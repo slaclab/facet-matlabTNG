@@ -1,0 +1,5 @@
+-Xbootclasspath/p:/usr/local/lcls/package/iona/orbacus/prod/JOB/lib/OB.jar
+-DAIDA_NAMESERVER_IOR_URL=http://mccas0.slac.stanford.edu/aida/NameServerPROD.ior
+-DOOC_COSEVENTCONFIG_PATHNAME=/u1/lcls/tools/orbacus/ooc_CosEvent_server.conf
+-DAIDA_CLIENT_TIMEOUT=90
+-Dsun.java2d.pmoffscreen=false

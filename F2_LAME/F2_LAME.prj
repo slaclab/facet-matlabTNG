@@ -1,0 +1,172 @@
+<deployment-project plugin="plugin.ezdeploy" plugin-version="1.0">
+  <configuration build-checksum="786843766" file="/media/psf/Home/OneDrive - SLAC National Accelerator Laboratory/Work/facet-sw/matlab/F2_LAME/F2_LAME.prj" location="/media/psf/Home/OneDrive - SLAC National Accelerator Laboratory/Work/facet-sw/matlab/F2_LAME" name="F2_LAME" preferred-package-location="/media/psf/Home/OneDrive - SLAC National Accelerator Laboratory/Work/facet-sw/matlab/F2_LAME/F2_LAME/for_redistribution" preferred-package-type="package.type.install" target="target.ezdeploy.standalone" target-name="Application Compiler">
+    <param.appname>F2_LAME</param.appname>
+    <param.icon />
+    <param.icons />
+    <param.version>1.0</param.version>
+    <param.authnamewatermark>Glen White</param.authnamewatermark>
+    <param.email>whitegr@slac.stanford.edu</param.email>
+    <param.company>SLAC National Accelerator Laboratory</param.company>
+    <param.summary>Looks up FACET-II gun energy based on changes in beam position on PR10241 for given changes in XC10121 and YC10122 corrector settings.</param.summary>
+    <param.description>FACET-II Gun: Larmor Angle Measurement of Energy
+
+Measurement process:
+
+* Enter solenoid current used
+* Take measure x &amp; y beam centroid on PR10241
+* Change XC10121 or YC10122 corrector strength
+* Re-measure beam centroid positions
+* Enter change in positions (dx &amp; dy) and change in corrector setting used, or linear fit changes across a range of settings.
+
+Fit results:
+
+* App generates 2 lookup parameters based on input data: R and dTheta, the vector length and angle calculated from the dx/dy screen position shifts entered
+3 calculated Gun energy measurements are shown:
+* "Closest fit": closest point in lookup table based on R and Theta measurements
+* "From R": energy which fits R measurement value
+* "From Theta": energy which fits Theta measurement value
+
+Notes:
+
+Lookup table is calculated using a 3D tracking model of the FACET-II injector using the code GPT.</param.description>
+    <param.screenshot />
+    <param.guid />
+    <param.installpath.string>/SLAC_National_Accelerator_Laboratory/F2_LAME/</param.installpath.string>
+    <param.installpath.combo>option.installpath.user</param.installpath.combo>
+    <param.logo />
+    <param.install.notes />
+    <param.target.install.notes>In the following directions, replace MR/v98 by the directory on the target machine where MATLAB is installed, or MR by the directory where the MATLAB Runtime is installed.
+
+(1) Set the environment variable XAPPLRESDIR to this value:
+
+MR/v98/X11/app-defaults
+
+
+(2) If the environment variable LD_LIBRARY_PATH is undefined, set it to the following:
+
+MR/v98/runtime/glnxa64:MR/v98/bin/glnxa64:MR/v98/sys/os/glnxa64:MR/v98/sys/opengl/lib/glnxa64
+
+If it is defined, set it to the following:
+
+${LD_LIBRARY_PATH}:MR/v98/runtime/glnxa64:MR/v98/bin/glnxa64:MR/v98/sys/os/glnxa64:MR/v98/sys/opengl/lib/glnxa64</param.target.install.notes>
+    <param.intermediate>${PROJECT_ROOT}/F2_LAME/for_testing</param.intermediate>
+    <param.files.only>${PROJECT_ROOT}/F2_LAME/for_redistribution_files_only</param.files.only>
+    <param.output>${PROJECT_ROOT}/F2_LAME/for_redistribution</param.output>
+    <param.logdir>${PROJECT_ROOT}/F2_LAME</param.logdir>
+    <param.enable.clean.build>false</param.enable.clean.build>
+    <param.user.defined.mcr.options />
+    <param.target.type>subtarget.standalone</param.target.type>
+    <param.support.packages />
+    <param.web.mcr>true</param.web.mcr>
+    <param.package.mcr>false</param.package.mcr>
+    <param.no.mcr>false</param.no.mcr>
+    <param.web.mcr.name>MyAppInstaller_web</param.web.mcr.name>
+    <param.package.mcr.name>MyAppInstaller_mcr</param.package.mcr.name>
+    <param.no.mcr.name>MyAppInstaller_app</param.no.mcr.name>
+    <param.windows.command.prompt>false</param.windows.command.prompt>
+    <param.create.log>false</param.create.log>
+    <param.log.file />
+    <param.native.matlab>false</param.native.matlab>
+    <param.checkbox>false</param.checkbox>
+    <param.example />
+    <param.help.text>Syntax 
+	  -? 
+	 
+ Input Arguments 
+	 -?  print help on how to use the application 
+	 input arguments</param.help.text>
+    <unset>
+      <param.icon />
+      <param.icons />
+      <param.version />
+      <param.authnamewatermark />
+      <param.email />
+      <param.company />
+      <param.screenshot />
+      <param.guid />
+      <param.installpath.string />
+      <param.installpath.combo />
+      <param.logo />
+      <param.install.notes />
+      <param.intermediate />
+      <param.files.only />
+      <param.output />
+      <param.logdir />
+      <param.enable.clean.build />
+      <param.user.defined.mcr.options />
+      <param.target.type />
+      <param.support.packages />
+      <param.web.mcr />
+      <param.package.mcr />
+      <param.no.mcr />
+      <param.web.mcr.name />
+      <param.package.mcr.name />
+      <param.no.mcr.name />
+      <param.windows.command.prompt />
+      <param.create.log />
+      <param.log.file />
+      <param.native.matlab />
+      <param.checkbox />
+      <param.example />
+    </unset>
+    <fileset.main>
+      <file>${PROJECT_ROOT}/F2_LAME.mlapp</file>
+    </fileset.main>
+    <fileset.resources>
+      <file>${PROJECT_ROOT}/F2_solcaldata.mat</file>
+      <file>/media/psf/Home/OneDrive - SLAC National Accelerator Laboratory/Work/facet-sw/matlab/web/F2_LAME.html</file>
+      <file>/media/psf/Home/OneDrive - SLAC National Accelerator Laboratory/Work/facet-sw/matlab/web/F2_LAME_app.jpg</file>
+    </fileset.resources>
+    <fileset.package>
+      <file>${PROJECT_ROOT}/solcaldata.mat</file>
+    </fileset.package>
+    <fileset.depfun>
+      <file>${PROJECT_ROOT}/F2GunDiagnostics.m</file>
+    </fileset.depfun>
+    <build-deliverables>
+      <file location="${PROJECT_ROOT}/F2_LAME/for_testing" name="splash.png" optional="false">/media/psf/Home/OneDrive - SLAC National Accelerator Laboratory/Work/facet-sw/matlab/F2_LAME/F2_LAME/for_testing/splash.png</file>
+      <file location="${PROJECT_ROOT}/F2_LAME/for_testing" name="F2_LAME" optional="false">/media/psf/Home/OneDrive - SLAC National Accelerator Laboratory/Work/facet-sw/matlab/F2_LAME/F2_LAME/for_testing/F2_LAME</file>
+      <file location="${PROJECT_ROOT}/F2_LAME/for_testing" name="run_F2_LAME.sh" optional="false">/media/psf/Home/OneDrive - SLAC National Accelerator Laboratory/Work/facet-sw/matlab/F2_LAME/F2_LAME/for_testing/run_F2_LAME.sh</file>
+      <file location="${PROJECT_ROOT}/F2_LAME/for_testing" name="readme.txt" optional="true">/media/psf/Home/OneDrive - SLAC National Accelerator Laboratory/Work/facet-sw/matlab/F2_LAME/F2_LAME/for_testing/readme.txt</file>
+    </build-deliverables>
+    <workflow />
+    <matlab>
+      <root>/usr/local/MATLAB/R2020a</root>
+      <toolboxes>
+        <toolbox name="matlabcoder" />
+        <toolbox name="fixedpoint" />
+        <toolbox name="neuralnetwork" />
+      </toolboxes>
+      <toolbox>
+        <matlabcoder>
+          <enabled>true</enabled>
+        </matlabcoder>
+      </toolbox>
+      <toolbox>
+        <fixedpoint>
+          <enabled>true</enabled>
+        </fixedpoint>
+      </toolbox>
+      <toolbox>
+        <neuralnetwork>
+          <enabled>true</enabled>
+        </neuralnetwork>
+      </toolbox>
+    </matlab>
+    <platform>
+      <unix>true</unix>
+      <mac>false</mac>
+      <windows>false</windows>
+      <win2k>false</win2k>
+      <winxp>false</winxp>
+      <vista>false</vista>
+      <linux>true</linux>
+      <solaris>false</solaris>
+      <osver>4.15.0-99-generic</osver>
+      <os32>false</os32>
+      <os64>true</os64>
+      <arch>glnxa64</arch>
+      <matlab>true</matlab>
+    </platform>
+  </configuration>
+</deployment-project>

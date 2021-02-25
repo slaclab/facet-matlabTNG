@@ -1,0 +1,23 @@
+classdef F2_IN10GunWatcher < handle
+  properties
+    pvlist PV
+    pvs
+  end
+  methods
+    function obj = F2_IN10GunWatcher(apph)
+      context = PV.Initialize(PVtype.EPICS) ;
+      obj.pvlist=[...
+        PV(context,'name',"State",'pvname',"SIOC:SYS1:ML00:AO843",'mode',"rw",'monitor',true); % Watcher state -1 OFF, 0 no error, 1 Gun FPWR error, 2 scope tarce derived error
+        PV(context,'name',"MaxPwr",'pvname',"SIOC:SYS1:ML00:AO844",'mode',"rw",'monitor',true); % Max forward gun power
+        PV(context,'name',"Enable",'pvname',"SIOC:SYS1:ML00:AO845",'mode',"rw",'monitor',true); % Watcher enable state 0 = OFF 1 = ON
+        PV(context,'name',"Heartbeat",'pvname',"SIOC:SYS1:ML00:AO846",'mode',"rw",'monito',true); % Watcher heartbeat
+        PV(context,'name',"GunFwdPwr",'pvname',"KLYS:LI10:21:FE_PWR"); % Forward gun power
+        PV(context,'name',"ScopeTriggerWF",'pvname',"SCOP:IN10:FC01:WF_CH0_TRACE"); % Laser trigger signal on scope
+        PV(context,'name',"GunPowerWF",'pvname',"SCOP:IN10:FC01:WF_CH0_TRACE"); % Laser trigger signal on scope
+        ] ;
+      pset(obj.pvlist,'debug',0) ;
+      obj.pvs = struct(obj.pvlist) ;
+      
+    end
+  end
+end

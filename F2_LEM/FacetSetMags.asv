@@ -1,0 +1,23 @@
+function FacetSetMags(dowrite)
+global BEAMLINE
+
+if ~exist('dowrite','var'); dowrite=false; end
+
+% Load and prepare Lucretia FACET2e model, get Beamline indices
+load FACET2e.mat BEAMLINE
+SetElementSlices(1,length(BEAMLINE));
+i1=findcells(BEAMLINE,'Name','BEGL1F'); i2=findcells(BEAMLINE,'Name','BEGBC20');
+
+% Print quad info and fields, and set to control system if requested
+quads=findcells(BEAMLINE,'Class','QUAD',i1,i2);
+names=arrayfun(@(x) BEAMLINE{x}.Name,quads,'UniformOutput',false);
+[names,iq]=unique(names); quads=quads(iq); [quads,sI]=sort(quads); names=names(sI);
+for iquad=1:length(names)
+  bdes_model = 10*GetTrueStrength(quads(iquad)) ;
+  fprintf('MODEL: %s: BDES= %g (kG) EMOD= %g (GeV)\n',names{iquad},bdes_model,BEAMLINE{quads(iquad)}.P);
+  mname = model_nameConvert(names{iquad}) ;
+  [~,bdes] = control_magnetGet(mname) ;
+  fprintf('%s: Current BDES = %g (kG)\n',mname,bdes) ;
+  if dowrite
+    control_magnetSet(mname,bdes_model
+end
