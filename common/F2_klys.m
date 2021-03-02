@@ -4,6 +4,7 @@ classdef F2_klys < handle
     PVUpdated
   end
   properties(SetObservable)
+    KlysForceZeroPhase logical = false
     KlysUseSector(1,4) logical = true(1,4) % L0, L1, L2, L3 (local setting to this object)
     KlysInUse(8,10) logical % Klystron in use? (flags which klystrons are physically present)
   end
@@ -33,7 +34,7 @@ classdef F2_klys < handle
     SectorPhase(1,4) % mean klystron phase in L0,L1,L2,L3
   end
   methods
-    function obj = F2_klys(LM,context,UpdateRate)
+    function obj = F2_klys(LM,context,klyszerophase,UpdateRate)
       %F2_KLYS Mapping between model and control system klystron data
       %F2_klys(LM [,context,UpdateRate])
       %  LM : LucretiaModel object (local copy made)
@@ -41,6 +42,9 @@ classdef F2_klys < handle
       %  UpdateRate(Optional) : auto update data at this rate (s) default=0 (no auto update)
       obj.LM=copy(LM);
       obj.LM.ModelClasses = "LCAV" ;
+      if exist('klyszerophase','var') && ~isempty(klyszerophase)
+        obj.KlysForceZeroPhase=klyszerophase;
+      end
       if exist('context','var') && ~isempty(context)
         obj.context=context;
       end
@@ -84,6 +88,12 @@ classdef F2_klys < handle
       end
       tab=table(phase(:),ampl(:),stat(:),'RowNames',names(:));
       tab.Properties.VariableNames={'Phase [deg]' 'ENLD [MeV]' 'STAT'};
+    end
+    function set.KlysForceZeroPhase(obj,val)
+      obj.KlysForceZeroPhase=logical(val);
+      if ~isempty(obj.pvs)
+        obj.UpdateData ;
+      end
     end
     function sname = get.KlysStatName(obj)
       for isec=1:10
@@ -142,6 +152,7 @@ classdef F2_klys < handle
             obj.pvlist(end+1) = PV(context,'name',sprintf("stat_%d_1%d",ikly,isec-1),'pvname',sprintf("LI1%d:KLYS:%d1:STAT",isec-1,ikly));
             obj.pvlist(end+1) = PV(context,'name',sprintf("swrd_%d_1%d",ikly,isec-1),'pvname',sprintf("LI1%d:KLYS:%d1:SWRD",isec-1,ikly));
           end
+          obj.pvlist(end+1) = PV(context,'name',sprintf("sbst_1%d_phase",isec-1),'pvname',sprintf("LI1%d:SBST:1:PDES",isec-1),'monitor',true) ;
         end
         pset(obj.pvlist,'debug',0) ;
         obj.pvs = struct(obj.pvlist) ;
@@ -190,7 +201,14 @@ classdef F2_klys < handle
           if ~obj.KlysUseSector(linacsector) || ~obj.KlysInUse(ikly,isec)
             continue
           end
-          obj.KlysPhase(ikly,isec) = obj.pvs.(sprintf("phase_%d_1%d",ikly,isec-1)).val{1} * 0 ;
+          if obj.KlysForceZeroPhase
+            obj.KlysPhase(ikly,isec) = 0 ;
+          else
+            obj.KlysPhase(ikly,isec) = obj.pvs.(sprintf("phase_%d_1%d",ikly,isec-1)).val{1} ;
+            if isec>1
+              obj.KlysPhase(ikly,isec) = obj.KlysPhase(ikly,isec) + obj.pvs.(sprintf("sbst_1%d_phase",isec-1)).val{1}  ;
+            end
+          end
         end
       end
     end
@@ -214,6 +232,9 @@ classdef F2_klys < handle
           end
         end
       end
+    end
+    function SetKlysPhase(obj,phase)
+      obj.KlysPhase=phase;
     end
   end
 end

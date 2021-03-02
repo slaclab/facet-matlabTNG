@@ -357,7 +357,7 @@ classdef F2_CathodeServices_exported < matlab.apps.AppBase
     % Menu selected function: SaveBufferedDataMenu
     function SaveBufferedDataMenuSelected(app, event)
       app.aobj.dnCMD=true;
-      [fn,pn]=uiputfile('*.mat');
+      [fn,pn]=uiputfile(app.aobj.datadir+"/*.mat");
       if ~isequal(fn,0)
         PositionData = app.aobj.poshistory ;
         timestamp=now;
@@ -420,7 +420,7 @@ classdef F2_CathodeServices_exported < matlab.apps.AppBase
     % Menu selected function: SaveConfigasMenu
     function SaveConfigasMenuSelected(app, event)
       app.aobj.dnCMD=true;
-      [fn,pn]=uiputfile('*.mat');
+      [fn,pn]=uiputfile(app.aobj.confdir+"/*.mat");
       if ~isequal(fn,0)
         app.aobj.SaveConfig(fullfile(pn,fn));
       end
@@ -430,7 +430,7 @@ classdef F2_CathodeServices_exported < matlab.apps.AppBase
     % Menu selected function: LoadConfigMenu
     function LoadConfigMenuSelected(app, event)
       app.aobj.dnCMD=true;
-      [fn,pn]=uigetfile('*.mat');
+      [fn,pn]=uigetfile(app.aobj.confdir+"/*.mat");
       if ~isequal(fn,0)
         app.aobj.LoadConfig(fullfile(pn,fn));
       end
@@ -446,7 +446,7 @@ classdef F2_CathodeServices_exported < matlab.apps.AppBase
     % Menu selected function: LoadImageMenu
     function LoadImageMenuSelected(app, event)
       app.aobj.dnCMD=true;
-      [fn,pn]=uigetfile('*.mat');
+      [fn,pn]=uigetfile(app.aobj.datadir+"/*.mat");
       if ~isequal(fn,0)
         app.aobj.LoadImage(fullfile(pn,fn));
       end
@@ -456,7 +456,7 @@ classdef F2_CathodeServices_exported < matlab.apps.AppBase
     % Menu selected function: SaveImageMenu
     function SaveImageMenuSelected(app, event)
       app.aobj.dnCMD=true;
-      [fn,pn]=uiputfile('*.mat');
+      [fn,pn]=uiputfile(app.aobj.datadir+"/*.mat");
       if ~isequal(fn,0)
         app.aobj.SaveImage(fullfile(pn,fn));
       end
@@ -676,7 +676,7 @@ classdef F2_CathodeServices_exported < matlab.apps.AppBase
     % Menu selected function: SaveCleaningDataMenu
     function SaveCleaningDataMenuSelected(app, event)
       app.aobj.dnCMD=true;
-      [fn,pn]=uiputfile('*.mat');
+      [fn,pn]=uiputfile(data.aobj.datadir+"/*.mat");
       if ~isequal(fn,0)
         CleaningData = app.aobj.CleaningSummaryData ;
         save(fullfile(pn,fn),'CleaningData');

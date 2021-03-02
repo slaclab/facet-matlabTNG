@@ -7,15 +7,15 @@ global BEAMLINE
 if ~exist('dowrite','var'); dowrite=false; end
 
 % Load and prepare Lucretia FACET2e model, get Beamline indices
-load FACET2e.mat BEAMLINE
+load /usr/local/facet/tools/facet2-lattice/Lucretia/models/FACET2e/FACET2e.mat BEAMLINE
 SetElementSlices(1,length(BEAMLINE));
 i1=findcells(BEAMLINE,'Name','L0BFEND'); i2=findcells(BEAMLINE,'Name','MAINDUMP');
 
 % Model and actual energy profile to use
 emod0=arrayfun(@(x) BEAMLINE{x}.P,1:length(BEAMLINE));
-EMOD=[0.135 0.335 4.5 10];
-EACT=[0.1014 0.260 4.1 10]; % @ L1BEG, BC11, BC14, BC20 [0.106 0.28 0.28 10]
-doreg=[true true true true]; % flag to set magnet strengths in region L0, L1, L2, L3
+EMOD=[0.135 0.335 4.5 9.3];
+EACT=[0.1014 0.260 4.5 6]; % @ L1BEG, BC11, BC14, BC20 [0.106 0.28 0.28 10]
+doreg=[false false false true]; % flag to set magnet strengths in region L0, L1, L2, L3
 E_ind=[findcells(BEAMLINE,'Name','BEGL1F') findcells(BEAMLINE,'Name','BEGL2F') findcells(BEAMLINE,'Name','BEGL3F_1')];
 SetDesignMomentumProfile( 1, E_ind(1), 2e-9, BEAMLINE{1}.P, EACT(1) ) ;
 SetDesignMomentumProfile( E_ind(1), E_ind(2), 2e-9, EACT(1), EACT(2) ) ;
@@ -122,7 +122,7 @@ if dowrite && ~isempty(fieldnames(bulk))
     control_mags_bb={}; control_vals_bb=[];
     for ifn=1:length(fn)
         [~,bid]=unique(bulk.(fn{ifn}).magname);
-        for ibst = bid
+        for ibst = bid(:)'
             [~,bdesm] = control_magnetGet(bulk.(fn{ifn}).magname{ibst}) ;
             [~,bdes] = control_magnetGet(bulk.(fn{ifn}).boostname{ibst}) ;
             bdes_new = bdes + (bulk.(fn{ifn}).boostval(ibst)-bdesm) ;

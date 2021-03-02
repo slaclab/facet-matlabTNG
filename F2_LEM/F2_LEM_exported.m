@@ -2,7 +2,11 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
   % Properties that correspond to app components
   properties (Access = public)
-    UIFigure                  matlab.ui.Figure
+    FLEMFACETIILEMUIFigure    matlab.ui.Figure
+    FileMenu                  matlab.ui.container.Menu
+    SetPrefMenu               matlab.ui.container.Menu
+    SaveDataMenu              matlab.ui.container.Menu
+    LoadDataMenu              matlab.ui.container.Menu
     GridLayout                matlab.ui.container.GridLayout
     LeftPanel                 matlab.ui.container.Panel
     ScaleMagnetsButton        matlab.ui.control.Button
@@ -25,7 +29,7 @@ classdef F2_LEM_exported < matlab.apps.AppBase
     L1Label                   matlab.ui.control.Label
     EditField_3               matlab.ui.control.NumericEditField
     EditField_4               matlab.ui.control.NumericEditField
-    L3Label                   matlab.ui.control.Label
+    L2Label_2                 matlab.ui.control.Label
     EditField_5               matlab.ui.control.NumericEditField
     EditField_6               matlab.ui.control.NumericEditField
     L3Label_2                 matlab.ui.control.Label
@@ -35,6 +39,7 @@ classdef F2_LEM_exported < matlab.apps.AppBase
     BC14Eref                  matlab.ui.control.NumericEditField
     BC20Label                 matlab.ui.control.Label
     BC20Eref                  matlab.ui.control.NumericEditField
+    UseBendEDEFButton         matlab.ui.control.StateButton
     WakesTab                  matlab.ui.container.Tab
     BunchChargenCLabel        matlab.ui.control.Label
     L0EditFieldLabel          matlab.ui.control.Label
@@ -55,6 +60,7 @@ classdef F2_LEM_exported < matlab.apps.AppBase
     EditField_180             matlab.ui.control.NumericEditField
     EditField_181             matlab.ui.control.NumericEditField
     EditField_182             matlab.ui.control.NumericEditField
+    UseMeasuredValuesButton   matlab.ui.control.StateButton
     RFTab                     matlab.ui.container.Tab
     L1Label_2                 matlab.ui.control.Label
     L2Label                   matlab.ui.control.Label
@@ -81,12 +87,16 @@ classdef F2_LEM_exported < matlab.apps.AppBase
     L3CheckBox                matlab.ui.control.CheckBox
     ReadDataButton            matlab.ui.control.Button
     S20CheckBox               matlab.ui.control.CheckBox
+    DataValidLampLabel        matlab.ui.control.Label
+    DataValidLamp             matlab.ui.control.Lamp
     RightPanel                matlab.ui.container.Panel
     TabGroup2                 matlab.ui.container.TabGroup
     EProfileTab               matlab.ui.container.Tab
     UIAxes                    matlab.ui.control.UIAxes
     MagnetsTab                matlab.ui.container.Tab
     UIAxes2                   matlab.ui.control.UIAxes
+    Table                     matlab.ui.container.Tab
+    UITable                   matlab.ui.control.Table
     KlysEgainTab              matlab.ui.container.Tab
     GridLayout2               matlab.ui.container.GridLayout
     Label_10                  matlab.ui.control.Label
@@ -279,12 +289,11 @@ classdef F2_LEM_exported < matlab.apps.AppBase
     EditField_168             matlab.ui.control.EditField
     MessagesTab               matlab.ui.container.Tab
     TextArea                  matlab.ui.control.TextArea
-    FileMenu                  matlab.ui.container.Menu
-    SetFudgerefMenu           matlab.ui.container.Menu
-    SetPrefMenu               matlab.ui.container.Menu
-    SaveModelMenu             matlab.ui.container.Menu
-    LoadModelMenu             matlab.ui.container.Menu
-    LoadDataMenu              matlab.ui.container.Menu
+    SettingsMenu              matlab.ui.container.Menu
+    ForceallphasestozeroMenu  matlab.ui.container.Menu
+    DisplayMenu               matlab.ui.container.Menu
+    ShowlegendMenu            matlab.ui.container.Menu
+    DetachplottableMenu       matlab.ui.container.Menu
     HelpMenu                  matlab.ui.container.Menu
   end
 
@@ -296,6 +305,53 @@ classdef F2_LEM_exported < matlab.apps.AppBase
   
   properties (Access = public)
     aobj % App object
+  end
+  
+  methods (Access = private)
+    
+    function SetRegion(app,regsel)
+      reghan1=[app.L0CheckBox app.L1CheckBox app.L2CheckBox app.L3CheckBox app.S20CheckBox];
+      if ~any(regsel)
+        app.L0CheckBox.Value=true;
+        app.SetRegion([true false false false false]);
+        return
+      end
+      app.aobj.linacsel = regsel ;
+      reghan={[app.GunEref app.EditField app.EditField_2] [app.BC11Eref app.EditField_3 app.EditField_4] [app.BC14Eref app.EditField_5 app.EditField_6] [app.BC20Eref app.EditField_7 app.EditField_8] []};
+      i1=find(regsel,1);
+      i2=find(regsel,1,'last');
+      for ireg=i1:i2
+        if ireg>i1 && ireg<i2
+          regsel(ireg)=true; % force continuous region selection
+        end
+      end
+      for ireg=1:length(regsel)
+        for iobj=1:length(reghan{ireg})
+          set(reghan{ireg}(iobj),'Visible',true);
+        end
+      end
+      if i1>1
+        reghan{2}=[app.DL1Eref app.EditField_3 app.EditField_4] ;
+%         reghan={[app.GunEref app.EditField app.EditField_2] [app.DL1Eref app.EditField_3 app.EditField_4] [app.BC11Eref app.EditField_5 app.EditField_6] [app.BC14Eref app.EditField_7 app.EditField_8] []};
+      end
+      if i1>2
+        reghan{3}=[app.BC11Eref app.EditField_5 app.EditField_6];
+      end
+      if i2<4
+        reghan{5}=app.BC20Eref;
+        reghan{4}=[reghan{4} app.BC20Eref];
+      end
+      if i1==5
+        reghan{4}=[reghan{4} app.BC14Eref];
+        reghan{5}=app.BC20Eref;
+      end
+      for ireg=1:length(regsel)
+        set(reghan1(ireg),'Value',regsel(ireg));
+        for iobj=1:length(reghan{ireg})
+          set(reghan{ireg}(iobj),'Visible',regsel(ireg));
+        end
+      end
+    end
   end
   
 
@@ -314,10 +370,10 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
     % Changes arrangement of the app based on UIFigure width
     function updateAppLayout(app, event)
-            currentFigureWidth = app.UIFigure.Position(3);
+            currentFigureWidth = app.FLEMFACETIILEMUIFigure.Position(3);
             if(currentFigureWidth <= app.onePanelWidth)
                 % Change to a 2x1 grid
-                app.GridLayout.RowHeight = {426, 426};
+                app.GridLayout.RowHeight = {458, 458};
                 app.GridLayout.ColumnWidth = {'1x'};
                 app.RightPanel.Layout.Row = 2;
                 app.RightPanel.Layout.Column = 1;
@@ -337,12 +393,19 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
     % Button pushed function: ReadDataButton
     function ReadDataButtonPushed(app, event)
+      app.DataValidLamp.Color='black';
       inittab = app.TabGroup2.SelectedTab ;
       app.TabGroup2.SelectedTab = app.MessagesTab ;
       if isempty(app.aobj) % Instantiate supporting app object
         try
-          app.aobj = F2_LEMApp(app) ;
+          if app.ForceallphasestozeroMenu.Checked
+            app.aobj = F2_LEMApp(app,true) ;
+          else
+            app.aobj = F2_LEMApp(app) ;
+          end
+          app.DataValidLamp.Color='green';
         catch ME 
+          app.DataValidLamp.Color='red';
           app.TextArea.Value=["!!!!!!! Error initializing LEM app: " + string(ME.message); string(app.TextArea.Value)];
           throw(ME);
         end
@@ -367,24 +430,28 @@ classdef F2_LEM_exported < matlab.apps.AppBase
     % Value changed function: DL1Eref
     function DL1ErefValueChanged(app, event)
       value = [app.DL1Eref.Value app.BC11Eref.Value app.BC14Eref.Value app.BC20Eref.Value] ;
+      app.UseBendEDEFButton.Value = false ;
       app.aobj.SetLinacEref(value) ;
     end
 
     % Value changed function: BC11Eref
     function BC11ErefValueChanged(app, event)
       value = [app.DL1Eref.Value app.BC11Eref.Value app.BC14Eref.Value app.BC20Eref.Value] ;
+      app.UseBendEDEFButton.Value = false ;
       app.aobj.SetLinacEref(value) ;
     end
 
     % Value changed function: BC14Eref
     function BC14ErefValueChanged(app, event)
       value = [app.DL1Eref.Value app.BC11Eref.Value app.BC14Eref.Value app.BC20Eref.Value] ;
+      app.UseBendEDEFButton.Value = false ;
       app.aobj.SetLinacEref(value) ;
     end
 
     % Value changed function: BC20Eref
     function BC20ErefValueChanged(app, event)
       value = [app.DL1Eref.Value app.BC11Eref.Value app.BC14Eref.Value app.BC20Eref.Value] ;
+      app.UseBendEDEFButton.Value = false ;
       app.aobj.SetLinacEref(value) ;
     end
 
@@ -392,48 +459,64 @@ classdef F2_LEM_exported < matlab.apps.AppBase
     function L0EditFieldValueChanged(app, event)
       value = [app.L0EditField.Value app.L1EditField.Value app.L2EditField.Value app.L3EditField.Value];
       app.aobj.bq = value ;
+      app.UseMeasuredValuesButton.Value=false;
+      app.aobj.UpdateGUI;
     end
 
     % Value changed function: L1EditField
     function L1EditFieldValueChanged(app, event)
       value = [app.L0EditField.Value app.L1EditField.Value app.L2EditField.Value app.L3EditField.Value];
       app.aobj.bq = value ;
+      app.UseMeasuredValuesButton.Value=false;
+      app.aobj.UpdateGUI;
     end
 
     % Value changed function: L2EditField
     function L2EditFieldValueChanged(app, event)
       value = [app.L0EditField.Value app.L1EditField.Value app.L2EditField.Value app.L3EditField.Value];
       app.aobj.bq = value ;
+      app.UseMeasuredValuesButton.Value=false;
+      app.aobj.UpdateGUI;
     end
 
     % Value changed function: L3EditField
     function L3EditFieldValueChanged(app, event)
       value = [app.L0EditField.Value app.L1EditField.Value app.L2EditField.Value app.L3EditField.Value];
       app.aobj.bq = value ;
+      app.UseMeasuredValuesButton.Value=false;
+      app.aobj.UpdateGUI;
     end
 
     % Value changed function: EditField_175
     function EditField_175ValueChanged(app, event)
       value = [app.EditField_175.Value app.EditField_176.Value app.EditField_177.Value app.EditField_178.Value ] ;
       app.aobj.blen = value ;
+      app.UseMeasuredValuesButton.Value=false;
+      app.aobj.UpdateGUI;
     end
 
     % Value changed function: EditField_176
     function EditField_176ValueChanged(app, event)
       value = [app.EditField_175.Value app.EditField_176.Value app.EditField_177.Value app.EditField_178.Value ] ;
       app.aobj.blen = value ;
+      app.UseMeasuredValuesButton.Value=false;
+      app.aobj.UpdateGUI;
     end
 
     % Value changed function: EditField_177
     function EditField_177ValueChanged(app, event)
       value = [app.EditField_175.Value app.EditField_176.Value app.EditField_177.Value app.EditField_178.Value ] ;
       app.aobj.blen = value ;
+      app.UseMeasuredValuesButton.Value=false;
+      app.aobj.UpdateGUI;
     end
 
     % Value changed function: EditField_178
     function EditField_178ValueChanged(app, event)
       value = [app.EditField_175.Value app.EditField_176.Value app.EditField_177.Value app.EditField_178.Value ] ;
       app.aobj.blen = value ;
+      app.UseMeasuredValuesButton.Value=false;
+      app.aobj.UpdateGUI;
     end
 
     % Selection changed function: 
@@ -441,41 +524,55 @@ classdef F2_LEM_exported < matlab.apps.AppBase
     function MagnetReferenceSourceButtonGroupSelectionChanged(app, event)
       selectedButton = app.MagnetReferenceSourceButtonGroup.SelectedObject;
       app.aobj.RescaleWithModel = selectedButton == app.UseModelStrengthsButton ;
+      app.aobj.UpdateGUI;
     end
 
     % Value changed function: L0CheckBox
     function L0CheckBoxValueChanged(app, event)
-      value = [app.L0CheckBox.Value app.L1CheckBox.Value app.L2CheckBox.Value app.L3CheckBox.Value ] ;
-      app.aobj.linacsel = value ;
+      value = [app.L0CheckBox.Value app.L1CheckBox.Value app.L2CheckBox.Value app.L3CheckBox.Value app.S20CheckBox.Value] ;
+      app.SetRegion(value);
     end
 
     % Value changed function: L1CheckBox
     function L1CheckBoxValueChanged(app, event)
-      value = [app.L0CheckBox.Value app.L1CheckBox.Value app.L2CheckBox.Value app.L3CheckBox.Value ] ;
-      app.aobj.linacsel = value ;
+      value = [app.L0CheckBox.Value app.L1CheckBox.Value app.L2CheckBox.Value app.L3CheckBox.Value app.S20CheckBox.Value] ;
+      app.SetRegion(value);
     end
 
     % Value changed function: L2CheckBox
     function L2CheckBoxValueChanged(app, event)
-      value = [app.L0CheckBox.Value app.L1CheckBox.Value app.L2CheckBox.Value app.L3CheckBox.Value ] ;
-      app.aobj.linacsel = value ;
+      value = [app.L0CheckBox.Value app.L1CheckBox.Value app.L2CheckBox.Value app.L3CheckBox.Value app.S20CheckBox.Value] ;
+      app.SetRegion(value);
     end
 
     % Value changed function: L3CheckBox
     function L3CheckBoxValueChanged(app, event)
-      value = [app.L0CheckBox.Value app.L1CheckBox.Value app.L2CheckBox.Value app.L3CheckBox.Value ] ;
-      app.aobj.linacsel = value ;
+      value = [app.L0CheckBox.Value app.L1CheckBox.Value app.L2CheckBox.Value app.L3CheckBox.Value app.S20CheckBox.Value] ;
+      app.SetRegion(value);
     end
 
     % Value changed function: S20CheckBox
     function S20CheckBoxValueChanged(app, event)
-      value = [app.L0CheckBox.Value app.L1CheckBox.Value app.L2CheckBox.Value app.L3CheckBox.Value ] ;
-      app.aobj.linacsel = value ;
+      value = [app.L0CheckBox.Value app.L1CheckBox.Value app.L2CheckBox.Value app.L3CheckBox.Value app.S20CheckBox.Value] ;
+      app.SetRegion(value);
     end
 
     % Button pushed function: ScaleMagnetsButton
     function ScaleMagnetsButtonPushed(app, event)
-      app.aobj.DoMagnetScale;      
+      if app.TabGroup2.SelectedTab==app.Table % provide possibility of selecting magnets to scale
+        resp=questdlg('Scale magnets from Eref to current energy profile based on Table selections or All magnets (with BERR flag set)?','Scale Magnets','All','Table Selection','Cancel','Cancel');
+        if string(resp)=="All"
+          app.aobj.DoMagnetScale;
+        elseif string(resp)=="Table Selection"
+          app.aobj.DoMagnetScale("tablesel");
+        end
+      else
+        resp=questdlg('Scale All magnets from Eref to current energy profile (with BERR flag set)?','Scale Magnets','Scale Magnets','Cancel','Cancel');
+        if string(resp)=="Scale Magnets"
+          app.aobj.DoMagnetScale;
+        end
+      end
+            
     end
 
     % Button pushed function: UndoButton
@@ -483,15 +580,9 @@ classdef F2_LEM_exported < matlab.apps.AppBase
       app.aobj.UndoMagnetScale;
     end
 
-    % Menu selected function: SetFudgerefMenu
+    % Callback function
     function SetFudgerefMenuSelected(app, event)
-      if string(questdlg('Set extant fudge factors as default reference and write to EPICS?','Yes','No'))=="Yes"
-        try
-          app.aobj.SetFREF;
-        catch ME
-          errordlg(sprintf('Error setting reference fudge factors:\n%s',ME.message),'FREF Set Error');
-        end
-      end
+      
     end
 
     % Menu selected function: SetPrefMenu
@@ -505,20 +596,20 @@ classdef F2_LEM_exported < matlab.apps.AppBase
       end
     end
 
-    % Menu selected function: SaveModelMenu
-    function SaveModelMenuSelected(app, event)
-      [fname,fdir]=uiputfile("FACET_LEM_"+datestr(now,30)+".mat","Save Model File");
+    % Menu selected function: SaveDataMenu
+    function SaveDataMenuSelected(app, event)
+      [fname,fdir]=uiputfile(app.aobj.confdir+"/F2_LEM/refdata.mat","Save Model File");
       if fname
-        app.aobj.SaveModel(fdir,fname);
+        app.aobj.SaveModel(fullfile(fdir,fname),true);
       end
     end
 
-    % Menu selected function: LoadModelMenu
+    % Callback function
     function LoadModelMenuSelected(app, event)
-      [fname,fdir]=uigetfile("*.mat","Load Model File");
+      [fname,fdir]=uigetfile(app.aobj.modeldir+"/FACET2e/*.mat","Load Model File");
       if fname
         try
-          app.aobj.LoadModel(fdir,fname);
+          app.aobj.LoadModel(fullfile(fdir,fname),true);
         catch ME
           errordlg(sprintf('Error loading model:\n%s',ME.message));
         end
@@ -527,14 +618,83 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
     % Menu selected function: LoadDataMenu
     function LoadDataMenuSelected(app, event)
-      [fname,fdir]=uigetfile("*.mat","Load Data File");
+      [fname,fdir]=uigetfile(app.aobj.confdir+"/F2_LEM/*.mat","Load Data File");
       if fname
         try
-          app.aobj.LoadModel(fdir,fname,true);
+          app.aobj.LoadModel(fullfile(fdir,fname),true);
         catch ME
           errordlg(sprintf('Error loading data:\n%s',ME.message));
         end
       end
+    end
+
+    % Size changed function: MagnetsTab_2
+    function MagnetsTab_2SizeChanged(app, event)
+      position = app.MagnetsTab_2.Position;
+      
+    end
+
+    % Value changed function: UseBendEDEFButton
+    function UseBendEDEFButtonValueChanged(app, event)
+      app.aobj.UseBendEDEF = app.UseBendEDEFButton.Value;
+      
+    end
+
+    % Cell edit callback: UITable
+    function UITableCellEdit(app, event)
+      indices = event.Indices;
+      newData = event.NewData;
+      app.aobj.tableCallback(indices,newData);
+    end
+
+    % Cell selection callback: UITable
+    function UITableCellSelection(app, event)
+      indices = event.Indices;
+      app.aobj.tableCallback(indices);
+    end
+
+    % Menu selected function: DetachplottableMenu
+    function DetachplottableMenuSelected(app, event)
+      app.aobj.uidetachplot=true;
+      app.aobj.UpdateGUI;
+    end
+
+    % Menu selected function: ShowlegendMenu
+    function ShowlegendMenuSelected(app, event)
+      if app.ShowlegendMenu.Checked
+        app.ShowlegendMenu.Checked=false;
+      else
+        app.ShowlegendMenu.Checked=true;
+      end
+      app.aobj.uishowlegend = app.ShowlegendMenu.Checked ;
+      app.aobj.UpdateGUI;
+    end
+
+    % Value changed function: UseMeasuredValuesButton
+    function UseMeasuredValuesButtonValueChanged(app, event)
+      value = app.UseMeasuredValuesButton.Value;
+      if value
+        app.aobj.ReadWakeMeasData;
+        app.aobj.UpdateGUI;
+      end
+    end
+
+    % Menu selected function: ForceallphasestozeroMenu
+    function ForceallphasestozeroMenuSelected(app, event)
+      if app.ForceallphasestozeroMenu.Checked
+        app.ForceallphasestozeroMenu.Checked=false;
+      else
+        app.ForceallphasestozeroMenu.Checked=true;
+      end
+      if ~isempty(app.aobj)
+        app.aobj.KlysZeroPhases = app.ForceallphasestozeroMenu.Checked ;
+      end
+    end
+
+    % Close request function: FLEMFACETIILEMUIFigure
+    function FLEMFACETIILEMUIFigureCloseRequest(app, event)
+      delete(app)
+%       exit
     end
   end
 
@@ -544,16 +704,36 @@ classdef F2_LEM_exported < matlab.apps.AppBase
     % Create UIFigure and components
     function createComponents(app)
 
-      % Create UIFigure and hide until all components are created
-      app.UIFigure = uifigure('Visible', 'off');
-      app.UIFigure.AutoResizeChildren = 'off';
-      app.UIFigure.Position = [100 100 1131 426];
-      app.UIFigure.Name = 'MATLAB App';
-      app.UIFigure.Resize = 'off';
-      app.UIFigure.SizeChangedFcn = createCallbackFcn(app, @updateAppLayout, true);
+      % Create FLEMFACETIILEMUIFigure and hide until all components are created
+      app.FLEMFACETIILEMUIFigure = uifigure('Visible', 'off');
+      app.FLEMFACETIILEMUIFigure.AutoResizeChildren = 'off';
+      app.FLEMFACETIILEMUIFigure.Position = [100 100 1133 458];
+      app.FLEMFACETIILEMUIFigure.Name = 'FLEM (FACET-II LEM)';
+      app.FLEMFACETIILEMUIFigure.Resize = 'off';
+      app.FLEMFACETIILEMUIFigure.CloseRequestFcn = createCallbackFcn(app, @FLEMFACETIILEMUIFigureCloseRequest, true);
+      app.FLEMFACETIILEMUIFigure.SizeChangedFcn = createCallbackFcn(app, @updateAppLayout, true);
+
+      % Create FileMenu
+      app.FileMenu = uimenu(app.FLEMFACETIILEMUIFigure);
+      app.FileMenu.Text = 'File';
+
+      % Create SetPrefMenu
+      app.SetPrefMenu = uimenu(app.FileMenu);
+      app.SetPrefMenu.MenuSelectedFcn = createCallbackFcn(app, @SetPrefMenuSelected, true);
+      app.SetPrefMenu.Text = 'Set P ref...';
+
+      % Create SaveDataMenu
+      app.SaveDataMenu = uimenu(app.FileMenu);
+      app.SaveDataMenu.MenuSelectedFcn = createCallbackFcn(app, @SaveDataMenuSelected, true);
+      app.SaveDataMenu.Text = 'Save Data...';
+
+      % Create LoadDataMenu
+      app.LoadDataMenu = uimenu(app.FileMenu);
+      app.LoadDataMenu.MenuSelectedFcn = createCallbackFcn(app, @LoadDataMenuSelected, true);
+      app.LoadDataMenu.Text = 'Load Data...';
 
       % Create GridLayout
-      app.GridLayout = uigridlayout(app.UIFigure);
+      app.GridLayout = uigridlayout(app.FLEMFACETIILEMUIFigure);
       app.GridLayout.ColumnWidth = {311, '1x'};
       app.GridLayout.RowHeight = {'1x'};
       app.GridLayout.ColumnSpacing = 0;
@@ -569,20 +749,20 @@ classdef F2_LEM_exported < matlab.apps.AppBase
       % Create ScaleMagnetsButton
       app.ScaleMagnetsButton = uibutton(app.LeftPanel, 'push');
       app.ScaleMagnetsButton.ButtonPushedFcn = createCallbackFcn(app, @ScaleMagnetsButtonPushed, true);
-      app.ScaleMagnetsButton.Position = [116 388 100 23];
+      app.ScaleMagnetsButton.Position = [116 396 100 23];
       app.ScaleMagnetsButton.Text = 'Scale Magnets';
 
       % Create UndoButton
       app.UndoButton = uibutton(app.LeftPanel, 'push');
       app.UndoButton.ButtonPushedFcn = createCallbackFcn(app, @UndoButtonPushed, true);
       app.UndoButton.Enable = 'off';
-      app.UndoButton.Position = [222 388 70 23];
+      app.UndoButton.Position = [222 396 70 23];
       app.UndoButton.Text = 'Undo';
 
       % Create TabGroup
       app.TabGroup = uitabgroup(app.LeftPanel);
       app.TabGroup.SelectionChangedFcn = createCallbackFcn(app, @TabGroupSelectionChanged, true);
-      app.TabGroup.Position = [1 8 306 340];
+      app.TabGroup.Position = [1 6 306 342];
 
       % Create EREFSTab
       app.EREFSTab = uitab(app.TabGroup);
@@ -591,166 +771,178 @@ classdef F2_LEM_exported < matlab.apps.AppBase
       % Create GunEditFieldLabel
       app.GunEditFieldLabel = uilabel(app.EREFSTab);
       app.GunEditFieldLabel.HorizontalAlignment = 'right';
-      app.GunEditFieldLabel.Position = [22 237 28 22];
+      app.GunEditFieldLabel.Position = [22 239 28 22];
       app.GunEditFieldLabel.Text = 'Gun';
 
       % Create GunEref
       app.GunEref = uieditfield(app.EREFSTab, 'numeric');
+      app.GunEref.ValueDisplayFormat = '%.4f';
       app.GunEref.ValueChangedFcn = createCallbackFcn(app, @GunErefValueChanged, true);
-      app.GunEref.Position = [65 237 85 22];
+      app.GunEref.Position = [65 239 85 22];
       app.GunEref.Value = 0.005;
 
       % Create DL1EditFieldLabel
       app.DL1EditFieldLabel = uilabel(app.EREFSTab);
       app.DL1EditFieldLabel.HorizontalAlignment = 'right';
-      app.DL1EditFieldLabel.Position = [23 185 27 22];
+      app.DL1EditFieldLabel.Position = [23 187 27 22];
       app.DL1EditFieldLabel.Text = 'DL1';
 
       % Create DL1Eref
       app.DL1Eref = uieditfield(app.EREFSTab, 'numeric');
+      app.DL1Eref.ValueDisplayFormat = '%.3f';
       app.DL1Eref.ValueChangedFcn = createCallbackFcn(app, @DL1ErefValueChanged, true);
-      app.DL1Eref.Position = [65 185 85 22];
+      app.DL1Eref.Position = [65 187 85 22];
       app.DL1Eref.Value = 0.135;
 
       % Create BC11EditFieldLabel
       app.BC11EditFieldLabel = uilabel(app.EREFSTab);
       app.BC11EditFieldLabel.HorizontalAlignment = 'right';
-      app.BC11EditFieldLabel.Position = [14 133 36 22];
+      app.BC11EditFieldLabel.Position = [14 135 36 22];
       app.BC11EditFieldLabel.Text = 'BC11';
 
       % Create BC11Eref
       app.BC11Eref = uieditfield(app.EREFSTab, 'numeric');
+      app.BC11Eref.ValueDisplayFormat = '%.3f';
       app.BC11Eref.ValueChangedFcn = createCallbackFcn(app, @BC11ErefValueChanged, true);
-      app.BC11Eref.Position = [65 133 85 22];
+      app.BC11Eref.Position = [65 135 85 22];
       app.BC11Eref.Value = 0.335;
 
       % Create ErefGeVLabel
       app.ErefGeVLabel = uilabel(app.EREFSTab);
       app.ErefGeVLabel.FontWeight = 'bold';
-      app.ErefGeVLabel.Position = [83 267 63 22];
+      app.ErefGeVLabel.Position = [83 269 63 22];
       app.ErefGeVLabel.Text = 'Eref (GeV)';
 
       % Create FudgeFactorLabel
       app.FudgeFactorLabel = uilabel(app.EREFSTab);
       app.FudgeFactorLabel.FontWeight = 'bold';
-      app.FudgeFactorLabel.Position = [174 267 82 22];
+      app.FudgeFactorLabel.Position = [174 269 82 22];
       app.FudgeFactorLabel.Text = 'Fudge Factor';
 
       % Create ExtantLabel
       app.ExtantLabel = uilabel(app.EREFSTab);
       app.ExtantLabel.FontWeight = 'bold';
-      app.ExtantLabel.Position = [171 237 42 22];
+      app.ExtantLabel.Position = [171 239 42 22];
       app.ExtantLabel.Text = 'Extant';
 
       % Create RefLabel
       app.RefLabel = uilabel(app.EREFSTab);
       app.RefLabel.FontWeight = 'bold';
-      app.RefLabel.Position = [240 237 28 22];
+      app.RefLabel.Position = [240 239 28 22];
       app.RefLabel.Text = 'Ref.';
 
       % Create L0Label
       app.L0Label = uilabel(app.EREFSTab);
       app.L0Label.HorizontalAlignment = 'right';
-      app.L0Label.Position = [23 212 25 22];
+      app.L0Label.Position = [23 214 25 22];
       app.L0Label.Text = 'L0';
 
       % Create EditField
       app.EditField = uieditfield(app.EREFSTab, 'numeric');
       app.EditField.ValueDisplayFormat = '%5.4f';
       app.EditField.Editable = 'off';
-      app.EditField.Position = [165 212 49 22];
+      app.EditField.Position = [165 214 49 22];
       app.EditField.Value = 1;
 
       % Create EditField_2
       app.EditField_2 = uieditfield(app.EREFSTab, 'numeric');
       app.EditField_2.ValueDisplayFormat = '%5.4f';
       app.EditField_2.Editable = 'off';
-      app.EditField_2.Position = [226 212 49 22];
+      app.EditField_2.Position = [226 214 49 22];
       app.EditField_2.Value = 1;
 
       % Create L1Label
       app.L1Label = uilabel(app.EREFSTab);
       app.L1Label.HorizontalAlignment = 'right';
-      app.L1Label.Position = [25 159 25 22];
+      app.L1Label.Position = [25 161 25 22];
       app.L1Label.Text = 'L1';
 
       % Create EditField_3
       app.EditField_3 = uieditfield(app.EREFSTab, 'numeric');
       app.EditField_3.ValueDisplayFormat = '%5.4f';
       app.EditField_3.Editable = 'off';
-      app.EditField_3.Position = [165 159 49 22];
+      app.EditField_3.Position = [165 161 49 22];
       app.EditField_3.Value = 1;
 
       % Create EditField_4
       app.EditField_4 = uieditfield(app.EREFSTab, 'numeric');
       app.EditField_4.ValueDisplayFormat = '%5.4f';
       app.EditField_4.Editable = 'off';
-      app.EditField_4.Position = [226 159 49 22];
+      app.EditField_4.Position = [226 161 49 22];
       app.EditField_4.Value = 1;
 
-      % Create L3Label
-      app.L3Label = uilabel(app.EREFSTab);
-      app.L3Label.HorizontalAlignment = 'right';
-      app.L3Label.Position = [25 106 25 22];
-      app.L3Label.Text = 'L3';
+      % Create L2Label_2
+      app.L2Label_2 = uilabel(app.EREFSTab);
+      app.L2Label_2.HorizontalAlignment = 'right';
+      app.L2Label_2.Position = [25 108 25 22];
+      app.L2Label_2.Text = 'L2';
 
       % Create EditField_5
       app.EditField_5 = uieditfield(app.EREFSTab, 'numeric');
       app.EditField_5.ValueDisplayFormat = '%5.4f';
       app.EditField_5.Editable = 'off';
-      app.EditField_5.Position = [165 106 49 22];
+      app.EditField_5.Position = [165 108 49 22];
       app.EditField_5.Value = 1;
 
       % Create EditField_6
       app.EditField_6 = uieditfield(app.EREFSTab, 'numeric');
       app.EditField_6.ValueDisplayFormat = '%5.4f';
       app.EditField_6.Editable = 'off';
-      app.EditField_6.Position = [226 106 49 22];
+      app.EditField_6.Position = [226 108 49 22];
       app.EditField_6.Value = 1;
 
       % Create L3Label_2
       app.L3Label_2 = uilabel(app.EREFSTab);
       app.L3Label_2.HorizontalAlignment = 'right';
-      app.L3Label_2.Position = [25 52 25 22];
+      app.L3Label_2.Position = [25 54 25 22];
       app.L3Label_2.Text = 'L3';
 
       % Create EditField_7
       app.EditField_7 = uieditfield(app.EREFSTab, 'numeric');
       app.EditField_7.ValueDisplayFormat = '%5.4f';
       app.EditField_7.Editable = 'off';
-      app.EditField_7.Position = [165 54 49 22];
+      app.EditField_7.Position = [165 56 49 22];
       app.EditField_7.Value = 1;
 
       % Create EditField_8
       app.EditField_8 = uieditfield(app.EREFSTab, 'numeric');
       app.EditField_8.ValueDisplayFormat = '%5.4f';
       app.EditField_8.Editable = 'off';
-      app.EditField_8.Position = [226 54 49 22];
+      app.EditField_8.Position = [226 56 49 22];
       app.EditField_8.Value = 1;
 
       % Create BC14Label
       app.BC14Label = uilabel(app.EREFSTab);
       app.BC14Label.HorizontalAlignment = 'right';
-      app.BC14Label.Position = [14 78 36 22];
+      app.BC14Label.Position = [14 80 36 22];
       app.BC14Label.Text = 'BC14';
 
       % Create BC14Eref
       app.BC14Eref = uieditfield(app.EREFSTab, 'numeric');
+      app.BC14Eref.ValueDisplayFormat = '%.3f';
       app.BC14Eref.ValueChangedFcn = createCallbackFcn(app, @BC14ErefValueChanged, true);
-      app.BC14Eref.Position = [65 78 85 22];
+      app.BC14Eref.Position = [65 80 85 22];
       app.BC14Eref.Value = 4.5;
 
       % Create BC20Label
       app.BC20Label = uilabel(app.EREFSTab);
       app.BC20Label.HorizontalAlignment = 'right';
-      app.BC20Label.Position = [14 26 36 22];
+      app.BC20Label.Position = [14 28 36 22];
       app.BC20Label.Text = 'BC20';
 
       % Create BC20Eref
       app.BC20Eref = uieditfield(app.EREFSTab, 'numeric');
+      app.BC20Eref.ValueDisplayFormat = '%.3f';
       app.BC20Eref.ValueChangedFcn = createCallbackFcn(app, @BC20ErefValueChanged, true);
-      app.BC20Eref.Position = [65 26 85 22];
+      app.BC20Eref.Position = [65 28 85 22];
       app.BC20Eref.Value = 10;
+
+      % Create UseBendEDEFButton
+      app.UseBendEDEFButton = uibutton(app.EREFSTab, 'state');
+      app.UseBendEDEFButton.ValueChangedFcn = createCallbackFcn(app, @UseBendEDEFButtonValueChanged, true);
+      app.UseBendEDEFButton.Text = 'Use Bend EDEF';
+      app.UseBendEDEFButton.Position = [173 10 115 30];
+      app.UseBendEDEFButton.Value = true;
 
       % Create WakesTab
       app.WakesTab = uitab(app.TabGroup);
@@ -759,120 +951,127 @@ classdef F2_LEM_exported < matlab.apps.AppBase
       % Create BunchChargenCLabel
       app.BunchChargenCLabel = uilabel(app.WakesTab);
       app.BunchChargenCLabel.FontWeight = 'bold';
-      app.BunchChargenCLabel.Position = [50 259 73 30];
+      app.BunchChargenCLabel.Position = [50 261 73 30];
       app.BunchChargenCLabel.Text = {'Bunch'; 'Charge (nC)'};
 
       % Create L0EditFieldLabel
       app.L0EditFieldLabel = uilabel(app.WakesTab);
       app.L0EditFieldLabel.HorizontalAlignment = 'right';
       app.L0EditFieldLabel.FontWeight = 'bold';
-      app.L0EditFieldLabel.Position = [14 227 25 22];
+      app.L0EditFieldLabel.Position = [14 229 25 22];
       app.L0EditFieldLabel.Text = 'L0';
 
       % Create L0EditField
       app.L0EditField = uieditfield(app.WakesTab, 'numeric');
       app.L0EditField.ValueChangedFcn = createCallbackFcn(app, @L0EditFieldValueChanged, true);
-      app.L0EditField.Position = [54 227 55 22];
+      app.L0EditField.Position = [54 229 55 22];
       app.L0EditField.Value = 2;
 
       % Create L1EditFieldLabel
       app.L1EditFieldLabel = uilabel(app.WakesTab);
       app.L1EditFieldLabel.HorizontalAlignment = 'right';
       app.L1EditFieldLabel.FontWeight = 'bold';
-      app.L1EditFieldLabel.Position = [14 190 25 22];
+      app.L1EditFieldLabel.Position = [14 192 25 22];
       app.L1EditFieldLabel.Text = 'L1';
 
       % Create L1EditField
       app.L1EditField = uieditfield(app.WakesTab, 'numeric');
       app.L1EditField.ValueChangedFcn = createCallbackFcn(app, @L1EditFieldValueChanged, true);
-      app.L1EditField.Position = [54 190 55 22];
+      app.L1EditField.Position = [54 192 55 22];
       app.L1EditField.Value = 2;
 
       % Create L2EditFieldLabel
       app.L2EditFieldLabel = uilabel(app.WakesTab);
       app.L2EditFieldLabel.HorizontalAlignment = 'right';
       app.L2EditFieldLabel.FontWeight = 'bold';
-      app.L2EditFieldLabel.Position = [14 153 25 22];
+      app.L2EditFieldLabel.Position = [14 155 25 22];
       app.L2EditFieldLabel.Text = 'L2';
 
       % Create L2EditField
       app.L2EditField = uieditfield(app.WakesTab, 'numeric');
       app.L2EditField.ValueChangedFcn = createCallbackFcn(app, @L2EditFieldValueChanged, true);
-      app.L2EditField.Position = [54 153 55 22];
+      app.L2EditField.Position = [54 155 55 22];
       app.L2EditField.Value = 2;
 
       % Create L3EditFieldLabel
       app.L3EditFieldLabel = uilabel(app.WakesTab);
       app.L3EditFieldLabel.HorizontalAlignment = 'right';
       app.L3EditFieldLabel.FontWeight = 'bold';
-      app.L3EditFieldLabel.Position = [14 116 25 22];
+      app.L3EditFieldLabel.Position = [14 118 25 22];
       app.L3EditFieldLabel.Text = 'L3';
 
       % Create L3EditField
       app.L3EditField = uieditfield(app.WakesTab, 'numeric');
       app.L3EditField.ValueChangedFcn = createCallbackFcn(app, @L3EditFieldValueChanged, true);
-      app.L3EditField.Position = [54 116 55 22];
+      app.L3EditField.Position = [54 118 55 22];
       app.L3EditField.Value = 2;
 
       % Create EditField_175
       app.EditField_175 = uieditfield(app.WakesTab, 'numeric');
       app.EditField_175.ValueChangedFcn = createCallbackFcn(app, @EditField_175ValueChanged, true);
-      app.EditField_175.Position = [123 227 57 22];
+      app.EditField_175.Position = [123 229 57 22];
       app.EditField_175.Value = 735;
 
       % Create EditField_176
       app.EditField_176 = uieditfield(app.WakesTab, 'numeric');
       app.EditField_176.ValueChangedFcn = createCallbackFcn(app, @EditField_176ValueChanged, true);
-      app.EditField_176.Position = [123 190 57 22];
+      app.EditField_176.Position = [123 192 57 22];
       app.EditField_176.Value = 735;
 
       % Create EditField_177
       app.EditField_177 = uieditfield(app.WakesTab, 'numeric');
       app.EditField_177.ValueChangedFcn = createCallbackFcn(app, @EditField_177ValueChanged, true);
-      app.EditField_177.Position = [123 153 57 22];
+      app.EditField_177.Position = [123 155 57 22];
       app.EditField_177.Value = 438;
 
       % Create EditField_178
       app.EditField_178 = uieditfield(app.WakesTab, 'numeric');
       app.EditField_178.ValueChangedFcn = createCallbackFcn(app, @EditField_178ValueChanged, true);
-      app.EditField_178.Position = [123 116 57 22];
+      app.EditField_178.Position = [123 118 57 22];
       app.EditField_178.Value = 90;
 
       % Create rmsBunchLengthumLabel
       app.rmsBunchLengthumLabel = uilabel(app.WakesTab);
       app.rmsBunchLengthumLabel.FontWeight = 'bold';
-      app.rmsBunchLengthumLabel.Position = [127 259 74 30];
+      app.rmsBunchLengthumLabel.Position = [127 261 74 30];
       app.rmsBunchLengthumLabel.Text = {'rms Bunch'; 'Length (um)'};
 
       % Create ElossMeVLabel
       app.ElossMeVLabel = uilabel(app.WakesTab);
       app.ElossMeVLabel.FontWeight = 'bold';
-      app.ElossMeVLabel.Position = [218 259 38 30];
+      app.ElossMeVLabel.Position = [218 261 38 30];
       app.ElossMeVLabel.Text = {'Eloss'; '(MeV)'};
 
       % Create EditField_179
       app.EditField_179 = uieditfield(app.WakesTab, 'numeric');
       app.EditField_179.ValueDisplayFormat = '%.1f';
       app.EditField_179.Editable = 'off';
-      app.EditField_179.Position = [208 227 57 22];
+      app.EditField_179.Position = [208 229 57 22];
 
       % Create EditField_180
       app.EditField_180 = uieditfield(app.WakesTab, 'numeric');
       app.EditField_180.ValueDisplayFormat = '%.1f';
       app.EditField_180.Editable = 'off';
-      app.EditField_180.Position = [208 190 57 22];
+      app.EditField_180.Position = [208 192 57 22];
 
       % Create EditField_181
       app.EditField_181 = uieditfield(app.WakesTab, 'numeric');
       app.EditField_181.ValueDisplayFormat = '%.1f';
       app.EditField_181.Editable = 'off';
-      app.EditField_181.Position = [208 153 57 22];
+      app.EditField_181.Position = [208 155 57 22];
 
       % Create EditField_182
       app.EditField_182 = uieditfield(app.WakesTab, 'numeric');
       app.EditField_182.ValueDisplayFormat = '%.1f';
       app.EditField_182.Editable = 'off';
-      app.EditField_182.Position = [208 116 57 22];
+      app.EditField_182.Position = [208 118 57 22];
+
+      % Create UseMeasuredValuesButton
+      app.UseMeasuredValuesButton = uibutton(app.WakesTab, 'state');
+      app.UseMeasuredValuesButton.ValueChangedFcn = createCallbackFcn(app, @UseMeasuredValuesButtonValueChanged, true);
+      app.UseMeasuredValuesButton.Text = 'Use Measured Values';
+      app.UseMeasuredValuesButton.Position = [36 66 229 34];
+      app.UseMeasuredValuesButton.Value = true;
 
       % Create RFTab
       app.RFTab = uitab(app.TabGroup);
@@ -883,7 +1082,7 @@ classdef F2_LEM_exported < matlab.apps.AppBase
       app.L1Label_2.HorizontalAlignment = 'center';
       app.L1Label_2.FontSize = 16;
       app.L1Label_2.FontWeight = 'bold';
-      app.L1Label_2.Position = [81 282 70 24];
+      app.L1Label_2.Position = [81 284 70 24];
       app.L1Label_2.Text = 'L1';
 
       % Create L2Label
@@ -891,7 +1090,7 @@ classdef F2_LEM_exported < matlab.apps.AppBase
       app.L2Label.HorizontalAlignment = 'center';
       app.L2Label.FontSize = 16;
       app.L2Label.FontWeight = 'bold';
-      app.L2Label.Position = [156 282 70 24];
+      app.L2Label.Position = [156 284 70 24];
       app.L2Label.Text = 'L2';
 
       % Create L3Label_5
@@ -899,7 +1098,7 @@ classdef F2_LEM_exported < matlab.apps.AppBase
       app.L3Label_5.HorizontalAlignment = 'center';
       app.L3Label_5.FontSize = 16;
       app.L3Label_5.FontWeight = 'bold';
-      app.L3Label_5.Position = [231 282 70 24];
+      app.L3Label_5.Position = [231 284 70 24];
       app.L3Label_5.Text = 'L3';
 
       % Create phasedegLabel
@@ -907,7 +1106,7 @@ classdef F2_LEM_exported < matlab.apps.AppBase
       app.phasedegLabel.HorizontalAlignment = 'center';
       app.phasedegLabel.FontSize = 16;
       app.phasedegLabel.FontWeight = 'bold';
-      app.phasedegLabel.Position = [9 235 71 38];
+      app.phasedegLabel.Position = [9 237 71 38];
       app.phasedegLabel.Text = {'<phase>'; '(deg)'};
 
       % Create EGAINGeVLabel
@@ -915,70 +1114,70 @@ classdef F2_LEM_exported < matlab.apps.AppBase
       app.EGAINGeVLabel.HorizontalAlignment = 'center';
       app.EGAINGeVLabel.FontSize = 16;
       app.EGAINGeVLabel.FontWeight = 'bold';
-      app.EGAINGeVLabel.Position = [9 191 71 38];
+      app.EGAINGeVLabel.Position = [9 193 71 38];
       app.EGAINGeVLabel.Text = {'EGAIN'; '(GeV)'};
 
       % Create EditField_169
       app.EditField_169 = uieditfield(app.RFTab, 'text');
       app.EditField_169.Editable = 'off';
       app.EditField_169.HorizontalAlignment = 'center';
-      app.EditField_169.Position = [83 239 68 29];
+      app.EditField_169.Position = [83 241 68 29];
       app.EditField_169.Value = '0.000';
 
       % Create EditField_170
       app.EditField_170 = uieditfield(app.RFTab, 'text');
       app.EditField_170.Editable = 'off';
       app.EditField_170.HorizontalAlignment = 'center';
-      app.EditField_170.Position = [156 239 68 29];
+      app.EditField_170.Position = [156 241 68 29];
       app.EditField_170.Value = '0.000';
 
       % Create EditField_171
       app.EditField_171 = uieditfield(app.RFTab, 'text');
       app.EditField_171.Editable = 'off';
       app.EditField_171.HorizontalAlignment = 'center';
-      app.EditField_171.Position = [229 239 68 29];
+      app.EditField_171.Position = [229 241 68 29];
       app.EditField_171.Value = '0.000';
 
       % Create EditField_172
       app.EditField_172 = uieditfield(app.RFTab, 'text');
       app.EditField_172.Editable = 'off';
       app.EditField_172.HorizontalAlignment = 'center';
-      app.EditField_172.Position = [84 194 68 29];
+      app.EditField_172.Position = [84 196 68 29];
       app.EditField_172.Value = '0.000';
 
       % Create EditField_173
       app.EditField_173 = uieditfield(app.RFTab, 'text');
       app.EditField_173.Editable = 'off';
       app.EditField_173.HorizontalAlignment = 'center';
-      app.EditField_173.Position = [157 194 68 29];
+      app.EditField_173.Position = [157 196 68 29];
       app.EditField_173.Value = '0.000';
 
       % Create EditField_174
       app.EditField_174 = uieditfield(app.RFTab, 'text');
       app.EditField_174.Editable = 'off';
       app.EditField_174.HorizontalAlignment = 'center';
-      app.EditField_174.Position = [230 194 68 29];
+      app.EditField_174.Position = [230 196 68 29];
       app.EditField_174.Value = '0.000';
 
       % Create EditField_183
       app.EditField_183 = uieditfield(app.RFTab, 'text');
       app.EditField_183.Editable = 'off';
       app.EditField_183.HorizontalAlignment = 'center';
-      app.EditField_183.Position = [84 148 68 29];
+      app.EditField_183.Position = [84 150 68 29];
       app.EditField_183.Value = '0.000';
 
       % Create EditField_184
       app.EditField_184 = uieditfield(app.RFTab, 'text');
       app.EditField_184.Editable = 'off';
       app.EditField_184.HorizontalAlignment = 'center';
-      app.EditField_184.Position = [157 148 68 29];
+      app.EditField_184.Position = [157 150 68 29];
       app.EditField_184.Value = '0.000';
 
       % Create EditField_185
       app.EditField_185 = uieditfield(app.RFTab, 'text');
       app.EditField_185.Editable = 'off';
       app.EditField_185.HorizontalAlignment = 'center';
-      app.EditField_185.Position = [230 148 68 29];
+      app.EditField_185.Position = [230 150 68 29];
       app.EditField_185.Value = '0.000';
 
       % Create CHIRPGeVLabel
@@ -986,18 +1185,19 @@ classdef F2_LEM_exported < matlab.apps.AppBase
       app.CHIRPGeVLabel.HorizontalAlignment = 'center';
       app.CHIRPGeVLabel.FontSize = 16;
       app.CHIRPGeVLabel.FontWeight = 'bold';
-      app.CHIRPGeVLabel.Position = [9 141 71 38];
+      app.CHIRPGeVLabel.Position = [9 143 71 38];
       app.CHIRPGeVLabel.Text = {'CHIRP'; '(GeV)'};
 
       % Create MagnetsTab_2
       app.MagnetsTab_2 = uitab(app.TabGroup);
+      app.MagnetsTab_2.SizeChangedFcn = createCallbackFcn(app, @MagnetsTab_2SizeChanged, true);
       app.MagnetsTab_2.Title = 'Magnets';
 
       % Create MagnetReferenceSourceButtonGroup
       app.MagnetReferenceSourceButtonGroup = uibuttongroup(app.MagnetsTab_2);
       app.MagnetReferenceSourceButtonGroup.SelectionChangedFcn = createCallbackFcn(app, @MagnetReferenceSourceButtonGroupSelectionChanged, true);
       app.MagnetReferenceSourceButtonGroup.Title = 'Magnet Reference Source';
-      app.MagnetReferenceSourceButtonGroup.Position = [57 194 177 102];
+      app.MagnetReferenceSourceButtonGroup.Position = [57 196 177 102];
 
       % Create UseExtantStrengthsButton
       app.UseExtantStrengthsButton = uitogglebutton(app.MagnetReferenceSourceButtonGroup);
@@ -1014,42 +1214,53 @@ classdef F2_LEM_exported < matlab.apps.AppBase
       app.L0CheckBox = uicheckbox(app.LeftPanel);
       app.L0CheckBox.ValueChangedFcn = createCallbackFcn(app, @L0CheckBoxValueChanged, true);
       app.L0CheckBox.Text = 'L0';
-      app.L0CheckBox.Position = [9 356 35 22];
+      app.L0CheckBox.Position = [9 364 35 22];
       app.L0CheckBox.Value = true;
 
       % Create L1CheckBox
       app.L1CheckBox = uicheckbox(app.LeftPanel);
       app.L1CheckBox.ValueChangedFcn = createCallbackFcn(app, @L1CheckBoxValueChanged, true);
       app.L1CheckBox.Text = 'L1';
-      app.L1CheckBox.Position = [74 356 35 22];
+      app.L1CheckBox.Position = [74 364 35 22];
       app.L1CheckBox.Value = true;
 
       % Create L2CheckBox
       app.L2CheckBox = uicheckbox(app.LeftPanel);
       app.L2CheckBox.ValueChangedFcn = createCallbackFcn(app, @L2CheckBoxValueChanged, true);
       app.L2CheckBox.Text = 'L2';
-      app.L2CheckBox.Position = [138 356 35 22];
+      app.L2CheckBox.Position = [138 364 35 22];
       app.L2CheckBox.Value = true;
 
       % Create L3CheckBox
       app.L3CheckBox = uicheckbox(app.LeftPanel);
       app.L3CheckBox.ValueChangedFcn = createCallbackFcn(app, @L3CheckBoxValueChanged, true);
       app.L3CheckBox.Text = 'L3';
-      app.L3CheckBox.Position = [202 356 35 22];
+      app.L3CheckBox.Position = [202 364 35 22];
       app.L3CheckBox.Value = true;
 
       % Create ReadDataButton
       app.ReadDataButton = uibutton(app.LeftPanel, 'push');
       app.ReadDataButton.ButtonPushedFcn = createCallbackFcn(app, @ReadDataButtonPushed, true);
-      app.ReadDataButton.Position = [9 388 100 23];
+      app.ReadDataButton.Position = [9 396 100 23];
       app.ReadDataButton.Text = 'Read Data';
 
       % Create S20CheckBox
       app.S20CheckBox = uicheckbox(app.LeftPanel);
       app.S20CheckBox.ValueChangedFcn = createCallbackFcn(app, @S20CheckBoxValueChanged, true);
       app.S20CheckBox.Text = 'S20';
-      app.S20CheckBox.Position = [266 356 43 22];
+      app.S20CheckBox.Position = [266 364 43 22];
       app.S20CheckBox.Value = true;
+
+      % Create DataValidLampLabel
+      app.DataValidLampLabel = uilabel(app.LeftPanel);
+      app.DataValidLampLabel.HorizontalAlignment = 'right';
+      app.DataValidLampLabel.Position = [112 427 69 22];
+      app.DataValidLampLabel.Text = 'Data Valid?';
+
+      % Create DataValidLamp
+      app.DataValidLamp = uilamp(app.LeftPanel);
+      app.DataValidLamp.Position = [196 427 20 20];
+      app.DataValidLamp.Color = [1 0 0];
 
       % Create RightPanel
       app.RightPanel = uipanel(app.GridLayout);
@@ -1059,7 +1270,7 @@ classdef F2_LEM_exported < matlab.apps.AppBase
       % Create TabGroup2
       app.TabGroup2 = uitabgroup(app.RightPanel);
       app.TabGroup2.SelectionChangedFcn = createCallbackFcn(app, @TabGroup2SelectionChanged, true);
-      app.TabGroup2.Position = [6 6 808 417];
+      app.TabGroup2.Position = [6 6 808 449];
 
       % Create EProfileTab
       app.EProfileTab = uitab(app.TabGroup2);
@@ -1067,11 +1278,11 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create UIAxes
       app.UIAxes = uiaxes(app.EProfileTab);
-      title(app.UIAxes, 'Title')
+      title(app.UIAxes, '')
       xlabel(app.UIAxes, 'X')
       ylabel(app.UIAxes, 'Y')
       zlabel(app.UIAxes, 'Z')
-      app.UIAxes.Position = [10 13 787 371];
+      app.UIAxes.Position = [10 8 787 403];
 
       % Create MagnetsTab
       app.MagnetsTab = uitab(app.TabGroup2);
@@ -1079,11 +1290,23 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create UIAxes2
       app.UIAxes2 = uiaxes(app.MagnetsTab);
-      title(app.UIAxes2, 'Title')
+      title(app.UIAxes2, '')
       xlabel(app.UIAxes2, 'X')
       ylabel(app.UIAxes2, 'Y')
       zlabel(app.UIAxes2, 'Z')
-      app.UIAxes2.Position = [0 0 808 384];
+      app.UIAxes2.Position = [0 17 808 384];
+
+      % Create Table
+      app.Table = uitab(app.TabGroup2);
+      app.Table.Title = 'Table';
+
+      % Create UITable
+      app.UITable = uitable(app.Table);
+      app.UITable.ColumnName = {'Column 1'; 'Column 2'; 'Column 3'; 'Column 4'};
+      app.UITable.RowName = {};
+      app.UITable.CellEditCallback = createCallbackFcn(app, @UITableCellEdit, true);
+      app.UITable.CellSelectionCallback = createCallbackFcn(app, @UITableCellSelection, true);
+      app.UITable.Position = [6 38 795 381];
 
       % Create KlysEgainTab
       app.KlysEgainTab = uitab(app.TabGroup2);
@@ -2492,44 +2715,40 @@ classdef F2_LEM_exported < matlab.apps.AppBase
       % Create TextArea
       app.TextArea = uitextarea(app.MessagesTab);
       app.TextArea.Editable = 'off';
-      app.TextArea.Position = [1 0 807 392];
+      app.TextArea.Position = [1 32 807 392];
       app.TextArea.Value = {'Push ''Read Data'' button to download controls data to start...'};
 
-      % Create FileMenu
-      app.FileMenu = uimenu(app.UIFigure);
-      app.FileMenu.Text = 'File';
+      % Create SettingsMenu
+      app.SettingsMenu = uimenu(app.FLEMFACETIILEMUIFigure);
+      app.SettingsMenu.Text = 'Settings';
 
-      % Create SetFudgerefMenu
-      app.SetFudgerefMenu = uimenu(app.FileMenu);
-      app.SetFudgerefMenu.MenuSelectedFcn = createCallbackFcn(app, @SetFudgerefMenuSelected, true);
-      app.SetFudgerefMenu.Text = 'Set Fudge ref...';
+      % Create ForceallphasestozeroMenu
+      app.ForceallphasestozeroMenu = uimenu(app.SettingsMenu);
+      app.ForceallphasestozeroMenu.MenuSelectedFcn = createCallbackFcn(app, @ForceallphasestozeroMenuSelected, true);
+      app.ForceallphasestozeroMenu.Checked = 'on';
+      app.ForceallphasestozeroMenu.Text = 'Force all phases to zero';
 
-      % Create SetPrefMenu
-      app.SetPrefMenu = uimenu(app.FileMenu);
-      app.SetPrefMenu.MenuSelectedFcn = createCallbackFcn(app, @SetPrefMenuSelected, true);
-      app.SetPrefMenu.Text = 'Set P ref...';
+      % Create DisplayMenu
+      app.DisplayMenu = uimenu(app.FLEMFACETIILEMUIFigure);
+      app.DisplayMenu.Text = 'Display';
 
-      % Create SaveModelMenu
-      app.SaveModelMenu = uimenu(app.FileMenu);
-      app.SaveModelMenu.MenuSelectedFcn = createCallbackFcn(app, @SaveModelMenuSelected, true);
-      app.SaveModelMenu.Text = 'Save Model....';
+      % Create ShowlegendMenu
+      app.ShowlegendMenu = uimenu(app.DisplayMenu);
+      app.ShowlegendMenu.MenuSelectedFcn = createCallbackFcn(app, @ShowlegendMenuSelected, true);
+      app.ShowlegendMenu.Checked = 'on';
+      app.ShowlegendMenu.Text = 'Show legend';
 
-      % Create LoadModelMenu
-      app.LoadModelMenu = uimenu(app.FileMenu);
-      app.LoadModelMenu.MenuSelectedFcn = createCallbackFcn(app, @LoadModelMenuSelected, true);
-      app.LoadModelMenu.Text = 'Load Model...';
-
-      % Create LoadDataMenu
-      app.LoadDataMenu = uimenu(app.FileMenu);
-      app.LoadDataMenu.MenuSelectedFcn = createCallbackFcn(app, @LoadDataMenuSelected, true);
-      app.LoadDataMenu.Text = 'Load Data...';
+      % Create DetachplottableMenu
+      app.DetachplottableMenu = uimenu(app.DisplayMenu);
+      app.DetachplottableMenu.MenuSelectedFcn = createCallbackFcn(app, @DetachplottableMenuSelected, true);
+      app.DetachplottableMenu.Text = 'Detach plot / table...';
 
       % Create HelpMenu
-      app.HelpMenu = uimenu(app.UIFigure);
+      app.HelpMenu = uimenu(app.FLEMFACETIILEMUIFigure);
       app.HelpMenu.Text = 'Help';
 
       % Show the figure after all components are created
-      app.UIFigure.Visible = 'on';
+      app.FLEMFACETIILEMUIFigure.Visible = 'on';
     end
   end
 
@@ -2543,7 +2762,7 @@ classdef F2_LEM_exported < matlab.apps.AppBase
       createComponents(app)
 
       % Register the app with App Designer
-      registerApp(app, app.UIFigure)
+      registerApp(app, app.FLEMFACETIILEMUIFigure)
 
       % Execute the startup function
       runStartupFcn(app, @(app)startupFcn(app, varargin{:}))
@@ -2557,7 +2776,7 @@ classdef F2_LEM_exported < matlab.apps.AppBase
     function delete(app)
 
       % Delete UIFigure when app is deleted
-      delete(app.UIFigure)
+      delete(app.FLEMFACETIILEMUIFigure)
     end
   end
 end
