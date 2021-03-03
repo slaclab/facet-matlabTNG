@@ -1,4 +1,4 @@
-classdef F2_CathodeServicesApp < handle
+classdef F2_CathodeServicesApp < handle & F2_common
   %F2_CATHODESERVICES Support functions for F2_CathodeServices.mlapp
   
   events
@@ -1426,7 +1426,7 @@ classdef F2_CathodeServicesApp < handle
         configdata.(obj.configprops(iconf)) = obj.(obj.configprops(iconf)) ;
       end
       if ~exist('fname','var')
-        fname='F2_CathodeServices_configdata';
+        fname=sprintf('%s/F2_CathodeServices_configdata',obj.confdir);
       end
       save(fname,'configdata');
     end
@@ -1435,7 +1435,7 @@ classdef F2_CathodeServicesApp < handle
       %LoadConfig() Loads "default" configuration parameters (from last time app exited)
       %LoadConfig(fname) Loads configuration parameters from user supplied file name
       if ~exist('fname','var') || isempty(fname)
-        fname='F2_CathodeServices_configdata';
+        fname=obj.confdir + "/F2_CathodeServices_configdata" ;
       end
       if ~exist(fname,'file') && ~exist(sprintf('%s.mat',fname),'file')
         error('Cannot find file: %s',fname)
@@ -1808,10 +1808,6 @@ classdef F2_CathodeServicesApp < handle
         end
       end
       
-      % Poke EPICS watchdog keepalive PV
-      caput(obj.pvs.watchdog_keepalive,1);
-      caput(obj.pvs.watchdog_keepalive,1);
-      
       % Reasons to auto close laser shutter and put app in error state
       reasons = ["Automated laser pattern enabled without streaming CCD image",...  % 1
         "Repeated PV readings",...                                                  % 2
@@ -1945,10 +1941,35 @@ classdef F2_CathodeServicesApp < handle
         obj.gui.VV155Lamp.Color = 'green' ;
       end
       
+      % Check EPICS watchdog running (check at <1Hz, and command autostop if in an automatic operating mode)
+      if isempty(tic_epicswatchdog) || toc(tic_epicswatchdog)>1.5
+        if ~isempty(lastepicswatchdog) && epicswatchdog==lastepicswatchdog
+          if obj.State ~= CathodeServicesState.Standby_opslasermode
+            [inerr,inerr_tries] = obj.procerr(4,maxerrtries,inerr,inerr_tries) ;
+          end
+          obj.gui.RunningLamp.Color='red';
+          tic_epicswatchdog=tic;
+        else
+          inerr_tries(4)=0;
+          obj.gui.RunningLamp.Color='green';
+          tic_epicswatchdog=tic;
+        end
+        lastepicswatchdog=epicswatchdog;
+      end
+      
       % If in OPS mode (large spot size), then no further checks required
       if obj.State == CathodeServicesState.Standby_opslasermode
+        if obj.dnCMD || ~obj.gui.DetachButton.Value
+          drawnow;
+        else
+          drawnow limitrate
+        end
         return;
       end
+      
+      % Poke EPICS watchdog keepalive PV
+      caput(obj.pvs.watchdog_keepalive,1);
+      caput(obj.pvs.watchdog_keepalive,1);
       
       % Throw error if the laser spot goes off the CCD area or estimate of centroid from image does
       xran=[obj.pvs.CCD_x1.val{1}+obj.LaserSpotSize(1)*1e-3 obj.pvs.CCD_x2.val{1}-obj.LaserSpotSize(1)*1e-3];
@@ -2026,21 +2047,6 @@ classdef F2_CathodeServicesApp < handle
       % Check Gun RF is off if it is supposed to be
       if isgunoffstate(obj.State) && gunrfon
         inerr(3) = true ;
-      end
-      
-      
-      % Check EPICS watchdog running (check at <1Hz, and command autostop if in an automatic operating mode)
-      if isempty(tic_epicswatchdog) || toc(tic_epicswatchdog)>1.5
-        if ~isempty(lastepicswatchdog) && epicswatchdog==lastepicswatchdog
-          [inerr,inerr_tries] = obj.procerr(4,maxerrtries,inerr,inerr_tries) ;
-          obj.gui.RunningLamp.Color='red';
-          tic_epicswatchdog=tic;
-        else
-          inerr_tries(4)=0;
-          obj.gui.RunningLamp.Color='green';
-          tic_epicswatchdog=tic;
-        end
-        lastepicswatchdog=epicswatchdog;
       end
       
       % shutter should only be open when laser in motion

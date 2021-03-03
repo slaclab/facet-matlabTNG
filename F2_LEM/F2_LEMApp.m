@@ -1,4 +1,4 @@
-classdef F2_LEMApp < handle & matlab.mixin.Copyable
+classdef F2_LEMApp < handle & matlab.mixin.Copyable & F2_common
   %F2_LEMAPP FACET-II Linac Energy Management application
   events
     PVUpdated
@@ -13,6 +13,8 @@ classdef F2_LEMApp < handle & matlab.mixin.Copyable
     bq(1,4) = [2 2 2 2] % Bunch charge in L0, L1, L2 & L3 (nC)
     linacsel(1,5) logical = [true true true true true] % use: L0, L1, L2, L3, S20
     RescaleWithModel logical = false % Set true to rescale based on model rather than extant magnet settings
+    KlysZeroPhases logical = false % Force all read phases to zero
+    errorstate logical = false
   end
   properties(SetAccess=private)
     Eref(1,5) = [0.005 0.135 0.335 4.5 10] % reference energies at entrance to regionNames (GeV)
@@ -30,7 +32,9 @@ classdef F2_LEMApp < handle & matlab.mixin.Copyable
     LM LucretiaModel
     wakedat
     RefTwiss % Twiss parameters with scaled magnets
-    Pref
+    Pref double
+    Pref_mdl double
+    Pref_mdlz double
     refdataValid logical = true
     tableinds % selected table coordinates from app GUI
   end
@@ -39,53 +43,51 @@ classdef F2_LEMApp < handle & matlab.mixin.Copyable
   end
   properties(Constant)
     version single = 1
-    regionNames = ["L0" "L1" "L2" "L3" "S20"] ;
+    regionNames = ["L0" "L1" "L2" "L3" "S20"]
   end
   methods
-    function obj = F2_LEMApp(appobj)
+    function obj = F2_LEMApp(appobj,KlysZeroPhase)
       %F2_LEMAPP FACET-II Linac Energy Management application
       global BEAMLINE
       
       % Store app object if given
-      if exist('appobj','var')
+      if exist('appobj','var') && ~isempty(appobj)
         obj.aobj = appobj ;
+      end
+      
+      % Initialize in mode where klystron phases are forced to be zero?
+      if exist('KlysZeroPhase','var') && ~isempty(KlysZeroPhase)
+        obj.KlysZeroPhases=KlysZeroPhase;
       end
       
       obj.message("Starting LEM Application...");
       
       % Load model
       obj.message("Loading Lucretia Model...");
-      obj.LM = LucretiaModel("common/FACET2e.mat") ;
+      obj.LM = LucretiaModel("/usr/local/facet/tools/facet2-lattice/Lucretia/models/FACET2e/FACET2e.mat") ;
+      obj.Pref_mdl = arrayfun(@(x) BEAMLINE{x}.P,1:length(BEAMLINE));
+      obj.Pref_mdlz = arrayfun(@(x) BEAMLINE{x}.Coordi(3),1:length(BEAMLINE));
+      [obj.Pref_mdlz,iz]=unique(obj.Pref_mdlz) ; obj.Pref_mdl = obj.Pref_mdl(iz) ;
       
       % Generate PV links
       obj.message("Linking to EPICS PVs...");
-%       context = PV.Initialize(PVtype.EPICS_labca) ;
       context = PV.Initialize(PVtype.EPICS) ;
-      obj.pvlist = [ PV(context,'name',"Data",'pvname',"SIOC:SYS1:ML00:FWF09",'nmax',length(BEAMLINE)+4) ;
+      obj.pvlist = [ PV(context,'name',"Data",'pvname',"SIOC:SYS1:ML00:FWF21",'nmax',length(BEAMLINE)*2+5) ;
         PV(context,'name',"DataValid",'pvname',"SIOC:SYS1:ML00:AO957") ;
         PV(context,'name',"BendDL1",'pvname',"BEND:IN10:661:BDES") ;
         PV(context,'name',"BendBC11",'pvname',"BEND:LI11:314:BDES") ;
         PV(context,'name',"BendBC14",'pvname',"BEND:LI14:720:BDES") ;
-        PV(context,'name',"BendBC20",'pvname',"LI20:LGPS:1900:BDES") ;
+        PV(context,'name',"BendBC20",'pvname',"LI20:LGPS:1990:BDES") ;
         PV(context,'name',"Q_inj",'pvname',"SIOC:SYS1:ML00:AO850") ;
         ] ;
       pset(obj.pvlist,'debug',0) ;
       obj.pvs = struct(obj.pvlist) ;
-      dat = caget(obj.pvs.Data) ; % Reference momenta of last LEM application and reference fudge factors
-      datvalid = caget(obj.pvs.DataValid) ;
-      if length(dat)<length(BEAMLINE)+4 || datvalid==0
-        obj.message("!!!!!!! Stored momentum ref values not valid, using Model momentum ref and unity fudge factors...");
-        obj.Pref=arrayfun(@(x) BEAMLINE{x}.P,1:length(BEAMLINE));
-        obj.RescaleWithModel = true ;
-        obj.refdataValid = false ;
-      else
-        obj.Pref = dat(1:end-4) ;
-        obj.fref = dat(end-3:end) ; 
-        obj.refdataValid = true ;
-      end
       
       % Initialize extant property values
       obj.fact = obj.fref ;
+      
+      % set reference momentum based on EPICS archive or original model
+      obj.GetPref() ;
       
       obj.message("Updating with live data...");
       % Load wakefield Eloss data
@@ -94,26 +96,34 @@ classdef F2_LEMApp < handle & matlab.mixin.Copyable
       obj.wakedat.Eloss = ld.Eloss ; % energy loss / m / nC (GeV)
       
       % Instantiate klystron & magnet objects
-      obj.Klys = F2_klys(obj.LM,context) ; % Constructs with update of live klystron data
+      if exist('KlysZeroPhase','var') && ~isempty(KlysZeroPhase)
+        obj.Klys = F2_klys(obj.LM,context,KlysZeroPhase) ;
+      else
+        obj.Klys = F2_klys(obj.LM,context) ; % Constructs with update of live klystron data
+      end
       obj.LM.SetKlystronData(obj.Klys,obj.fact) ; % Update model with Klystron values
       obj.Mags = F2_mags(obj.LM) ;
       obj.Mags.MagClasses = ["QUAD" "SEXT"] ;
+      obj.Mags.WriteEnable = true ;
       
-      % Fetch all magnet data once
-      obj.Mags.ReadB;
+      % Fetch all magnet data once and load into model
+      obj.Mags.ReadB(true);
       
       % Read measured bunch charge & length data
       obj.ReadWakeMeasData;
       
       % Load last reference energies and run LEM calculations
       for iele=1:length(BEAMLINE)
-        BEAMLINE{iele}.P=obj.Pref(iele);
+        BEAMLINE{iele}.P=double(obj.Pref(iele));
       end
-      obj.UpdateEREF;
-      obj.UpdateGUI;
-      
-      % Initialize with EREFs given by bend magnets
-      obj.SetLinacEref();
+      try
+        obj.UpdateEREF;
+        obj.SetLinacEref(); % Initialize with EREFs given by bend magnets (updates GUI afterwards)
+      catch ME
+        obj.message("!!!!!!!!! Error processing energy reference:");
+        obj.message(ME.message);
+        obj.UpdateGUI;
+      end
       
       obj.message("Initialization complete.");
     end
@@ -123,10 +133,13 @@ classdef F2_LEMApp < handle & matlab.mixin.Copyable
     end
     function DoMagnetScale(obj,cmd)
       %DOMAGNETSCALE Write new scaled magnet strengths to control system
-      global BEAMLINE
       app=obj.aobj;
       if ~isempty(app)
         obj.aobj.TabGroup2.SelectedTab=obj.aobj.MessagesTab ;
+      end
+      if obj.errorstate
+        obj.message("!!!!!!! ABORTING: LEM is in an error state- see previous messages (press ReadData to try and clear)");
+        return
       end
       if isempty(obj.Mags.BDES_cntrl) || isempty(obj.Mags.BDES)
         obj.message("!!!!!!! No magnet strengths read, push 'Read Data' button");
@@ -137,20 +150,23 @@ classdef F2_LEMApp < handle & matlab.mixin.Copyable
       else
         obj.message("Scaling magnets from current values to match energy profile...");
       end
+      obj.SaveModel(obj.confdir+"/F2_LEM/lastpref",true);
       obj.UndoSettings.BDES = obj.Mags.BDES ;
       obj.UndoSettings.BDES_cntrl = obj.Mags.BDES_cntrl ;
       obj.UndoSettings.Pref = obj.Pref ;
+      obj.UndoSettings.fref = obj.fref ;
       rid=find(obj.GetRegionID);
       id=obj.Mags.LM.ModelUniqueID;
       magid=ismember(id,rid);
-      obj.Mags.BDES_err(~magid) = false ;
+      iserr = obj.Mags.BDES_err ; iserr(~magid)=false ;
+      obj.Mags.SetBDES_err(iserr) ;
       if exist('cmd','var') && ~isempty(cmd)
         if string(cmd)=="tablesel" % User request to select magnets to trim based on uitable
           if isempty(obj.tableinds)
             error('No table selection data');
           end
-          obj.Mags.BDES_err = false(size(obj.Mags.BDES_err));
-          obj.Mags.BDES_err(magid(unique(obj.tableinds(1,:)))) = true ; 
+          obj.Mags.SetBDES_err(false) ;
+          obj.Mags.SetBDES_err(true,find(magid(unique(obj.tableinds(1,:))))) ; %#ok<FNDSB>
         end
       end
       try
@@ -159,8 +175,7 @@ classdef F2_LEMApp < handle & matlab.mixin.Copyable
         obj.message(sprintf('!!!! Error writing new BDES values: %s',ME.message));
         return
       end
-      obj.Pref = arrayfun(@(x) BEAMLINE{x}.P,1:length(BEAMLINE));
-      caput(obj.pvs.Data,[obj.Pref obj.fref]);
+      obj.SetPref;
       if ~isempty(msg)
         obj.message(msg(:));
       end
@@ -181,15 +196,17 @@ classdef F2_LEMApp < handle & matlab.mixin.Copyable
       if isempty(obj.UndoSettings)
         obj.message("No previous magnet setting data to undo, aborting.");
       else
-        obj.Mags.ReadB;
+        obj.Mags.ReadB(true);
         obj.Mags.BDES = obj.UndoSettings.BDES_cntrl ;
+        obj.Mags.SetBDES_err(true(size(obj.Mags.BDES))) ;
         msg = obj.Mags.WriteBDES ;
         if ~isempty(msg)
           obj.message(msg(:));
         end
         obj.Mags.BDES = obj.UndoSettings.BDES ;
         obj.Pref = obj.UndoSettings.Pref ;
-        caput(obj.pvs.Data,obj.Pref);
+        obj.fref = obj.UndoSettings.fref ;
+        obj.SetPref;
         obj.UndoSettings = [] ;
         obj.UpdateModel ;
       end
@@ -198,16 +215,12 @@ classdef F2_LEMApp < handle & matlab.mixin.Copyable
         app.UndoButton.Enable = false ;
       end
     end
-    function set.RescaleWithModel(obj,val)
-      if ~obj.refdataValid
-        obj.RescaleWithModel=true;
-      else
-        obj.RescaleWithModel=logical(val);
-      end
-    end
     function message(obj,txt)
       fprintf('%s:\n',datestr(now));
       fprintf('%s\n',txt(:));
+      if startsWith(string(txt),"!")
+        obj.errorstate=true;
+      end
       if ~isempty(obj.aobj)
         if strncmp(txt,"!!",2)
           obj.aobj.TextArea.Value = ["!!!!!!! " + string(datestr(now)) + " : " + regexprep(string(txt),"!+\s*","") ; string(obj.aobj.TextArea.Value) ]  ;
@@ -218,27 +231,45 @@ classdef F2_LEMApp < handle & matlab.mixin.Copyable
         drawnow;
       end
     end
+    function GetPref(obj)
+      %GETPREF Set reference momentum from archived values or design model
+      global BEAMLINE
+      % Get pref from EPICS
+      dat = caget(obj.pvs.Data) ; % Reference momenta of last LEM application and reference fudge factors
+      datvalid = caget(obj.pvs.DataValid) ;
+      zmod = arrayfun(@(x) BEAMLINE{x}.Coordi(3),1:length(BEAMLINE)) ;
+      try
+        datlen = dat(1) ;
+        zdat = dat(2:datlen+1) ;
+        pdat = dat(2+datlen:1+datlen*2) ;
+        if obj.RescaleWithModel
+          [zdat,izd]=unique(obj.Pref_mdlz);
+          obj.Pref = interp1(zdat,obj.Pref_mdl(izd),zmod) ;
+        else
+          [zdat,izd]=unique(zdat);
+          obj.Pref = interp1(zdat,pdat(izd),zmod) ;
+        end
+        obj.fref = dat(2+datlen*2:5+datlen*2) ; 
+        obj.refdataValid = true ;
+      catch
+        datvalid=0;
+      end
+      if datvalid==0
+        obj.message(">>>>>>> Stored momentum ref values not valid, using Model momentum ref and unity fudge factors...");
+        obj.Pref = interp1(obj.Pref_mdlz,obj.Pref_mdl,zmod) ;
+        obj.RescaleWithModel = true ;
+        obj.refdataValid = false ;
+      end
+    end
     function UpdateModel(obj)
       %UPDATEMODEL Get control system values and put in model
-      global BEAMLINE
       obj.message("Getting new data from controls and updating model...");
-      % Get pref from EPICS
-      datvalid = caget(obj.pvs.DataValid) ;
-      dat = caget(obj.pvs.Data) ; % Reference momenta of last LEM application and reference fudge factors
-      if length(dat)<length(BEAMLINE)+4 || datvalid==0 || obj.RescaleWithModel
-        obj.LM.SetDesignModel;
-        obj.Pref=arrayfun(@(x) BEAMLINE{x}.P,1:length(BEAMLINE));
-        obj.RescaleWithModel = true ;
-        if length(dat)<length(BEAMLINE)+4 || datvalid==0
-          obj.refdataValid = false ;
-        end
-      else
-        obj.Pref = dat(1:end-4) ;
-        obj.fref = dat(end-3:end) ; 
-        obj.refdataValid = true ;
+      obj.errorstate = false ;
+      if ~isempty(obj.aobj)
+        obj.aobj.DataValidLamp.Color='black';
       end
       try
-        obj.Mags.ReadB;
+        obj.Mags.ReadB(true);
       catch ME
         obj.message("!!!!!! Error Getting magnet data:");
         obj.message(ME.message);
@@ -253,11 +284,18 @@ classdef F2_LEMApp < handle & matlab.mixin.Copyable
       end
       try
         obj.LM.SetKlystronData(obj.Klys,obj.fact) ; % Update model with Klystron values
-        obj.UpdateEREF;
+        obj.SetLinacEref();
       catch ME
         obj.message("!!!!!! Error Updating Model:");
         obj.message(ME.message);
         return
+      end
+      if ~isempty(obj.aobj)
+        obj.aobj.DataValidLamp.Color='green';
+      end
+      obj.GetPref() ;
+      if ~obj.RescaleWithModel
+        obj.SetExtantModel;
       end
       obj.message("Done.");
     end
@@ -269,38 +307,48 @@ classdef F2_LEMApp < handle & matlab.mixin.Copyable
     function UpdateEREFmdl(obj)
       global BEAMLINE KLYSTRON
       %UPDATEEREF Update Eref property based on live Klystron values, update model and scale model magnets
-      secid = [ obj.LM.ModelRegionID([1 4 6 8],1); length(BEAMLINE) ] ;
+      
+      secid = [ obj.LM.ModelRegionID([1 4 6 8 9],1); length(BEAMLINE) ] ;
       eref=obj.Eref;
       wakeloss=zeros(1,4);
       if obj.RescaleWithModel % Load design model instead of live model if request to scale wrt Design
-        obj.Mags.LM.SetDesignModel;
+        obj.SetDesignModel;
       else % Scale with respect to momentum reference (last LEM action)
         if length(obj.Pref) ~= length(BEAMLINE)
           obj.message("!!!!!!!! Length mismatch between reference momentum profile and model, aborting update.");
           return
         end
+        obj.SetExtantModel;
         for iele=1:length(BEAMLINE)
-          BEAMLINE{iele}.P=obj.Pref(iele);
+          BEAMLINE{iele}.P=double(obj.Pref(iele));
         end
       end
       obj.LM.SetKlystronData(obj.Klys,obj.fact) ;
-      for isec=1:length(secid)-1 % L0, L1, L2, L3&S20
+      for isec=1:5 % L0, L1, L2, L3&S20
         % Set Kloss data in LCAV's using lookup table in wakedat property
         % - Eloss is GeV / m / nC -> convert to V/C/m for Lucretia Kloss property
-        kl = interp1(obj.wakedat.sz,obj.wakedat.Eloss,obj.blen(isec))*1e18 ;
-        for ikly=findcells(BEAMLINE,'Class','LCAV',double(secid(isec)),double(secid(isec+1)))
-          if BEAMLINE{ikly}.Freq==2856
-            BEAMLINE{ikly}.Kloss = kl ;
-            wakeloss(isec)=wakeloss(isec)+kl*BEAMLINE{ikly}.L*obj.bq(isec)*1e-15 ; % MeV
+        if isec<5
+          kl = interp1(obj.wakedat.sz,obj.wakedat.Eloss,obj.blen(isec))*1e18 ;
+          for ikly=findcells(BEAMLINE,'Class','LCAV',double(secid(isec)),double(secid(isec+1)))
+            if BEAMLINE{ikly}.Freq==2856
+              BEAMLINE{ikly}.Kloss = kl ;
+              wakeloss(isec)=wakeloss(isec)+kl*BEAMLINE{ikly}.L*obj.bq(isec)*1e-15 ; % MeV
+            end
           end
         end
         % Set energy profile and scale Model magnets
-        if obj.linacsel(isec+1)
-          stat = UpdateMomentumProfile(double(secid(isec)),double(secid(isec+1)),obj.bq(isec).*1e-9,eref(isec),1) ;
+        if obj.linacsel(isec)
+          if isec<5
+            stat = UpdateMomentumProfile(double(secid(isec)),double(secid(isec+1)),obj.bq(isec).*1e-9,eref(isec),1) ;
+          else
+            stat = UpdateMomentumProfile(double(secid(isec)),double(secid(isec+1)),obj.bq(end).*1e-9,eref(end),1) ;
+          end
           if stat{1}~=1
             error('Error updating momentum profile: %s',stat{2});
           end
-          eref(isec+1) = BEAMLINE{secid(isec+1)}.P ;
+          if isec<5
+            eref(isec+1) = BEAMLINE{secid(isec+1)}.P ;
+          end
         end
       end
       for isec=1:4
@@ -330,21 +378,6 @@ classdef F2_LEMApp < handle & matlab.mixin.Copyable
         obj.Mags.LM.ModelBDES = obj.Mags.BDES_cntrl ;
       end
     end
-    function set.bq(obj,Q)
-      obj.bq = Q ;
-      obj.LM.Initial.Q = Q(1)*1e-9 ;
-      obj.UpdateEREF; % need to update wakeloss entries
-    end
-    function set.blen(obj,blen)
-      obj.blen = blen ;
-      obj.LM.Initial.sigz = blen*1e-6 ; 
-      obj.UpdateEREF; % need to update wakeloss entries
-    end
-    function set.linacsel(obj,sel)
-      obj.linacsel=sel;
-%       obj.Mags.UseSector=sel;
-      obj.UpdateGUI;
-    end
     function UpdateGUI(obj)
       %UPDATEGUI Update visible GUI tab info
       global BEAMLINE
@@ -362,16 +395,16 @@ classdef F2_LEMApp < handle & matlab.mixin.Copyable
           app.BC20Eref.Value = obj.Eref(5) ;
           app.EditField.Value = obj.fact(1) ;
           if abs(obj.fref(1)-obj.fact(1))>0.0001; app.EditField.FontColor='red'; else; app.EditField.FontColor='black'; end
-          app.EditField_2.Value = obj.fref(1) ;
-          app.EditField_3.Value = obj.fact(2) ;
+          app.EditField_2.Value = double(obj.fref(1)) ;
+          app.EditField_3.Value = double(obj.fact(2)) ;
           if abs(obj.fref(2)-obj.fact(2))>0.0001; app.EditField_3.FontColor='red'; else; app.EditField_3.FontColor='black'; end
-          app.EditField_4.Value = obj.fref(2) ;
-          app.EditField_5.Value = obj.fact(3) ;
+          app.EditField_4.Value = double(obj.fref(2)) ;
+          app.EditField_5.Value = double(obj.fact(3)) ;
           if abs(obj.fref(3)-obj.fact(3))>0.0001; app.EditField_5.FontColor='red'; else; app.EditField_5.FontColor='black'; end
-          app.EditField_6.Value = obj.fref(3) ;
-          app.EditField_7.Value = obj.fact(4) ;
+          app.EditField_6.Value = double(obj.fref(3)) ;
+          app.EditField_7.Value = double(obj.fact(4)) ;
           if abs(obj.fref(4)-obj.fact(4))>0.0001; app.EditField_7.FontColor='red'; else; app.EditField_7.FontColor='black'; end
-          app.EditField_8.Value = obj.fref(4) ;
+          app.EditField_8.Value = double(obj.fref(4)) ;
         case app.WakesTab
           app.L0EditField.Value = obj.bq(1) ;
           app.L1EditField.Value = obj.bq(2) ;
@@ -402,6 +435,7 @@ classdef F2_LEMApp < handle & matlab.mixin.Copyable
       switch app.TabGroup2.SelectedTab % right side Tab group
         case app.EProfileTab
           if obj.uidetachplot
+            figure;
             h=axes;
           else
             h=app.UIAxes;
@@ -441,14 +475,14 @@ classdef F2_LEMApp < handle & matlab.mixin.Copyable
             legend(h,'off');
           end
           if obj.uidetachplot
-            AddMagnetPlotZ(id(1),id(end),h);
             obj.uidetachplot=false;
+            AddMagnetPlotZ(id(1),id(end),h);
             obj.UpdateGUI;
           end
         case app.KlysEgainTab
           for ikly=1:8
             for isec=1:10
-              if obj.Klys.KlysInUse(ikly,isec)
+              if obj.Klys.KlysInUse(ikly,isec) && obj.Klys.KlysStat(ikly,isec)==0
                 egain = num2str(obj.Klys.KlysAmpl(ikly,isec)*cosd(obj.Klys.KlysPhase(ikly,isec)) - obj.klyswakeloss(ikly,isec),4) ;
               else
                 egain="---";
@@ -460,7 +494,7 @@ classdef F2_LEMApp < handle & matlab.mixin.Copyable
           for ikly=1:8
             for isec=1:10
               if obj.Klys.KlysInUse(ikly,isec)
-                pha = num2str(obj.Klys.KlysPhase(ikly,isec),4) ;
+                pha = num2str(round(obj.Klys.KlysPhase(ikly,isec))) ;
               else
                 pha="---";
               end
@@ -469,6 +503,7 @@ classdef F2_LEMApp < handle & matlab.mixin.Copyable
           end
         case app.MagnetsTab
           if obj.uidetachplot
+            figure;
             h=axes;
           else
             h=app.UIAxes2;
@@ -495,12 +530,13 @@ classdef F2_LEMApp < handle & matlab.mixin.Copyable
           xlabel(h,'Z [m]'); ylabel(h,'\DeltaBDES [%]');
           yyaxis(h,'right');
           co=colororder;
-          bmagmax=max([BMAG_X BMAG_Y],2); bmagmax(bmagmax>10)=10;
+          bmagmax=max([BMAG_X BMAG_Y],[],2); bmagmax(bmagmax>10)=10;
           area(h,Z(gid),bmagmax(gid),'FaceColor',co(2,:),'FaceAlpha',0.1,'EdgeColor',co(2,:));
+          axis(h,[min(Z(gid)) max(Z(gid)) 1 max(bmagmax(:))]);
           xlabel(h,'Z [m]'); ylabel(h,'BMAG');
           if obj.uidetachplot
-            AddMagnetPlotZ(id(1),id(end),h);
             obj.uidetachplot=false;
+            AddMagnetPlotZ(id(1),id(end),h);
             obj.UpdateGUI;
           end
         case app.MessagesTab
@@ -554,14 +590,6 @@ classdef F2_LEMApp < handle & matlab.mixin.Copyable
         obj.SetLinacEref(obj.Eref(2:end));
       end
     end
-    function set.UseBendEDEF(obj,val)
-      
-      val=logical(val);
-      if val
-        obj.SetLinacEref();
-      end
-      obj.UseBendEDEF=val;
-    end
     function SetLinacEref(obj,eref)
       %SETLINACEREF Change the Linac reference energy (1x4) vector (GeV)
       % Changes extant fudge factors to match
@@ -583,43 +611,48 @@ classdef F2_LEMApp < handle & matlab.mixin.Copyable
       end
       obj.UpdateGUI;
     end
-    function SetFREF(obj,fref)
-      %SETFREF Store extant (or user supplied) fudge factor references and write to PV
-      if exist('fref','var')
-        if length(fref)~=4
-          error('Need to supply 4 element vector');
-        end
-        obj.fref=fref;
-      else
-        obj.fref=obj.fact;
-      end
-      caput(obj.pvs.Data,[obj.Pref obj.fref]);
-    end
-    function SetPREF(obj)
+    function SetPref(obj)
       % SetPREF Store current BEAMLINE momentum profile and fudge factors into EPICS and Pref property
       global BEAMLINE
       if isempty(BEAMLINE)
         error('No model loaded into memory');
       end
-      pref=arrayfun(@(x) BEAMLINE{x}.P,1:length(BEAMLINE));
-      obj.Pref=pref;
-      caput(obj.pvs.Data,[pref obj.fact]);
+      pref = arrayfun(@(x) BEAMLINE{x}.P,1:length(BEAMLINE)) ;
+      zdat = arrayfun(@(x) BEAMLINE{x}.Coordi(3),1:length(BEAMLINE)) ;
+      caput(obj.pvs.Data,[length(zdat) zdat pref obj.fact]);
+      obj.fref=obj.fact;
+      obj.SaveModel(obj.datadir+"/F2_LEM"+datestr(now,30),true);
     end
-    function SaveModel(obj,dir,fname)
+    function SaveModel(obj,fname,dataonly)
       global BEAMLINE PS KLYSTRON
       LEM = obj ;
-      save(fullfile(dir,sprintf('%s.mat',regexprep(fname,'\.mat$',''))),'BEAMLINE','PS','KLYSTRON','LEM');
-    end
-    function LoadModel(obj,dir,fname,dataonly)
-      global BEAMLINE PS KLYSTRON
-      ld=load(fullfile(dir,sprintf('%s.mat',regexprep(fname,'\.mat$',''))),'BEAMLINE','PS','KLYSTRON','LEM');
-      if ~isfield(ld,'LEM') || ~isfield(ld,'BEAMLINE') || length(ld.BEAMLINE)~=length(BEAMLINE)
-        error('Model in file not compatible with Model in memory');
+      fref = obj.fact ; %#ok<PROPLC>
+      pref = arrayfun(@(x) BEAMLINE{x}.P,1:length(BEAMLINE)) ;
+      zdat = arrayfun(@(x) BEAMLINE{x}.Coordi(3),1:length(BEAMLINE)) ;
+      if exist('dataonly','var') && dataonly
+        save(fname,'fref','pref','zdat');
+      else
+        save(fname,'BEAMLINE','PS','KLYSTRON','LEM','pref','zdat','fref');
       end
+    end
+    function LoadModel(obj,fname,dataonly)
+      global BEAMLINE PS KLYSTRON
+      ld=load(fname);
       if ~exist('dataonly','var') || isempty(dataonly) || ~dataonly
         BEAMLINE=ld.BEAMLINE; PS=ld.PS; KLYSTRON=ld.KLYSTRON;
       end
-      obj.Pref=ld.LEM.Pref; obj.fact=ld.LEM.fact; obj.fref=ld.LEM.fref;
+      obj.fref=ld.fref;
+      zmod = arrayfun(@(x) BEAMLINE{x}.Coordi(3),1:length(BEAMLINE)) ;
+      [zd,izd]=unique(ld.zdat);
+      obj.Pref = interp1(zd,ld.pref(izd),zmod) ;
+      if any(isnan(obj.Pref))
+        obj.message("!!!! Save data does not match current model z value range");
+      end
+      obj.SetExtantModel;
+      obj.UpdateEREF;
+      if ~isempty(obj.aobj)
+        obj.UpdateGUI;
+      end
     end
     function tab = table(obj)
       % TABLE Tabular data format for magnet strengths and reference
@@ -631,7 +664,7 @@ classdef F2_LEMApp < handle & matlab.mixin.Copyable
       Z=obj.Mags.LM.ModelBDES_Z;
       NAME=obj.Mags.LM.ControlNames;
       EREF=obj.Pref(id);
-      EACT=arrayfun(@(x) BEAMLINE{x}.P,id);
+      EACT=arrayfun(@(x) double(BEAMLINE{x}.P),id);
       BDES=obj.Mags.BDES;
       BACT=obj.Mags.BDES_cntrl;
       if obj.RescaleWithModel
@@ -660,6 +693,92 @@ classdef F2_LEMApp < handle & matlab.mixin.Copyable
       else
         obj.tableinds=indices;
       end
+    end
+    function SetExtantModel(obj)
+      obj.Mags.LM.SetExtantModel;
+      obj.Mags.LM.ModelBDES = obj.Mags.BDES_cntrl;
+      if ~isempty(obj.aobj)
+        obj.aobj.MagnetReferenceSourceButtonGroup.SelectedObject = obj.aobj.UseExtantStrengthsButton ;
+      end
+    end
+    function SetDesignModel(obj)
+      obj.Mags.LM.SetDesignModel;
+      if ~isempty(obj.aobj)
+        obj.aobj.MagnetReferenceSourceButtonGroup.SelectedObject = obj.aobj.UseModelStrengthsButton ;
+      end
+    end
+  end
+  % Set/Get methods
+  methods
+    function set.errorstate(obj,val)
+      obj.errorstate=logical(val);
+      if ~isempty(obj.aobj)
+        if obj.errorstate
+          obj.aobj.DataValidLamp.Color='red';
+        else
+          obj.aobj.DataValidLamp.Color='green';
+        end
+      end
+    end
+    function set.RescaleWithModel(obj,val)
+      if logical(val) ~= obj.RescaleWithModel
+        obj.RescaleWithModel=logical(val);
+        if ~obj.refdataValid
+          obj.RescaleWithModel=true;
+        end
+        obj.GetPref() ; % set reference momentum based on EPICS archive or original model
+        obj.UpdateEREFmdl;
+        if ~isempty(obj.aobj)
+          obj.UpdateGUI;
+        end
+      end
+    end
+    function set.bq(obj,Q)
+      obj.bq = Q ;
+      obj.LM.Initial.Q = Q(1)*1e-9 ;
+      try
+        obj.UpdateEREF; % need to update wakeloss entries
+      catch ME
+        obj.message("!!!!!!!!! Error processing energy reference:");
+        obj.message(ME.message);
+      end
+    end
+    function set.blen(obj,blen)
+      obj.blen = blen ;
+      obj.LM.Initial.sigz = blen*1e-6 ; 
+      obj.UpdateEREF; % need to update wakeloss entries
+    end
+    function set.linacsel(obj,sel)
+      obj.linacsel=sel;
+%       obj.Mags.UseSector=sel;
+      obj.UpdateEREF;
+      obj.UpdateGUI;
+    end
+    function set.KlysZeroPhases(obj,val)
+      obj.KlysZeroPhases=logical(val);
+      if isempty(obj.Klys)
+        return
+      end
+      obj.Klys.KlysForceZeroPhase=val;
+      try
+        obj.UpdateModel;
+        obj.UpdateEREF;
+        obj.UpdateGUI;
+      catch ME
+        obj.message("!!!!! Error setting energy profile:");
+        obj.message(ME.message);
+        if ~isempty(obj.aobj)
+          obj.aobj.TabGroup2.SelectedTab=obj.aobj.MessagesTab ;
+        end
+      end
+    end
+    function set.UseBendEDEF(obj,val)
+      
+      val=logical(val);
+      if val
+        obj.SetLinacEref();
+      end
+      obj.UseBendEDEF=val;
     end
   end
 end

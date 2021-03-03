@@ -182,8 +182,8 @@ classdef LucretiaModel < handle & matlab.mixin.Copyable
         error('Must provide BDES vector same length as model (%d)\n',length(ind));
       end
       for imag=1:length(ind)
-        PS(BEAMLINE{ind(imag)}.PS).Ampl = bdes(imag) ;
-        PS(BEAMLINE{ind(imag)}.PS).SetPt = bdes(imag) ;
+        PS(BEAMLINE{ind(imag)}.PS).Ampl = bdes(imag)./10 ;
+        PS(BEAMLINE{ind(imag)}.PS).SetPt = bdes(imag)./10 ;
       end
     end
     function bdes = get.ModelBDES_Z(obj)
@@ -328,29 +328,31 @@ classdef LucretiaModel < handle & matlab.mixin.Copyable
             fudge = ffact(4) ;
           end
           if obj.ModelKlysID(ikly,isec)>0
-            if Klys.KlysInUse(ikly,isec) % && Klys.KlysStat(ikly,isec)==0
-              KLYSTRON(obj.ModelKlysID(ikly,isec)).Ampl = Klys.KlysAmpl(ikly,isec)*fudge ;
-              KLYSTRON(obj.ModelKlysID(ikly,isec)).AmplSetPt = Klys.KlysAmpl(ikly,isec)*fudge ;
+            if Klys.KlysInUse(ikly,isec) && Klys.KlysStat(ikly,isec)==0
+              KLYSTRON(obj.ModelKlysID(ikly,isec)).Ampl = double( Klys.KlysAmpl(ikly,isec)*fudge ) ;
+              KLYSTRON(obj.ModelKlysID(ikly,isec)).AmplSetPt = double( Klys.KlysAmpl(ikly,isec)*fudge ) ;
             else
               KLYSTRON(obj.ModelKlysID(ikly,isec)).Ampl = 0 ;
               KLYSTRON(obj.ModelKlysID(ikly,isec)).AmplSetPt = 0 ;
             end
             if Klys.KlysInUse(ikly,isec)
-              KLYSTRON(obj.ModelKlysID(ikly,isec)).Phase = Klys.KlysPhase(ikly,isec) ;
-              KLYSTRON(obj.ModelKlysID(ikly,isec)).PhaseSetPt = Klys.KlysPhase(ikly,isec) ;
+              KLYSTRON(obj.ModelKlysID(ikly,isec)).Phase = double( Klys.KlysPhase(ikly,isec) ) ;
+              KLYSTRON(obj.ModelKlysID(ikly,isec)).PhaseSetPt = double( Klys.KlysPhase(ikly,isec) ) ;
             end
           end
         end
       end
     end
-    function SetExtantModel(obj)
+    function hasset=SetExtantModel(obj)
       global BEAMLINE PS KLYSTRON
+      hasset=false;
       if isempty(obj.ModelTempStore)
         return % haven't updated model since loading design or extant model already loaded
       end
       BEAMLINE = obj.ModelTempStore.BEAMLINE ;
       PS = obj.ModelTempStore.PS ;
       KLYSTRON = obj.ModelTempStore.KLYSTRON ;
+      hasset=true;
     end
     function SetDesignModel(obj,db)
       %SETDESIGNMODEL Restore design model database

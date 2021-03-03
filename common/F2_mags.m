@@ -36,7 +36,10 @@ classdef F2_mags < handle
       obj.LM=copy(LM);
       obj.LM.ModelClasses = obj.MagClasses ;
     end
-    function [bdes,bact] = ReadB(obj)
+    function [bdes,bact] = ReadB(obj,SetModel)
+      %READB Get magnet strengths from control system
+      %ReadB([SetModel])
+      % SetModel (Optional) : also set read B fields into Lucretia model
       [bact,bdes] = control_magnetGet(cellstr(obj.LM.ControlNames)) ; bdes=bdes(:)'; bact=bact(:)';
       obj.BDES_err = false(size(bdes)) ;
       obj.BACT_err = obj.BDES_err ;
@@ -48,6 +51,9 @@ classdef F2_mags < handle
       end
       obj.BDES_cntrl = bdes ;
       obj.BACT_cntrl = bact ;
+      if exist('SetModel','var') && SetModel
+        obj.LM.ModelBDES = bdes ;
+      end
     end
     function msg=WriteBDES(obj)
       %SETBDES Write BDES property values to control system
@@ -69,7 +75,7 @@ classdef F2_mags < handle
           continue
         end
         % is this a bulk+boost deal?
-        [~, par] = control_magnetLGPSMap(char(mnames(iname)));
+        [~, par] = control_magnetLGPSMap(char(mnames(imag)));
         if isfield(par,'idC') && length(par.idC{1})==2
           bn = regexprep(par.nameL{1},':','') ;
           if isfield(bulk,bn)
@@ -97,9 +103,9 @@ classdef F2_mags < handle
             bulk.(bn).magname{1} = char(mnames(imag)) ;
           end
         elseif isfield(par,'idC') && length(par.idC{1})>2
-          error('Dont know what to do with this: %s',mnames(iname));
+          error('Dont know what to do with this: %s',mnames(imag));
         else % lucky day, it is a simple 1 PS, 1 magnet deal (or handled by SCP)
-          control_mags{end+1}=char(mnames(iname)); %#ok<*AGROW>
+          control_mags{end+1}=char(mnames(imag)); %#ok<*AGROW>
           control_vals(end+1)=obj.BDES(imag);
         end
       end
@@ -121,7 +127,7 @@ classdef F2_mags < handle
           control_vals_bb(end+1) = breq*bulk.(fn{ifn}).bulksign ;
           control_mags_bb{end+1} = bulk.(fn{ifn}).bulkname ;
           [~,bid]=unique(bulk.(fn{ifn}).magname);
-          for ibst = bid
+          for ibst = bid(:)'
             control_mags_bb{end+1} = bulk.(fn{ifn}).magname{ibst} ;
             breq_bst = bulk.(fn{ifn}).boostval(ibst) - breq ;
             control_vals_bb(end+1) = breq_bst * bulk.(fn{ifn}).boostsign(ibst) ;
@@ -129,24 +135,24 @@ classdef F2_mags < handle
         end
         if obj.WriteEnable
           control_magnetSet(control_mags_bb',control_vals_bb','action','TRIM');
+        else
+          msg=[msg; "control_magnetSet: " + string(control_mags_bb(:)) + " = " + string(control_vals_bb(:)) ] ;
         end
         % This doesn't quite get there according to the QUAS values, do
         % fine-trim of boosts to get QUAS values to agree with required
         control_mags_bb={}; control_vals_bb=[];
         for ifn=1:length(fn)
           [~,bid]=unique(bulk.(fn{ifn}).magname);
-          for ibst = bid
+          for ibst = bid(:)'
             [~,bdesm] = control_magnetGet(bulk.(fn{ifn}).magname{ibst}) ;
-            [~,obj.BDES] = control_magnetGet(bulk.(fn{ifn}).boostname{ibst}) ;
-            bdes_new = obj.BDES + (bulk.(fn{ifn}).boostval(ibst)-bdesm) ;
+            [~,bdes] = control_magnetGet(bulk.(fn{ifn}).boostname{ibst}) ;
+            bdes_new = bdes + (bulk.(fn{ifn}).boostval(ibst)-bdesm) ;
             control_mags_bb{end+1} = bulk.(fn{ifn}).magname{ibst} ;
             control_vals_bb(end+1) = bdes_new ;
           end
         end
         if obj.WriteEnable
           control_magnetSet(control_mags_bb',control_vals_bb','action','TRIM');
-        else
-          msg(end+1)="control_magnetSet: " + string(control_mags_bb(:)) + " = " + string(control_vals_bb(:)) ;
         end
       end
       % Set the single PS magnets if any
@@ -154,17 +160,21 @@ classdef F2_mags < handle
         if obj.WriteEnable
           control_magnetSet(control_mags',control_vals','action','TRIM');
         else
-          msg(end+1)="control_magnetSet: " + string(control_mags(:)) + " = " + string(control_vals(:)) ;
+          msg = [msg; "control_magnetSet: " + string(control_mags(:)) + " = " + string(control_vals(:)) ] ;
         end
       end
       
       % Check BDES and BACT within tolerances
       [bdes,bact]=obj.ReadB;
       for imag = find(obj.BDES_err)
-        msg(end+1) = sprintf("!!!!!! %s: BDES out of Tol: Req= %g Act= %g",mnames(imag),obj.BDES(imag),bdes(imag));
+        if bdes_err(imag)
+          msg(end+1) = sprintf("!!!!!! %s: BDES out of Tol: Req= %g Act= %g",mnames(imag),obj.BDES(imag),bdes(imag));
+        end
       end
       for imag = find(obj.BACT_err)
-        msg(end+1) = sprintf("!!!!!! %s: BACT out of Tol: BDES= %g Act= %g",mnames(imag),obj.BDES(imag),bact(imag));
+        if bdes_err(imag)
+          msg(end+1) = sprintf("!!!!!! %s: BACT out of Tol: BDES= %g Act= %g",mnames(imag),obj.BDES(imag),bact(imag));
+        end
       end
     end
     function set.UseSector(obj,dosec)
@@ -215,8 +225,11 @@ classdef F2_mags < handle
         obj.BACT_err(abs(obj.BDES-obj.BACT_cntrl) < obj.AbsTolBACT) = false ;
       end
     end
-    function SetBDES_err(obj,id,val)
-      if id<1 || id>length(obj.BDES_err)
+    function SetBDES_err(obj,val,id)
+      if ~exist('id','var') || isempty(id)
+        id=1:length(obj.BDES_err);
+      end
+      if any(id<1) || any(id>length(obj.BDES_err))
         error('ID error');
       end
       obj.BDES_err(id)=logical(val);

@@ -9,6 +9,7 @@ classdef PV < handle
     PVStateChange % notifies upon successfull fetching of new PV value
   end
   properties
+    verbose uint8 = 0
     name string = "none" % user supplied name for PV
     pvname string = "none" % Control system PV string (can be a vector associating this PV to multiple control PVs)
     monitor=false; % Flag this PV to be monitored
@@ -780,7 +781,9 @@ classdef PV < handle
       end
       pvd=cell(1,length(obj.pvname));
       for ipv=1:length(obj.pvname)
-        fprintf(obj.STDOUT,'Connecting to PV: %s\n',obj.pvname(ipv));
+        if obj.verbose>0
+          fprintf(obj.STDOUT,'Connecting to PV: %s\n',obj.pvname(ipv));
+        end
         if ~isempty(obj.pvdatatype)
           if iscell(obj.pvdatatype)
             obj.channel{ipv} = org.epics.ca.Channels.create(obj.context,org.epics.ca.ChannelDescriptor(char(obj.pvname(ipv)),obj.pvdatatype{ipv})) ;
