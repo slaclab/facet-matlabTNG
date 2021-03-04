@@ -1,0 +1,135 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+  <head>
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+    <title>facet-dev</title>
+  </head>
+  <body>
+    <h1>FACET-II Simulated Controls Development Environment<br>
+    </h1>
+    <h2>Author</h2>
+    <p>Glen White, SLAC.<br>
+      email: whitegr -AT- slac.stanford.edu <br>
+    </p>
+    <b> v.1.0 <br>
+      <br>
+    </b><a href="#description">Description</a> | <a href="#install">Installation
+      and Run Instructions</a> | <a href="#apps">Available Applications</a><br>
+    <b> </b>
+    <h2><a name="description"></a>Description<br>
+    </h2>
+    facet-dev is simulated EPICS database which emulates FACET-II
+    specific PVs and has a simulation engine which populates the PVs
+    with values which respond, in turn, to PV changes according to an
+    internal model of the beamline. The aim is to provide an environment
+    which is useful for writing, testing and debugging high-level
+    controls applications (HLA).<br>
+    It is available as a <a href="https://www.docker.com/">Docker</a>
+    image, and when run according to instructions below, provides EPICS
+    PVs on the default TCP/IP ports.<br>
+    Where currently unavailable on the control system, PV names are
+    invented for simulation purposes, to be replaced with actual PV
+    names later.<br>
+    <h3>Available PVs</h3>
+    <p>The currently included PVs are limited to those required for
+      creating HLA's for the cathode, but can be expanded in future to
+      include more of the machine as required.<br>
+    </p>
+    <ul>
+      <li>KLYS:LI10:21:MOD:HVON_STATE % Gun rf on/off (10-2 modulator
+        state)</li>
+      <li>CAMR:LT10:900 % VCC camera (all usual PVs generated from
+        areaDetector module supplied)</li>
+      <ul>
+        <li>Image populated based on simulation GUI fields, and M2 motor
+          control inputs</li>
+      </ul>
+      <li>IOC:SYS1:MP01:MSHUTCTL % Laser MPS shutter control</li>
+      <li>SHUT:LT10:950:IN_MPS / SHUT:LT10:950:OUT_MPS % Laser MPS
+        shutter IN/OUT status</li>
+      <li>IN10_CATHODESUPPORT:laserShutterOp % EPICS CathodeServices
+        watchdog keepalive PV (write to this PV at ~1Hz to operate EPICS
+        watchdog service)</li>
+      <li>N10_CATHODESUPPORT:HEARTBEAT % Counter changes at 1 Hz, used
+        to verify EPICS watchdog services running</li>
+      <li>FARC:IN10:241:PNEUMATIC % Faraday cup status</li>
+      <li>FARC:IN10:241:VAL % Faraday cup reading</li>
+      <li>TORR:IN10:1:VAL % Torroid charge reading</li>
+      <li>MIRR:LT10:770:M2_MOTR_H % M2 sector 10 mirror horizontal motor
+        record</li>
+      <li>MIRR:LT10:770:M2_MOTR_V.% M2 sector 10 mirror vertical motor
+        record</li>
+      <li>LASR:LT10:930:PWR % Laser energy readout (uJ)</li>
+      <li>LASR:LT10:930:PWR_SET % Laser energy setting (uJ)</li>
+      <li>VGCC:IN10:W285:P % Gun Waveguide Vacuum pressure (nTorr)</li>
+      <li>VGCC:IN10:113:P&nbsp; % Vacuum pressire for gun [nTorr]</li>
+      <li>LASR:LT10:100:TELE % In/Out status of telescope optics for
+        laser (small spot size condition)</li>
+      <li>LASR:LT10:REPRATE % Operating rep rate for source laser</li>
+      <li>IN10_CATHODESUPPORT:gunVacHi % PV used by EPICS watchdog for
+        high gun vacuum limit (:gunVacLo for low limit)<br>
+      </li>
+      <li>IN10_CATHODESUPPORT:laserHi % PV used by EPICS watchdog for
+        high laser energy limit (:laserLo for low limit)<br>
+      </li>
+    </ul>
+    <h2><a name="install"></a>Installation and Run Instructions</h2>
+    <ul>
+      <li>Install <a href="https://www.docker.com/">docker</a> (for
+        Linux) / <a
+          href="https://www.docker.com/products/docker-desktop">docker
+          desktop</a> (for Mac/Windows)</li>
+      <li>Get "whitegr/facet-dev" image from docker hub</li>
+      <ul>
+        <li>$ docker pull whitegr/facet-dev</li>
+      </ul>
+      <li>Generate container and run /root/-sw-dev.sh command with bash,
+        exposing ports 5064 &amp; 5065</li>
+      <ul>
+        <li>e.g. from Docker: $ docker run --rm -d -t --expose 5064
+          --expose 5065 whitegr/facet-dev /bin/bash -ilc
+          /root/run-swdev.sh</li>
+      </ul>
+    </ul>
+    <h2><a name="apps"></a>Available Applications</h2>
+    <ul>
+      <li>HLA's available from facet software github repository: <b>https://github.com/slaclab/facet-sw.git</b></li>
+    </ul>
+    <h3>Matlab Applications</h3>
+    <ul>
+      <li>Requires R2020a+, run from facet-sw/matlab directory</li>
+      <li>Run each application in separate Matlab session, suggest
+        running each app using -nodesktop mode to speed lauch<br>
+      </li>
+    </ul>
+    <h4>SimControls</h4>
+    <ul>
+      <li>Basic low-level control of simulation environment</li>
+      <li>&gt;&gt; F2_SimControls; starts GUI</li>
+      <li>Exit by closing GUI window (exits Matlab session)<br>
+      </li>
+    </ul>
+    <h4><a href="F2_CathodeServices.html">CathodeServices</a></h4>
+    <ul>
+      <li>Laser cleaning and QE measurements of cathode</li>
+      <li>&gt;&gt; CS = F2_CathodeServicesApp(0); start cathode services
+        software and program GUI<br>
+      </li>
+      <li>Exit by closing GUI window or issuing CS.shutdown command
+        (exits Matlab session)</li>
+    </ul>
+    <h4>
+      <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+      <a href="F2_LAME.html">Larmor Angle Measurement of Energy (LAME)</a></h4>
+    <ul>
+      <li>Determination of emitted electron bunch from cathode </li>
+      <li>&gt;&gt;
+        <meta http-equiv="content-type" content="text/html;
+          charset=UTF-8">
+        FD = F2GunDiagnostics ; starts GUI</li>
+      <li>Doesn't currently use EPICS PVs, can be run stadalone (without
+        facet-dev)<br>
+      </li>
+    </ul>
+  </body>
+</html>
