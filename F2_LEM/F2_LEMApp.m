@@ -599,7 +599,8 @@ classdef F2_LEMApp < handle & matlab.mixin.Copyable & F2_common
         error('4 element vector of energies (GeV) required');
       end
       itry=0;
-      isel=find(obj.linacsel(2:5));
+%       isel=find(obj.linacsel(2:5));
+      isel=1:4;
       while any(abs(obj.Eref(1+isel)-eref(isel))>0.0001) && itry<15
         for iref=isel
           obj.fact(iref) = obj.fact(iref) * (eref(iref)-obj.Eref(iref)) / (obj.Eref(1+iref)-obj.Eref(iref)) ;
