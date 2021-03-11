@@ -12,7 +12,7 @@ classdef F2_IN10GunWatcherApp < handle
   end
   properties(Constant)
     maxbeat=1e7 % max heartbeat count, wrap to zero
-    triglevel=0.1 % trigger level on scope / V
+    triglevel=0.0005 % trigger level on scope / V
     scalevals = [1 2 5 10 20 50 100 200 500 1000 2000 5000 10000] % V/div on scope
   end
   methods

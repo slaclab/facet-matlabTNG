@@ -1,3 +1,3 @@
 #!/bin/bash
-ssh facet-srv02 "cd ~/whitegr/facet-sw/matlab; screen -dmS "$1" ./runapp.sh $1"
+ssh facet-srv02 "cd ~/usr/local/facet/tools/matlabTNG; screen -dmS "$1" ./runapp.sh $1"
 

@@ -1,4 +1,4 @@
-classdef F2_common < handle
+classdef (Abstract) F2_common < handle
   %F2_COMMON
   
   properties(Constant)
@@ -16,7 +16,7 @@ classdef F2_common < handle
     end
   end
   methods(Static)
-    function dnum = epics2mltime(tstamp)
+    function dnum = epics2mltime(time)
       % Put epics time stamp as Matlab datenum format in gui requested
       % local time
       persistent toffset tzoffset
@@ -24,7 +24,7 @@ classdef F2_common < handle
         toffset=datenum('1-jan-1970');
         tzoffset=-double(java.util.Date().getTimezoneOffset()/60);
       end
-      dnum=toffset+floor(tstamp+tzoffset*3600)*1e3/86400000;
+      dnum=toffset+floor(obj.time+tzoffset*3600)*1e3/86400000;
     end
   end
 end

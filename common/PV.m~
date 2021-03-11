@@ -263,9 +263,9 @@ classdef PV < handle
         elseif asyn && ~isempty(obj.future{ipv}) % Get data from previously lanched asyn thread if available
           if obj.future{ipv}.isDone() && ( obj.alarm==0 || obj.futurealarm{ipv}.isDone() ) % fetch data if asyn thread returned
             cavals = obj.future{ipv}.get() ;
-            if obj.gettime % This doesn't work with asyn gets
-%               pvstat = obj.future{ipv}.get(org.epics.ca.data.Timestamped().getClass());
-%               catime = pvstat.Seconds + pvstat.Nanos/1e9 ;
+            if obj.gettime
+              pvstat = obj.future{ipv}.get(org.epics.ca.data.Timestamped().getClass());
+              catime = pvstat.Seconds + pvstat.Nanos/1e9 ;
             end
             obj.future{ipv} = [] ;
             if obj.alarm>0
@@ -764,18 +764,6 @@ classdef PV < handle
     function ContextMenuCallback(obj,~,~) %#ok<INUSD>
       msgbox(evalc('disp(obj)'));
     end
-    function tsout = get.mltime(obj)
-      % Put epics time stamp as Matlab datenum format in gui requested
-      % local time
-      persistent toffset tzoffset
-      if isempty(toffset)
-        toffset=datenum('1-jan-1970');
-        tzoffset=-double(java.util.Date().getTimezoneOffset()/60);
-      end
-      for ipv=1:length(obj.time)
-        tsout{ipv}=toffset+floor(obj.time{ipv}+tzoffset*3600)*1e3/86400000;
-      end
-    end
   end
   methods(Access=protected)
     function utimerErr(obj,~,~) % Actions to take if timer errors
@@ -870,6 +858,16 @@ classdef PV < handle
     end
   end
   methods(Static)
+    function tsout = epicsts2mat(ts)
+      % EPICSTS2MAT
+      % Put epics time stamp as Matlab datenum format in gui requested
+      % local time
+      persistent toffset
+      if isempty(toffset)
+        toffset=datenum('1-jan-1970');
+      end
+      tsout=toffset+floor(ts+FlObj.timezone*3600)*1e3/86400000;
+    end
     function context = Initialize(type,alarmlevel)
       %INITIALIZE One-time initialization steps for channel access client
       % context = PV.Initialize(PVtype.EPICS [,alarmlevel])

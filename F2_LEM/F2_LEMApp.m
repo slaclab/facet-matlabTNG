@@ -170,10 +170,14 @@ classdef F2_LEMApp < handle & matlab.mixin.Copyable & F2_common
         end
       end
       try
+        msg=[]; %#ok<NASGU>
         msg = obj.Mags.WriteBDES ;
       catch ME
         obj.message(sprintf('!!!! Error writing new BDES values: %s',ME.message));
         return
+      end
+      if ~isempty(msg)
+        obj.message(msg(:));
       end
       obj.SetPref;
       if ~isempty(msg)
@@ -199,7 +203,13 @@ classdef F2_LEMApp < handle & matlab.mixin.Copyable & F2_common
         obj.Mags.ReadB(true);
         obj.Mags.BDES = obj.UndoSettings.BDES_cntrl ;
         obj.Mags.SetBDES_err(true(size(obj.Mags.BDES))) ;
-        msg = obj.Mags.WriteBDES ;
+        try
+          msg=[]; %#ok<NASGU>
+          msg = obj.Mags.WriteBDES ;
+        catch ME
+          obj.message(sprintf('!!!! Error writing new BDES values: %s',ME.message));
+          return
+        end
         if ~isempty(msg)
           obj.message(msg(:));
         end
