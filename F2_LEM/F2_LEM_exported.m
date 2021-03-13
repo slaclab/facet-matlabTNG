@@ -1213,6 +1213,7 @@ classdef F2_LEM_exported < matlab.apps.AppBase
       % Create L0CheckBox
       app.L0CheckBox = uicheckbox(app.LeftPanel);
       app.L0CheckBox.ValueChangedFcn = createCallbackFcn(app, @L0CheckBoxValueChanged, true);
+      app.L0CheckBox.Enable = 'off';
       app.L0CheckBox.Text = 'L0';
       app.L0CheckBox.Position = [9 364 35 22];
       app.L0CheckBox.Value = true;
@@ -1220,6 +1221,7 @@ classdef F2_LEM_exported < matlab.apps.AppBase
       % Create L1CheckBox
       app.L1CheckBox = uicheckbox(app.LeftPanel);
       app.L1CheckBox.ValueChangedFcn = createCallbackFcn(app, @L1CheckBoxValueChanged, true);
+      app.L1CheckBox.Enable = 'off';
       app.L1CheckBox.Text = 'L1';
       app.L1CheckBox.Position = [74 364 35 22];
       app.L1CheckBox.Value = true;
@@ -1227,6 +1229,7 @@ classdef F2_LEM_exported < matlab.apps.AppBase
       % Create L2CheckBox
       app.L2CheckBox = uicheckbox(app.LeftPanel);
       app.L2CheckBox.ValueChangedFcn = createCallbackFcn(app, @L2CheckBoxValueChanged, true);
+      app.L2CheckBox.Enable = 'off';
       app.L2CheckBox.Text = 'L2';
       app.L2CheckBox.Position = [138 364 35 22];
       app.L2CheckBox.Value = true;
@@ -1234,6 +1237,7 @@ classdef F2_LEM_exported < matlab.apps.AppBase
       % Create L3CheckBox
       app.L3CheckBox = uicheckbox(app.LeftPanel);
       app.L3CheckBox.ValueChangedFcn = createCallbackFcn(app, @L3CheckBoxValueChanged, true);
+      app.L3CheckBox.Enable = 'off';
       app.L3CheckBox.Text = 'L3';
       app.L3CheckBox.Position = [202 364 35 22];
       app.L3CheckBox.Value = true;
@@ -1247,6 +1251,7 @@ classdef F2_LEM_exported < matlab.apps.AppBase
       % Create S20CheckBox
       app.S20CheckBox = uicheckbox(app.LeftPanel);
       app.S20CheckBox.ValueChangedFcn = createCallbackFcn(app, @S20CheckBoxValueChanged, true);
+      app.S20CheckBox.Enable = 'off';
       app.S20CheckBox.Text = 'S20';
       app.S20CheckBox.Position = [266 364 43 22];
       app.S20CheckBox.Value = true;

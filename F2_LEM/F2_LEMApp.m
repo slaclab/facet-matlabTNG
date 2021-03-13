@@ -79,6 +79,11 @@ classdef F2_LEMApp < handle & matlab.mixin.Copyable & F2_common
         PV(context,'name',"BendBC14",'pvname',"BEND:LI14:720:BDES") ;
         PV(context,'name',"BendBC20",'pvname',"LI20:LGPS:1990:BDES") ;
         PV(context,'name',"Q_inj",'pvname',"SIOC:SYS1:ML00:AO850") ;
+        PV(context,'name',"EGUN",'pvname',"SIOC:SYS1:ML00:AO896",'mode',"rw") ;
+        PV(context,'name',"EDL1",'pvname',"SIOC:SYS1:ML00:AO892",'mode',"rw") ;
+        PV(context,'name',"EBC11",'pvname',"SIOC:SYS1:ML00:AO893",'mode',"rw") ;
+        PV(context,'name',"EBC14",'pvname',"SIOC:SYS1:ML00:AO894",'mode',"rw") ;
+        PV(context,'name',"EBC20",'pvname',"SIOC:SYS1:ML00:AO895",'mode',"rw") ;
         ] ;
       pset(obj.pvlist,'debug',0) ;
       obj.pvs = struct(obj.pvlist) ;
@@ -104,7 +109,7 @@ classdef F2_LEMApp < handle & matlab.mixin.Copyable & F2_common
       obj.LM.SetKlystronData(obj.Klys,obj.fact) ; % Update model with Klystron values
       obj.Mags = F2_mags(obj.LM) ;
       obj.Mags.MagClasses = ["QUAD" "SEXT"] ;
-      obj.Mags.WriteEnable = true ;
+%       obj.Mags.WriteEnable = true ;
       
       % Fetch all magnet data once and load into model
       obj.Mags.ReadB(true);
@@ -123,6 +128,15 @@ classdef F2_LEMApp < handle & matlab.mixin.Copyable & F2_common
         obj.message("!!!!!!!!! Error processing energy reference:");
         obj.message(ME.message);
         obj.UpdateGUI;
+      end
+      
+      % Enable region select buttons
+      if ~isempty(obj.aobj)
+        obj.aobj.L0CheckBox.Enable=true;
+        obj.aobj.L1CheckBox.Enable=true;
+        obj.aobj.L2CheckBox.Enable=true;
+        obj.aobj.L3CheckBox.Enable=true;
+        obj.aobj.S20CheckBox.Enable=true;
       end
       
       obj.message("Initialization complete.");
@@ -152,7 +166,7 @@ classdef F2_LEMApp < handle & matlab.mixin.Copyable & F2_common
       end
       obj.SaveModel(obj.confdir+"/F2_LEM/lastpref",true);
       obj.UndoSettings.BDES = obj.Mags.BDES ;
-      obj.UndoSettings.BDES_cntrl = obj.Mags.BDES_cntrl ;
+      obj.UndoSettings.BDES_cntrl = obj.Mags.BDES_cntrl ; 
       obj.UndoSettings.Pref = obj.Pref ;
       obj.UndoSettings.fref = obj.fref ;
       rid=find(obj.GetRegionID);
@@ -166,9 +180,11 @@ classdef F2_LEMApp < handle & matlab.mixin.Copyable & F2_common
             error('No table selection data');
           end
           obj.Mags.SetBDES_err(false) ;
-          obj.Mags.SetBDES_err(true,find(magid(unique(obj.tableinds(1,:))))) ; %#ok<FNDSB>
+          allid = find(magid) ;
+          obj.Mags.SetBDES_err(true,allid(unique(obj.tableinds(:,1)))) ;
         end
       end
+      obj.UndoSettings.BDES_err = obj.Mags.BDES_err ;
       try
         msg=[]; %#ok<NASGU>
         msg = obj.Mags.WriteBDES ;
@@ -202,7 +218,7 @@ classdef F2_LEMApp < handle & matlab.mixin.Copyable & F2_common
       else
         obj.Mags.ReadB(true);
         obj.Mags.BDES = obj.UndoSettings.BDES_cntrl ;
-        obj.Mags.SetBDES_err(true(size(obj.Mags.BDES))) ;
+        obj.Mags.SetBDES_err(obj.UndoSettings.BDES_err) ;
         try
           msg=[]; %#ok<NASGU>
           msg = obj.Mags.WriteBDES ;
@@ -594,6 +610,7 @@ classdef F2_LEMApp < handle & matlab.mixin.Copyable & F2_common
       %SETGUNEREF Change the initial reference energy for the lattice (GeV)
       % Changes Linac reference energies
       obj.Eref(1) = eref ;
+      caput(obj.pvs.EGUN,eref) ;
       if obj.UseBendEDEF
         obj.SetLinacEref();
       else
@@ -603,11 +620,17 @@ classdef F2_LEMApp < handle & matlab.mixin.Copyable & F2_common
     function SetLinacEref(obj,eref)
       %SETLINACEREF Change the Linac reference energy (1x4) vector (GeV)
       % Changes extant fudge factors to match
+      egun = caget(obj.pvs.EGUN) ;
+      obj.Eref(1) = egun ;
       if ~exist('eref','var') || isempty(eref) % Use bends to set Eref
         eref = [caget(obj.pvs.BendDL1) caget(obj.pvs.BendBC11) caget(obj.pvs.BendBC14) caget(obj.pvs.BendBC20)];
       elseif length(eref)~=4
         error('4 element vector of energies (GeV) required');
       end
+      caput(obj.pvs.EDL1,eref(1)) ;
+      caput(obj.pvs.EBC11,eref(2)) ;
+      caput(obj.pvs.EBC14,eref(3)) ;
+      caput(obj.pvs.EBC20,eref(4)) ;
       itry=0;
 %       isel=find(obj.linacsel(2:5));
       isel=1:4;

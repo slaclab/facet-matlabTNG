@@ -145,12 +145,16 @@ classdef F2_klys < handle
           for ikly=1:8
             if obj.KlysControl(ikly,isec)==1 % SLC
               obj.pvlist(end+1) = PV(context,'name',sprintf("phase_%d_1%d",ikly,isec-1),'pvname',sprintf("LI1%d:KLYS:%d1:PDES",isec-1,ikly));
-            else
+              obj.pvlist(end+1) = PV(context,'name',sprintf("ampl_%d_1%d",ikly,isec-1),'pvname',sprintf("LI1%d:KLYS:%d1:ENLD",isec-1,ikly));
+              obj.pvlist(end+1) = PV(context,'name',sprintf("stat_%d_1%d",ikly,isec-1),'pvname',sprintf("LI1%d:KLYS:%d1:STAT",isec-1,ikly));
+              obj.pvlist(end+1) = PV(context,'name',sprintf("swrd_%d_1%d",ikly,isec-1),'pvname',sprintf("LI1%d:KLYS:%d1:SWRD",isec-1,ikly));
+            else % EPICS
               obj.pvlist(end+1) = PV(context,'name',sprintf("phase_%d_1%d",ikly,isec-1),'pvname',sprintf("KLYS:LI1%d:%d1:PDES",isec-1,ikly));
+              obj.pvlist(end+1) = PV(context,'name',sprintf("ampl_%d_1%d",ikly,isec-1),'pvname',sprintf("KLYS:LI1%d:%d1:BVLT",isec-1,ikly));
+              obj.pvlist(end+1) = PV(context,'name',sprintf("stat_%d_1%d",ikly,isec-1),'pvname',sprintf("KLYS:LI1%d:%d1:FAULTSEQ_STATUS",isec-1,ikly));
+              obj.pvlist(end+1) = PV(context,'name',sprintf("swrd_%d_1%d",ikly,isec-1),'pvname',sprintf("KLYS:LI1%d:%d1:BEAMCODE10_TSTAT",isec-1,ikly));
             end
-            obj.pvlist(end+1) = PV(context,'name',sprintf("ampl_%d_1%d",ikly,isec-1),'pvname',sprintf("LI1%d:KLYS:%d1:ENLD",isec-1,ikly));
-            obj.pvlist(end+1) = PV(context,'name',sprintf("stat_%d_1%d",ikly,isec-1),'pvname',sprintf("LI1%d:KLYS:%d1:STAT",isec-1,ikly));
-            obj.pvlist(end+1) = PV(context,'name',sprintf("swrd_%d_1%d",ikly,isec-1),'pvname',sprintf("LI1%d:KLYS:%d1:SWRD",isec-1,ikly));
+            
           end
           obj.pvlist(end+1) = PV(context,'name',sprintf("sbst_1%d_phase",isec-1),'pvname',sprintf("LI1%d:SBST:1:PDES",isec-1),'monitor',true) ;
         end
@@ -220,15 +224,25 @@ classdef F2_klys < handle
           if ~obj.KlysUseSector(linacsector) || ~obj.KlysInUse(ikly,isec)
             continue
           end
-          stat = aidaget(sprintf('KLYS:LI1%d:%d1//TACT',isec-1,ikly),'short',{'BEAM=10' 'DGRP=LIN_KLYS'}) ;
-          if isnan(stat) || isnan(obj.pvs.(sprintf("stat_%d_1%d",ikly,isec-1)).val{1}) || isnan(obj.pvs.(sprintf("swrd_%d_1%d",ikly,isec-1)).val{1})
-            obj.KlysStat(ikly,isec) = 3 ;
-          elseif bitget(stat, 1)
-            obj.KlysStat(ikly,isec) = 0 ;
-          elseif bitget(stat, 2)
-            obj.KlysStat(ikly,isec) = 1 ;
-          elseif bitget(stat, 3)
-            obj.KlysStat(ikly,isec) = 2 ;
+          if obj.KlysControl(ikly,isec)==0 % EPICS
+            if string(obj.pvs.(sprintf("stat_%d_1%d",ikly,isec-1)).val{1}) ~= "OK"
+              obj.KlysStat(ikly,isec) = 3 ;
+            elseif string(obj.pvs.(sprintf("swrd_%d_1%d",ikly,isec-1)).val{1}) ~= "Activated"
+              obj.KlysStat(ikly,isec) = 1 ;
+            else
+              obj.KlysStat(ikly,isec) = 0 ;
+            end
+          else % SCP
+            stat = aidaget(sprintf('KLYS:LI1%d:%d1//TACT',isec-1,ikly),'short',{'BEAM=10' 'DGRP=LIN_KLYS'}) ;
+            if isnan(stat) || isnan(obj.pvs.(sprintf("stat_%d_1%d",ikly,isec-1)).val{1}) || isnan(obj.pvs.(sprintf("swrd_%d_1%d",ikly,isec-1)).val{1})
+              obj.KlysStat(ikly,isec) = 3 ;
+            elseif bitget(stat, 1)
+              obj.KlysStat(ikly,isec) = 0 ;
+            elseif bitget(stat, 2)
+              obj.KlysStat(ikly,isec) = 1 ;
+            elseif bitget(stat, 3)
+              obj.KlysStat(ikly,isec) = 2 ;
+            end
           end
         end
       end

@@ -3,18 +3,25 @@ classdef fbSISO < handle
   
   events
     DataUpdated
+    StateChange
   end
   properties
+    WriteEnable logical = true % enable writing to PV control
     Method string {mustBeMember(Method,"PID")} = "PID"
-    Kp {mustBeNonNegative} = 1
+    Kp {mustBeNonnegative} = 1
     Ki {mustBeNonnegative} = 0
     Kd {mustBeNonnegative} = 0
     LimitRate uint16 = 0 % Limit data acquisition rate if >0 [seconds]
     ControlLimits(1,2) = [-inf,inf] % Limits for ControlVal
     SetpointLimits(1,2) = [-inf,inf] % Limits to setpoint (saturates on limits)
-    ControlVal % current control variable value (local)
-    SetpointVal % current setpoint value (local)
+    QualLimits(1,2) = [-inf,inf] % Limits to place on quality control PV
+    SetpointDeadband(1,2) = [-eps,eps] % Deadband- only update feeddback when move out of this range of setpoint
     SetpointDES = 0 % desired setpoint value
+    ControlVar % control variable (PV object)
+    SetpointVar % setpoint variable to use (PV or BufferData object)
+    QualVar % Quality control (PV object)
+  end
+  properties(SetObservable)
     Enable logical = false
   end
   properties(Dependent)
@@ -22,18 +29,17 @@ classdef fbSISO < handle
     statestr string % state description
   end
   properties(SetAccess=private)
+    ControlVal % current control variable value (local)
+    SetpointVal % current setpoint value (local)
+    QualVal % quality control value
     Running logical = false
-    ControlVar % control variable (PV object)
-    SetpointVar % setpoint variable to use (PV or BufferData object)
     ControlState uint8 = 3 % 0=OK, 1=limit low, 2=limit high, 3=Error
     SetpointState uint8 = 3 % 0=OK, 1=limit low, 2=limit high, 3=Error
-  end
-  properties(Access=private)
-    listener
+    QualState uint8 = 3 % 0=OK, 1=limit low, 2=limit high, 3=not connected, 4=Error
   end
   
   methods
-    function obj = fbSISO(controlPV,setpoint)
+    function obj = fbSISO(controlPV,setpoint,qualPV)
       %FBSISO
       % FB = fbSISO(controlPV,setpointPV)
       % FB = fbSISO(controlPV,SetPointBufferDataObject)
@@ -48,7 +54,18 @@ classdef fbSISO < handle
       end
       obj.SetpointVar = setpoint ;
       obj.ControlVar = controlPV ;
-      obj.listener = addlistener(obj,'DataUpdated',@(~,~) obj.ProcDataUpdated) ;
+      addlistener(obj,'DataUpdated',@(~,~) obj.ProcDataUpdated) ;
+      if isa(obj.SetpointVar,'PV')
+        obj.SetpointVar.monitor = true ;
+        run(obj.SetpointVar,false,1/0.01,obj,'DataUpdated');
+      else % BufferData object
+        obj.SetpointVar.Enable=true;
+        addlistener(obj.SetpointVar,'PVUpdated',@(~,~) obj.ProcDataUpdated) ;
+      end
+      % Use quality control PV?
+      if exist('qualPV','var') && isa(qualPV,'PV')
+        obj.QualVar = qualPV;
+      end
     end
   end
   % set/get and private methods
@@ -58,25 +75,68 @@ classdef fbSISO < handle
         return
       end
       obj.Enable=logical(val);
+    end
+    function state = get.state(obj)
       if obj.Enable
-        if isa(obj.SetpointVar,'PV')
-          obj.listener = run(obj.SetpointVar,false,1/0.01,obj,'DataUpdated');
-        else
-          obj.SetpointVar.Enable=true;
-        end
+        state = uint8(0);
       else
-        if isa(obj.SetpointVar,'PV')
-          stop(obj.SetpointVar);
-        else
-          obj.SetpointVar.Enable=false;
-        end
-        obj.Running=false;
+        state = uint8(1);
       end
+      if obj.ControlState>0 || obj.SetpointState>2 || obj.QualState==1 || obj.QualState==2
+        state = uint8(2);
+      end
+      % Check validity of data
+      data = [obj.ControlVal obj.SetpointVal];
+      if any(isnan(data)) || any(isinf(data)) || obj.ControlState == 3 || obj.SetpointState == 3 || obj.QualState == 4
+        state=uint8(3);
+      end
+    end
+    function txt = get.statestr(obj)
+      if obj.Enable
+        txt = "Enabled" ;
+      else
+        txt = "Not Enabled" ;
+      end
+      if obj.state<2
+        txt = txt + ", OK" ;
+      else
+        txt = txt + ", Error" ;
+      end
+      switch obj.ControlState
+        case 1
+          txt = txt + ", Control Limit LOW" ;
+        case 2
+          txt = txt + ", Control Limit HIGH" ;
+        case 3
+          txt = txt + ", Control Readback INVALID" ;
+      end
+      switch obj.SetpointState
+        case 1
+          txt = txt + ", Setpoint Limit LOW" ;
+        case 2
+          txt = txt + ", Setpoint Limit HIGH" ;
+        case 3
+          txt = txt + ", Setpoint Readback INVALID" ;
+      end
+      switch obj.QualState
+        case 1
+          txt = txt + ", Quality Control Val LOW" ;
+        case 2
+          txt = txt + ", Quality Control Val HIGH" ;
+        case 4
+          txt = txt + ", Quality Control Val INVALID" ;
+      end
+      data = [obj.ControlVal obj.SetpointVal];
+      if any(isnan(data)) || any(isinf(data))
+        txt = txt + ", Data invalid" ;
+      end
+      txt = txt + "." ;
     end
   end
   methods(Access=private)
     function ProcDataUpdated(obj)
-      persistent lasttic
+      persistent lasttic laststate
+      obj.Running = true ;
       % Reject new values if LimitRate set and not enough time elapsed since last reading
       if obj.LimitRate>0 && ~isempty(lasttic) && toc(lasttic)<obj.LimitRate
         lasttic=tic;
@@ -84,65 +144,75 @@ classdef fbSISO < handle
       elseif obj.LimitRate>0
         lasttic=tic;
       end
-      try
-        % Read control variable and check status
-        obj.ControlState = 0 ;
-        obj.ControlVal = caget(obj.ControlVar) ;
-        if isnan(obj.ControlVal)
-          obj.ControlState = 3 ;
+      % Read control variable and check status
+      obj.ControlState = 0 ;
+      obj.ControlVal = caget(obj.ControlVar) ;
+      if isnan(obj.ControlVal)
+        obj.ControlState = 3 ;
+      end
+      if obj.ControlVal<obj.ControlLimits(1)
+        obj.ControlState = 1 ;
+      end
+      if obj.ControlVal>obj.ControlLimits(2)
+        obj.ControlState = 2 ;
+      end
+      % Read setpoint variable and check status
+      obj.SetpointState = 0 ;
+      if isa(obj.SetpointVar,'PV')
+        obj.SetpointVal = obj.SetpointVar.val{1} ;
+      else
+        obj.SetpointVal = obj.SetpointVar.Value ;
+      end
+      if isnan(obj.SetpointVal)
+        obj.SetpointState = 3 ;
+      end
+      if obj.SetpointVal < obj.SetpointLimits(1)
+        obj.SetpointState = 1 ;
+        obj.SetpointVal = obj.SetpointLimits(1) ;
+      end
+      if obj.SetpointVal > obj.SetpointLimits(2)
+        obj.SetpointState = 2 ;
+        obj.SetpointVal = obj.SetpointLimits(2) ;
+      end 
+      if ~isempty(obj.QualVar)
+        obj.QualVal = caget(obj.QualVar) ;
+        if isnan(obj.QualVal) || isinf(obj.QualVal)
+          obj.QualState=4;
         end
-        if obj.ControlVal<obj.ControlLimits(1)
-          obj.ControlState = 1 ;
+        if obj.QualVal < obj.QualLimits(1)
+          obj.QualState = uint8(1) ;
+        elseif obj.QualVal > obj.QualLimits(2)
+          obj.QualState = uint8(2) ;
         end
-        if obj.ControlVal>obj.ControlLimits(2)
-          obj.ControlState = 2 ;
-        end
-        % Read setpoint variable and check status
-        obj.SetpointState = 0 ;
-        if isa(obj.SetpointVar,'PV')
-          obj.SetpointVal = obj.SetpointVar.val{1} ;
-        else
-          obj.SetpointVal = obj.SetpointVar.Value ;
-        end
-        if isnan(obj.SetpointVal)
-          obj.SetpointState = 3 ;
-        end
-        if obj.SetpointVal < obj.SetpointLimits(1)
-          obj.SetpointState = 1 ;
-          obj.SetpointVal = obj.SetpointLimits(1) ;
-        end
-        if obj.SetpointVal > obj.SetpointLimits(2)
-          obj.SetpointState = 2 ;
-          obj.SetpointVal = obj.SetpointLimits(2) ;
-        end
-        % Error if control variable out of bounds and/or error state
-        if obj.ControlState>0
-          error('Control Variable in error state');
-        end
-        % Error if setpoint in error state (at limits OK, keep it saturated here)
-        if obj.SetpointState>2
-          error('Setpoint Variable in error state');
-        end
-        % Process the feedback if enabled
-        if obj.Enable
-          dc = GetFeedback(obj) ;
+      end
+      % Process the feedback if enabled and not in error state
+      if obj.state==0
+        dc = GetFeedback(obj) ;
+        if obj.WriteEnable && abs(dc)>0 && ~isnan(dc) && ~isnan(dc)
           caput(obj.ControlVar,obj.ControlVal+dc) ;
         end
-        obj.Running=true;
-      catch ME
-        obj.Running=false;
-        fprintf(2,'%s\n',ME.message);
+      end
+      if isempty(laststate) || obj.state ~= laststate
+        notify(obj,"StateChange") ;
+        laststate=obj.state;
+      end
+      if ~isa(obj.SetpointVar,'PV')
+        notify(obj,"DataUpdated");
       end
     end
     function dc = GetFeedback(obj)
       %GETFEEDBACK Get neww control variable offset
+      dc=0;
       if obj.SetpointState<3
         switch obj.Method
           case "PID"
             if obj.Ki>0 || obj.Kd>0
               error('I and D parts of PID controller not yet implemented');
             end
-            dc = (obj.SetpointVal-obj.SetpointDES) * obj.Kp ;
+            dDES = (obj.SetpointVal-obj.SetpointDES) ;
+            if dDES < obj.SetpointDeadband(1) || dDES > obj.SetpointDeadband(2)
+              dc = dDES * obj.Kp ;
+            end
           otherwise
             error('This feedback method not yet implemented');
         end

@@ -70,7 +70,7 @@ classdef F2_IN10GunWatcherApp < handle
       end
       obj.listeners = addlistener(obj,'PVUpdated',@(~,~) obj.wdfun) ;
       run(obj.pvlist,false,0.1,obj,'PVUpdated');
-      if ~isempty(obj.guihan)
+      if isempty(obj.guihan)
         diary('/u1/facet/physics/log/matlab/F2_IN10GunWatcher.log');
       end
       fprintf('%s (F2_IN10GunWatcher) Started.\n',datestr(now));

@@ -13,6 +13,7 @@ classdef BufferData < handle
   end
   properties(SetObservable)
     DataPV PV % Connect to data PV ti acquire data
+    Qual
     FilterInterval(1,2) = [0.001 0.1] % [LOW,HIGH] frequency filter settings [Hz]
     BufferTime uint16 {mustBePositive} = 2 % Storage length for feedback variables [minutes]
     Enable logical = false
@@ -99,6 +100,11 @@ classdef BufferData < handle
     function val = get.Value(obj)
       if isempty(obj.DataRaw) || isempty(obj.DataRaw.Data)
         val = [] ;
+        return
+      end
+      % Current value must be valid, else provide nan as output
+      if isnan(obj.DataPV.val{1}) || isinf(obj.DataPV.val{1})
+        val = nan;
         return
       end
       if obj.DoFilter
