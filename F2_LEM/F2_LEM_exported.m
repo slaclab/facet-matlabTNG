@@ -589,7 +589,7 @@ classdef F2_LEM_exported < matlab.apps.AppBase
     function SetPrefMenuSelected(app, event)
       if string(questdlg('Set in-memory momentum profile as energy profile reference and write to EPICS (without scaling magnets)?','Yes','No'))=="Yes"
         try
-          app.aobj.SetPREF;
+          app.aobj.SetPref;
         catch ME
           errordlg(sprintf('Error setting momentum profile reference:\n%s',ME.message),"PRED Set Error");
         end

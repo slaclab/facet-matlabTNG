@@ -109,7 +109,7 @@ classdef F2_LEMApp < handle & matlab.mixin.Copyable & F2_common
       obj.LM.SetKlystronData(obj.Klys,obj.fact) ; % Update model with Klystron values
       obj.Mags = F2_mags(obj.LM) ;
       obj.Mags.MagClasses = ["QUAD" "SEXT"] ;
-%       obj.Mags.WriteEnable = true ;
+      obj.Mags.WriteEnable = true ;
       
       % Fetch all magnet data once and load into model
       obj.Mags.ReadB(true);
@@ -656,6 +656,10 @@ classdef F2_LEMApp < handle & matlab.mixin.Copyable & F2_common
       caput(obj.pvs.Data,[length(zdat) zdat pref obj.fact]);
       obj.fref=obj.fact;
       obj.SaveModel(obj.datadir+"/F2_LEM"+datestr(now,30),true);
+      obj.GetPref(); % load new reference values locally
+      if ~isempty(obj.aobj)
+        obj.UpdateGUI;
+      end
     end
     function SaveModel(obj,fname,dataonly)
       global BEAMLINE PS KLYSTRON
