@@ -2,299 +2,302 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
   % Properties that correspond to app components
   properties (Access = public)
-    FLEMFACETIILEMUIFigure    matlab.ui.Figure
-    FileMenu                  matlab.ui.container.Menu
-    SetPrefMenu               matlab.ui.container.Menu
-    SaveDataMenu              matlab.ui.container.Menu
-    LoadDataMenu              matlab.ui.container.Menu
-    GridLayout                matlab.ui.container.GridLayout
-    LeftPanel                 matlab.ui.container.Panel
-    ScaleMagnetsButton        matlab.ui.control.Button
-    UndoButton                matlab.ui.control.Button
-    TabGroup                  matlab.ui.container.TabGroup
-    EREFSTab                  matlab.ui.container.Tab
-    GunEditFieldLabel         matlab.ui.control.Label
-    GunEref                   matlab.ui.control.NumericEditField
-    DL1EditFieldLabel         matlab.ui.control.Label
-    DL1Eref                   matlab.ui.control.NumericEditField
-    BC11EditFieldLabel        matlab.ui.control.Label
-    BC11Eref                  matlab.ui.control.NumericEditField
-    ErefGeVLabel              matlab.ui.control.Label
-    FudgeFactorLabel          matlab.ui.control.Label
-    ExtantLabel               matlab.ui.control.Label
-    RefLabel                  matlab.ui.control.Label
-    L0Label                   matlab.ui.control.Label
-    EditField                 matlab.ui.control.NumericEditField
-    EditField_2               matlab.ui.control.NumericEditField
-    L1Label                   matlab.ui.control.Label
-    EditField_3               matlab.ui.control.NumericEditField
-    EditField_4               matlab.ui.control.NumericEditField
-    L2Label_2                 matlab.ui.control.Label
-    EditField_5               matlab.ui.control.NumericEditField
-    EditField_6               matlab.ui.control.NumericEditField
-    L3Label_2                 matlab.ui.control.Label
-    EditField_7               matlab.ui.control.NumericEditField
-    EditField_8               matlab.ui.control.NumericEditField
-    BC14Label                 matlab.ui.control.Label
-    BC14Eref                  matlab.ui.control.NumericEditField
-    BC20Label                 matlab.ui.control.Label
-    BC20Eref                  matlab.ui.control.NumericEditField
-    UseBendEDEFButton         matlab.ui.control.StateButton
-    WakesTab                  matlab.ui.container.Tab
-    BunchChargenCLabel        matlab.ui.control.Label
-    L0EditFieldLabel          matlab.ui.control.Label
-    L0EditField               matlab.ui.control.NumericEditField
-    L1EditFieldLabel          matlab.ui.control.Label
-    L1EditField               matlab.ui.control.NumericEditField
-    L2EditFieldLabel          matlab.ui.control.Label
-    L2EditField               matlab.ui.control.NumericEditField
-    L3EditFieldLabel          matlab.ui.control.Label
-    L3EditField               matlab.ui.control.NumericEditField
-    EditField_175             matlab.ui.control.NumericEditField
-    EditField_176             matlab.ui.control.NumericEditField
-    EditField_177             matlab.ui.control.NumericEditField
-    EditField_178             matlab.ui.control.NumericEditField
-    rmsBunchLengthumLabel     matlab.ui.control.Label
-    ElossMeVLabel             matlab.ui.control.Label
-    EditField_179             matlab.ui.control.NumericEditField
-    EditField_180             matlab.ui.control.NumericEditField
-    EditField_181             matlab.ui.control.NumericEditField
-    EditField_182             matlab.ui.control.NumericEditField
-    UseMeasuredValuesButton   matlab.ui.control.StateButton
-    RFTab                     matlab.ui.container.Tab
-    L1Label_2                 matlab.ui.control.Label
-    L2Label                   matlab.ui.control.Label
-    L3Label_5                 matlab.ui.control.Label
-    phasedegLabel             matlab.ui.control.Label
-    EGAINGeVLabel             matlab.ui.control.Label
-    EditField_169             matlab.ui.control.EditField
-    EditField_170             matlab.ui.control.EditField
-    EditField_171             matlab.ui.control.EditField
-    EditField_172             matlab.ui.control.EditField
-    EditField_173             matlab.ui.control.EditField
-    EditField_174             matlab.ui.control.EditField
-    EditField_183             matlab.ui.control.EditField
-    EditField_184             matlab.ui.control.EditField
-    EditField_185             matlab.ui.control.EditField
-    CHIRPGeVLabel             matlab.ui.control.Label
-    MagnetsTab_2              matlab.ui.container.Tab
+    FLEMFACETIILEMUIFigure     matlab.ui.Figure
+    FileMenu                   matlab.ui.container.Menu
+    SetPrefMenu                matlab.ui.container.Menu
+    SaveDataMenu               matlab.ui.container.Menu
+    LoadDataMenu               matlab.ui.container.Menu
+    GridLayout                 matlab.ui.container.GridLayout
+    LeftPanel                  matlab.ui.container.Panel
+    ScaleMagnetsButton         matlab.ui.control.Button
+    UndoButton                 matlab.ui.control.Button
+    TabGroup                   matlab.ui.container.TabGroup
+    EREFSTab                   matlab.ui.container.Tab
+    GunEditFieldLabel          matlab.ui.control.Label
+    GunEref                    matlab.ui.control.NumericEditField
+    DL1EditFieldLabel          matlab.ui.control.Label
+    DL1Eref                    matlab.ui.control.NumericEditField
+    BC11EditFieldLabel         matlab.ui.control.Label
+    BC11Eref                   matlab.ui.control.NumericEditField
+    ErefGeVLabel               matlab.ui.control.Label
+    FudgeFactorLabel           matlab.ui.control.Label
+    ExtantLabel                matlab.ui.control.Label
+    RefLabel                   matlab.ui.control.Label
+    L0Label                    matlab.ui.control.Label
+    EditField                  matlab.ui.control.NumericEditField
+    EditField_2                matlab.ui.control.NumericEditField
+    L1Label                    matlab.ui.control.Label
+    EditField_3                matlab.ui.control.NumericEditField
+    EditField_4                matlab.ui.control.NumericEditField
+    L2Label_2                  matlab.ui.control.Label
+    EditField_5                matlab.ui.control.NumericEditField
+    EditField_6                matlab.ui.control.NumericEditField
+    L3Label_2                  matlab.ui.control.Label
+    EditField_7                matlab.ui.control.NumericEditField
+    EditField_8                matlab.ui.control.NumericEditField
+    BC14Label                  matlab.ui.control.Label
+    BC14Eref                   matlab.ui.control.NumericEditField
+    BC20Label                  matlab.ui.control.Label
+    BC20Eref                   matlab.ui.control.NumericEditField
+    UseBendEDEFButton          matlab.ui.control.StateButton
+    WakesTab                   matlab.ui.container.Tab
+    BunchChargenCLabel         matlab.ui.control.Label
+    L0EditFieldLabel           matlab.ui.control.Label
+    L0EditField                matlab.ui.control.NumericEditField
+    L1EditFieldLabel           matlab.ui.control.Label
+    L1EditField                matlab.ui.control.NumericEditField
+    L2EditFieldLabel           matlab.ui.control.Label
+    L2EditField                matlab.ui.control.NumericEditField
+    L3EditFieldLabel           matlab.ui.control.Label
+    L3EditField                matlab.ui.control.NumericEditField
+    EditField_175              matlab.ui.control.NumericEditField
+    EditField_176              matlab.ui.control.NumericEditField
+    EditField_177              matlab.ui.control.NumericEditField
+    EditField_178              matlab.ui.control.NumericEditField
+    rmsBunchLengthumLabel      matlab.ui.control.Label
+    ElossMeVLabel              matlab.ui.control.Label
+    EditField_179              matlab.ui.control.NumericEditField
+    EditField_180              matlab.ui.control.NumericEditField
+    EditField_181              matlab.ui.control.NumericEditField
+    EditField_182              matlab.ui.control.NumericEditField
+    UseMeasuredValuesButton    matlab.ui.control.StateButton
+    RFTab                      matlab.ui.container.Tab
+    L1Label_2                  matlab.ui.control.Label
+    L2Label                    matlab.ui.control.Label
+    L3Label_5                  matlab.ui.control.Label
+    phasedegLabel              matlab.ui.control.Label
+    EGAINGeVLabel              matlab.ui.control.Label
+    EditField_169              matlab.ui.control.EditField
+    EditField_170              matlab.ui.control.EditField
+    EditField_171              matlab.ui.control.EditField
+    EditField_172              matlab.ui.control.EditField
+    EditField_173              matlab.ui.control.EditField
+    EditField_174              matlab.ui.control.EditField
+    EditField_183              matlab.ui.control.EditField
+    EditField_184              matlab.ui.control.EditField
+    EditField_185              matlab.ui.control.EditField
+    CHIRPGeVLabel              matlab.ui.control.Label
+    MagnetsTab_2               matlab.ui.container.Tab
     MagnetReferenceSourceButtonGroup  matlab.ui.container.ButtonGroup
-    UseExtantStrengthsButton  matlab.ui.control.ToggleButton
-    UseModelStrengthsButton   matlab.ui.control.ToggleButton
-    L0CheckBox                matlab.ui.control.CheckBox
-    L1CheckBox                matlab.ui.control.CheckBox
-    L2CheckBox                matlab.ui.control.CheckBox
-    L3CheckBox                matlab.ui.control.CheckBox
-    ReadDataButton            matlab.ui.control.Button
-    S20CheckBox               matlab.ui.control.CheckBox
-    DataValidLampLabel        matlab.ui.control.Label
-    DataValidLamp             matlab.ui.control.Lamp
-    RightPanel                matlab.ui.container.Panel
-    TabGroup2                 matlab.ui.container.TabGroup
-    EProfileTab               matlab.ui.container.Tab
-    UIAxes                    matlab.ui.control.UIAxes
-    MagnetsTab                matlab.ui.container.Tab
-    UIAxes2                   matlab.ui.control.UIAxes
-    Table                     matlab.ui.container.Tab
-    UITable                   matlab.ui.control.Table
-    KlysEgainTab              matlab.ui.container.Tab
-    GridLayout2               matlab.ui.container.GridLayout
-    Label_10                  matlab.ui.control.Label
-    Label_9                   matlab.ui.control.Label
-    Label_8                   matlab.ui.control.Label
-    Label_7                   matlab.ui.control.Label
-    Label_6                   matlab.ui.control.Label
-    Label_5                   matlab.ui.control.Label
-    Label_4                   matlab.ui.control.Label
-    Label_3                   matlab.ui.control.Label
-    Label_2                   matlab.ui.control.Label
-    Label                     matlab.ui.control.Label
-    L0Label_2                 matlab.ui.control.Label
-    L1L2Label                 matlab.ui.control.Label
-    L3Label_3                 matlab.ui.control.Label
-    EditField_9               matlab.ui.control.EditField
-    EditField_10              matlab.ui.control.EditField
-    EditField_11              matlab.ui.control.EditField
-    EditField_12              matlab.ui.control.EditField
-    EditField_13              matlab.ui.control.EditField
-    EditField_14              matlab.ui.control.EditField
-    EditField_15              matlab.ui.control.EditField
-    EditField_16              matlab.ui.control.EditField
-    EditField_17              matlab.ui.control.EditField
-    EditField_18              matlab.ui.control.EditField
-    EditField_19              matlab.ui.control.EditField
-    EditField_20              matlab.ui.control.EditField
-    EditField_21              matlab.ui.control.EditField
-    EditField_22              matlab.ui.control.EditField
-    EditField_23              matlab.ui.control.EditField
-    EditField_24              matlab.ui.control.EditField
-    EditField_25              matlab.ui.control.EditField
-    EditField_26              matlab.ui.control.EditField
-    EditField_27              matlab.ui.control.EditField
-    EditField_28              matlab.ui.control.EditField
-    EditField_29              matlab.ui.control.EditField
-    EditField_30              matlab.ui.control.EditField
-    EditField_31              matlab.ui.control.EditField
-    EditField_32              matlab.ui.control.EditField
-    EditField_33              matlab.ui.control.EditField
-    EditField_34              matlab.ui.control.EditField
-    EditField_35              matlab.ui.control.EditField
-    EditField_36              matlab.ui.control.EditField
-    EditField_37              matlab.ui.control.EditField
-    EditField_38              matlab.ui.control.EditField
-    EditField_39              matlab.ui.control.EditField
-    EditField_40              matlab.ui.control.EditField
-    EditField_41              matlab.ui.control.EditField
-    EditField_42              matlab.ui.control.EditField
-    EditField_43              matlab.ui.control.EditField
-    EditField_44              matlab.ui.control.EditField
-    EditField_45              matlab.ui.control.EditField
-    EditField_46              matlab.ui.control.EditField
-    EditField_47              matlab.ui.control.EditField
-    EditField_48              matlab.ui.control.EditField
-    EditField_49              matlab.ui.control.EditField
-    EditField_50              matlab.ui.control.EditField
-    EditField_51              matlab.ui.control.EditField
-    EditField_52              matlab.ui.control.EditField
-    EditField_53              matlab.ui.control.EditField
-    EditField_54              matlab.ui.control.EditField
-    EditField_55              matlab.ui.control.EditField
-    EditField_56              matlab.ui.control.EditField
-    EditField_57              matlab.ui.control.EditField
-    EditField_58              matlab.ui.control.EditField
-    EditField_59              matlab.ui.control.EditField
-    EditField_60              matlab.ui.control.EditField
-    EditField_61              matlab.ui.control.EditField
-    EditField_62              matlab.ui.control.EditField
-    EditField_63              matlab.ui.control.EditField
-    EditField_64              matlab.ui.control.EditField
-    EditField_65              matlab.ui.control.EditField
-    EditField_66              matlab.ui.control.EditField
-    EditField_67              matlab.ui.control.EditField
-    EditField_68              matlab.ui.control.EditField
-    EditField_69              matlab.ui.control.EditField
-    EditField_70              matlab.ui.control.EditField
-    EditField_71              matlab.ui.control.EditField
-    EditField_72              matlab.ui.control.EditField
-    EditField_73              matlab.ui.control.EditField
-    EditField_74              matlab.ui.control.EditField
-    EditField_75              matlab.ui.control.EditField
-    EditField_76              matlab.ui.control.EditField
-    EditField_77              matlab.ui.control.EditField
-    EditField_78              matlab.ui.control.EditField
-    EditField_79              matlab.ui.control.EditField
-    EditField_80              matlab.ui.control.EditField
-    EditField_81              matlab.ui.control.EditField
-    EditField_82              matlab.ui.control.EditField
-    EditField_83              matlab.ui.control.EditField
-    EditField_84              matlab.ui.control.EditField
-    EditField_85              matlab.ui.control.EditField
-    EditField_86              matlab.ui.control.EditField
-    EditField_87              matlab.ui.control.EditField
-    EditField_88              matlab.ui.control.EditField
-    KlysPhaseTab              matlab.ui.container.Tab
-    GridLayout2_2             matlab.ui.container.GridLayout
-    Label_11                  matlab.ui.control.Label
-    Label_12                  matlab.ui.control.Label
-    Label_13                  matlab.ui.control.Label
-    Label_14                  matlab.ui.control.Label
-    Label_15                  matlab.ui.control.Label
-    Label_16                  matlab.ui.control.Label
-    Label_17                  matlab.ui.control.Label
-    Label_18                  matlab.ui.control.Label
-    Label_19                  matlab.ui.control.Label
-    Label_20                  matlab.ui.control.Label
-    L0Label_3                 matlab.ui.control.Label
-    L1L2Label_2               matlab.ui.control.Label
-    L3Label_4                 matlab.ui.control.Label
-    EditField_89              matlab.ui.control.EditField
-    EditField_90              matlab.ui.control.EditField
-    EditField_91              matlab.ui.control.EditField
-    EditField_92              matlab.ui.control.EditField
-    EditField_93              matlab.ui.control.EditField
-    EditField_94              matlab.ui.control.EditField
-    EditField_95              matlab.ui.control.EditField
-    EditField_96              matlab.ui.control.EditField
-    EditField_97              matlab.ui.control.EditField
-    EditField_98              matlab.ui.control.EditField
-    EditField_99              matlab.ui.control.EditField
-    EditField_100             matlab.ui.control.EditField
-    EditField_101             matlab.ui.control.EditField
-    EditField_102             matlab.ui.control.EditField
-    EditField_103             matlab.ui.control.EditField
-    EditField_104             matlab.ui.control.EditField
-    EditField_105             matlab.ui.control.EditField
-    EditField_106             matlab.ui.control.EditField
-    EditField_107             matlab.ui.control.EditField
-    EditField_108             matlab.ui.control.EditField
-    EditField_109             matlab.ui.control.EditField
-    EditField_110             matlab.ui.control.EditField
-    EditField_111             matlab.ui.control.EditField
-    EditField_112             matlab.ui.control.EditField
-    EditField_113             matlab.ui.control.EditField
-    EditField_114             matlab.ui.control.EditField
-    EditField_115             matlab.ui.control.EditField
-    EditField_116             matlab.ui.control.EditField
-    EditField_117             matlab.ui.control.EditField
-    EditField_118             matlab.ui.control.EditField
-    EditField_119             matlab.ui.control.EditField
-    EditField_120             matlab.ui.control.EditField
-    EditField_121             matlab.ui.control.EditField
-    EditField_122             matlab.ui.control.EditField
-    EditField_123             matlab.ui.control.EditField
-    EditField_124             matlab.ui.control.EditField
-    EditField_125             matlab.ui.control.EditField
-    EditField_126             matlab.ui.control.EditField
-    EditField_127             matlab.ui.control.EditField
-    EditField_128             matlab.ui.control.EditField
-    EditField_129             matlab.ui.control.EditField
-    EditField_130             matlab.ui.control.EditField
-    EditField_131             matlab.ui.control.EditField
-    EditField_132             matlab.ui.control.EditField
-    EditField_133             matlab.ui.control.EditField
-    EditField_134             matlab.ui.control.EditField
-    EditField_135             matlab.ui.control.EditField
-    EditField_136             matlab.ui.control.EditField
-    EditField_137             matlab.ui.control.EditField
-    EditField_138             matlab.ui.control.EditField
-    EditField_139             matlab.ui.control.EditField
-    EditField_140             matlab.ui.control.EditField
-    EditField_141             matlab.ui.control.EditField
-    EditField_142             matlab.ui.control.EditField
-    EditField_143             matlab.ui.control.EditField
-    EditField_144             matlab.ui.control.EditField
-    EditField_145             matlab.ui.control.EditField
-    EditField_146             matlab.ui.control.EditField
-    EditField_147             matlab.ui.control.EditField
-    EditField_148             matlab.ui.control.EditField
-    EditField_149             matlab.ui.control.EditField
-    EditField_150             matlab.ui.control.EditField
-    EditField_151             matlab.ui.control.EditField
-    EditField_152             matlab.ui.control.EditField
-    EditField_153             matlab.ui.control.EditField
-    EditField_154             matlab.ui.control.EditField
-    EditField_155             matlab.ui.control.EditField
-    EditField_156             matlab.ui.control.EditField
-    EditField_157             matlab.ui.control.EditField
-    EditField_158             matlab.ui.control.EditField
-    EditField_159             matlab.ui.control.EditField
-    EditField_160             matlab.ui.control.EditField
-    EditField_161             matlab.ui.control.EditField
-    EditField_162             matlab.ui.control.EditField
-    EditField_163             matlab.ui.control.EditField
-    EditField_164             matlab.ui.control.EditField
-    EditField_165             matlab.ui.control.EditField
-    EditField_166             matlab.ui.control.EditField
-    EditField_167             matlab.ui.control.EditField
-    EditField_168             matlab.ui.control.EditField
-    MessagesTab               matlab.ui.container.Tab
-    TextArea                  matlab.ui.control.TextArea
-    SettingsMenu              matlab.ui.container.Menu
-    ForceallphasestozeroMenu  matlab.ui.container.Menu
-    DisplayMenu               matlab.ui.container.Menu
-    ShowlegendMenu            matlab.ui.container.Menu
-    DetachplottableMenu       matlab.ui.container.Menu
-    HelpMenu                  matlab.ui.container.Menu
+    UseExtantStrengthsButton   matlab.ui.control.ToggleButton
+    UseModelStrengthsButton    matlab.ui.control.ToggleButton
+    L0CheckBox                 matlab.ui.control.CheckBox
+    L1CheckBox                 matlab.ui.control.CheckBox
+    L2CheckBox                 matlab.ui.control.CheckBox
+    L3CheckBox                 matlab.ui.control.CheckBox
+    ReadDataButton             matlab.ui.control.Button
+    S20CheckBox                matlab.ui.control.CheckBox
+    DataValidLampLabel         matlab.ui.control.Label
+    DataValidLamp              matlab.ui.control.Lamp
+    RightPanel                 matlab.ui.container.Panel
+    TabGroup2                  matlab.ui.container.TabGroup
+    EProfileTab                matlab.ui.container.Tab
+    UIAxes                     matlab.ui.control.UIAxes
+    MagnetsTab                 matlab.ui.container.Tab
+    UIAxes2                    matlab.ui.control.UIAxes
+    Table                      matlab.ui.container.Tab
+    UITable                    matlab.ui.control.Table
+    KlysEgainTab               matlab.ui.container.Tab
+    GridLayout2                matlab.ui.container.GridLayout
+    Label_10                   matlab.ui.control.Label
+    Label_9                    matlab.ui.control.Label
+    Label_8                    matlab.ui.control.Label
+    Label_7                    matlab.ui.control.Label
+    Label_6                    matlab.ui.control.Label
+    Label_5                    matlab.ui.control.Label
+    Label_4                    matlab.ui.control.Label
+    Label_3                    matlab.ui.control.Label
+    Label_2                    matlab.ui.control.Label
+    Label                      matlab.ui.control.Label
+    L0Label_2                  matlab.ui.control.Label
+    L1L2Label                  matlab.ui.control.Label
+    L3Label_3                  matlab.ui.control.Label
+    EditField_9                matlab.ui.control.EditField
+    EditField_10               matlab.ui.control.EditField
+    EditField_11               matlab.ui.control.EditField
+    EditField_12               matlab.ui.control.EditField
+    EditField_13               matlab.ui.control.EditField
+    EditField_14               matlab.ui.control.EditField
+    EditField_15               matlab.ui.control.EditField
+    EditField_16               matlab.ui.control.EditField
+    EditField_17               matlab.ui.control.EditField
+    EditField_18               matlab.ui.control.EditField
+    EditField_19               matlab.ui.control.EditField
+    EditField_20               matlab.ui.control.EditField
+    EditField_21               matlab.ui.control.EditField
+    EditField_22               matlab.ui.control.EditField
+    EditField_23               matlab.ui.control.EditField
+    EditField_24               matlab.ui.control.EditField
+    EditField_25               matlab.ui.control.EditField
+    EditField_26               matlab.ui.control.EditField
+    EditField_27               matlab.ui.control.EditField
+    EditField_28               matlab.ui.control.EditField
+    EditField_29               matlab.ui.control.EditField
+    EditField_30               matlab.ui.control.EditField
+    EditField_31               matlab.ui.control.EditField
+    EditField_32               matlab.ui.control.EditField
+    EditField_33               matlab.ui.control.EditField
+    EditField_34               matlab.ui.control.EditField
+    EditField_35               matlab.ui.control.EditField
+    EditField_36               matlab.ui.control.EditField
+    EditField_37               matlab.ui.control.EditField
+    EditField_38               matlab.ui.control.EditField
+    EditField_39               matlab.ui.control.EditField
+    EditField_40               matlab.ui.control.EditField
+    EditField_41               matlab.ui.control.EditField
+    EditField_42               matlab.ui.control.EditField
+    EditField_43               matlab.ui.control.EditField
+    EditField_44               matlab.ui.control.EditField
+    EditField_45               matlab.ui.control.EditField
+    EditField_46               matlab.ui.control.EditField
+    EditField_47               matlab.ui.control.EditField
+    EditField_48               matlab.ui.control.EditField
+    EditField_49               matlab.ui.control.EditField
+    EditField_50               matlab.ui.control.EditField
+    EditField_51               matlab.ui.control.EditField
+    EditField_52               matlab.ui.control.EditField
+    EditField_53               matlab.ui.control.EditField
+    EditField_54               matlab.ui.control.EditField
+    EditField_55               matlab.ui.control.EditField
+    EditField_56               matlab.ui.control.EditField
+    EditField_57               matlab.ui.control.EditField
+    EditField_58               matlab.ui.control.EditField
+    EditField_59               matlab.ui.control.EditField
+    EditField_60               matlab.ui.control.EditField
+    EditField_61               matlab.ui.control.EditField
+    EditField_62               matlab.ui.control.EditField
+    EditField_63               matlab.ui.control.EditField
+    EditField_64               matlab.ui.control.EditField
+    EditField_65               matlab.ui.control.EditField
+    EditField_66               matlab.ui.control.EditField
+    EditField_67               matlab.ui.control.EditField
+    EditField_68               matlab.ui.control.EditField
+    EditField_69               matlab.ui.control.EditField
+    EditField_70               matlab.ui.control.EditField
+    EditField_71               matlab.ui.control.EditField
+    EditField_72               matlab.ui.control.EditField
+    EditField_73               matlab.ui.control.EditField
+    EditField_74               matlab.ui.control.EditField
+    EditField_75               matlab.ui.control.EditField
+    EditField_76               matlab.ui.control.EditField
+    EditField_77               matlab.ui.control.EditField
+    EditField_78               matlab.ui.control.EditField
+    EditField_79               matlab.ui.control.EditField
+    EditField_80               matlab.ui.control.EditField
+    EditField_81               matlab.ui.control.EditField
+    EditField_82               matlab.ui.control.EditField
+    EditField_83               matlab.ui.control.EditField
+    EditField_84               matlab.ui.control.EditField
+    EditField_85               matlab.ui.control.EditField
+    EditField_86               matlab.ui.control.EditField
+    EditField_87               matlab.ui.control.EditField
+    EditField_88               matlab.ui.control.EditField
+    KlysPhaseTab               matlab.ui.container.Tab
+    GridLayout2_2              matlab.ui.container.GridLayout
+    Label_11                   matlab.ui.control.Label
+    Label_12                   matlab.ui.control.Label
+    Label_13                   matlab.ui.control.Label
+    Label_14                   matlab.ui.control.Label
+    Label_15                   matlab.ui.control.Label
+    Label_16                   matlab.ui.control.Label
+    Label_17                   matlab.ui.control.Label
+    Label_18                   matlab.ui.control.Label
+    Label_19                   matlab.ui.control.Label
+    Label_20                   matlab.ui.control.Label
+    L0Label_3                  matlab.ui.control.Label
+    L1L2Label_2                matlab.ui.control.Label
+    L3Label_4                  matlab.ui.control.Label
+    EditField_89               matlab.ui.control.EditField
+    EditField_90               matlab.ui.control.EditField
+    EditField_91               matlab.ui.control.EditField
+    EditField_92               matlab.ui.control.EditField
+    EditField_93               matlab.ui.control.EditField
+    EditField_94               matlab.ui.control.EditField
+    EditField_95               matlab.ui.control.EditField
+    EditField_96               matlab.ui.control.EditField
+    EditField_97               matlab.ui.control.EditField
+    EditField_98               matlab.ui.control.EditField
+    EditField_99               matlab.ui.control.EditField
+    EditField_100              matlab.ui.control.EditField
+    EditField_101              matlab.ui.control.EditField
+    EditField_102              matlab.ui.control.EditField
+    EditField_103              matlab.ui.control.EditField
+    EditField_104              matlab.ui.control.EditField
+    EditField_105              matlab.ui.control.EditField
+    EditField_106              matlab.ui.control.EditField
+    EditField_107              matlab.ui.control.EditField
+    EditField_108              matlab.ui.control.EditField
+    EditField_109              matlab.ui.control.EditField
+    EditField_110              matlab.ui.control.EditField
+    EditField_111              matlab.ui.control.EditField
+    EditField_112              matlab.ui.control.EditField
+    EditField_113              matlab.ui.control.EditField
+    EditField_114              matlab.ui.control.EditField
+    EditField_115              matlab.ui.control.EditField
+    EditField_116              matlab.ui.control.EditField
+    EditField_117              matlab.ui.control.EditField
+    EditField_118              matlab.ui.control.EditField
+    EditField_119              matlab.ui.control.EditField
+    EditField_120              matlab.ui.control.EditField
+    EditField_121              matlab.ui.control.EditField
+    EditField_122              matlab.ui.control.EditField
+    EditField_123              matlab.ui.control.EditField
+    EditField_124              matlab.ui.control.EditField
+    EditField_125              matlab.ui.control.EditField
+    EditField_126              matlab.ui.control.EditField
+    EditField_127              matlab.ui.control.EditField
+    EditField_128              matlab.ui.control.EditField
+    EditField_129              matlab.ui.control.EditField
+    EditField_130              matlab.ui.control.EditField
+    EditField_131              matlab.ui.control.EditField
+    EditField_132              matlab.ui.control.EditField
+    EditField_133              matlab.ui.control.EditField
+    EditField_134              matlab.ui.control.EditField
+    EditField_135              matlab.ui.control.EditField
+    EditField_136              matlab.ui.control.EditField
+    EditField_137              matlab.ui.control.EditField
+    EditField_138              matlab.ui.control.EditField
+    EditField_139              matlab.ui.control.EditField
+    EditField_140              matlab.ui.control.EditField
+    EditField_141              matlab.ui.control.EditField
+    EditField_142              matlab.ui.control.EditField
+    EditField_143              matlab.ui.control.EditField
+    EditField_144              matlab.ui.control.EditField
+    EditField_145              matlab.ui.control.EditField
+    EditField_146              matlab.ui.control.EditField
+    EditField_147              matlab.ui.control.EditField
+    EditField_148              matlab.ui.control.EditField
+    EditField_149              matlab.ui.control.EditField
+    EditField_150              matlab.ui.control.EditField
+    EditField_151              matlab.ui.control.EditField
+    EditField_152              matlab.ui.control.EditField
+    EditField_153              matlab.ui.control.EditField
+    EditField_154              matlab.ui.control.EditField
+    EditField_155              matlab.ui.control.EditField
+    EditField_156              matlab.ui.control.EditField
+    EditField_157              matlab.ui.control.EditField
+    EditField_158              matlab.ui.control.EditField
+    EditField_159              matlab.ui.control.EditField
+    EditField_160              matlab.ui.control.EditField
+    EditField_161              matlab.ui.control.EditField
+    EditField_162              matlab.ui.control.EditField
+    EditField_163              matlab.ui.control.EditField
+    EditField_164              matlab.ui.control.EditField
+    EditField_165              matlab.ui.control.EditField
+    EditField_166              matlab.ui.control.EditField
+    EditField_167              matlab.ui.control.EditField
+    EditField_168              matlab.ui.control.EditField
+    MessagesTab                matlab.ui.container.Tab
+    TextArea                   matlab.ui.control.TextArea
+    SettingsMenu               matlab.ui.container.Menu
+    ForceallphasestozeroMenu   matlab.ui.container.Menu
+    MultiknobMenu              matlab.ui.container.Menu
+    AssignalltableentriesMenu  matlab.ui.container.Menu
+    AssignSelectedrowsMenu     matlab.ui.container.Menu
+    DisplayMenu                matlab.ui.container.Menu
+    ShowlegendMenu             matlab.ui.container.Menu
+    DetachplottableMenu        matlab.ui.container.Menu
+    HelpMenu                   matlab.ui.container.Menu
   end
 
   % Properties that correspond to apps with auto-reflow
@@ -388,6 +391,12 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
     % Selection change function: TabGroup2
     function TabGroup2SelectionChanged(app, event)
+      switch app.TabGroup2.SelectedTab % right side Tab group
+        case app.Table
+          app.AssignSelectedrowsMenu.Enable=true;
+        otherwise
+          app.AssignSelectedrowsMenu.Enable=false;
+      end
       app.aobj.UpdateGUI;
     end
 
@@ -628,12 +637,6 @@ classdef F2_LEM_exported < matlab.apps.AppBase
       end
     end
 
-    % Size changed function: MagnetsTab_2
-    function MagnetsTab_2SizeChanged(app, event)
-      position = app.MagnetsTab_2.Position;
-      
-    end
-
     % Value changed function: UseBendEDEFButton
     function UseBendEDEFButtonValueChanged(app, event)
       app.aobj.UseBendEDEF = app.UseBendEDEFButton.Value;
@@ -695,6 +698,16 @@ classdef F2_LEM_exported < matlab.apps.AppBase
     function FLEMFACETIILEMUIFigureCloseRequest(app, event)
       delete(app)
 %       exit
+    end
+
+    % Menu selected function: AssignalltableentriesMenu
+    function AssignalltableentriesMenuSelected(app, event)
+      app.aobj.LaunchMultiknob("Berr");
+    end
+
+    % Menu selected function: AssignSelectedrowsMenu
+    function AssignSelectedrowsMenuSelected(app, event)
+      app.aobj.LaunchMultiknob("TableSelect");
     end
   end
 
@@ -1190,7 +1203,6 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create MagnetsTab_2
       app.MagnetsTab_2 = uitab(app.TabGroup);
-      app.MagnetsTab_2.SizeChangedFcn = createCallbackFcn(app, @MagnetsTab_2SizeChanged, true);
       app.MagnetsTab_2.Title = 'Magnets';
 
       % Create MagnetReferenceSourceButtonGroup
@@ -2732,6 +2744,21 @@ classdef F2_LEM_exported < matlab.apps.AppBase
       app.ForceallphasestozeroMenu.MenuSelectedFcn = createCallbackFcn(app, @ForceallphasestozeroMenuSelected, true);
       app.ForceallphasestozeroMenu.Checked = 'on';
       app.ForceallphasestozeroMenu.Text = 'Force all phases to zero';
+
+      % Create MultiknobMenu
+      app.MultiknobMenu = uimenu(app.FLEMFACETIILEMUIFigure);
+      app.MultiknobMenu.Text = 'Multiknob';
+
+      % Create AssignalltableentriesMenu
+      app.AssignalltableentriesMenu = uimenu(app.MultiknobMenu);
+      app.AssignalltableentriesMenu.MenuSelectedFcn = createCallbackFcn(app, @AssignalltableentriesMenuSelected, true);
+      app.AssignalltableentriesMenu.Text = 'Assign all table entries...';
+
+      % Create AssignSelectedrowsMenu
+      app.AssignSelectedrowsMenu = uimenu(app.MultiknobMenu);
+      app.AssignSelectedrowsMenu.MenuSelectedFcn = createCallbackFcn(app, @AssignSelectedrowsMenuSelected, true);
+      app.AssignSelectedrowsMenu.Enable = 'off';
+      app.AssignSelectedrowsMenu.Text = 'Assign Selected rows...';
 
       % Create DisplayMenu
       app.DisplayMenu = uimenu(app.FLEMFACETIILEMUIFigure);
