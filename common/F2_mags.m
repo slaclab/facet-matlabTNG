@@ -5,6 +5,7 @@ classdef F2_mags < handle
   end
   properties
     WriteEnable logical = false % Set true to enable writing to control system BDES
+    WriteAction string {mustBeMember(WriteAction,["TRIM","PERTURB"])} = "TRIM"
     RelTolBDES double = 0.001 % Relative Tolerance for BDES errors
     RelTolBACT double = 0.1 % Relative Tolerance for BDES vs BACT errors
     AbsTolBDES double = 0.001 % Absolute Tolerance for BDES errors
@@ -134,7 +135,7 @@ classdef F2_mags < handle
           end
         end
         if obj.WriteEnable
-          control_magnetSet(control_mags_bb',control_vals_bb','action','TRIM');
+          control_magnetSet(control_mags_bb',control_vals_bb','action',char(obj.WriteAction));
         else
           msg=[msg; "control_magnetSet: " + string(control_mags_bb(:)) + " = " + string(control_vals_bb(:)) ] ;
         end
@@ -152,13 +153,13 @@ classdef F2_mags < handle
           end
         end
         if obj.WriteEnable
-          control_magnetSet(control_mags_bb',control_vals_bb','action','TRIM');
+          control_magnetSet(control_mags_bb',control_vals_bb','action',char(obj.WriteAction));
         end
       end
       % Set the single PS magnets if any
       if ~isempty(control_mags)
         if obj.WriteEnable
-          control_magnetSet(control_mags',control_vals','action','TRIM');
+          control_magnetSet(control_mags',control_vals','action',char(obj.WriteAction));
         else
           msg = [msg; "control_magnetSet: " + string(control_mags(:)) + " = " + string(control_vals(:)) ] ;
         end

@@ -145,6 +145,27 @@ classdef F2_LEMApp < handle & matlab.mixin.Copyable & F2_common
       %READWAKEMEASDATA get bunch charge & bunch length data from EPICS
       obj.bq=ones(size(obj.bq)).*caget(obj.pvs.Q_inj);
     end
+    function LaunchMultiknob(obj,cmd)
+      rid=find(obj.GetRegionID);
+      id=obj.Mags.LM.ModelUniqueID;
+      magid=ismember(id,rid);
+      iserr = obj.Mags.BDES_err ; iserr(~magid) = false ;
+      MagNames=obj.Mags.LM.ControlNames;
+      switch cmd
+        case "Berr"
+          sca = obj.Mags.BDES(iserr)-obj.Mags.BDES_cntrl(iserr) ;
+          Multiknob(MagNames(iserr),sca(:)) ;
+        case "TableSelect"
+          if isempty(obj.tableinds)
+            error('No table selection data');
+          end
+          allid = find(magid) ;
+          iserr=false(size(iserr)) ;
+          iserr(allid(unique(obj.tableinds(:,1)))) = true ;
+          sca = obj.Mags.BDES(iserr)-obj.Mags.BDES_cntrl(iserr) ;
+          Multiknob(MagNames(iserr),sca(:)) ;
+      end
+    end
     function DoMagnetScale(obj,cmd)
       %DOMAGNETSCALE Write new scaled magnet strengths to control system
       app=obj.aobj;
