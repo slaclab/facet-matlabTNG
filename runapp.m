@@ -4,7 +4,6 @@ function runapp(appname)
 if ~nargin || ~exist(appname,'dir')
   error('No provided app name or app doesn''t exist');
 end
-
 addpath common
 addpath web
 cd(appname);

@@ -55,7 +55,7 @@ classdef F2_CathodeServicesApp < handle & F2_common
     imflipY logical = false % flip Y axis after rotation ?
     ImageCIntMax single {mustBePositive} = 20 % Abort if any pixel integrates to this times ImageIntensityRange(2)
     dnCMD logical = false % force drawnow command in main watchdog loop
-    lmovadd = 0.6 % Add this move to line move commands [mm]
+    lmovadd = 0.5 % Add this move to line move commands [mm]
   end
   properties(SetAccess=private)
     VCC_mirrcal(1,4) single = [0,0,1,1] % Calibration mirror position to image position on VCC image [xpos,ypos,xscale,yscale] [mm]
@@ -616,7 +616,7 @@ classdef F2_CathodeServicesApp < handle & F2_common
       end
     end
     function Proc_Cleaning(obj,varargin)
-      persistent cstate boundary whan xm ym href vref movecount usenext engage
+      persistent cstate boundary whan xm ym href vref movecount engage
       %PROC_CLEANING Process next logical cleaning step
       %Proc_Cleaning() 
       %Proc_Cleaning("SetBoundary",[x0 y0 w h]) Set cleaning pattern boundaries (Matlab rectangle function pos format with curvature=1)
@@ -624,7 +624,6 @@ classdef F2_CathodeServicesApp < handle & F2_common
       % Initialize state
       if isempty(cstate)
         cstate=0;
-        usenext=false;
         engage=false;
       end
       movecount=0;
@@ -778,10 +777,8 @@ classdef F2_CathodeServicesApp < handle & F2_common
           end
           if obj.CleaningColNum>1 || obj.CleaningLineNum>1
             cstate = 3 ;
-            usenext=false;
           else
             cstate = 1 ;
-            usenext=false;
           end
           obj.State = CathodeServicesState.Cleaning_movingtonewline ; % watchdog method will repeatedly call this function until aborted
           fprintf(obj.STDOUT,'%s: Cleaning: start\n',datetime);
@@ -826,7 +823,6 @@ classdef F2_CathodeServicesApp < handle & F2_common
             obj.movemirror(reqmove,"fast");
           else % done with this move
             cstate = 2 ;
-            usenext=false;
           end
           obj.ClearPIMG; % clear integrated image
           fprintf(obj.STDOUT,'%s: Cleaning: move to start position\n',datetime);
@@ -842,14 +838,13 @@ classdef F2_CathodeServicesApp < handle & F2_common
               vref=ym;
               crdlen=double(obj.CleaningNumCols(obj.CleaningLineNum))*obj.CleaningStepSize*1e3; % length of circle cord at this vertical position
               if xm<(boundary(1)+boundary(3)/2) % move in +ve x direction
-                reqmove = [crdlen+2*adist(1)+obj.lmovadd+1 0] ;
+                reqmove = [crdlen+2*adist(1)+obj.lmovadd 0] ;
               else % move in -ve x direction
-                reqmove = [-crdlen-2*adist(1)-obj.lmovadd-1 0] ;
+                reqmove = [-crdlen-2*adist(1)-obj.lmovadd 0] ;
               end
               fprintf(obj.STDOUT,'%s: Cleaning: line # %d (of %d)\n',datetime,obj.CleaningLineNum,obj.CleaningNumLines);
               if obj.CleaningLineNum == obj.CleaningNumLines
                 cstate = 4 ; % done
-                usenext=false;
                 obj.CleaningColNum = 1 ; obj.CleaningLineNum = 1 ;
                 if obj.CleaningStartPosition ==4 
                   obj.CleaningStartPosition = 1 ;
@@ -860,16 +855,15 @@ classdef F2_CathodeServicesApp < handle & F2_common
               else
                 obj.CleaningLineNum = obj.CleaningLineNum + 1 ;
                 cstate = 3 ; % move to next line when move finished
-                usenext=false;
               end
             case {2,4} % vertical moves
               href=xm;
               vref=[];
               crdlen=double(obj.CleaningNumLines(obj.CleaningColNum))*obj.CleaningStepSize*1e3; % length of circle cord at this horizontal position
               if ym<(boundary(2)+boundary(4)/2) % move in +ve y direction
-                reqmove = [0 crdlen+2*adist(2)+obj.lmovadd+1] ;
+                reqmove = [0 crdlen+2*adist(2)+obj.lmovadd] ;
               else % move in -ve y direction
-                reqmove = [0 -crdlen-2*adist(2)-obj.lmovadd-1] ;
+                reqmove = [0 -crdlen-2*adist(2)-obj.lmovadd] ;
               end
               fprintf(obj.STDOUT,'%s: Cleaning: column # %d (of %d)\n',datetime,obj.CleaningColNum,obj.CleaningNumCols);
               if obj.CleaningColNum == obj.CleaningNumCols
@@ -884,7 +878,6 @@ classdef F2_CathodeServicesApp < handle & F2_common
               else
                 obj.CleaningColNum = obj.CleaningColNum + 1 ;
                 cstate = 3 ; % move to next line when move finished
-                usenext=false;
               end
           end
           obj.movemirror(reqmove);
@@ -901,10 +894,8 @@ classdef F2_CathodeServicesApp < handle & F2_common
               crdlen=double(obj.CleaningNumCols(obj.CleaningLineNum))*obj.CleaningStepSize*1e3; % length of circle cord at this vertical position
               if xm<(boundary(1)+boundary(3)/2) % next move in +ve x direction
                 dest = [boundary(1)+boundary(3)/2-crdlen/2-adist(1) boundary(2)+obj.CleaningStepSize*1e3*double(obj.CleaningLineNum-1)+(obj.CleaningStepSize/2)*1e3] ;
-                destnext = dest; destnext(1)=destnext(1)+obj.adistadd;
               else % next move in -ve x direction
                 dest = [boundary(1)+boundary(3)/2+crdlen/2+adist(1) boundary(2)+obj.CleaningStepSize*1e3*double(obj.CleaningLineNum-1)+(obj.CleaningStepSize/2)*1e3] ;
-                destnext = dest; destnext(1)=destnext(1)-obj.adistadd;
               end
               fprintf(obj.STDOUT,'%s: Cleaning: move to line # %d (of %d)\n',datetime,obj.CleaningLineNum,obj.CleaningNumLines);
             case 3
@@ -912,30 +903,24 @@ classdef F2_CathodeServicesApp < handle & F2_common
               crdlen=double(obj.CleaningNumCols(obj.CleaningLineNum))*obj.CleaningStepSize*1e3; % length of circle cord at this vertical position
               if xm<(boundary(1)+boundary(3)/2) % next move in +ve x direction
                 dest = [boundary(1)+boundary(3)/2-crdlen/2-adist(1) boundary(2)+boundary(4)-obj.CleaningStepSize*1e3*double(obj.CleaningLineNum-1)-(obj.CleaningStepSize/2)*1e3] ;
-                destnext = dest; destnext(1)=destnext(1)+obj.adistadd;
               else % next move in -ve x direction
                 dest = [boundary(1)+boundary(3)/2+crdlen/2+adist(1) boundary(2)+boundary(4)-obj.CleaningStepSize*1e3*double(obj.CleaningLineNum-1)-(obj.CleaningStepSize/2)*1e3] ;
-                destnext = dest; destnext(1)=destnext(1)-obj.adistadd;
               end
               fprintf(obj.STDOUT,'%s: Cleaning: move to line # %d (of %d)\n',datetime,obj.CleaningLineNum,obj.CleaningNumLines);
             case 2 % vertical moves, starting on left
               crdlen=double(obj.CleaningNumLines(obj.CleaningColNum))*obj.CleaningStepSize*1e3; % length of circle cord at this horizontal position
               if ym<(boundary(2)+boundary(4)/2) % next move in +ve y direction
                 dest = [boundary(1)+obj.CleaningStepSize*1e3*double(obj.CleaningColNum-1)+(obj.CleaningStepSize/2)*1e3 boundary(2)+boundary(4)/2-crdlen/2-adist(2)] ;
-                destnext = dest; destnext(2)=destnext(2)+obj.adistadd;
               else % next move in -ve y direction
                 dest = [boundary(1)+obj.CleaningStepSize*1e3*double(obj.CleaningColNum-1)+(obj.CleaningStepSize/2)*1e3 boundary(2)+boundary(4)/2+crdlen/2+adist(2)] ;
-                destnext = dest; destnext(2)=destnext(2)-obj.adistadd;
               end
               fprintf(obj.STDOUT,'%s: Cleaning: move to column # %d (of %d)\n',datetime,obj.CleaningColNum,obj.CleaningNumCols);
             case 4 % vertical moves, starting on right
               crdlen=double(obj.CleaningNumLines(obj.CleaningColNum))*obj.CleaningStepSize*1e3; % length of circle cord at this horizontal position
               if ym<(boundary(2)+boundary(4)/2) % next move in +ve y direction
                 dest = [boundary(1)+boundary(3)-obj.CleaningStepSize*1e3*double(obj.CleaningColNum-1)-(obj.CleaningStepSize/2)*1e3 boundary(2)+boundary(4)/2-crdlen/2-adist(2)] ;
-                destnext = dest; destnext(2)=destnext(2)+obj.adistadd;
               else % next move in -ve y direction
                 dest = [boundary(1)+boundary(3)-obj.CleaningStepSize*1e3*double(obj.CleaningColNum-1)-(obj.CleaningStepSize/2)*1e3 boundary(2)+boundary(4)/2+crdlen/2+adist(2)] ;
-                destnext = dest; destnext(2)=destnext(2)-obj.adistadd;
               end
               fprintf(obj.STDOUT,'%s: Cleaning: move to column # %d (of %d)\n',datetime,obj.CleaningColNum,obj.CleaningNumCols);
           end
@@ -951,11 +936,7 @@ classdef F2_CathodeServicesApp < handle & F2_common
             dest(2)=ylim(2);
           end
           posnow = obj.LaserPosition_img;
-          if usenext
-            reqmove = destnext - posnow ;
-          else
-            reqmove = dest - posnow ;
-          end
+          reqmove = dest - posnow ;
           if obj.CleaningStartPosition==1 || obj.CleaningStartPosition==3 % loose start tol in scan direction
             pres=[obj.motrbktol*3 obj.motrbktol];
           else
@@ -963,17 +944,14 @@ classdef F2_CathodeServicesApp < handle & F2_common
           end
           if any(abs(reqmove)>pres)
             disp(reqmove)
-            obj.movemirror(reqmove);
-%           elseif ~usenext
-%             usenext=true;
+            obj.movemirror(reqmove,"fast");
           else % done with this move
             cstate = 2 ;
-            usenext=false;
           end
         case 4 % Cleaning complete, move back to center
           fprintf('Laser Cleaning Finish: %s\n',datestr(now))
           obj.stopping=true;
-          href=[]; vref=[]; movecount=0; usenext=false;
+          href=[]; vref=[]; movecount=0;
           obj.ShutterCloseOveride = true ;
           CloseShutterAndVerify(obj) ;
           if any( abs( obj.CleaningCenter - obj.LaserPosition_img ) > obj.motrbktol )
@@ -1529,7 +1507,7 @@ classdef F2_CathodeServicesApp < handle & F2_common
   % get/set methods
   methods
     function time = get.bonustime(obj)
-      time = 30 * ( 75 / (obj.CleaningRadius / obj.CleaningStepSize) ) ;
+      time = 180 * ( 75 / (obj.CleaningRadius / obj.CleaningStepSize) ) ;
     end
     function [xpos,ypos] = GetLaserPos(obj)
       if obj.UseMirrPos
@@ -2409,13 +2387,13 @@ classdef F2_CathodeServicesApp < handle & F2_common
       end
       
       imdrawn=false;
+      xax=[obj.pvs.CCD_x1.val{1} obj.pvs.CCD_x2.val{1}].*1e-3; yax=[obj.pvs.CCD_y1.val{1} obj.pvs.CCD_y2.val{1}].*1e-3; % Axis ranges
       if obj.imupdate || isempty(lastimcount) || obj.pvs.CCD_counter.val{1}~=lastimcount
         
         % Update array size to get if required
         [nx,ny,img,imgstats] = obj.getimg ;
         
         % Update image in axes window at imupdate rate if intensity above threshold
-        xax=[obj.pvs.CCD_x1.val{1} obj.pvs.CCD_x2.val{1}].*1e-3; yax=[obj.pvs.CCD_y1.val{1} obj.pvs.CCD_y2.val{1}].*1e-3; % Axis ranges
         xdata = linspace(xax(1),xax(2),nx) ; ydata = linspace(yax(1),yax(2),ny) ;
         if obj.imupdate || isempty(tic_img) || ( ( obj.ImageIntensity > obj.ImageIntensityRange(1) ) && toc(tic_img)>1/obj.imudrate )
           tic_img = tic ;
