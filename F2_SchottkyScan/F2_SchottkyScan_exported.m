@@ -30,12 +30,17 @@ classdef F2_SchottkyScan_exported < matlab.apps.AppBase
         StartButton                 matlab.ui.control.Button
         AbortButton                 matlab.ui.control.Button
         RestoreInitPhaseButton      matlab.ui.control.Button
+        StatusPanel                 matlab.ui.container.Panel
         MessagesTextAreaLabel       matlab.ui.control.Label
         MessagesTextArea            matlab.ui.control.TextArea
+        SettingPhaseLampLabel       matlab.ui.control.Label
+        SettingPhaseLamp            matlab.ui.control.Lamp
+        AcquiringDataLampLabel      matlab.ui.control.Label
+        AcquiringDataLamp           matlab.ui.control.Lamp
         RightPanel                  matlab.ui.container.Panel
         UIAxes                      matlab.ui.control.UIAxes
         PrinttoeLogButton           matlab.ui.control.Button
-        SavingEnabledCheckBox       matlab.ui.control.CheckBox
+        SaveDataCheckBox            matlab.ui.control.CheckBox
         AnalysisPanel               matlab.ui.container.Panel
     end
 
@@ -106,6 +111,17 @@ classdef F2_SchottkyScan_exported < matlab.apps.AppBase
         % Button pushed function: PrinttoeLogButton
         function PrinttoeLogButtonPushed(app, event)
             app.aobj.print2elog();
+        end
+
+        % Button pushed function: AbortButton
+        function AbortButtonPushed(app, event)
+            app.aobj.abort_state = true;
+        end
+
+        % Value changed function: PhaseEndEditField, 
+        % PhaseStartEditField, ShotsperstepEditField, StepsEditField
+        function StepsEditFieldValueChanged(app, event)
+            app.aobj.getScanParams();
         end
 
         % Changes arrangement of the app based on UIFigure width
@@ -235,51 +251,55 @@ classdef F2_SchottkyScan_exported < matlab.apps.AppBase
             % Create ScanPanel
             app.ScanPanel = uipanel(app.LeftPanel);
             app.ScanPanel.Title = 'Scan';
-            app.ScanPanel.Position = [8 126 413 203];
+            app.ScanPanel.Position = [8 213 409 141];
 
             % Create PhaseStartEditFieldLabel
             app.PhaseStartEditFieldLabel = uilabel(app.ScanPanel);
             app.PhaseStartEditFieldLabel.HorizontalAlignment = 'right';
-            app.PhaseStartEditFieldLabel.Position = [6 148 68 22];
+            app.PhaseStartEditFieldLabel.Position = [6 86 68 22];
             app.PhaseStartEditFieldLabel.Text = 'Phase Start';
 
             % Create PhaseStartEditField
             app.PhaseStartEditField = uieditfield(app.ScanPanel, 'numeric');
-            app.PhaseStartEditField.Position = [83 148 50 22];
+            app.PhaseStartEditField.ValueChangedFcn = createCallbackFcn(app, @StepsEditFieldValueChanged, true);
+            app.PhaseStartEditField.Position = [83 86 50 22];
 
             % Create PhaseEndEditFieldLabel
             app.PhaseEndEditFieldLabel = uilabel(app.ScanPanel);
             app.PhaseEndEditFieldLabel.HorizontalAlignment = 'right';
-            app.PhaseEndEditFieldLabel.Position = [146 148 65 22];
+            app.PhaseEndEditFieldLabel.Position = [146 86 65 22];
             app.PhaseEndEditFieldLabel.Text = 'Phase End';
 
             % Create PhaseEndEditField
             app.PhaseEndEditField = uieditfield(app.ScanPanel, 'numeric');
-            app.PhaseEndEditField.Position = [220 148 50 22];
+            app.PhaseEndEditField.ValueChangedFcn = createCallbackFcn(app, @StepsEditFieldValueChanged, true);
+            app.PhaseEndEditField.Position = [220 86 50 22];
             app.PhaseEndEditField.Value = 150;
 
             % Create StepsEditFieldLabel
             app.StepsEditFieldLabel = uilabel(app.ScanPanel);
             app.StepsEditFieldLabel.HorizontalAlignment = 'right';
-            app.StepsEditFieldLabel.Position = [6 115 36 22];
+            app.StepsEditFieldLabel.Position = [6 53 36 22];
             app.StepsEditFieldLabel.Text = 'Steps';
 
             % Create StepsEditField
             app.StepsEditField = uieditfield(app.ScanPanel, 'numeric');
             app.StepsEditField.Limits = [2 100];
-            app.StepsEditField.Position = [98 115 33 22];
+            app.StepsEditField.ValueChangedFcn = createCallbackFcn(app, @StepsEditFieldValueChanged, true);
+            app.StepsEditField.Position = [98 53 33 22];
             app.StepsEditField.Value = 21;
 
             % Create ShotsperstepEditFieldLabel
             app.ShotsperstepEditFieldLabel = uilabel(app.ScanPanel);
             app.ShotsperstepEditFieldLabel.HorizontalAlignment = 'right';
-            app.ShotsperstepEditFieldLabel.Position = [142 115 83 22];
+            app.ShotsperstepEditFieldLabel.Position = [142 53 83 22];
             app.ShotsperstepEditFieldLabel.Text = 'Shots per step';
 
             % Create ShotsperstepEditField
             app.ShotsperstepEditField = uieditfield(app.ScanPanel, 'numeric');
             app.ShotsperstepEditField.Limits = [1 100];
-            app.ShotsperstepEditField.Position = [235 115 33 22];
+            app.ShotsperstepEditField.ValueChangedFcn = createCallbackFcn(app, @StepsEditFieldValueChanged, true);
+            app.ShotsperstepEditField.Position = [235 53 33 22];
             app.ShotsperstepEditField.Value = 10;
 
             % Create StartButton
@@ -288,15 +308,16 @@ classdef F2_SchottkyScan_exported < matlab.apps.AppBase
             app.StartButton.BackgroundColor = [0.7137 0.949 0.7373];
             app.StartButton.FontSize = 16;
             app.StartButton.FontWeight = 'bold';
-            app.StartButton.Position = [10 73 100 28];
+            app.StartButton.Position = [298 86 100 28];
             app.StartButton.Text = 'Start';
 
             % Create AbortButton
             app.AbortButton = uibutton(app.ScanPanel, 'push');
+            app.AbortButton.ButtonPushedFcn = createCallbackFcn(app, @AbortButtonPushed, true);
             app.AbortButton.BackgroundColor = [0.949 0.7373 0.7137];
             app.AbortButton.FontSize = 16;
             app.AbortButton.FontWeight = 'bold';
-            app.AbortButton.Position = [10 33 100 28];
+            app.AbortButton.Position = [298 50 100 28];
             app.AbortButton.Text = 'Abort';
 
             % Create RestoreInitPhaseButton
@@ -304,18 +325,50 @@ classdef F2_SchottkyScan_exported < matlab.apps.AppBase
             app.RestoreInitPhaseButton.BackgroundColor = [0.7608 0.7608 0.7608];
             app.RestoreInitPhaseButton.FontSize = 16;
             app.RestoreInitPhaseButton.FontWeight = 'bold';
-            app.RestoreInitPhaseButton.Position = [251 6 158 28];
+            app.RestoreInitPhaseButton.Position = [240 12 158 28];
             app.RestoreInitPhaseButton.Text = 'Restore Init. Phase';
 
+            % Create StatusPanel
+            app.StatusPanel = uipanel(app.LeftPanel);
+            app.StatusPanel.Title = 'Status';
+            app.StatusPanel.Position = [8 13 409 184];
+
             % Create MessagesTextAreaLabel
-            app.MessagesTextAreaLabel = uilabel(app.LeftPanel);
+            app.MessagesTextAreaLabel = uilabel(app.StatusPanel);
             app.MessagesTextAreaLabel.HorizontalAlignment = 'right';
-            app.MessagesTextAreaLabel.Position = [8 92 61 22];
+            app.MessagesTextAreaLabel.Position = [6 79 61 22];
             app.MessagesTextAreaLabel.Text = 'Messages';
 
             % Create MessagesTextArea
-            app.MessagesTextArea = uitextarea(app.LeftPanel);
-            app.MessagesTextArea.Position = [16 24 393 60];
+            app.MessagesTextArea = uitextarea(app.StatusPanel);
+            app.MessagesTextArea.Position = [14 11 385 60];
+
+            % Create SettingPhaseLampLabel
+            app.SettingPhaseLampLabel = uilabel(app.StatusPanel);
+            app.SettingPhaseLampLabel.HorizontalAlignment = 'right';
+            app.SettingPhaseLampLabel.FontSize = 16;
+            app.SettingPhaseLampLabel.FontWeight = 'bold';
+            app.SettingPhaseLampLabel.Position = [35 121 111 22];
+            app.SettingPhaseLampLabel.Text = 'Setting Phase';
+
+            % Create SettingPhaseLamp
+            app.SettingPhaseLamp = uilamp(app.StatusPanel);
+            app.SettingPhaseLamp.Enable = 'off';
+            app.SettingPhaseLamp.Position = [161 121 20 20];
+            app.SettingPhaseLamp.Color = [1 1 0];
+
+            % Create AcquiringDataLampLabel
+            app.AcquiringDataLampLabel = uilabel(app.StatusPanel);
+            app.AcquiringDataLampLabel.HorizontalAlignment = 'right';
+            app.AcquiringDataLampLabel.FontSize = 16;
+            app.AcquiringDataLampLabel.FontWeight = 'bold';
+            app.AcquiringDataLampLabel.Position = [224 121 119 22];
+            app.AcquiringDataLampLabel.Text = 'Acquiring Data';
+
+            % Create AcquiringDataLamp
+            app.AcquiringDataLamp = uilamp(app.StatusPanel);
+            app.AcquiringDataLamp.Enable = 'off';
+            app.AcquiringDataLamp.Position = [358 121 20 20];
 
             % Create RightPanel
             app.RightPanel = uipanel(app.GridLayout);
@@ -326,7 +379,8 @@ classdef F2_SchottkyScan_exported < matlab.apps.AppBase
             app.UIAxes = uiaxes(app.RightPanel);
             title(app.UIAxes, 'Schottky Scan')
             xlabel(app.UIAxes, 'KLYS LI10 2-1 Phase [deg] ')
-            ylabel(app.UIAxes, 'Charge')
+            ylabel(app.UIAxes, 'Charge [pC]')
+            app.UIAxes.HandleVisibility = 'off';
             app.UIAxes.Position = [7 282 432 314];
 
             % Create PrinttoeLogButton
@@ -336,11 +390,11 @@ classdef F2_SchottkyScan_exported < matlab.apps.AppBase
             app.PrinttoeLogButton.Position = [339 24 100 23];
             app.PrinttoeLogButton.Text = 'Print to eLog';
 
-            % Create SavingEnabledCheckBox
-            app.SavingEnabledCheckBox = uicheckbox(app.RightPanel);
-            app.SavingEnabledCheckBox.Text = 'Saving Enabled';
-            app.SavingEnabledCheckBox.Position = [7 24 109 22];
-            app.SavingEnabledCheckBox.Value = true;
+            % Create SaveDataCheckBox
+            app.SaveDataCheckBox = uicheckbox(app.RightPanel);
+            app.SaveDataCheckBox.Text = 'Save Data';
+            app.SaveDataCheckBox.Position = [7 24 79 22];
+            app.SaveDataCheckBox.Value = true;
 
             % Create AnalysisPanel
             app.AnalysisPanel = uipanel(app.RightPanel);

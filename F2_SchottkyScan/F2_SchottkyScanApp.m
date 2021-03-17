@@ -14,8 +14,10 @@ classdef F2_SchottkyScanApp < handle
         nMsg
         mode
         scan_state
+        abort_state
         machine_state
         dummy_mode
+        count
     end
     properties(Hidden)
         listeners
@@ -76,11 +78,14 @@ classdef F2_SchottkyScanApp < handle
             
             % Set scan state false
             obj.scan_state = false;
+            obj.abort_state = false;
             obj.mode = "IDLE";
             
             % Get initial PDES on PHAS tolerance
             obj.machine_state.init_phas = caget(obj.pvs.KLYS_21_PDES);
             obj.machine_state.phas_tol = apph.PhaseToldegEditField.Value;
+            obj.machine_state.pdes = obj.machine_state.init_phas;
+            if obj.dummy_mode; obj.machine_state.phas_tol = 100; end
             
             % Get state of Faraday cup
             obj.getFcupState();
@@ -91,6 +96,9 @@ classdef F2_SchottkyScanApp < handle
             % Get initial scan params
             obj.getScanParams();
             
+            % Set count to zero
+            obj.count = 0;
+            
             % Start listening for PV updates
             obj.listeners = addlistener(obj,'PVUpdated',@(~,~) obj.loop) ;
             run(obj.pvlist,false,0.1,obj,'PVUpdated');                
@@ -99,7 +107,10 @@ classdef F2_SchottkyScanApp < handle
         
         function loop(obj)
             % function where stuff happens
-            persistent lastMEAS lastPHAS
+            persistent lastMEAS lastPHAS pdes_count
+            
+            
+            
             
             switch obj.mode
                 case "IDLE"
@@ -108,20 +119,36 @@ classdef F2_SchottkyScanApp < handle
                     
                 case "PHASE_SETTING" % Waiting for Klystron (PDES - PHAS) < tol 
                     
-                    if abs(obj.scan_param.step_vals(obj.scan_param.step) - obj.pvs.KLYS_21_PDES.val{1}) > obj.machine_state.phas_tol
+                    if abs(obj.machine_state.pdes - obj.pvs.KLYS_21_PDES.val{1}) > obj.machine_state.phas_tol
                         
-                        obj.addMessage('PDES not set. Aborting.');
-                        obj.scan_state = false;
-                        obj.mode = "IDLE";
+                        if isempty(pdes_count); pdes_count = 1; else; pdes_count = pdes_count+1; end
+                        
+                        if pdes_count > 5
+                        
+                            obj.addMessage('PDES not set. Aborting.');
+                            obj.scan_state = false;
+                            obj.mode = "IDLE";
+                            obj.guihan.SettingPhaseLamp.Enable = false;
+                            pdes_count = 0;
+                        end
                     end
                     
                     if isempty(lastPHAS) || lastPHAS ~= obj.pvs.KLYS_21_PHAS.val{1}
                         
+                        pdes_count = 0;
+                        
+                        if obj.abort_state; obj.abort(); end
+                        
                         lastPHAS = obj.pvs.KLYS_21_PHAS.val{1};
             
                         delta = abs(obj.pvs.KLYS_21_PHAS.val{1} - obj.pvs.KLYS_21_PDES.val{1});
+                        
+%                         if obj.count == 0
+%                             obj.guihan.SettingPhaseLamp.Enable = ~obj.guihan.SettingPhaseLamp.Enable; % flashing lamp
+%                         end
                         if delta < obj.machine_state.phas_tol && obj.scan_state
                             obj.mode = "MEASUREMENT";
+                            obj.guihan.AcquiringDataLamp.Enable = true;
                         end
                         
                     end
@@ -130,12 +157,16 @@ classdef F2_SchottkyScanApp < handle
                     
                     if isempty(lastMEAS) || lastMEAS ~= obj.pvs.(obj.data.devStr).val{1}
                         
+                        if obj.abort_state; obj.abort(); end
+                        
                         lastMEAS = obj.pvs.(obj.data.devStr).val{1};
                         obj.scan_param.shot=obj.scan_param.shot+1;
                     
-                        obj.data.Measurements(obj.scan_param.shot,obj.scan_param.step) = obj.pvs.(obj.data.devStr).val{1};
+                        obj.data.Measurements(obj.scan_param.shot,obj.scan_param.step) = obj.data.conv*obj.pvs.(obj.data.devStr).val{1};
                         
-                        
+%                         if obj.count == 0
+%                             obj.guihan.AcquiringDataLamp.Enable = ~obj.guihan.AcquiringDataLamp.Enable; % flashing lamp
+%                         end
                         
                         if obj.scan_param.shot == obj.scan_param.n_shots
                             
@@ -144,21 +175,57 @@ classdef F2_SchottkyScanApp < handle
                             
                             % End of scan
                             if obj.scan_param.step > obj.scan_param.n_steps
+                                obj.addMessage('End of scan.');
+                                obj.guihan.AcquiringDataLamp.Enable = false;
                                 obj.scan_state = false;
+                                
                                 obj.mode = "ANALYZE_DATA";
                                 obj.analyzeData();
+                                
+                                obj.restoreInitPhas();
+                                return;
                             end
                             
                             obj.mode = "PHASE_SETTING";
+                            obj.guihan.SettingPhaseLamp.Enable = true;
                             obj.scan_param.shot = 0;
-                            if ~obj.dummy_mode; caput(obj.pvs.KLYS_21_PDES,obj.scan_param.step_vals(obj.scan_param.step)); end
-                            
+                            %if ~obj.dummy_mode; caput(obj.pvs.KLYS_21_PDES,obj.scan_param.step_vals(obj.scan_param.step)); end
+                            if ~obj.dummy_mode; obj.setPhas(obj.scan_param.step_vals(obj.scan_param.step)); end
                             obj.updatePlot();
                             
                         end                        
                     end
             end
             
+            obj.count = obj.count + 1;
+            if obj.count > 10
+                obj.count = 0;
+            end
+            
+        end
+        
+        function abort(obj)
+            obj.addMessage('Abork!');
+            obj.scan_state = false;
+            obj.mode = "IDLE";
+            obj.guihan.SettingPhaseLamp.Enable = false;
+            obj.guihan.AcquiringDataLamp.Enable = false;
+            obj.restoreInitPhas();
+        end
+        
+        function setPhas(obj,phas)
+            obj.machine_state.pdes = phas;
+            caput(obj.pvs.KLYS_21_PDES,phas);
+            
+        end
+            
+            
+            
+        
+        function restoreInitPhas(obj)
+            obj.setPhas(obj.machine_state.init_phas);
+            %caput(obj.pvs.KLYS_21_PDES,obj.machine_state.init_phas);
+            obj.addMessage(sprintf('Restoring initial PDES: %0.2f',obj.machine_state.init_phas));
         end
         
         function getFcupState(obj)
@@ -225,6 +292,9 @@ classdef F2_SchottkyScanApp < handle
         
         function startScan(obj)
             
+            obj.abort_state = false;
+            obj.machine_state.init_phas = caget(obj.pvs.KLYS_21_PDES);
+            
             obj.getScanParams();
             
             obj.addMessage(sprintf('Scan start %0.2f, end %0.2f, steps %d.',...
@@ -234,7 +304,9 @@ classdef F2_SchottkyScanApp < handle
             
             obj.scan_state = true;
             obj.mode = "PHASE_SETTING";
-            if ~obj.dummy_mode; caput(obj.pvs.KLYS_21_PDES,obj.scan_param.step_vals(obj.scan_param.step)); end
+            obj.guihan.SettingPhaseLamp.Enable = true;
+            %if ~obj.dummy_mode; caput(obj.pvs.KLYS_21_PDES,obj.scan_param.step_vals(obj.scan_param.step)); end
+            if ~obj.dummy_mode; obj.setPhas(obj.scan_param.step_vals(obj.scan_param.step)); end
             
             obj.addMessage('Starting scan.');
             
@@ -248,7 +320,7 @@ classdef F2_SchottkyScanApp < handle
             obj.data.MeasEOMs = std(obj.data.Measurements)/sqrt(obj.scan_param.n_shots);
             
             obj.finalPlot();
-            obj.saveData();
+            
             
             obj.mode = "IDLE";
             
@@ -257,27 +329,61 @@ classdef F2_SchottkyScanApp < handle
         function updatePlot(obj)
             
             plot(obj.guihan.UIAxes,obj.scan_param.step_vals(1:obj.scan_param.step-1),obj.data.Measurements(:,1:obj.scan_param.step-1),'bo','linewidth',2);
-            xlabel('Gun Phase [deg]','fontsize',14);
-            ylabel('Charge [pC]','fontsize',14);
+            
+            xlabel(obj.guihan.UIAxes,'Gun Phase [deg]','fontsize',14);
+            ylabel(obj.guihan.UIAxes,'Charge [pC]','fontsize',14);
+            title_str = ['Schottky Scan on ' strrep(obj.data.devStr,'_',' ')];
+            if obj.dummy_mode; title_str = [title_str ' (Dummy Mode)']; end
+            title(obj.guihan.UIAxes,title_str,'fontsize',16);
             
         end
         
-        function finalPlot(obj)
+        function finalPlot(obj,fnum)
             
-            errorbar(obj.scan_param.step_vals,obj.data.MeasMeans,obj.data.MeasEOMs,'bo--','linewidth',2);
-            xlabel('Gun Phase [deg]','fontsize',14);
-            ylabel('Charge [pC]','fontsize',14);
+            if nargin < 2
+                errorbar(obj.guihan.UIAxes,obj.scan_param.step_vals,obj.data.MeasMeans,obj.data.MeasEOMs,'bo--','linewidth',2);
+                xlabel(obj.guihan.UIAxes,'Gun Phase [deg]','fontsize',14);
+                ylabel(obj.guihan.UIAxes,'Charge [pC]','fontsize',14);
+                title_str = ['Schottky Scan on ' strrep(obj.data.devStr,'_',' ')];
+                if obj.dummy_mode; title_str = [title_str ' (Dummy Mode)']; end
+                title(obj.guihan.UIAxes,title_str,'fontsize',16);
+            else
+                figure(fnum);
+                errorbar(obj.scan_param.step_vals,obj.data.MeasMeans,obj.data.MeasEOMs,'bo--','linewidth',2);
+                xlabel('Gun Phase [deg]','fontsize',14);
+                ylabel('Charge [pC]','fontsize',14);
+                title_str = ['Schottky Scan on ' strrep(obj.data.devStr,'_',' ')];
+                if obj.dummy_mode; title_str = [title_str ' (Dummy Mode)']; end
+                title(title_str,'fontsize',16);
+            end
+                
             
         end
         
         function saveData(obj)
             
-            obj.addMessage('Saving data.');
+            [~,tsi]=lcaGet('PATT:SYS1:1:PULSEID');
+            ts = lca2matlabTime(tsi);
+            
+            [fileName, pathName] = util_dataSave(obj.data, 'SchottkyScan', char(obj.pvs.KLYS_21_PHAS.pvname), ts);
+            
+            obj.addMessage(['Saving data to ' pathName '/' fileName]);
             
         end
         
         function print2elog(obj)
-            util_printLog(1)
+            
+            
+            
+            obj.addMessage('Printing to eLog.');
+            
+            obj.finalPlot(1);
+            opts.title = 'Schottky Scan';
+            opts.author = 'Matlab';
+            opts.text = '';
+            util_printLog(1,opts);
+            
+            obj.saveData();
         end
         
         function getScanParams(obj)
