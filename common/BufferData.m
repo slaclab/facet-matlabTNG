@@ -23,6 +23,7 @@ classdef BufferData < handle
   end
   properties(Access=private)
     listener
+    is_shutdown logical = false
   end
   properties(Dependent)
     DataFiltered timeseries
@@ -44,6 +45,9 @@ classdef BufferData < handle
       obj.listener = addlistener(obj,'PVUpdated',@(~,~) obj.DataUpdate) ;
     end
     function DataUpdate(obj)
+      if obj.is_shutdown
+        return
+      end
       if ~isempty(obj.DataPV.val{1}) && ~obj.DataPV.isalarm
         obj.AddData(obj.DataPV.val{1},obj.DataPV.time{1});
       end
@@ -55,7 +59,8 @@ classdef BufferData < handle
       obj.DataRaw = addsample(obj.DataRaw,'Data',data,'Time',time) ;
       obj.TrimData();
     end
-    function delete(obj)
+    function shutdown(obj)
+      obj.is_shutdown = true ;
       stop(obj.DataPV);
     end
     function plot(obj)

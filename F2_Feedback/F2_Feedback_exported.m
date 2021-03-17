@@ -1,4 +1,4 @@
-_Feedclassdef F2_Feedback_exported < matlab.apps.AppBase
+classdef F2_Feedback_exported < matlab.apps.AppBase
 
   % Properties that correspond to app components
   properties (Access = public)
@@ -160,6 +160,12 @@ _Feedclassdef F2_Feedback_exported < matlab.apps.AppBase
         app.aobj.GuiEnergyUnits = true ;
       end
     end
+
+    % Close request function: FACETIIFeedbackUIFigure
+    function FACETIIFeedbackUIFigureCloseRequest(app, event)
+      app.aobj.shutdown;
+      delete(app)
+    end
   end
 
   % Component initialization
@@ -172,6 +178,7 @@ _Feedclassdef F2_Feedback_exported < matlab.apps.AppBase
       app.FACETIIFeedbackUIFigure = uifigure('Visible', 'off');
       app.FACETIIFeedbackUIFigure.Position = [100 100 982 673];
       app.FACETIIFeedbackUIFigure.Name = 'FACET-II Feedback';
+      app.FACETIIFeedbackUIFigure.CloseRequestFcn = createCallbackFcn(app, @FACETIIFeedbackUIFigureCloseRequest, true);
 
       % Create StripchartsMenu
       app.StripchartsMenu = uimenu(app.FACETIIFeedbackUIFigure);

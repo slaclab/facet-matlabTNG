@@ -28,6 +28,9 @@ classdef F2_FeedbackApp < handle & F2_common
     pvs
     Disp_DL1 % DL1 dispersion
   end
+  properties(Access=private)
+    is_shutdown logical = false
+  end
   properties(Constant)
     FeedbacksAvailable string = "DL1_E"
     FeedbackEnabledPV string = "SIOC:SYS1:ML00:AO856"
@@ -122,6 +125,9 @@ classdef F2_FeedbackApp < handle & F2_common
       
     end
     function DL1Updated(obj)
+      if obj.is_shutdown
+        return
+      end
       if ~isempty(obj.guihan)
         ifb=1;
         val = obj.SetpointConversion{ifb}(1) + obj.SetpointConversion{ifb}(2) * obj.Feedbacks(1).SetpointVal ;
@@ -164,6 +170,9 @@ classdef F2_FeedbackApp < handle & F2_common
       end
     end
     function statewatcher(obj)
+      if obj.is_shutdown
+        return
+      end
       if ~isempty(obj.guihan)
         gh=["StatusLamp" "StatusLamp_3" "StatusLamp_5" "StatusLamp_6" "StatusLamp_2" "StatusLamp_7" "StatusLamp_4"];
         ght=["NotRunningButton"  "NotRunningButton_2" "NotRunningButton_3" "NotRunningButton_4" "NotRunningButton_5" "NotRunningButton_7" "NotRunningButton_6"];
@@ -188,6 +197,9 @@ classdef F2_FeedbackApp < handle & F2_common
       obj.SetpointConversion{1}(2) = 1000 * ( E_DL1 / obj.Disp_DL1 ) ; % m -> MeV
     end
     function pvwatcher(obj)
+      if obj.is_shutdown
+        return
+      end
       obj.Enabled = obj.pvs.FeedbackEnable.val{1} ;
       if ~isequal(obj.pvs.FeedbackSetpoints.val{1},obj.SetpointOffsets)
         obj.SetpointOffsets = obj.pvs.FeedbackSetpoints.val{1} ;
@@ -200,10 +212,15 @@ classdef F2_FeedbackApp < handle & F2_common
       obj.FeedbackCoefficients{1}(1) = obj.pvs.DL1E_Gain.val{1} ;
       obj.SetpointOffsets(1) = obj.pvs.DL1E_Offset.val{1}*1e-3 ;
     end
-    function delete(obj)
+    function shutdown(obj)
+      obj.is_shutdown = true ;
       obj.Enabled=0; % register stopped status in PV
       FB = obj ;
       save(sprintf('%s/F2_Feedback.mat',obj.confdir),'FB');
+      stop(obj.pvlist);
+      for ifb=1:length(obj.FeedbacksAvailable)
+        obj.Feedbacks(ifb).shutdown;
+      end
     end
   end
   % Set/get and private methods

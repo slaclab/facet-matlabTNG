@@ -37,6 +37,9 @@ classdef fbSISO < handle
     SetpointState uint8 = 3 % 0=OK, 1=limit low, 2=limit high, 3=Error
     QualState uint8 = 3 % 0=OK, 1=limit low, 2=limit high, 3=not connected, 4=Error
   end
+  properties(Access=private)
+    is_shutdown logical = false
+  end
   
   methods
     function obj = fbSISO(controlPV,setpoint,qualPV)
@@ -65,6 +68,14 @@ classdef fbSISO < handle
       % Use quality control PV?
       if exist('qualPV','var') && isa(qualPV,'PV')
         obj.QualVar = qualPV;
+      end
+    end
+    function shutdown(obj)
+      obj.is_shutdown = true ;
+      if isa(obj.SetpointVar,'PV')
+        stop(obj.SetpointVar);
+      else
+        obj.SetpointVar.shutdown;
       end
     end
   end
@@ -136,6 +147,9 @@ classdef fbSISO < handle
   methods(Access=private)
     function ProcDataUpdated(obj)
       persistent lasttic laststate
+      if obj.is_shutdown
+        return
+      end
       obj.Running = true ;
       % Reject new values if LimitRate set and not enough time elapsed since last reading
       if obj.LimitRate>0 && ~isempty(lasttic) && toc(lasttic)<obj.LimitRate
