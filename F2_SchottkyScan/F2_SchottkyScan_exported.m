@@ -46,6 +46,9 @@ classdef F2_SchottkyScan_exported < matlab.apps.AppBase
         PrinttoeLogButton           matlab.ui.control.Button
         SaveDataCheckBox            matlab.ui.control.CheckBox
         AnalysisPanel               matlab.ui.container.Panel
+        PlotVariableButtonGroup     matlab.ui.container.ButtonGroup
+        ChargeButton                matlab.ui.control.RadioButton
+        QEButton                    matlab.ui.control.RadioButton
     end
 
     % Properties that correspond to apps with auto-reflow
@@ -74,9 +77,14 @@ classdef F2_SchottkyScan_exported < matlab.apps.AppBase
             if strcmp(value,'FC1')
                 app.FC1Switch.Enable = true;
                 app.ShotsperstepEditField.Value = 5;
+                app.ChargeButton.Enable = true;
+                app.QEButton.Enable = true;
             else
                 app.FC1Switch.Enable = false;
                 app.ShotsperstepEditField.Value = 10;
+                app.ChargeButton.Value = true;
+                app.ChargeButton.Enable = false;
+                app.QEButton.Enable = false;
             end
             app.aobj.getFcupState();
             app.aobj.measDev();
@@ -434,6 +442,24 @@ classdef F2_SchottkyScan_exported < matlab.apps.AppBase
             app.AnalysisPanel = uipanel(app.RightPanel);
             app.AnalysisPanel.Title = 'Analysis';
             app.AnalysisPanel.Position = [7 76 429 169];
+
+            % Create PlotVariableButtonGroup
+            app.PlotVariableButtonGroup = uibuttongroup(app.AnalysisPanel);
+            app.PlotVariableButtonGroup.Title = 'Plot Variable';
+            app.PlotVariableButtonGroup.Position = [13 68 123 75];
+
+            % Create ChargeButton
+            app.ChargeButton = uiradiobutton(app.PlotVariableButtonGroup);
+            app.ChargeButton.Enable = 'off';
+            app.ChargeButton.Text = 'Charge';
+            app.ChargeButton.Position = [11 29 63 22];
+            app.ChargeButton.Value = true;
+
+            % Create QEButton
+            app.QEButton = uiradiobutton(app.PlotVariableButtonGroup);
+            app.QEButton.Enable = 'off';
+            app.QEButton.Text = 'QE';
+            app.QEButton.Position = [11 7 65 22];
 
             % Show the figure after all components are created
             app.SchottkyAppUIFigure.Visible = 'on';

@@ -55,7 +55,7 @@ classdef F2_SchottkyScanApp < handle
             obj.nMsg = 0;
             obj.addMessage(sprintf('Started instance %d.',inst+1));
             
-            obj.dummy_mode = true;
+            obj.dummy_mode = false;
             if obj.dummy_mode
                 obj.addMessage('Running in dummy mode.');
             end
