@@ -18,6 +18,10 @@ classdef F2_SchottkyScan_exported < matlab.apps.AppBase
         KLYSPDESEditField           matlab.ui.control.NumericEditField
         KLYSPHASEditFieldLabel      matlab.ui.control.Label
         KLYSPHASEditField           matlab.ui.control.NumericEditField
+        InStateLampLabel            matlab.ui.control.Label
+        InStateLamp                 matlab.ui.control.Lamp
+        SETPDESEditFieldLabel       matlab.ui.control.Label
+        SETPDESEditField            matlab.ui.control.NumericEditField
         ScanPanel                   matlab.ui.container.Panel
         PhaseStartEditFieldLabel    matlab.ui.control.Label
         PhaseStartEditField         matlab.ui.control.NumericEditField
@@ -122,6 +126,12 @@ classdef F2_SchottkyScan_exported < matlab.apps.AppBase
         % PhaseStartEditField, ShotsperstepEditField, StepsEditField
         function StepsEditFieldValueChanged(app, event)
             app.aobj.getScanParams();
+        end
+
+        % Value changed function: SETPDESEditField
+        function SETPDESEditFieldValueChanged(app, event)
+            value = app.SETPDESEditField.Value;
+            app.aobj.SetPhas(value);
         end
 
         % Changes arrangement of the app based on UIFigure width
@@ -247,6 +257,30 @@ classdef F2_SchottkyScan_exported < matlab.apps.AppBase
             % Create KLYSPHASEditField
             app.KLYSPHASEditField = uieditfield(app.DevicePanel, 'numeric');
             app.KLYSPHASEditField.Position = [298 133 64 22];
+
+            % Create InStateLampLabel
+            app.InStateLampLabel = uilabel(app.DevicePanel);
+            app.InStateLampLabel.HorizontalAlignment = 'right';
+            app.InStateLampLabel.FontSize = 10;
+            app.InStateLampLabel.Position = [10 36 42 22];
+            app.InStateLampLabel.Text = 'In State';
+
+            % Create InStateLamp
+            app.InStateLamp = uilamp(app.DevicePanel);
+            app.InStateLamp.Position = [59 42 10 10];
+
+            % Create SETPDESEditFieldLabel
+            app.SETPDESEditFieldLabel = uilabel(app.DevicePanel);
+            app.SETPDESEditFieldLabel.HorizontalAlignment = 'right';
+            app.SETPDESEditFieldLabel.FontWeight = 'bold';
+            app.SETPDESEditFieldLabel.Position = [224 98 64 22];
+            app.SETPDESEditFieldLabel.Text = 'SET PDES';
+
+            % Create SETPDESEditField
+            app.SETPDESEditField = uieditfield(app.DevicePanel, 'numeric');
+            app.SETPDESEditField.ValueChangedFcn = createCallbackFcn(app, @SETPDESEditFieldValueChanged, true);
+            app.SETPDESEditField.FontWeight = 'bold';
+            app.SETPDESEditField.Position = [298 98 64 22];
 
             % Create ScanPanel
             app.ScanPanel = uipanel(app.LeftPanel);

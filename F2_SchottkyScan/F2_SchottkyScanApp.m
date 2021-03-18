@@ -17,7 +17,6 @@ classdef F2_SchottkyScanApp < handle
         abort_state
         machine_state
         dummy_mode
-        count
     end
     properties(Hidden)
         listeners
@@ -56,7 +55,7 @@ classdef F2_SchottkyScanApp < handle
             obj.nMsg = 0;
             obj.addMessage(sprintf('Started instance %d.',inst+1));
             
-            obj.dummy_mode = false;
+            obj.dummy_mode = true;
             if obj.dummy_mode
                 obj.addMessage('Running in dummy mode.');
             end
@@ -73,8 +72,9 @@ classdef F2_SchottkyScanApp < handle
             obj.pvs.KLYS_21_PHAS.guihan = apph.KLYSPHASEditField ;
             obj.pvs.KLYS_21_PDES.guihan = apph.KLYSPDESEditField ;
             
+            
             % Set GUI callbacks for FC cup in/out
-            %obj.pvs.fcupInOut.guihan = apph.FC1Switch ;
+            obj.pvs.fcupStats.guihan = apph.InStateLamp ;
             
             % Set scan state false
             obj.scan_state = false;
@@ -95,9 +95,6 @@ classdef F2_SchottkyScanApp < handle
             
             % Get initial scan params
             obj.getScanParams();
-            
-            % Set count to zero
-            obj.count = 0;
             
             % Start listening for PV updates
             obj.listeners = addlistener(obj,'PVUpdated',@(~,~) obj.loop) ;
@@ -163,6 +160,11 @@ classdef F2_SchottkyScanApp < handle
                         obj.scan_param.shot=obj.scan_param.shot+1;
                     
                         obj.data.Measurements(obj.scan_param.shot,obj.scan_param.step) = obj.data.conv*obj.pvs.(obj.data.devStr).val{1};
+                        if obj.data.devInd == 2
+                            obj.data.QEs(obj.scan_param.shot,obj.scan_param.step) = obj.pvs.QE.val{1};
+                        end
+
+
                         
 %                         if obj.count == 0
 %                             obj.guihan.AcquiringDataLamp.Enable = ~obj.guihan.AcquiringDataLamp.Enable; % flashing lamp
@@ -189,7 +191,6 @@ classdef F2_SchottkyScanApp < handle
                             obj.mode = "PHASE_SETTING";
                             obj.guihan.SettingPhaseLamp.Enable = true;
                             obj.scan_param.shot = 0;
-                            %if ~obj.dummy_mode; caput(obj.pvs.KLYS_21_PDES,obj.scan_param.step_vals(obj.scan_param.step)); end
                             if ~obj.dummy_mode; obj.setPhas(obj.scan_param.step_vals(obj.scan_param.step)); end
                             obj.updatePlot();
                             
@@ -197,10 +198,10 @@ classdef F2_SchottkyScanApp < handle
                     end
             end
             
-            obj.count = obj.count + 1;
-            if obj.count > 10
-                obj.count = 0;
-            end
+%             obj.count = obj.count + 1;
+%             if obj.count > 10
+%                 obj.count = 0;
+%             end
             
         end
         
@@ -224,7 +225,6 @@ classdef F2_SchottkyScanApp < handle
         
         function restoreInitPhas(obj)
             obj.setPhas(obj.machine_state.init_phas);
-            %caput(obj.pvs.KLYS_21_PDES,obj.machine_state.init_phas);
             obj.addMessage(sprintf('Restoring initial PDES: %0.2f',obj.machine_state.init_phas));
         end
         
@@ -251,7 +251,6 @@ classdef F2_SchottkyScanApp < handle
                 obj.machine_state.pm_state = 2;
             end
             
-            %obj.guihan.
             
             
         end
@@ -301,11 +300,11 @@ classdef F2_SchottkyScanApp < handle
                 obj.scan_param.start,obj.scan_param.end,obj.scan_param.n_steps));
             
             obj.data.Measurements = zeros(obj.scan_param.n_shots,obj.scan_param.n_steps);
+            obj.data.QEs = zeros(obj.scan_param.n_shots,obj.scan_param.n_steps);
             
             obj.scan_state = true;
             obj.mode = "PHASE_SETTING";
             obj.guihan.SettingPhaseLamp.Enable = true;
-            %if ~obj.dummy_mode; caput(obj.pvs.KLYS_21_PDES,obj.scan_param.step_vals(obj.scan_param.step)); end
             if ~obj.dummy_mode; obj.setPhas(obj.scan_param.step_vals(obj.scan_param.step)); end
             
             obj.addMessage('Starting scan.');
@@ -319,6 +318,10 @@ classdef F2_SchottkyScanApp < handle
             obj.data.MeasSTDs = std(obj.data.Measurements);
             obj.data.MeasEOMs = std(obj.data.Measurements)/sqrt(obj.scan_param.n_shots);
             
+            obj.data.MeasMeans_QE = mean(obj.data.QEs);
+            obj.data.MeasSTDs_QE = std(obj.data.QEs);
+            obj.data.MeasEOMs_QE = std(obj.data.QEs)/sqrt(obj.scan_param.n_shots);
+            
             obj.finalPlot();
             
             
@@ -328,33 +331,79 @@ classdef F2_SchottkyScanApp < handle
         
         function updatePlot(obj)
             
-            plot(obj.guihan.UIAxes,obj.scan_param.step_vals(1:obj.scan_param.step-1),obj.data.Measurements(:,1:obj.scan_param.step-1),'bo','linewidth',2);
+            plotQE = obj.guihan.QEButton.Value;
             
+            if plotQE
+                plot_data = obj.data.QEs(:,1:obj.scan_param.step-1);
+                ylabel_str = 'QE';
+            else
+                plot_data = obj.data.Measurements(:,1:obj.scan_param.step-1);
+                ylabel_str = 'Charge [pC]';
+            end
+
+            
+            plot(obj.guihan.UIAxes,obj.scan_param.step_vals(1:obj.scan_param.step-1),plot_data,'bo','linewidth',2);
+
             xlabel(obj.guihan.UIAxes,'Gun Phase [deg]','fontsize',14);
-            ylabel(obj.guihan.UIAxes,'Charge [pC]','fontsize',14);
-            title_str = ['Schottky Scan on ' strrep(obj.data.devStr,'_',' ')];
+            ylabel(obj.guihan.UIAxes,ylabel_str,'fontsize',14);
+            title_str = ['Schottky Scan on ' strrep(obj.data.devName,'_',' ')];
             if obj.dummy_mode; title_str = [title_str ' (Dummy Mode)']; end
             title(obj.guihan.UIAxes,title_str,'fontsize',16);
-            
+
         end
         
         function finalPlot(obj,fnum)
             
-            if nargin < 2
-                errorbar(obj.guihan.UIAxes,obj.scan_param.step_vals,obj.data.MeasMeans,obj.data.MeasEOMs,'bo--','linewidth',2);
-                xlabel(obj.guihan.UIAxes,'Gun Phase [deg]','fontsize',14);
-                ylabel(obj.guihan.UIAxes,'Charge [pC]','fontsize',14);
-                title_str = ['Schottky Scan on ' strrep(obj.data.devStr,'_',' ')];
-                if obj.dummy_mode; title_str = [title_str ' (Dummy Mode)']; end
-                title(obj.guihan.UIAxes,title_str,'fontsize',16);
+            plotQE = obj.guihan.QEButton.Value;
+            
+            if plotQE
+                plot_means = obj.data.MeasMeans_QE;
+                plot_eoms = obj.data.MeasEOMs_QE;
+                ylabel_str = 'QE';
             else
-                figure(fnum);
-                errorbar(obj.scan_param.step_vals,obj.data.MeasMeans,obj.data.MeasEOMs,'bo--','linewidth',2);
-                xlabel('Gun Phase [deg]','fontsize',14);
-                ylabel('Charge [pC]','fontsize',14);
-                title_str = ['Schottky Scan on ' strrep(obj.data.devStr,'_',' ')];
-                if obj.dummy_mode; title_str = [title_str ' (Dummy Mode)']; end
-                title(title_str,'fontsize',16);
+                plot_means = obj.data.MeasMeans;
+                plot_eoms = obj.data.MeasEOMs;
+                ylabel_str = 'Charge [pC]';
+            end
+
+            if plotQE
+            
+                if nargin < 2
+                    errorbar(obj.guihan.UIAxes,obj.scan_param.step_vals,plot_means,plot_eoms,'bo--','linewidth',2);
+                    xlabel(obj.guihan.UIAxes,'Gun Phase [deg]','fontsize',14);
+                    ylabel(obj.guihan.UIAxes,ylabel_str,'fontsize',14);
+                    title_str = ['Schottky Scan on ' strrep(obj.data.devName,'_',' ')];
+                    if obj.dummy_mode; title_str = [title_str ' (Dummy Mode)']; end
+                    title(obj.guihan.UIAxes,title_str,'fontsize',16);
+                else
+                    figure(fnum);
+                    errorbar(obj.scan_param.step_vals,plot_means,plot_eoms,'bo--','linewidth',2);
+                    xlabel('Gun Phase [deg]','fontsize',14);
+                    ylabel(ylabel_str','fontsize',14);
+                    title_str = ['Schottky Scan on ' strrep(obj.data.devName,'_',' ')];
+                    if obj.dummy_mode; title_str = [title_str ' (Dummy Mode)']; end
+                    title(title_str,'fontsize',16);
+                end
+                
+            else
+                
+                if nargin < 2
+                    errorbar(obj.guihan.UIAxes,obj.scan_param.step_vals,obj.data.MeasMeans,obj.data.MeasEOMs,'bo--','linewidth',2);
+                    xlabel(obj.guihan.UIAxes,'Gun Phase [deg]','fontsize',14);
+                    ylabel(obj.guihan.UIAxes,'Charge [pC]','fontsize',14);
+                    title_str = ['Schottky Scan on ' strrep(obj.data.devName,'_',' ')];
+                    if obj.dummy_mode; title_str = [title_str ' (Dummy Mode)']; end
+                    title(obj.guihan.UIAxes,title_str,'fontsize',16);
+                else
+                    figure(fnum);
+                    errorbar(obj.scan_param.step_vals,obj.data.MeasMeans,obj.data.MeasEOMs,'bo--','linewidth',2);
+                    xlabel('Gun Phase [deg]','fontsize',14);
+                    ylabel('Charge [pC]','fontsize',14);
+                    title_str = ['Schottky Scan on ' strrep(obj.data.devName,'_',' ')];
+                    if obj.dummy_mode; title_str = [title_str ' (Dummy Mode)']; end
+                    title(title_str,'fontsize',16);
+                end
+                
             end
                 
             
@@ -364,8 +413,13 @@ classdef F2_SchottkyScanApp < handle
             
             [~,tsi]=lcaGet('PATT:SYS1:1:PULSEID');
             ts = lca2matlabTime(tsi);
+
+            save_obj.data = obj.data;
+            save_obj.scan_param = obj.scan_param;
+            save_obj.machine_state = obj.machine_state;
+
             
-            [fileName, pathName] = util_dataSave(obj.data, 'SchottkyScan', char(obj.pvs.KLYS_21_PHAS.pvname), ts);
+            [fileName, pathName] = util_dataSave(save_obj, 'SchottkyScan', char(obj.pvs.KLYS_21_PHAS.pvname), ts);
             
             obj.addMessage(['Saving data to ' pathName '/' fileName]);
             
@@ -409,7 +463,9 @@ classdef F2_SchottkyScanApp < handle
             
             % Dev list to match PV List
             gui_ind = strcmp(obj.devlist(:,1),obj.guihan.DiagnosticDropDown.Value);
+            obj.data.devInd = gui_ind;
             obj.data.devStr = obj.devlist{gui_ind,2};
+            obj.data.devName = obj.devlist{gui_ind,1};
             obj.data.devPV = obj.pvs.(obj.data.devStr).pvname;
             obj.data.conv = obj.devconv(gui_ind);
                         
