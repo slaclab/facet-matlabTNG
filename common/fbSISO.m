@@ -14,12 +14,15 @@ classdef fbSISO < handle
     LimitRate uint16 = 0 % Limit data acquisition rate if >0 [seconds]
     ControlLimits(1,2) = [-inf,inf] % Limits for ControlVal
     SetpointLimits(1,2) = [-inf,inf] % Limits to setpoint (saturates on limits)
-    QualLimits(1,2) = [-inf,inf] % Limits to place on quality control PV
+    QualLimits(1,2) = [-inf,inf] % Limits to place on Setpoint quality control PV
     SetpointDeadband(1,2) = [-eps,eps] % Deadband- only update feeddback when move out of this range of setpoint
     SetpointDES = 0 % desired setpoint value
     ControlVar % control variable (PV object)
     SetpointVar % setpoint variable to use (PV or BufferData object)
-    QualVar % Quality control (PV object)
+    QualVar % Setpoint Quality control (PV object)
+    ControlStatusVar cell % Control variable status PV (can be list)
+    ControlStatusGood cell % OK if ControlStatusVar PV evaluates to this (if set) (can be list)
+    Running logical = true % Externally controlled running state
   end
   properties(SetObservable)
     Enable logical = false
@@ -29,10 +32,10 @@ classdef fbSISO < handle
     statestr string % state description
   end
   properties(SetAccess=private)
+    ControlStatusVal cell
     ControlVal % current control variable value (local)
     SetpointVal % current setpoint value (local)
     QualVal % quality control value
-    Running logical = false
     ControlState uint8 = 3 % 0=OK, 1=limit low, 2=limit high, 3=Error
     SetpointState uint8 = 3 % 0=OK, 1=limit low, 2=limit high, 3=Error
     QualState uint8 = 3 % 0=OK, 1=limit low, 2=limit high, 3=not connected, 4=Error
@@ -88,7 +91,7 @@ classdef fbSISO < handle
       obj.Enable=logical(val);
     end
     function state = get.state(obj)
-      if obj.Enable
+      if obj.Enable && obj.Running
         state = uint8(0);
       else
         state = uint8(1);
@@ -150,7 +153,6 @@ classdef fbSISO < handle
       if obj.is_shutdown
         return
       end
-      obj.Running = true ;
       % Reject new values if LimitRate set and not enough time elapsed since last reading
       if obj.LimitRate>0 && ~isempty(lasttic) && toc(lasttic)<obj.LimitRate
         lasttic=tic;
@@ -190,6 +192,7 @@ classdef fbSISO < handle
       end 
       if ~isempty(obj.QualVar)
         obj.QualVal = caget(obj.QualVar) ;
+        obj.QualState=0;
         if isnan(obj.QualVal) || isinf(obj.QualVal)
           obj.QualState=4;
         end
@@ -199,10 +202,19 @@ classdef fbSISO < handle
           obj.QualState = uint8(2) ;
         end
       end
+      if ~isempty(obj.ControlStatusVar)
+        for ic=1:length(obj.ControlStatusVar)
+          obj.ControlStatusVal{ic} = caget(obj.ControlStatusVar{ic}) ;
+          if ~isequal(obj.ControlStatusVal{ic},obj.ControlStatusGood{ic})
+            obj.ControlState = 3 ;
+          end
+        end
+      end
       % Process the feedback if enabled and not in error state
       if obj.state==0
         dc = GetFeedback(obj) ;
         if obj.WriteEnable && abs(dc)>0 && ~isnan(dc) && ~isnan(dc)
+%           fprintf('Feedback val = %g\n',obj.ControlVal+dc);
           caput(obj.ControlVar,obj.ControlVal+dc) ;
         end
       end

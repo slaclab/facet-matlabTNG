@@ -122,6 +122,7 @@ classdef F2_Feedback_exported < matlab.apps.AppBase
     function SwitchValueChanged(app, event)
       value = string(app.Switch.Value) == "On" ;
       caput(app.aobj.pvs.FeedbackEnable,double(bitset(app.aobj.Enabled,1,value)));
+      disp(value)
     end
 
     % Menu selected function: DL1EnergyMenu
