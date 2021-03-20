@@ -266,6 +266,7 @@ classdef F2_Feedback_exported < matlab.apps.AppBase
 
       % Create EditField_2
       app.EditField_2 = uieditfield(app.DL1EnergyFeedbackPanel, 'numeric');
+      app.EditField_2.ValueDisplayFormat = '%11.6g';
       app.EditField_2.Editable = 'off';
       app.EditField_2.HorizontalAlignment = 'center';
       app.EditField_2.FontSize = 10;

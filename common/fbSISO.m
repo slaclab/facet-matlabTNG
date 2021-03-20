@@ -106,8 +106,10 @@ classdef fbSISO < handle
       end
     end
     function txt = get.statestr(obj)
-      if obj.Enable
+      if obj.Enable && obj.Running
         txt = "Enabled" ;
+      elseif ~obj.Running
+        txt = "Not Running" ;
       else
         txt = "Not Enabled" ;
       end
