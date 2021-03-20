@@ -10,6 +10,7 @@ classdef BufferData < handle
     MaxDataRate {mustBeGreaterThan(MaxDataRate,0.001)} = 100 % Max expected data rate [Hz]
     DoFilter logical = false
     FilterType string {mustBeMember(FilterType,["notch" "pass"])} = "pass" % filter can be pass or notch type
+    axhan % axis handle for plotting (use separate figure window if not set)
   end
   properties(SetObservable)
     DataPV PV % Connect to data PV ti acquire data
@@ -68,13 +69,16 @@ classdef BufferData < handle
       ts=obj.DataRaw;
       ts.Name=obj.Name;
       ts.Time=ts.Time-ts.Time(1);
-      if isempty(fh)
+      if ~isempty(obj.axhan)
+        ah=obj.axhan;
+      elseif isempty(fh)
         fh=figure;
         ah=axes;
       end
-      if ~ishandle(fh) && obj.StripPlot % disable strip chart plotting if window deleted
+      if (isempty(ah) || ~ishandle(ah)) && obj.StripPlot % disable strip chart plotting if window deleted
         fh=[]; ah=[];
         obj.StripPlot=false;
+        obj.axhan=[];
         return;
       end
       plot(ts,'Parent',ah);
@@ -142,9 +146,9 @@ classdef BufferData < handle
         error('Incorrect filter interval setting');
       end
       % Check filter settings
-      if obj.BufferTime*60 < ceil(1/val(2))*2
-        error('Buffer length insufficient for filter rate, set to %d mins',ceil(1/obj.FilterInterval(2)/30)) ;
-      end
+%       if obj.BufferTime*60 < ceil(1/val(2))*2
+%         error('Buffer length insufficient for filter rate, set to %d mins',ceil(1/obj.FilterInterval(2)/30)) ;
+%       end
       obj.FilterInterval = val ;
     end
   end

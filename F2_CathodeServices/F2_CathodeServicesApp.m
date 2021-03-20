@@ -55,7 +55,7 @@ classdef F2_CathodeServicesApp < handle & F2_common
     imflipY logical = false % flip Y axis after rotation ?
     ImageCIntMax single {mustBePositive} = 20 % Abort if any pixel integrates to this times ImageIntensityRange(2)
     dnCMD logical = false % force drawnow command in main watchdog loop
-    lmovadd = 0.5 % Add this move to line move commands [mm]
+    lmovadd = 1 % Add this move to line move commands [mm]
   end
   properties(SetAccess=private)
     VCC_mirrcal(1,4) single = [0,0,1,1] % Calibration mirror position to image position on VCC image [xpos,ypos,xscale,yscale] [mm]
@@ -96,6 +96,7 @@ classdef F2_CathodeServicesApp < handle & F2_common
     buflenListener
     bufpos uint16 = 1
     pimg % integrated image filled during cleaning cycle
+    pimg_ref
     qint_f % integrated faraday cup charge data
     qint_t % integrated torroid data
     lint % integrated laser energy data
@@ -946,6 +947,7 @@ classdef F2_CathodeServicesApp < handle & F2_common
             disp(reqmove)
             obj.movemirror(reqmove,"fast");
           else % done with this move
+            obj.pimg_ref = obj.pimg ; % reset reference integrated image
             cstate = 2 ;
           end
         case 4 % Cleaning complete, move back to center
@@ -1291,6 +1293,7 @@ classdef F2_CathodeServicesApp < handle & F2_common
               obj.imupdate=true;
             end
           else % Reset from watchdog autostop
+            obj.pimg_ref = obj.pimg ; % reset reference integrated image
             obj.gui.CLOSESwitch.Enable='on';
             obj.AutoStop("reset");
           end
@@ -1344,6 +1347,7 @@ classdef F2_CathodeServicesApp < handle & F2_common
           return;
       end
       if isequal(reasons,"reset")
+        % If stopped due to integrated signal getting too high, renormalize the signal
         lastreasons="none";
         if ~isempty(prevstate) % put back into state when error issued
           obj.State=prevstate;
@@ -1390,7 +1394,7 @@ classdef F2_CathodeServicesApp < handle & F2_common
     end
     function ClearPIMG(obj)
       %CLEARPIMG Clear persistent image and other integrated data
-      obj.pimg=[];
+      obj.pimg=[]; obj.pimg_ref=[];
       obj.qint_f=[];
       obj.qint_t=[];
       obj.lint=[];
@@ -1968,15 +1972,20 @@ classdef F2_CathodeServicesApp < handle & F2_common
       end
       
       % Check for integrated image pixels rising above threshold value- tests if motors got stuck in some way not detected by other means
+      if ~isempty(obj.pimg_ref) && isequal(size(obj.pimg),size(obj.pimg_ref))
+        pcomp = obj.pimg - obj.pimg_ref ;
+      else
+        pcomp = obj.pimg ;
+      end
       if strcmp(obj.gui.TabGroup.SelectedTab.Title,'Laser Cleaning')
-        if exist('ABORTREQ','file') || ( ~isempty(obj.pimg) && max(obj.pimg(:)) > ( double(obj.CleaningNumPulsesPerStep) * double(obj.ImageCIntMax) * double(obj.ImageIntensityRange(2)) ) )
+        if ~isempty(pcomp) && max(pcomp(:)) > ( double(obj.CleaningNumPulsesPerStep) * double(obj.ImageCIntMax) * double(obj.ImageIntensityRange(2)) )
           [inerr,inerr_tries] = obj.procerr(14,maxerrtries,inerr,inerr_tries) ;
           fprintf('Integrated image count = %g\n',max(obj.pimg(:)))
         else
           inerr_tries(14)=0;
         end
       else
-        if exist('ABORTREQ','file') || ( ~isempty(obj.pimg) && max(obj.pimg(:)) > ( double(obj.MapNumPulsesPerStep) * double(obj.ImageCIntMax) * double(obj.ImageIntensityRange(2)) ) )
+        if ~isempty(pcomp) && max(pcomp(:)) > ( double(obj.MapNumPulsesPerStep) * double(obj.ImageCIntMax) * double(obj.ImageIntensityRange(2)) )
           [inerr,inerr_tries] = obj.procerr(14,maxerrtries,inerr,inerr_tries) ;
         else
           inerr_tries(14)=0;
@@ -2178,7 +2187,7 @@ classdef F2_CathodeServicesApp < handle & F2_common
   end
   methods
     function [nx,ny,img,imgstats] = getimg(obj)
-      persistent bkgcount
+      persistent bkgcount initshutstate
       nx=obj.pvs.CCD_nx.val{1}; ny=obj.pvs.CCD_ny.val{1};
       obj.pvs.CCD_img.nmax=round(nx*ny);
       img=reshape(caget(obj.pvs.CCD_img),nx,ny);
@@ -2203,7 +2212,10 @@ classdef F2_CathodeServicesApp < handle & F2_common
           obj.takebkg = false ;
           obj.bkg = obj.bkg + uint16(img) ;
           obj.bkg = uint16(double(obj.bkg) / double(obj.nbkg)) ;
-          caput(obj.pvs.laser_shutter1,'HIGH');
+          if ~isempty(initshutstate)
+            caput(obj.pvs.laser_shutter1,initshutstate);
+          end
+          initshutstate=[];
         elseif bkgcount==1
           obj.bkg = uint16(img) ;
           bkgcount=2;
@@ -2216,6 +2228,7 @@ classdef F2_CathodeServicesApp < handle & F2_common
           bkgcount=bkgcount+1 ;
         end
       elseif obj.takebkg && string(caget(obj.pvs.laser_shutter1))~="LOW"
+        initshutstate="HIGH" ;
         caput(obj.pvs.laser_shutter1,'LOW');
       end
       
@@ -2447,7 +2460,7 @@ classdef F2_CathodeServicesApp < handle & F2_common
         if xp>xax(2); xp=xax(2); end
         if yp<yax(1);yp=yax(1); end
         if yp>yax(2);yp=yax(2); end
-        plot(axhan,xp,yp,'k.','MarkerSize',20); % centroid calculated by EPICS based on image
+        plot(axhan,xp,yp,'w.','MarkerSize',20); % centroid calculated by EPICS based on image
         if uint8(obj.State)>1 % for all states other than standby, draw cleaning areas
           % Draw circle showing cleaning area and rectangles showing test and energy set patterns
           if isqemapstate(obj.State)

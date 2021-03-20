@@ -368,7 +368,10 @@ classdef F2_LEM_exported < matlab.apps.AppBase
       app.TabGroup2.SelectedTab = app.MessagesTab ;
       app.TabGroup.SelectedTab = app.EREFSTab ;
       
+      drawnow
       
+      % Update data...
+      app.ReadDataButtonPushed();
     end
 
     % Changes arrangement of the app based on UIFigure width
@@ -397,7 +400,9 @@ classdef F2_LEM_exported < matlab.apps.AppBase
         otherwise
           app.AssignSelectedrowsMenu.Enable=false;
       end
-      app.aobj.UpdateGUI;
+      if isequal(app.DataValidLamp.Color,[0 1 0])
+        app.aobj.UpdateGUI;
+      end
     end
 
     % Button pushed function: ReadDataButton
@@ -407,6 +412,7 @@ classdef F2_LEM_exported < matlab.apps.AppBase
       app.TabGroup2.SelectedTab = app.MessagesTab ;
       if isempty(app.aobj) % Instantiate supporting app object
         try
+          app.ReadDataButton.Enable=false;
           if app.ForceallphasestozeroMenu.Checked
             app.aobj = F2_LEMApp(app,true) ;
           else
@@ -414,6 +420,7 @@ classdef F2_LEM_exported < matlab.apps.AppBase
           end
           app.DataValidLamp.Color='green';
         catch ME 
+          app.ReadDataButton.Enable=true;
           app.DataValidLamp.Color='red';
           app.TextArea.Value=["!!!!!!! Error initializing LEM app: " + string(ME.message); string(app.TextArea.Value)];
           throw(ME);
@@ -421,13 +428,16 @@ classdef F2_LEM_exported < matlab.apps.AppBase
       else
         app.aobj.UpdateModel;
       end
+      app.ReadDataButton.Enable=true;
       app.TabGroup2.SelectedTab = inittab ;
       app.aobj.UpdateGUI;
     end
 
     % Selection change function: TabGroup
     function TabGroupSelectionChanged(app, event)
-      app.aobj.UpdateGUI;
+      if isequal(app.DataValidLamp.Color,[0 1 0])
+        app.aobj.UpdateGUI;
+      end
     end
 
     % Value changed function: GunEref
@@ -568,6 +578,7 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
     % Button pushed function: ScaleMagnetsButton
     function ScaleMagnetsButtonPushed(app, event)
+      app.DataValidLamp.Color = 'black' ;
       if app.TabGroup2.SelectedTab==app.Table % provide possibility of selecting magnets to scale
         resp=questdlg('Scale magnets from Eref to current energy profile based on Table selections or All magnets (with BERR flag set)?','Scale Magnets','All','Table Selection','Cancel','Cancel');
         if string(resp)=="All"
@@ -1271,12 +1282,12 @@ classdef F2_LEM_exported < matlab.apps.AppBase
       % Create DataValidLampLabel
       app.DataValidLampLabel = uilabel(app.LeftPanel);
       app.DataValidLampLabel.HorizontalAlignment = 'right';
-      app.DataValidLampLabel.Position = [112 427 69 22];
+      app.DataValidLampLabel.Position = [105 427 69 22];
       app.DataValidLampLabel.Text = 'Data Valid?';
 
       % Create DataValidLamp
       app.DataValidLamp = uilamp(app.LeftPanel);
-      app.DataValidLamp.Position = [196 427 20 20];
+      app.DataValidLamp.Position = [189 426 23 23];
       app.DataValidLamp.Color = [1 0 0];
 
       % Create RightPanel
@@ -2733,7 +2744,6 @@ classdef F2_LEM_exported < matlab.apps.AppBase
       app.TextArea = uitextarea(app.MessagesTab);
       app.TextArea.Editable = 'off';
       app.TextArea.Position = [1 32 807 392];
-      app.TextArea.Value = {'Push ''Read Data'' button to download controls data to start...'};
 
       % Create SettingsMenu
       app.SettingsMenu = uimenu(app.FLEMFACETIILEMUIFigure);

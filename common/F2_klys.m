@@ -150,7 +150,7 @@ classdef F2_klys < handle
               obj.pvlist(end+1) = PV(context,'name',sprintf("swrd_%d_1%d",ikly,isec-1),'pvname',sprintf("LI1%d:KLYS:%d1:SWRD",isec-1,ikly));
             else % EPICS
               obj.pvlist(end+1) = PV(context,'name',sprintf("phase_%d_1%d",ikly,isec-1),'pvname',sprintf("KLYS:LI1%d:%d1:PDES",isec-1,ikly));
-              obj.pvlist(end+1) = PV(context,'name',sprintf("ampl_%d_1%d",ikly,isec-1),'pvname',sprintf("KLYS:LI1%d:%d1:BVLT",isec-1,ikly));
+              obj.pvlist(end+1) = PV(context,'name',sprintf("ampl_%d_1%d",ikly,isec-1),'pvname',sprintf("KLYS:LI1%d:%d1:ADES",isec-1,ikly));
               obj.pvlist(end+1) = PV(context,'name',sprintf("stat_%d_1%d",ikly,isec-1),'pvname',sprintf("KLYS:LI1%d:%d1:FAULTSEQ_STATUS",isec-1,ikly));
               obj.pvlist(end+1) = PV(context,'name',sprintf("swrd_%d_1%d",ikly,isec-1),'pvname',sprintf("KLYS:LI1%d:%d1:BEAMCODE10_TSTAT",isec-1,ikly));
             end

@@ -6,7 +6,7 @@ classdef F2_Feedback_exported < matlab.apps.AppBase
     StripchartsMenu               matlab.ui.container.Menu
     DL1EnergyMenu                 matlab.ui.container.Menu
     SettingsMenu                  matlab.ui.container.Menu
-    DL1EnergyFeedbckGain0006Menu  matlab.ui.container.Menu
+    DL1EnergyFeedbackMenu         matlab.ui.container.Menu
     DisplayEnergyUnitsMenu        matlab.ui.container.Menu
     DL1EnergyFeedbackPanel        matlab.ui.container.Panel
     SetpointEditField             matlab.ui.control.NumericEditField
@@ -129,15 +129,10 @@ classdef F2_Feedback_exported < matlab.apps.AppBase
       !StripTool /u1/facet/tools/StripTool/config/FB_DL1_E.stp &
     end
 
-    % Menu selected function: DL1EnergyFeedbckGain0006Menu
-    function DL1EnergyFeedbckGain0006MenuSelected(app, event)
-      resp=inputdlg('Enter New DL1 Energy Feedback Gain...','DL1 FB E Gain',1,{num2str(app.aobj.FeedbackCoefficients{1}(1))});
-      if ~isempty(resp)
-        gainval = str2double(resp{1}) ;
-        app.aobj.FeedbackCoefficients{1}(1) = gainval ;
-      end
-      caput(app.aobj.pvs.DL1E_Gain,gainval);
-      app.DL1EnergyFeedbckGain0006Menu.Text = "DL1 Energy Feedbck Gain = " + string(gainval) ; 
+    % Menu selected function: DL1EnergyFeedbackMenu
+    function DL1EnergyFeedbackMenuSelected(app, event)
+      app.DL1EnergyFeedbackMenu.Enable = false ;
+      DL1E_Settings(app.aobj);
     end
 
     % Value changed function: SetpointEditField
@@ -159,6 +154,7 @@ classdef F2_Feedback_exported < matlab.apps.AppBase
         app.DisplayEnergyUnitsMenu.Checked = true ;
         app.aobj.GuiEnergyUnits = true ;
       end
+      notify(app.aobj,'PVUpdated');
     end
 
     % Close request function: FACETIIFeedbackUIFigure
@@ -193,15 +189,14 @@ classdef F2_Feedback_exported < matlab.apps.AppBase
       app.SettingsMenu = uimenu(app.FACETIIFeedbackUIFigure);
       app.SettingsMenu.Text = 'Settings';
 
-      % Create DL1EnergyFeedbckGain0006Menu
-      app.DL1EnergyFeedbckGain0006Menu = uimenu(app.SettingsMenu);
-      app.DL1EnergyFeedbckGain0006Menu.MenuSelectedFcn = createCallbackFcn(app, @DL1EnergyFeedbckGain0006MenuSelected, true);
-      app.DL1EnergyFeedbckGain0006Menu.Text = 'DL1 Energy Feedbck Gain = 0.006 ';
+      % Create DL1EnergyFeedbackMenu
+      app.DL1EnergyFeedbackMenu = uimenu(app.SettingsMenu);
+      app.DL1EnergyFeedbackMenu.MenuSelectedFcn = createCallbackFcn(app, @DL1EnergyFeedbackMenuSelected, true);
+      app.DL1EnergyFeedbackMenu.Text = 'DL1 Energy Feedback ...';
 
       % Create DisplayEnergyUnitsMenu
       app.DisplayEnergyUnitsMenu = uimenu(app.SettingsMenu);
       app.DisplayEnergyUnitsMenu.MenuSelectedFcn = createCallbackFcn(app, @DisplayEnergyUnitsMenuSelected, true);
-      app.DisplayEnergyUnitsMenu.Checked = 'on';
       app.DisplayEnergyUnitsMenu.Text = 'Display Energy Units';
 
       % Create DL1EnergyFeedbackPanel
@@ -247,7 +242,7 @@ classdef F2_Feedback_exported < matlab.apps.AppBase
       % Create Gauge_3
       app.Gauge_3 = uigauge(app.DL1EnergyFeedbackPanel, 'linear');
       app.Gauge_3.FontSize = 10;
-      app.Gauge_3.Position = [334 31 126 35];
+      app.Gauge_3.Position = [333 34 125 29];
       app.Gauge_3.Value = 40;
 
       % Create KLYSIN1041ADESLabel

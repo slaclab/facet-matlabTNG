@@ -643,7 +643,7 @@ classdef F2_LEMApp < handle & matlab.mixin.Copyable & F2_common
       % Changes extant fudge factors to match
       egun = caget(obj.pvs.EGUN) ;
       obj.Eref(1) = egun ;
-      if ~exist('eref','var') || isempty(eref) % Use bends to set Eref
+      if obj.UseBendEDEF % Use bends to set Eref
         eref = [caget(obj.pvs.BendDL1) caget(obj.pvs.BendBC11) caget(obj.pvs.BendBC14) caget(obj.pvs.BendBC20)];
       elseif length(eref)~=4
         error('4 element vector of energies (GeV) required');
@@ -658,6 +658,10 @@ classdef F2_LEMApp < handle & matlab.mixin.Copyable & F2_common
       while any(abs(obj.Eref(1+isel)-eref(isel))>0.0001) && itry<15
         for iref=isel
           obj.fact(iref) = obj.fact(iref) * (eref(iref)-obj.Eref(iref)) / (obj.Eref(1+iref)-obj.Eref(iref)) ;
+          if obj.fact(iref)<0 && iref>1 % cannot have a deceleration case
+            obj.fact(iref)=0;
+            eref(iref)=obj.Eref(iref);
+          end
         end
         obj.fact(isinf(obj.fact))=0; % cases with no energy gain in a sector
         obj.UpdateEREFmdl;
