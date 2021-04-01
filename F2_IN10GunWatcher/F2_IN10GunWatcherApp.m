@@ -49,6 +49,7 @@ classdef F2_IN10GunWatcherApp < handle
         PV(context,'name',"FCQ2",'pvname',"SIOC:SYS1:ML00:AO802",'monitor',true,'mode',"rw"); % output faraday cup charge meas
         PV(context,'name',"QE2",'pvname',"SIOC:SYS1:ML00:AO801",'monitor',true,'mode',"rw"); % output faraday cup QE meas
         PV(context,'name',"fcup_stat",'pvname',"FARC:IN10:241:PNEUMATIC",'monitor',true); % Faraday cup in/out status
+        PV(context,'name',"nave",'pvname',"SIOC:SYS1:ML00:AO851",'monitor',true,'mode',"rw"); % Averaging to apply to output PVs
         ] ;
       pset(obj.pvlist,'debug',0) ;
       obj.pvs = struct(obj.pvlist) ;
@@ -67,6 +68,7 @@ classdef F2_IN10GunWatcherApp < handle
         obj.pvs.QE.guihan = apph.EditField_4 ;
         obj.pvs.FCQ2.guihan = apph.EditField_5 ;
         obj.pvs.QE2.guihan = apph.EditField_6 ;
+        obj.pvs.nave.guihan = apph.NAVEEditField ;
       end
       obj.listeners = addlistener(obj,'PVUpdated',@(~,~) obj.wdfun) ;
       run(obj.pvlist,false,0.1,obj,'PVUpdated');
@@ -77,13 +79,23 @@ classdef F2_IN10GunWatcherApp < handle
     end
     function wdfun(obj)
       %WDFUN Watchdog function calls when PV values change
-      persistent lastmax lasthb dofc1 dofc2
+      persistent lastmax lasthb dofc1 dofc2 dstore
       
       % Update limits on GUI gauge if GUI showing
       if ~isempty(obj.guihan) && (isempty(lastmax) || lastmax~=obj.pvs.MaxPwr.val{1})
         lastmax=obj.pvs.MaxPwr.val{1};
         obj.pvs.GunFwdPwr.limits = [0 obj.pvs.MaxPwr.val{1}];
         obj.pvs.GunPowerWFout.limits = [0 obj.pvs.MaxPwr.val{1}];
+      end
+      
+      % Initialize averaging
+      if isempty(dstore)
+        dstore.max=100;
+        dstore.ind=0;
+        dstore.Q_FC1=nan(1,100);
+        dstore.QE_FC1=nan(1,100);
+%         dstore.Q_FC2=nan(1,100);
+%         dstore.QE_FC2=nan(1,100);
       end
       
       % Update heartbeat
@@ -138,9 +150,25 @@ classdef F2_IN10GunWatcherApp < handle
         Vs = integral(@(x) interp1(linspace(0,dt,length(wf_fc)),wf_fc,x,'linear'),0,t1);
         Q = 1e9 * abs(Vs)/50 ; % Charge in nC
         QE = ( Q / obj.pvs.LaserEnergy.val{1} ) * 0.004661010785703 ;
-        if string(obj.pvs.fcup_stat.val{1})=="IN" && isempty(obj.guihan)
-          caput(obj.pvs.FCQ,Q);
-          caput(obj.pvs.QE,QE);
+        if isempty(obj.guihan) && string(obj.pvs.fcup_stat.val{1})=="IN"
+          if dstore.ind<dstore.max
+            dstore.ind=dstore.ind+1;
+          else
+            dstore.Q_FC1 = circshift(dstore.Q_FC1,-1) ;
+            dstore.QE_FC1 = circshift(dstore.QE_FC1,-1) ;
+          end
+          dstore.Q_FC1(dstore.ind) = Q ;
+          dstore.QE_FC1(dstore.ind) = QE ;
+          nave = round(obj.pvs.nave.val{1}) ;
+          if dstore.ind<nave
+            Qave = mean(dstore.Q_FC1(1:dstore.ind)) ;
+            QEave = mean(dstore.QE_FC1(1:dstore.ind));
+          else
+            Qave = mean(dstore.Q_FC1(dstore.ind-nave+1:dstore.ind)) ;
+            QEave = mean(dstore.QE_FC1(1:dstore.ind-nave+1:dstore.ind));
+          end
+          caput(obj.pvs.FCQ,Qave);
+          caput(obj.pvs.QE,QEave);
         end
         dofc1=true;
       catch ME
