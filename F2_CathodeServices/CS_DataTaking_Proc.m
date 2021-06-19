@@ -38,6 +38,9 @@ plot(t(cut),vac(cut),'.')
 xlabel('Time [min]'); ylabel('Gun Vacuum[nTorr]');
 legend({sprintf('Gun Vacuum = %.3f +/- %.3f range= %.3f \\muJ/mm^2',mean(vac,'omitnan'),std(vac,'omitnan'),range(vac))})
 grid
-
-% wt=vac(cut);
-% [~,XV,YV,binX]=histcounts2(xv(cut),yv(cut));
+% 
+figure
+scatter3(xv(cut),yv(cut),vac(cut),[],vac(cut),'filled');
+%
+figure
+scatter3(xv(cut),yv(cut),fluence,[],fluence,'filled');

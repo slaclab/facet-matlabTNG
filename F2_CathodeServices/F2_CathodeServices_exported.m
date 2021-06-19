@@ -62,6 +62,7 @@ classdef F2_CathodeServices_exported < matlab.apps.AppBase
     ResetButton                     matlab.ui.control.Button
     StartPositionKnob               matlab.ui.control.DiscreteKnob
     CleaningStartPositionLabel      matlab.ui.control.Label
+    LudicrousmodeCheckBox           matlab.ui.control.CheckBox
     QEMapTab                        matlab.ui.container.Tab
     DefineMapAreaButton             matlab.ui.control.Button
     ExecuteQEMapProgramButton       matlab.ui.control.Button
@@ -773,6 +774,15 @@ classdef F2_CathodeServices_exported < matlab.apps.AppBase
     function StripToolMenuSelected(app, event)
       !StripTool /u1/facet/tools/StripTool/config/jsy_laser_clean_monitor.stp &
     end
+
+    % Value changed function: LudicrousmodeCheckBox
+    function LudicrousmodeCheckBoxValueChanged(app, event)
+      value = app.LudicrousmodeCheckBox.Value;
+      app.aobj.cmode = value ;
+      if value
+        disp([datestr(now) ' : Ludicrous mode enabled']);
+      end
+    end
   end
 
   % Component initialization
@@ -1106,6 +1116,12 @@ classdef F2_CathodeServices_exported < matlab.apps.AppBase
       app.CleaningStartPositionLabel = uilabel(app.LaserCleaningTab);
       app.CleaningStartPositionLabel.Position = [371 107 128 22];
       app.CleaningStartPositionLabel.Text = 'Cleaning Start Position';
+
+      % Create LudicrousmodeCheckBox
+      app.LudicrousmodeCheckBox = uicheckbox(app.LaserCleaningTab);
+      app.LudicrousmodeCheckBox.ValueChangedFcn = createCallbackFcn(app, @LudicrousmodeCheckBoxValueChanged, true);
+      app.LudicrousmodeCheckBox.Text = 'Ludicrous mode';
+      app.LudicrousmodeCheckBox.Position = [211 114 110 22];
 
       % Create QEMapTab
       app.QEMapTab = uitab(app.TabGroup);
