@@ -3,6 +3,10 @@ classdef F2_klys < handle
   events
     PVUpdated
   end
+  properties
+    KlysPhaseOverride(8,10) single = nan(8,10) % override live values for ~nan values
+    KlysAmplOverride(8,10) single = nan(8,10) % override live values for ~nan values
+  end
   properties(SetObservable)
     KlysForceZeroPhase logical = false
     KlysUseSector(1,4) logical = true(1,4) % L0, L1, L2, L3 (local setting to this object)
@@ -34,7 +38,7 @@ classdef F2_klys < handle
     SectorPhase(1,4) % mean klystron phase in L0,L1,L2,L3
   end
   methods
-    function obj = F2_klys(LM,context,klyszerophase,UpdateRate)
+    function obj = F2_klys(LM,context,AmplOverride,PhaseOverride,klyszerophase,UpdateRate)
       %F2_KLYS Mapping between model and control system klystron data
       %F2_klys(LM [,context,UpdateRate])
       %  LM : LucretiaModel object (local copy made)
@@ -50,6 +54,12 @@ classdef F2_klys < handle
       end
       if exist('UpdateRate','var') && ~isempty(UpdateRate)
         obj.UpdateRate=UpdateRate;
+      end
+      if exist('PhaseOverride','var') && ~isempty(PhaseOverride)
+        obj.KlysPhaseOverride = PhaseOverride ;
+      end
+      if exist('AmplOverride','var') && ~isempty(AmplOverride)
+        obj.KlysAmplOverride = AmplOverride ;
       end
       aidainit;
       % Klystron ID 1:10 = LI10:LI19
@@ -193,7 +203,11 @@ classdef F2_klys < handle
           if ~obj.KlysUseSector(linacsector) || ~obj.KlysInUse(ikly,isec)
             continue
           end
-          obj.KlysAmpl(ikly,isec) = obj.pvs.(sprintf("ampl_%d_1%d",ikly,isec-1)).val{1} ;
+          if ~isnan(obj.KlysAmplOverride(ikly,isec))
+            obj.KlysAmpl(ikly,isec) = obj.KlysAmplOverride(ikly,isec) ;
+          else
+            obj.KlysAmpl(ikly,isec) = obj.pvs.(sprintf("ampl_%d_1%d",ikly,isec-1)).val{1} ;
+          end
         end
       end
     end
@@ -207,6 +221,8 @@ classdef F2_klys < handle
           end
           if obj.KlysForceZeroPhase
             obj.KlysPhase(ikly,isec) = 0 ;
+          elseif ~isnan(obj.KlysPhaseOverride(ikly,isec))
+            obj.KlysPhase(ikly,isec) = obj.KlysPhaseOverride(ikly,isec) ;
           else
             obj.KlysPhase(ikly,isec) = obj.pvs.(sprintf("phase_%d_1%d",ikly,isec-1)).val{1} ;
             if isec>1

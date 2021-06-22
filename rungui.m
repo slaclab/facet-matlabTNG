@@ -9,6 +9,7 @@ addpath common
 addpath web
 cd(appname);
 appobj=eval([appname '_exported']);
+% appobj=eval(appname);
 % Kill splash screen loader message if still there
 if exist('splashid','var') && ~isempty(splashid)
   [stat,~]=system(sprintf('ps %s',splashid));
