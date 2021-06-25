@@ -284,7 +284,7 @@ classdef DL1E_Settings_exported < matlab.apps.AppBase
       app.UIAxes = uiaxes(app.RightPanel);
       title(app.UIAxes, 'BPM10731:X')
       xlabel(app.UIAxes, 'time [s]')
-      ylabel(app.UIAxes, 'X [m]')
+      ylabel(app.UIAxes, 'X [mm]')
       app.UIAxes.Position = [4 6 588 470];
 
       % Show the figure after all components are created

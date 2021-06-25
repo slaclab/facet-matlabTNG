@@ -22,6 +22,8 @@ classdef F2_CathodeServicesApp < handle & F2_common
     imagemap string = "jet" % colormap to use for image
   end
   properties
+    ctime = 30 % motor cooldown time [min]
+    cmode logical = false % continuous mode for cleaning
     showimgstats logical = false % display Gaussian fit and stats on image
     takebkg logical = false % set true to take new backround image
     usebkg logical = false % Use stored image background and subtract from live stream
@@ -53,7 +55,7 @@ classdef F2_CathodeServicesApp < handle & F2_common
     imrot uint8 {mustBeMember(imrot,[0,1,2,3])} = 0 % Apply image rotation (in multiples of 90 degrees)
     imflipX logical = false % flip X axis after rotation ?
     imflipY logical = false % flip Y axis after rotation ?
-    ImageCIntMax single {mustBePositive} = 20 % Abort if any pixel integrates to this times ImageIntensityRange(2)
+    ImageCIntMax single {mustBePositive} = 50 % Abort if any pixel integrates to this times ImageIntensityRange(2)
     dnCMD logical = false % force drawnow command in main watchdog loop
     lmovadd = 1 % Add this move to line move commands [mm]
   end
@@ -107,6 +109,7 @@ classdef F2_CathodeServicesApp < handle & F2_common
     wd_time_ind uint8 = 1
     wd_time_ind_noncleaning uint8 = 1
     CleaningSummaryData double
+    cooldown ;
   end
   properties(Dependent,Hidden)
     wd_freq
@@ -133,6 +136,7 @@ classdef F2_CathodeServicesApp < handle & F2_common
     function obj=F2_CathodeServicesApp(debuglevel,guihan)
 %       warning('off','MATLAB:nearlySingularMatrix');
       warning off
+      
       % CS = F2_CathodeServices(debuglevel)
       if ~exist('debuglevel','var')
         error('Must provide debug level');
@@ -853,6 +857,13 @@ classdef F2_CathodeServicesApp < handle & F2_common
                   obj.CleaningStartPosition = obj.CleaningStartPosition + 1 ;
                 end
                 obj.gui.StartPositionKnob.Value = num2str(obj.CleaningStartPosition) ;
+                % If in continuous mode, then reset to state 3 and clear integrated image
+                if obj.cmode
+                  obj.ClearPIMG;
+                  obj.imupdate=true;
+                  cstate = 3 ;
+                  obj.cooldown=clock;
+                end
               else
                 obj.CleaningLineNum = obj.CleaningLineNum + 1 ;
                 cstate = 3 ; % move to next line when move finished
@@ -876,6 +887,13 @@ classdef F2_CathodeServicesApp < handle & F2_common
                   obj.CleaningStartPosition = obj.CleaningStartPosition + 1 ;
                 end
                 obj.gui.StartPositionKnob.Value = num2str(obj.CleaningStartPosition) ;
+                % If in continuous mode, then reset to state 3 and clear integrated image
+                if obj.cmode
+                  obj.ClearPIMG;
+                  obj.imupdate=true;
+                  cstate = 3 ;
+                  obj.cooldown=clock;
+                end
               else
                 obj.CleaningColNum = obj.CleaningColNum + 1 ;
                 cstate = 3 ; % move to next line when move finished
@@ -1264,6 +1282,7 @@ classdef F2_CathodeServicesApp < handle & F2_common
         case 'STOP'
           obj.ShutterCloseOveride = true ;
           obj.CloseShutterAndVerify ;
+          obj.cooldown=false;
           caput(obj.pvs.lsr_stopx,1); caput(obj.pvs.lsr_stopy,1);
           if obj.State == CathodeServicesState(6)
             obj.StopResetGUI('RESET');
@@ -2166,6 +2185,18 @@ classdef F2_CathodeServicesApp < handle & F2_common
         end
       end
       
+      % Process cooldown wait
+      if ~isempty(obj.cooldown)
+        if etime(clock,obj.cooldown) < obj.ctime*60
+          obj.gui.CleaningStatusEditField.Value=sprintf('Motor cooldown: %.1f / %.1f min ...',etime(clock,obj.cooldown)/60, obj.ctime) ;
+          obj.gui.CleaningStatusEditField.BackgroundColor='white';
+          drawnow
+          return
+        else
+          obj.cooldown=[];
+        end
+      end
+      
       % Process automatic pattern steps
       switch obj.State
         case {CathodeServicesState.Cleaning_testpattern,CathodeServicesState.Cleaning_setenergypattern}
@@ -2256,8 +2287,10 @@ classdef F2_CathodeServicesApp < handle & F2_common
       % Replace spot size and centroid with local calculation - EPICS value
       xax=[obj.pvs.CCD_x1.val{1} obj.pvs.CCD_x2.val{1}].*1e-3; yax=[obj.pvs.CCD_y1.val{1} obj.pvs.CCD_y2.val{1}].*1e-3;
       xvals = linspace(xax(1),xax(2),nx) ; yvals = linspace(yax(1),yax(2),ny) ;
-      %if all(obj.LaserSpotSize<1000) % only use local fitting for small spots
-        xcut=true(size(xvals)); ycut=true(size(yvals));
+      ran=0.2; xran=[obj.LaserPosition_img(1)-ran obj.LaserPosition_img(1)+ran]; yran=[obj.LaserPosition_img(2)-ran obj.LaserPosition_img(2)+ran];
+      xran(1)=max([xran(1) xax(1)]); xran(2)=min([xran(2) xax(2)]); yran(1)=max([yran(1) yax(1)]); yran(2)=min([yran(2) yax(2)]);
+      if obj.State ~= CathodeServicesState.Standby_opslasermode % only use local fitting for small spots
+        xcut=xvals>xran(1) & xvals<xran(2); ycut=yvals>yran(1) & yvals<yran(2);
         xproj=sum(img,1); yproj=sum(img,2);
         try
           [~,q]=gauss_fit(xvals(xcut),xproj(xcut)); obj.LaserSpotSize(1)=obj.std2fwhm*abs(q(4))*1000; obj.LaserPosition_img(1)=q(3); imgstats.x=q;
@@ -2266,7 +2299,7 @@ classdef F2_CathodeServicesApp < handle & F2_common
         catch
           fprintf('Gauss fit fail, using EPICS spot size values\n');
         end
-      %end
+      end
       
       % Calculate Laser Fluence
       obj.LaserFluence = 1e6 * obj.LaserEnergy / prod(obj.LaserSpotSize) ;

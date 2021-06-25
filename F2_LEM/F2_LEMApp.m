@@ -101,10 +101,16 @@ classdef F2_LEMApp < handle & matlab.mixin.Copyable & F2_common
       obj.wakedat.Eloss = ld.Eloss ; % energy loss / m / nC (GeV)
       
       % Instantiate klystron & magnet objects
-      if exist('KlysZeroPhase','var') && ~isempty(KlysZeroPhase)
-        obj.Klys = F2_klys(obj.LM,context,KlysZeroPhase) ;
+      fname = obj.confdir+"/F2_LEM/overrides.mat" ; % Load previously set Override values
+      if exist(fname,'file')
+        load(fname,'PhaseOverride','AmplOverride');
       else
-        obj.Klys = F2_klys(obj.LM,context) ; % Constructs with update of live klystron data
+        PhaseOverride=[]; AmplOverride=[];
+      end
+      if exist('KlysZeroPhase','var') && ~isempty(KlysZeroPhase)
+        obj.Klys = F2_klys(obj.LM,context,AmplOverride,PhaseOverride,KlysZeroPhase) ;
+      else
+        obj.Klys = F2_klys(obj.LM,context,AmplOverride,PhaseOverride) ; % Constructs with update of live klystron data
       end
       obj.LM.SetKlystronData(obj.Klys,obj.fact) ; % Update model with Klystron values
       obj.Mags = F2_mags(obj.LM) ;
@@ -534,7 +540,13 @@ classdef F2_LEMApp < handle & matlab.mixin.Copyable & F2_common
               else
                 egain="---";
               end
+              if isnan(obj.Klys.KlysAmplOverride(ikly,isec))
+                col='black';
+              else
+                col='red';
+              end
               app.(sprintf('EditField_%d',(ikly-1)*10+isec+8)).Value=egain;
+              app.(sprintf('EditField_%d',(ikly-1)*10+isec+8)).FontColor=col;
             end
           end
         case app.KlysPhaseTab
@@ -545,6 +557,12 @@ classdef F2_LEMApp < handle & matlab.mixin.Copyable & F2_common
               else
                 pha="---";
               end
+              if isnan(obj.Klys.KlysPhaseOverride(ikly,isec))
+                col='black';
+              else
+                col='red';
+              end
+              app.(sprintf('EditField_%d',(ikly-1)*10+isec+88)).FontColor=col;
               app.(sprintf('EditField_%d',(ikly-1)*10+isec+88)).Value=pha;
             end
           end
@@ -685,6 +703,18 @@ classdef F2_LEMApp < handle & matlab.mixin.Copyable & F2_common
       if ~isempty(obj.aobj)
         obj.UpdateGUI;
       end
+    end
+    function SaveOverrides(obj)
+      fname = obj.confdir+"/F2_LEM/overrides.mat" ;
+      PhaseOverride = obj.Klys.KlysPhaseOverride ;
+      AmplOverride = obj.Klys.KlysAmplOverride ;
+      save(fname,'PhaseOverride','AmplOverride');
+    end
+    function LoadOverrides(obj)
+      fname = obj.confdir+"/F2_LEM/overrides.mat" ;
+      load(fname,'PhaseOverride','AmplOverride');
+      obj.Klys.KlysPhaseOverride = PhaseOverride ;
+      obj.Klys.KlysAmplOverride = AmplOverride ;
     end
     function SaveModel(obj,fname,dataonly)
       global BEAMLINE PS KLYSTRON
@@ -838,10 +868,11 @@ classdef F2_LEMApp < handle & matlab.mixin.Copyable & F2_common
     function set.UseBendEDEF(obj,val)
       
       val=logical(val);
+      obj.UseBendEDEF=val;
       if val
         obj.SetLinacEref();
       end
-      obj.UseBendEDEF=val;
+      
     end
   end
 end

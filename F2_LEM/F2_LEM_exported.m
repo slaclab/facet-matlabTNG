@@ -695,6 +695,10 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
     % Menu selected function: ForceallphasestozeroMenu
     function ForceallphasestozeroMenuSelected(app, event)
+      app.DataValidLamp.Color='black';
+      inittab = app.TabGroup2.SelectedTab ;
+      app.TabGroup2.SelectedTab = app.MessagesTab ;
+      app.ReadDataButton.Enable=false;
       if app.ForceallphasestozeroMenu.Checked
         app.ForceallphasestozeroMenu.Checked=false;
       else
@@ -703,6 +707,10 @@ classdef F2_LEM_exported < matlab.apps.AppBase
       if ~isempty(app.aobj)
         app.aobj.KlysZeroPhases = app.ForceallphasestozeroMenu.Checked ;
       end
+      app.DataValidLamp.Color='green';
+      app.ReadDataButton.Enable=true;
+      app.TabGroup2.SelectedTab = inittab ;
+      app.aobj.UpdateGUI;
     end
 
     % Close request function: FLEMFACETIILEMUIFigure
@@ -719,6 +727,84 @@ classdef F2_LEM_exported < matlab.apps.AppBase
     % Menu selected function: AssignSelectedrowsMenu
     function AssignSelectedrowsMenuSelected(app, event)
       app.aobj.LaunchMultiknob("TableSelect");
+    end
+
+    % Value changed function: EditField_10, EditField_11, 
+    % EditField_12, EditField_13, EditField_14, EditField_15, 
+    % EditField_16, EditField_17, EditField_18, EditField_20, 
+    % EditField_21, EditField_22, EditField_23, EditField_24, 
+    % EditField_25, EditField_26, EditField_27, EditField_28, 
+    % EditField_29, EditField_31, EditField_32, EditField_33, 
+    % EditField_34, EditField_35, EditField_36, EditField_37, 
+    % EditField_38, EditField_39, EditField_40, EditField_41, 
+    % EditField_42, EditField_43, EditField_44, EditField_45, 
+    % EditField_46, EditField_47, EditField_48, EditField_50, 
+    % EditField_51, EditField_52, EditField_53, EditField_54, 
+    % EditField_55, EditField_56, EditField_57, EditField_58, 
+    % EditField_60, EditField_61, EditField_62, EditField_63, 
+    % EditField_64, EditField_65, EditField_66, EditField_67, 
+    % EditField_68, EditField_70, EditField_71, EditField_72, 
+    % EditField_74, EditField_75, EditField_76, EditField_77, 
+    % EditField_80, EditField_81, EditField_82, EditField_84, 
+    % EditField_85, EditField_86, EditField_87
+    function EditField_29ValueChanged(app, event)
+      % Setting overrides Egain values
+      t=regexp(event.Source.Tag,'(\d+)_(\d+)','tokens','once');
+      isec=str2double(t{1})-9; ikly=str2double(t{2});
+      egain = str2double(event.Source.Value) ;
+      phase = app.aobj.Klys.KlysPhase(ikly,isec) ;
+      wake = app.aobj.klyswakeloss(ikly,isec) ;
+      ampl = (egain + wake) / cosd(phase) ;
+      app.aobj.Klys.KlysAmplOverride(ikly,isec) = ampl ;
+      app.DataValidLamp.Color='red';
+      if isnan(event.Source.Value)
+        fprintf('%s: Disabling Klystron %d-%d Ampl Override\n',datestr(now),isec+9,ikly);
+        event.Source.FontColor='black';
+      else
+        fprintf('%s: Overriding Klystron %d-%d Ampl = %g\n',datestr(now),isec+9,ikly,ampl);
+        event.Source.FontColor='red';
+      end
+      app.aobj.SaveOverrides;
+    end
+
+    % Value changed function: EditField_100, EditField_101, 
+    % EditField_102, EditField_103, EditField_104, 
+    % EditField_105, EditField_106, EditField_107, 
+    % EditField_108, EditField_109, EditField_111, 
+    % EditField_112, EditField_113, EditField_114, 
+    % EditField_115, EditField_116, EditField_117, 
+    % EditField_118, EditField_119, EditField_120, 
+    % EditField_121, EditField_122, EditField_123, 
+    % EditField_124, EditField_125, EditField_126, 
+    % EditField_127, EditField_128, EditField_130, 
+    % EditField_131, EditField_132, EditField_133, 
+    % EditField_134, EditField_135, EditField_136, 
+    % EditField_137, EditField_138, EditField_140, 
+    % EditField_141, EditField_142, EditField_143, 
+    % EditField_144, EditField_145, EditField_146, 
+    % EditField_147, EditField_148, EditField_150, 
+    % EditField_151, EditField_152, EditField_154, 
+    % EditField_155, EditField_156, EditField_157, 
+    % EditField_160, EditField_161, EditField_162, 
+    % EditField_164, EditField_165, EditField_166, 
+    % EditField_167, EditField_90, EditField_91, EditField_92, 
+    % EditField_93, EditField_94, EditField_95, EditField_96, 
+    % EditField_97, EditField_98
+    function EditField_109ValueChanged(app, event)
+       % Setting overrides phase values
+       t=regexp(event.Source.Tag,'(\d+)_(\d+)','tokens','once');
+       isec=str2double(t{1})-9; ikly=str2double(t{2});
+       phase = str2double(event.Source.Value) ;
+       app.aobj.Klys.KlysPhaseOverride(ikly,isec) = phase ;
+       app.DataValidLamp.Color='red';
+       if isnan(event.Source.Value)
+         fprintf('%s: Disabling Klystron %d-%d Phase Override\n',datestr(now),isec+9,ikly);
+         event.Source.FontColor='black';
+       else
+         fprintf('%s: Overriding Klystron %d-%d Phase = %g\n',datestr(now),isec+9,ikly,phase);
+         event.Source.FontColor='red';
+       end
+       app.aobj.SaveOverrides;
     end
   end
 
@@ -1475,6 +1561,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_10
       app.EditField_10 = uieditfield(app.GridLayout2, 'text');
+      app.EditField_10.ValueChangedFcn = createCallbackFcn(app, @EditField_29ValueChanged, true);
+      app.EditField_10.Tag = '11_1';
       app.EditField_10.HorizontalAlignment = 'center';
       app.EditField_10.Layout.Row = 3;
       app.EditField_10.Layout.Column = 2;
@@ -1482,6 +1570,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_11
       app.EditField_11 = uieditfield(app.GridLayout2, 'text');
+      app.EditField_11.ValueChangedFcn = createCallbackFcn(app, @EditField_29ValueChanged, true);
+      app.EditField_11.Tag = '12_1';
       app.EditField_11.HorizontalAlignment = 'center';
       app.EditField_11.Layout.Row = 3;
       app.EditField_11.Layout.Column = 3;
@@ -1489,6 +1579,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_12
       app.EditField_12 = uieditfield(app.GridLayout2, 'text');
+      app.EditField_12.ValueChangedFcn = createCallbackFcn(app, @EditField_29ValueChanged, true);
+      app.EditField_12.Tag = '13_1';
       app.EditField_12.HorizontalAlignment = 'center';
       app.EditField_12.Layout.Row = 3;
       app.EditField_12.Layout.Column = 4;
@@ -1496,6 +1588,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_13
       app.EditField_13 = uieditfield(app.GridLayout2, 'text');
+      app.EditField_13.ValueChangedFcn = createCallbackFcn(app, @EditField_29ValueChanged, true);
+      app.EditField_13.Tag = '14_1';
       app.EditField_13.HorizontalAlignment = 'center';
       app.EditField_13.Layout.Row = 3;
       app.EditField_13.Layout.Column = 5;
@@ -1503,6 +1597,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_14
       app.EditField_14 = uieditfield(app.GridLayout2, 'text');
+      app.EditField_14.ValueChangedFcn = createCallbackFcn(app, @EditField_29ValueChanged, true);
+      app.EditField_14.Tag = '15_1';
       app.EditField_14.HorizontalAlignment = 'center';
       app.EditField_14.Layout.Row = 3;
       app.EditField_14.Layout.Column = 6;
@@ -1510,6 +1606,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_15
       app.EditField_15 = uieditfield(app.GridLayout2, 'text');
+      app.EditField_15.ValueChangedFcn = createCallbackFcn(app, @EditField_29ValueChanged, true);
+      app.EditField_15.Tag = '16_1';
       app.EditField_15.HorizontalAlignment = 'center';
       app.EditField_15.Layout.Row = 3;
       app.EditField_15.Layout.Column = 7;
@@ -1517,6 +1615,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_16
       app.EditField_16 = uieditfield(app.GridLayout2, 'text');
+      app.EditField_16.ValueChangedFcn = createCallbackFcn(app, @EditField_29ValueChanged, true);
+      app.EditField_16.Tag = '17_1';
       app.EditField_16.HorizontalAlignment = 'center';
       app.EditField_16.Layout.Row = 3;
       app.EditField_16.Layout.Column = 8;
@@ -1524,6 +1624,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_17
       app.EditField_17 = uieditfield(app.GridLayout2, 'text');
+      app.EditField_17.ValueChangedFcn = createCallbackFcn(app, @EditField_29ValueChanged, true);
+      app.EditField_17.Tag = '18_1';
       app.EditField_17.HorizontalAlignment = 'center';
       app.EditField_17.Layout.Row = 3;
       app.EditField_17.Layout.Column = 9;
@@ -1531,6 +1633,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_18
       app.EditField_18 = uieditfield(app.GridLayout2, 'text');
+      app.EditField_18.ValueChangedFcn = createCallbackFcn(app, @EditField_29ValueChanged, true);
+      app.EditField_18.Tag = '19_1';
       app.EditField_18.HorizontalAlignment = 'center';
       app.EditField_18.Layout.Row = 3;
       app.EditField_18.Layout.Column = 10;
@@ -1546,6 +1650,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_20
       app.EditField_20 = uieditfield(app.GridLayout2, 'text');
+      app.EditField_20.ValueChangedFcn = createCallbackFcn(app, @EditField_29ValueChanged, true);
+      app.EditField_20.Tag = '11_2';
       app.EditField_20.HorizontalAlignment = 'center';
       app.EditField_20.Layout.Row = 4;
       app.EditField_20.Layout.Column = 2;
@@ -1553,6 +1659,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_21
       app.EditField_21 = uieditfield(app.GridLayout2, 'text');
+      app.EditField_21.ValueChangedFcn = createCallbackFcn(app, @EditField_29ValueChanged, true);
+      app.EditField_21.Tag = '12_2';
       app.EditField_21.HorizontalAlignment = 'center';
       app.EditField_21.Layout.Row = 4;
       app.EditField_21.Layout.Column = 3;
@@ -1560,6 +1668,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_22
       app.EditField_22 = uieditfield(app.GridLayout2, 'text');
+      app.EditField_22.ValueChangedFcn = createCallbackFcn(app, @EditField_29ValueChanged, true);
+      app.EditField_22.Tag = '13_2';
       app.EditField_22.HorizontalAlignment = 'center';
       app.EditField_22.Layout.Row = 4;
       app.EditField_22.Layout.Column = 4;
@@ -1567,6 +1677,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_23
       app.EditField_23 = uieditfield(app.GridLayout2, 'text');
+      app.EditField_23.ValueChangedFcn = createCallbackFcn(app, @EditField_29ValueChanged, true);
+      app.EditField_23.Tag = '14_2';
       app.EditField_23.HorizontalAlignment = 'center';
       app.EditField_23.Layout.Row = 4;
       app.EditField_23.Layout.Column = 5;
@@ -1574,6 +1686,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_24
       app.EditField_24 = uieditfield(app.GridLayout2, 'text');
+      app.EditField_24.ValueChangedFcn = createCallbackFcn(app, @EditField_29ValueChanged, true);
+      app.EditField_24.Tag = '15_2';
       app.EditField_24.HorizontalAlignment = 'center';
       app.EditField_24.Layout.Row = 4;
       app.EditField_24.Layout.Column = 6;
@@ -1581,6 +1695,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_25
       app.EditField_25 = uieditfield(app.GridLayout2, 'text');
+      app.EditField_25.ValueChangedFcn = createCallbackFcn(app, @EditField_29ValueChanged, true);
+      app.EditField_25.Tag = '16_2';
       app.EditField_25.HorizontalAlignment = 'center';
       app.EditField_25.Layout.Row = 4;
       app.EditField_25.Layout.Column = 7;
@@ -1588,6 +1704,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_26
       app.EditField_26 = uieditfield(app.GridLayout2, 'text');
+      app.EditField_26.ValueChangedFcn = createCallbackFcn(app, @EditField_29ValueChanged, true);
+      app.EditField_26.Tag = '17_2';
       app.EditField_26.HorizontalAlignment = 'center';
       app.EditField_26.Layout.Row = 4;
       app.EditField_26.Layout.Column = 8;
@@ -1595,6 +1713,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_27
       app.EditField_27 = uieditfield(app.GridLayout2, 'text');
+      app.EditField_27.ValueChangedFcn = createCallbackFcn(app, @EditField_29ValueChanged, true);
+      app.EditField_27.Tag = '18_2';
       app.EditField_27.HorizontalAlignment = 'center';
       app.EditField_27.Layout.Row = 4;
       app.EditField_27.Layout.Column = 9;
@@ -1602,6 +1722,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_28
       app.EditField_28 = uieditfield(app.GridLayout2, 'text');
+      app.EditField_28.ValueChangedFcn = createCallbackFcn(app, @EditField_29ValueChanged, true);
+      app.EditField_28.Tag = '19_2';
       app.EditField_28.HorizontalAlignment = 'center';
       app.EditField_28.Layout.Row = 4;
       app.EditField_28.Layout.Column = 10;
@@ -1609,6 +1731,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_29
       app.EditField_29 = uieditfield(app.GridLayout2, 'text');
+      app.EditField_29.ValueChangedFcn = createCallbackFcn(app, @EditField_29ValueChanged, true);
+      app.EditField_29.Tag = '10_3';
       app.EditField_29.HorizontalAlignment = 'center';
       app.EditField_29.Layout.Row = 5;
       app.EditField_29.Layout.Column = 1;
@@ -1624,6 +1748,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_31
       app.EditField_31 = uieditfield(app.GridLayout2, 'text');
+      app.EditField_31.ValueChangedFcn = createCallbackFcn(app, @EditField_29ValueChanged, true);
+      app.EditField_31.Tag = '12_3';
       app.EditField_31.HorizontalAlignment = 'center';
       app.EditField_31.Layout.Row = 5;
       app.EditField_31.Layout.Column = 3;
@@ -1631,6 +1757,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_32
       app.EditField_32 = uieditfield(app.GridLayout2, 'text');
+      app.EditField_32.ValueChangedFcn = createCallbackFcn(app, @EditField_29ValueChanged, true);
+      app.EditField_32.Tag = '13_3';
       app.EditField_32.HorizontalAlignment = 'center';
       app.EditField_32.Layout.Row = 5;
       app.EditField_32.Layout.Column = 4;
@@ -1638,6 +1766,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_33
       app.EditField_33 = uieditfield(app.GridLayout2, 'text');
+      app.EditField_33.ValueChangedFcn = createCallbackFcn(app, @EditField_29ValueChanged, true);
+      app.EditField_33.Tag = '14_3';
       app.EditField_33.HorizontalAlignment = 'center';
       app.EditField_33.Layout.Row = 5;
       app.EditField_33.Layout.Column = 5;
@@ -1645,6 +1775,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_34
       app.EditField_34 = uieditfield(app.GridLayout2, 'text');
+      app.EditField_34.ValueChangedFcn = createCallbackFcn(app, @EditField_29ValueChanged, true);
+      app.EditField_34.Tag = '15_3';
       app.EditField_34.HorizontalAlignment = 'center';
       app.EditField_34.Layout.Row = 5;
       app.EditField_34.Layout.Column = 6;
@@ -1652,6 +1784,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_35
       app.EditField_35 = uieditfield(app.GridLayout2, 'text');
+      app.EditField_35.ValueChangedFcn = createCallbackFcn(app, @EditField_29ValueChanged, true);
+      app.EditField_35.Tag = '16_3';
       app.EditField_35.HorizontalAlignment = 'center';
       app.EditField_35.Layout.Row = 5;
       app.EditField_35.Layout.Column = 7;
@@ -1659,6 +1793,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_36
       app.EditField_36 = uieditfield(app.GridLayout2, 'text');
+      app.EditField_36.ValueChangedFcn = createCallbackFcn(app, @EditField_29ValueChanged, true);
+      app.EditField_36.Tag = '17_3';
       app.EditField_36.HorizontalAlignment = 'center';
       app.EditField_36.Layout.Row = 5;
       app.EditField_36.Layout.Column = 8;
@@ -1666,6 +1802,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_37
       app.EditField_37 = uieditfield(app.GridLayout2, 'text');
+      app.EditField_37.ValueChangedFcn = createCallbackFcn(app, @EditField_29ValueChanged, true);
+      app.EditField_37.Tag = '18_3';
       app.EditField_37.HorizontalAlignment = 'center';
       app.EditField_37.Layout.Row = 5;
       app.EditField_37.Layout.Column = 9;
@@ -1673,6 +1811,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_38
       app.EditField_38 = uieditfield(app.GridLayout2, 'text');
+      app.EditField_38.ValueChangedFcn = createCallbackFcn(app, @EditField_29ValueChanged, true);
+      app.EditField_38.Tag = '19_3';
       app.EditField_38.HorizontalAlignment = 'center';
       app.EditField_38.Layout.Row = 5;
       app.EditField_38.Layout.Column = 10;
@@ -1680,6 +1820,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_39
       app.EditField_39 = uieditfield(app.GridLayout2, 'text');
+      app.EditField_39.ValueChangedFcn = createCallbackFcn(app, @EditField_29ValueChanged, true);
+      app.EditField_39.Tag = '10_4';
       app.EditField_39.HorizontalAlignment = 'center';
       app.EditField_39.Layout.Row = 6;
       app.EditField_39.Layout.Column = 1;
@@ -1687,6 +1829,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_40
       app.EditField_40 = uieditfield(app.GridLayout2, 'text');
+      app.EditField_40.ValueChangedFcn = createCallbackFcn(app, @EditField_29ValueChanged, true);
+      app.EditField_40.Tag = '11_4';
       app.EditField_40.HorizontalAlignment = 'center';
       app.EditField_40.Layout.Row = 6;
       app.EditField_40.Layout.Column = 2;
@@ -1694,6 +1838,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_41
       app.EditField_41 = uieditfield(app.GridLayout2, 'text');
+      app.EditField_41.ValueChangedFcn = createCallbackFcn(app, @EditField_29ValueChanged, true);
+      app.EditField_41.Tag = '12_4';
       app.EditField_41.HorizontalAlignment = 'center';
       app.EditField_41.Layout.Row = 6;
       app.EditField_41.Layout.Column = 3;
@@ -1701,6 +1847,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_42
       app.EditField_42 = uieditfield(app.GridLayout2, 'text');
+      app.EditField_42.ValueChangedFcn = createCallbackFcn(app, @EditField_29ValueChanged, true);
+      app.EditField_42.Tag = '13_4';
       app.EditField_42.HorizontalAlignment = 'center';
       app.EditField_42.Layout.Row = 6;
       app.EditField_42.Layout.Column = 4;
@@ -1708,6 +1856,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_43
       app.EditField_43 = uieditfield(app.GridLayout2, 'text');
+      app.EditField_43.ValueChangedFcn = createCallbackFcn(app, @EditField_29ValueChanged, true);
+      app.EditField_43.Tag = '14_4';
       app.EditField_43.HorizontalAlignment = 'center';
       app.EditField_43.Layout.Row = 6;
       app.EditField_43.Layout.Column = 5;
@@ -1715,6 +1865,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_44
       app.EditField_44 = uieditfield(app.GridLayout2, 'text');
+      app.EditField_44.ValueChangedFcn = createCallbackFcn(app, @EditField_29ValueChanged, true);
+      app.EditField_44.Tag = '15_4';
       app.EditField_44.HorizontalAlignment = 'center';
       app.EditField_44.Layout.Row = 6;
       app.EditField_44.Layout.Column = 6;
@@ -1722,6 +1874,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_45
       app.EditField_45 = uieditfield(app.GridLayout2, 'text');
+      app.EditField_45.ValueChangedFcn = createCallbackFcn(app, @EditField_29ValueChanged, true);
+      app.EditField_45.Tag = '16_4';
       app.EditField_45.HorizontalAlignment = 'center';
       app.EditField_45.Layout.Row = 6;
       app.EditField_45.Layout.Column = 7;
@@ -1729,6 +1883,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_46
       app.EditField_46 = uieditfield(app.GridLayout2, 'text');
+      app.EditField_46.ValueChangedFcn = createCallbackFcn(app, @EditField_29ValueChanged, true);
+      app.EditField_46.Tag = '17_4';
       app.EditField_46.HorizontalAlignment = 'center';
       app.EditField_46.Layout.Row = 6;
       app.EditField_46.Layout.Column = 8;
@@ -1736,6 +1892,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_47
       app.EditField_47 = uieditfield(app.GridLayout2, 'text');
+      app.EditField_47.ValueChangedFcn = createCallbackFcn(app, @EditField_29ValueChanged, true);
+      app.EditField_47.Tag = '18_4';
       app.EditField_47.HorizontalAlignment = 'center';
       app.EditField_47.Layout.Row = 6;
       app.EditField_47.Layout.Column = 9;
@@ -1743,6 +1901,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_48
       app.EditField_48 = uieditfield(app.GridLayout2, 'text');
+      app.EditField_48.ValueChangedFcn = createCallbackFcn(app, @EditField_29ValueChanged, true);
+      app.EditField_48.Tag = '19_4';
       app.EditField_48.HorizontalAlignment = 'center';
       app.EditField_48.Layout.Row = 6;
       app.EditField_48.Layout.Column = 10;
@@ -1758,6 +1918,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_50
       app.EditField_50 = uieditfield(app.GridLayout2, 'text');
+      app.EditField_50.ValueChangedFcn = createCallbackFcn(app, @EditField_29ValueChanged, true);
+      app.EditField_50.Tag = '11_5';
       app.EditField_50.HorizontalAlignment = 'center';
       app.EditField_50.Layout.Row = 7;
       app.EditField_50.Layout.Column = 2;
@@ -1765,6 +1927,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_51
       app.EditField_51 = uieditfield(app.GridLayout2, 'text');
+      app.EditField_51.ValueChangedFcn = createCallbackFcn(app, @EditField_29ValueChanged, true);
+      app.EditField_51.Tag = '12_5';
       app.EditField_51.HorizontalAlignment = 'center';
       app.EditField_51.Layout.Row = 7;
       app.EditField_51.Layout.Column = 3;
@@ -1772,6 +1936,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_52
       app.EditField_52 = uieditfield(app.GridLayout2, 'text');
+      app.EditField_52.ValueChangedFcn = createCallbackFcn(app, @EditField_29ValueChanged, true);
+      app.EditField_52.Tag = '13_5';
       app.EditField_52.HorizontalAlignment = 'center';
       app.EditField_52.Layout.Row = 7;
       app.EditField_52.Layout.Column = 4;
@@ -1779,6 +1945,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_53
       app.EditField_53 = uieditfield(app.GridLayout2, 'text');
+      app.EditField_53.ValueChangedFcn = createCallbackFcn(app, @EditField_29ValueChanged, true);
+      app.EditField_53.Tag = '14_5';
       app.EditField_53.HorizontalAlignment = 'center';
       app.EditField_53.Layout.Row = 7;
       app.EditField_53.Layout.Column = 5;
@@ -1786,6 +1954,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_54
       app.EditField_54 = uieditfield(app.GridLayout2, 'text');
+      app.EditField_54.ValueChangedFcn = createCallbackFcn(app, @EditField_29ValueChanged, true);
+      app.EditField_54.Tag = '15_5';
       app.EditField_54.HorizontalAlignment = 'center';
       app.EditField_54.Layout.Row = 7;
       app.EditField_54.Layout.Column = 6;
@@ -1793,6 +1963,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_55
       app.EditField_55 = uieditfield(app.GridLayout2, 'text');
+      app.EditField_55.ValueChangedFcn = createCallbackFcn(app, @EditField_29ValueChanged, true);
+      app.EditField_55.Tag = '16_5';
       app.EditField_55.HorizontalAlignment = 'center';
       app.EditField_55.Layout.Row = 7;
       app.EditField_55.Layout.Column = 7;
@@ -1800,6 +1972,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_56
       app.EditField_56 = uieditfield(app.GridLayout2, 'text');
+      app.EditField_56.ValueChangedFcn = createCallbackFcn(app, @EditField_29ValueChanged, true);
+      app.EditField_56.Tag = '17_5';
       app.EditField_56.HorizontalAlignment = 'center';
       app.EditField_56.Layout.Row = 7;
       app.EditField_56.Layout.Column = 8;
@@ -1807,6 +1981,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_57
       app.EditField_57 = uieditfield(app.GridLayout2, 'text');
+      app.EditField_57.ValueChangedFcn = createCallbackFcn(app, @EditField_29ValueChanged, true);
+      app.EditField_57.Tag = '18_5';
       app.EditField_57.HorizontalAlignment = 'center';
       app.EditField_57.Layout.Row = 7;
       app.EditField_57.Layout.Column = 9;
@@ -1814,6 +1990,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_58
       app.EditField_58 = uieditfield(app.GridLayout2, 'text');
+      app.EditField_58.ValueChangedFcn = createCallbackFcn(app, @EditField_29ValueChanged, true);
+      app.EditField_58.Tag = '19_5';
       app.EditField_58.HorizontalAlignment = 'center';
       app.EditField_58.Layout.Row = 7;
       app.EditField_58.Layout.Column = 10;
@@ -1829,6 +2007,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_60
       app.EditField_60 = uieditfield(app.GridLayout2, 'text');
+      app.EditField_60.ValueChangedFcn = createCallbackFcn(app, @EditField_29ValueChanged, true);
+      app.EditField_60.Tag = '11_6';
       app.EditField_60.HorizontalAlignment = 'center';
       app.EditField_60.Layout.Row = 8;
       app.EditField_60.Layout.Column = 2;
@@ -1836,6 +2016,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_61
       app.EditField_61 = uieditfield(app.GridLayout2, 'text');
+      app.EditField_61.ValueChangedFcn = createCallbackFcn(app, @EditField_29ValueChanged, true);
+      app.EditField_61.Tag = '12_6';
       app.EditField_61.HorizontalAlignment = 'center';
       app.EditField_61.Layout.Row = 8;
       app.EditField_61.Layout.Column = 3;
@@ -1843,6 +2025,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_62
       app.EditField_62 = uieditfield(app.GridLayout2, 'text');
+      app.EditField_62.ValueChangedFcn = createCallbackFcn(app, @EditField_29ValueChanged, true);
+      app.EditField_62.Tag = '13_6';
       app.EditField_62.HorizontalAlignment = 'center';
       app.EditField_62.Layout.Row = 8;
       app.EditField_62.Layout.Column = 4;
@@ -1850,6 +2034,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_63
       app.EditField_63 = uieditfield(app.GridLayout2, 'text');
+      app.EditField_63.ValueChangedFcn = createCallbackFcn(app, @EditField_29ValueChanged, true);
+      app.EditField_63.Tag = '14_6';
       app.EditField_63.HorizontalAlignment = 'center';
       app.EditField_63.Layout.Row = 8;
       app.EditField_63.Layout.Column = 5;
@@ -1857,6 +2043,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_64
       app.EditField_64 = uieditfield(app.GridLayout2, 'text');
+      app.EditField_64.ValueChangedFcn = createCallbackFcn(app, @EditField_29ValueChanged, true);
+      app.EditField_64.Tag = '15_6';
       app.EditField_64.HorizontalAlignment = 'center';
       app.EditField_64.Layout.Row = 8;
       app.EditField_64.Layout.Column = 6;
@@ -1864,6 +2052,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_65
       app.EditField_65 = uieditfield(app.GridLayout2, 'text');
+      app.EditField_65.ValueChangedFcn = createCallbackFcn(app, @EditField_29ValueChanged, true);
+      app.EditField_65.Tag = '16_6';
       app.EditField_65.HorizontalAlignment = 'center';
       app.EditField_65.Layout.Row = 8;
       app.EditField_65.Layout.Column = 7;
@@ -1871,6 +2061,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_66
       app.EditField_66 = uieditfield(app.GridLayout2, 'text');
+      app.EditField_66.ValueChangedFcn = createCallbackFcn(app, @EditField_29ValueChanged, true);
+      app.EditField_66.Tag = '17_6';
       app.EditField_66.HorizontalAlignment = 'center';
       app.EditField_66.Layout.Row = 8;
       app.EditField_66.Layout.Column = 8;
@@ -1878,6 +2070,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_67
       app.EditField_67 = uieditfield(app.GridLayout2, 'text');
+      app.EditField_67.ValueChangedFcn = createCallbackFcn(app, @EditField_29ValueChanged, true);
+      app.EditField_67.Tag = '18_6';
       app.EditField_67.HorizontalAlignment = 'center';
       app.EditField_67.Layout.Row = 8;
       app.EditField_67.Layout.Column = 9;
@@ -1885,6 +2079,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_68
       app.EditField_68 = uieditfield(app.GridLayout2, 'text');
+      app.EditField_68.ValueChangedFcn = createCallbackFcn(app, @EditField_29ValueChanged, true);
+      app.EditField_68.Tag = '19_6';
       app.EditField_68.HorizontalAlignment = 'center';
       app.EditField_68.Layout.Row = 8;
       app.EditField_68.Layout.Column = 10;
@@ -1900,6 +2096,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_70
       app.EditField_70 = uieditfield(app.GridLayout2, 'text');
+      app.EditField_70.ValueChangedFcn = createCallbackFcn(app, @EditField_29ValueChanged, true);
+      app.EditField_70.Tag = '11_7';
       app.EditField_70.HorizontalAlignment = 'center';
       app.EditField_70.Layout.Row = 9;
       app.EditField_70.Layout.Column = 2;
@@ -1907,6 +2105,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_71
       app.EditField_71 = uieditfield(app.GridLayout2, 'text');
+      app.EditField_71.ValueChangedFcn = createCallbackFcn(app, @EditField_29ValueChanged, true);
+      app.EditField_71.Tag = '12_7';
       app.EditField_71.HorizontalAlignment = 'center';
       app.EditField_71.Layout.Row = 9;
       app.EditField_71.Layout.Column = 3;
@@ -1914,6 +2114,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_72
       app.EditField_72 = uieditfield(app.GridLayout2, 'text');
+      app.EditField_72.ValueChangedFcn = createCallbackFcn(app, @EditField_29ValueChanged, true);
+      app.EditField_72.Tag = '13_7';
       app.EditField_72.HorizontalAlignment = 'center';
       app.EditField_72.Layout.Row = 9;
       app.EditField_72.Layout.Column = 4;
@@ -1929,6 +2131,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_74
       app.EditField_74 = uieditfield(app.GridLayout2, 'text');
+      app.EditField_74.ValueChangedFcn = createCallbackFcn(app, @EditField_29ValueChanged, true);
+      app.EditField_74.Tag = '15_7';
       app.EditField_74.HorizontalAlignment = 'center';
       app.EditField_74.Layout.Row = 9;
       app.EditField_74.Layout.Column = 6;
@@ -1936,6 +2140,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_75
       app.EditField_75 = uieditfield(app.GridLayout2, 'text');
+      app.EditField_75.ValueChangedFcn = createCallbackFcn(app, @EditField_29ValueChanged, true);
+      app.EditField_75.Tag = '16_7';
       app.EditField_75.HorizontalAlignment = 'center';
       app.EditField_75.Layout.Row = 9;
       app.EditField_75.Layout.Column = 7;
@@ -1943,6 +2149,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_76
       app.EditField_76 = uieditfield(app.GridLayout2, 'text');
+      app.EditField_76.ValueChangedFcn = createCallbackFcn(app, @EditField_29ValueChanged, true);
+      app.EditField_76.Tag = '17_7';
       app.EditField_76.HorizontalAlignment = 'center';
       app.EditField_76.Layout.Row = 9;
       app.EditField_76.Layout.Column = 8;
@@ -1950,6 +2158,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_77
       app.EditField_77 = uieditfield(app.GridLayout2, 'text');
+      app.EditField_77.ValueChangedFcn = createCallbackFcn(app, @EditField_29ValueChanged, true);
+      app.EditField_77.Tag = '18_7';
       app.EditField_77.HorizontalAlignment = 'center';
       app.EditField_77.Layout.Row = 9;
       app.EditField_77.Layout.Column = 9;
@@ -1973,6 +2183,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_80
       app.EditField_80 = uieditfield(app.GridLayout2, 'text');
+      app.EditField_80.ValueChangedFcn = createCallbackFcn(app, @EditField_29ValueChanged, true);
+      app.EditField_80.Tag = '11_8';
       app.EditField_80.HorizontalAlignment = 'center';
       app.EditField_80.Layout.Row = 10;
       app.EditField_80.Layout.Column = 2;
@@ -1980,6 +2192,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_81
       app.EditField_81 = uieditfield(app.GridLayout2, 'text');
+      app.EditField_81.ValueChangedFcn = createCallbackFcn(app, @EditField_29ValueChanged, true);
+      app.EditField_81.Tag = '12_8';
       app.EditField_81.HorizontalAlignment = 'center';
       app.EditField_81.Layout.Row = 10;
       app.EditField_81.Layout.Column = 3;
@@ -1987,6 +2201,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_82
       app.EditField_82 = uieditfield(app.GridLayout2, 'text');
+      app.EditField_82.ValueChangedFcn = createCallbackFcn(app, @EditField_29ValueChanged, true);
+      app.EditField_82.Tag = '13_8';
       app.EditField_82.HorizontalAlignment = 'center';
       app.EditField_82.Layout.Row = 10;
       app.EditField_82.Layout.Column = 4;
@@ -2002,6 +2218,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_84
       app.EditField_84 = uieditfield(app.GridLayout2, 'text');
+      app.EditField_84.ValueChangedFcn = createCallbackFcn(app, @EditField_29ValueChanged, true);
+      app.EditField_84.Tag = '15_8';
       app.EditField_84.HorizontalAlignment = 'center';
       app.EditField_84.Layout.Row = 10;
       app.EditField_84.Layout.Column = 6;
@@ -2009,6 +2227,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_85
       app.EditField_85 = uieditfield(app.GridLayout2, 'text');
+      app.EditField_85.ValueChangedFcn = createCallbackFcn(app, @EditField_29ValueChanged, true);
+      app.EditField_85.Tag = '16_8';
       app.EditField_85.HorizontalAlignment = 'center';
       app.EditField_85.Layout.Row = 10;
       app.EditField_85.Layout.Column = 7;
@@ -2016,6 +2236,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_86
       app.EditField_86 = uieditfield(app.GridLayout2, 'text');
+      app.EditField_86.ValueChangedFcn = createCallbackFcn(app, @EditField_29ValueChanged, true);
+      app.EditField_86.Tag = '17_8';
       app.EditField_86.HorizontalAlignment = 'center';
       app.EditField_86.Layout.Row = 10;
       app.EditField_86.Layout.Column = 8;
@@ -2023,6 +2245,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_87
       app.EditField_87 = uieditfield(app.GridLayout2, 'text');
+      app.EditField_87.ValueChangedFcn = createCallbackFcn(app, @EditField_29ValueChanged, true);
+      app.EditField_87.Tag = '18_8';
       app.EditField_87.HorizontalAlignment = 'center';
       app.EditField_87.Layout.Row = 10;
       app.EditField_87.Layout.Column = 9;
@@ -2175,6 +2399,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_90
       app.EditField_90 = uieditfield(app.GridLayout2_2, 'text');
+      app.EditField_90.ValueChangedFcn = createCallbackFcn(app, @EditField_109ValueChanged, true);
+      app.EditField_90.Tag = '11_1';
       app.EditField_90.HorizontalAlignment = 'center';
       app.EditField_90.Layout.Row = 3;
       app.EditField_90.Layout.Column = 2;
@@ -2182,6 +2408,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_91
       app.EditField_91 = uieditfield(app.GridLayout2_2, 'text');
+      app.EditField_91.ValueChangedFcn = createCallbackFcn(app, @EditField_109ValueChanged, true);
+      app.EditField_91.Tag = '12_1';
       app.EditField_91.HorizontalAlignment = 'center';
       app.EditField_91.Layout.Row = 3;
       app.EditField_91.Layout.Column = 3;
@@ -2189,6 +2417,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_92
       app.EditField_92 = uieditfield(app.GridLayout2_2, 'text');
+      app.EditField_92.ValueChangedFcn = createCallbackFcn(app, @EditField_109ValueChanged, true);
+      app.EditField_92.Tag = '13_1';
       app.EditField_92.HorizontalAlignment = 'center';
       app.EditField_92.Layout.Row = 3;
       app.EditField_92.Layout.Column = 4;
@@ -2196,6 +2426,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_93
       app.EditField_93 = uieditfield(app.GridLayout2_2, 'text');
+      app.EditField_93.ValueChangedFcn = createCallbackFcn(app, @EditField_109ValueChanged, true);
+      app.EditField_93.Tag = '14_1';
       app.EditField_93.HorizontalAlignment = 'center';
       app.EditField_93.Layout.Row = 3;
       app.EditField_93.Layout.Column = 5;
@@ -2203,6 +2435,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_94
       app.EditField_94 = uieditfield(app.GridLayout2_2, 'text');
+      app.EditField_94.ValueChangedFcn = createCallbackFcn(app, @EditField_109ValueChanged, true);
+      app.EditField_94.Tag = '15_1';
       app.EditField_94.HorizontalAlignment = 'center';
       app.EditField_94.Layout.Row = 3;
       app.EditField_94.Layout.Column = 6;
@@ -2210,6 +2444,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_95
       app.EditField_95 = uieditfield(app.GridLayout2_2, 'text');
+      app.EditField_95.ValueChangedFcn = createCallbackFcn(app, @EditField_109ValueChanged, true);
+      app.EditField_95.Tag = '16_1';
       app.EditField_95.HorizontalAlignment = 'center';
       app.EditField_95.Layout.Row = 3;
       app.EditField_95.Layout.Column = 7;
@@ -2217,6 +2453,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_96
       app.EditField_96 = uieditfield(app.GridLayout2_2, 'text');
+      app.EditField_96.ValueChangedFcn = createCallbackFcn(app, @EditField_109ValueChanged, true);
+      app.EditField_96.Tag = '17_1';
       app.EditField_96.HorizontalAlignment = 'center';
       app.EditField_96.Layout.Row = 3;
       app.EditField_96.Layout.Column = 8;
@@ -2224,6 +2462,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_97
       app.EditField_97 = uieditfield(app.GridLayout2_2, 'text');
+      app.EditField_97.ValueChangedFcn = createCallbackFcn(app, @EditField_109ValueChanged, true);
+      app.EditField_97.Tag = '18_1';
       app.EditField_97.HorizontalAlignment = 'center';
       app.EditField_97.Layout.Row = 3;
       app.EditField_97.Layout.Column = 9;
@@ -2231,6 +2471,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_98
       app.EditField_98 = uieditfield(app.GridLayout2_2, 'text');
+      app.EditField_98.ValueChangedFcn = createCallbackFcn(app, @EditField_109ValueChanged, true);
+      app.EditField_98.Tag = '19_1';
       app.EditField_98.HorizontalAlignment = 'center';
       app.EditField_98.Layout.Row = 3;
       app.EditField_98.Layout.Column = 10;
@@ -2246,6 +2488,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_100
       app.EditField_100 = uieditfield(app.GridLayout2_2, 'text');
+      app.EditField_100.ValueChangedFcn = createCallbackFcn(app, @EditField_109ValueChanged, true);
+      app.EditField_100.Tag = '11_2';
       app.EditField_100.HorizontalAlignment = 'center';
       app.EditField_100.Layout.Row = 4;
       app.EditField_100.Layout.Column = 2;
@@ -2253,6 +2497,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_101
       app.EditField_101 = uieditfield(app.GridLayout2_2, 'text');
+      app.EditField_101.ValueChangedFcn = createCallbackFcn(app, @EditField_109ValueChanged, true);
+      app.EditField_101.Tag = '12_2';
       app.EditField_101.HorizontalAlignment = 'center';
       app.EditField_101.Layout.Row = 4;
       app.EditField_101.Layout.Column = 3;
@@ -2260,6 +2506,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_102
       app.EditField_102 = uieditfield(app.GridLayout2_2, 'text');
+      app.EditField_102.ValueChangedFcn = createCallbackFcn(app, @EditField_109ValueChanged, true);
+      app.EditField_102.Tag = '13_2';
       app.EditField_102.HorizontalAlignment = 'center';
       app.EditField_102.Layout.Row = 4;
       app.EditField_102.Layout.Column = 4;
@@ -2267,6 +2515,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_103
       app.EditField_103 = uieditfield(app.GridLayout2_2, 'text');
+      app.EditField_103.ValueChangedFcn = createCallbackFcn(app, @EditField_109ValueChanged, true);
+      app.EditField_103.Tag = '14_2';
       app.EditField_103.HorizontalAlignment = 'center';
       app.EditField_103.Layout.Row = 4;
       app.EditField_103.Layout.Column = 5;
@@ -2274,6 +2524,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_104
       app.EditField_104 = uieditfield(app.GridLayout2_2, 'text');
+      app.EditField_104.ValueChangedFcn = createCallbackFcn(app, @EditField_109ValueChanged, true);
+      app.EditField_104.Tag = '15_2';
       app.EditField_104.HorizontalAlignment = 'center';
       app.EditField_104.Layout.Row = 4;
       app.EditField_104.Layout.Column = 6;
@@ -2281,6 +2533,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_105
       app.EditField_105 = uieditfield(app.GridLayout2_2, 'text');
+      app.EditField_105.ValueChangedFcn = createCallbackFcn(app, @EditField_109ValueChanged, true);
+      app.EditField_105.Tag = '16_2';
       app.EditField_105.HorizontalAlignment = 'center';
       app.EditField_105.Layout.Row = 4;
       app.EditField_105.Layout.Column = 7;
@@ -2288,6 +2542,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_106
       app.EditField_106 = uieditfield(app.GridLayout2_2, 'text');
+      app.EditField_106.ValueChangedFcn = createCallbackFcn(app, @EditField_109ValueChanged, true);
+      app.EditField_106.Tag = '17_2';
       app.EditField_106.HorizontalAlignment = 'center';
       app.EditField_106.Layout.Row = 4;
       app.EditField_106.Layout.Column = 8;
@@ -2295,6 +2551,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_107
       app.EditField_107 = uieditfield(app.GridLayout2_2, 'text');
+      app.EditField_107.ValueChangedFcn = createCallbackFcn(app, @EditField_109ValueChanged, true);
+      app.EditField_107.Tag = '18_2';
       app.EditField_107.HorizontalAlignment = 'center';
       app.EditField_107.Layout.Row = 4;
       app.EditField_107.Layout.Column = 9;
@@ -2302,6 +2560,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_108
       app.EditField_108 = uieditfield(app.GridLayout2_2, 'text');
+      app.EditField_108.ValueChangedFcn = createCallbackFcn(app, @EditField_109ValueChanged, true);
+      app.EditField_108.Tag = '19_2';
       app.EditField_108.HorizontalAlignment = 'center';
       app.EditField_108.Layout.Row = 4;
       app.EditField_108.Layout.Column = 10;
@@ -2309,6 +2569,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_109
       app.EditField_109 = uieditfield(app.GridLayout2_2, 'text');
+      app.EditField_109.ValueChangedFcn = createCallbackFcn(app, @EditField_109ValueChanged, true);
+      app.EditField_109.Tag = '10_3';
       app.EditField_109.HorizontalAlignment = 'center';
       app.EditField_109.Layout.Row = 5;
       app.EditField_109.Layout.Column = 1;
@@ -2324,6 +2586,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_111
       app.EditField_111 = uieditfield(app.GridLayout2_2, 'text');
+      app.EditField_111.ValueChangedFcn = createCallbackFcn(app, @EditField_109ValueChanged, true);
+      app.EditField_111.Tag = '12_3';
       app.EditField_111.HorizontalAlignment = 'center';
       app.EditField_111.Layout.Row = 5;
       app.EditField_111.Layout.Column = 3;
@@ -2331,6 +2595,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_112
       app.EditField_112 = uieditfield(app.GridLayout2_2, 'text');
+      app.EditField_112.ValueChangedFcn = createCallbackFcn(app, @EditField_109ValueChanged, true);
+      app.EditField_112.Tag = '13_3';
       app.EditField_112.HorizontalAlignment = 'center';
       app.EditField_112.Layout.Row = 5;
       app.EditField_112.Layout.Column = 4;
@@ -2338,6 +2604,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_113
       app.EditField_113 = uieditfield(app.GridLayout2_2, 'text');
+      app.EditField_113.ValueChangedFcn = createCallbackFcn(app, @EditField_109ValueChanged, true);
+      app.EditField_113.Tag = '14_3';
       app.EditField_113.HorizontalAlignment = 'center';
       app.EditField_113.Layout.Row = 5;
       app.EditField_113.Layout.Column = 5;
@@ -2345,6 +2613,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_114
       app.EditField_114 = uieditfield(app.GridLayout2_2, 'text');
+      app.EditField_114.ValueChangedFcn = createCallbackFcn(app, @EditField_109ValueChanged, true);
+      app.EditField_114.Tag = '15_3';
       app.EditField_114.HorizontalAlignment = 'center';
       app.EditField_114.Layout.Row = 5;
       app.EditField_114.Layout.Column = 6;
@@ -2352,6 +2622,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_115
       app.EditField_115 = uieditfield(app.GridLayout2_2, 'text');
+      app.EditField_115.ValueChangedFcn = createCallbackFcn(app, @EditField_109ValueChanged, true);
+      app.EditField_115.Tag = '16_3';
       app.EditField_115.HorizontalAlignment = 'center';
       app.EditField_115.Layout.Row = 5;
       app.EditField_115.Layout.Column = 7;
@@ -2359,6 +2631,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_116
       app.EditField_116 = uieditfield(app.GridLayout2_2, 'text');
+      app.EditField_116.ValueChangedFcn = createCallbackFcn(app, @EditField_109ValueChanged, true);
+      app.EditField_116.Tag = '17_3';
       app.EditField_116.HorizontalAlignment = 'center';
       app.EditField_116.Layout.Row = 5;
       app.EditField_116.Layout.Column = 8;
@@ -2366,6 +2640,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_117
       app.EditField_117 = uieditfield(app.GridLayout2_2, 'text');
+      app.EditField_117.ValueChangedFcn = createCallbackFcn(app, @EditField_109ValueChanged, true);
+      app.EditField_117.Tag = '18_3';
       app.EditField_117.HorizontalAlignment = 'center';
       app.EditField_117.Layout.Row = 5;
       app.EditField_117.Layout.Column = 9;
@@ -2373,6 +2649,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_118
       app.EditField_118 = uieditfield(app.GridLayout2_2, 'text');
+      app.EditField_118.ValueChangedFcn = createCallbackFcn(app, @EditField_109ValueChanged, true);
+      app.EditField_118.Tag = '19_3';
       app.EditField_118.HorizontalAlignment = 'center';
       app.EditField_118.Layout.Row = 5;
       app.EditField_118.Layout.Column = 10;
@@ -2380,6 +2658,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_119
       app.EditField_119 = uieditfield(app.GridLayout2_2, 'text');
+      app.EditField_119.ValueChangedFcn = createCallbackFcn(app, @EditField_109ValueChanged, true);
+      app.EditField_119.Tag = '10_4';
       app.EditField_119.HorizontalAlignment = 'center';
       app.EditField_119.Layout.Row = 6;
       app.EditField_119.Layout.Column = 1;
@@ -2387,6 +2667,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_120
       app.EditField_120 = uieditfield(app.GridLayout2_2, 'text');
+      app.EditField_120.ValueChangedFcn = createCallbackFcn(app, @EditField_109ValueChanged, true);
+      app.EditField_120.Tag = '11_4';
       app.EditField_120.HorizontalAlignment = 'center';
       app.EditField_120.Layout.Row = 6;
       app.EditField_120.Layout.Column = 2;
@@ -2394,6 +2676,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_121
       app.EditField_121 = uieditfield(app.GridLayout2_2, 'text');
+      app.EditField_121.ValueChangedFcn = createCallbackFcn(app, @EditField_109ValueChanged, true);
+      app.EditField_121.Tag = '12_4';
       app.EditField_121.HorizontalAlignment = 'center';
       app.EditField_121.Layout.Row = 6;
       app.EditField_121.Layout.Column = 3;
@@ -2401,6 +2685,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_122
       app.EditField_122 = uieditfield(app.GridLayout2_2, 'text');
+      app.EditField_122.ValueChangedFcn = createCallbackFcn(app, @EditField_109ValueChanged, true);
+      app.EditField_122.Tag = '13_4';
       app.EditField_122.HorizontalAlignment = 'center';
       app.EditField_122.Layout.Row = 6;
       app.EditField_122.Layout.Column = 4;
@@ -2408,6 +2694,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_123
       app.EditField_123 = uieditfield(app.GridLayout2_2, 'text');
+      app.EditField_123.ValueChangedFcn = createCallbackFcn(app, @EditField_109ValueChanged, true);
+      app.EditField_123.Tag = '14_4';
       app.EditField_123.HorizontalAlignment = 'center';
       app.EditField_123.Layout.Row = 6;
       app.EditField_123.Layout.Column = 5;
@@ -2415,6 +2703,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_124
       app.EditField_124 = uieditfield(app.GridLayout2_2, 'text');
+      app.EditField_124.ValueChangedFcn = createCallbackFcn(app, @EditField_109ValueChanged, true);
+      app.EditField_124.Tag = '15_4';
       app.EditField_124.HorizontalAlignment = 'center';
       app.EditField_124.Layout.Row = 6;
       app.EditField_124.Layout.Column = 6;
@@ -2422,6 +2712,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_125
       app.EditField_125 = uieditfield(app.GridLayout2_2, 'text');
+      app.EditField_125.ValueChangedFcn = createCallbackFcn(app, @EditField_109ValueChanged, true);
+      app.EditField_125.Tag = '16_4';
       app.EditField_125.HorizontalAlignment = 'center';
       app.EditField_125.Layout.Row = 6;
       app.EditField_125.Layout.Column = 7;
@@ -2429,6 +2721,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_126
       app.EditField_126 = uieditfield(app.GridLayout2_2, 'text');
+      app.EditField_126.ValueChangedFcn = createCallbackFcn(app, @EditField_109ValueChanged, true);
+      app.EditField_126.Tag = '17_4';
       app.EditField_126.HorizontalAlignment = 'center';
       app.EditField_126.Layout.Row = 6;
       app.EditField_126.Layout.Column = 8;
@@ -2436,6 +2730,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_127
       app.EditField_127 = uieditfield(app.GridLayout2_2, 'text');
+      app.EditField_127.ValueChangedFcn = createCallbackFcn(app, @EditField_109ValueChanged, true);
+      app.EditField_127.Tag = '18_4';
       app.EditField_127.HorizontalAlignment = 'center';
       app.EditField_127.Layout.Row = 6;
       app.EditField_127.Layout.Column = 9;
@@ -2443,6 +2739,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_128
       app.EditField_128 = uieditfield(app.GridLayout2_2, 'text');
+      app.EditField_128.ValueChangedFcn = createCallbackFcn(app, @EditField_109ValueChanged, true);
+      app.EditField_128.Tag = '19_4';
       app.EditField_128.HorizontalAlignment = 'center';
       app.EditField_128.Layout.Row = 6;
       app.EditField_128.Layout.Column = 10;
@@ -2458,6 +2756,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_130
       app.EditField_130 = uieditfield(app.GridLayout2_2, 'text');
+      app.EditField_130.ValueChangedFcn = createCallbackFcn(app, @EditField_109ValueChanged, true);
+      app.EditField_130.Tag = '11_5';
       app.EditField_130.HorizontalAlignment = 'center';
       app.EditField_130.Layout.Row = 7;
       app.EditField_130.Layout.Column = 2;
@@ -2465,6 +2765,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_131
       app.EditField_131 = uieditfield(app.GridLayout2_2, 'text');
+      app.EditField_131.ValueChangedFcn = createCallbackFcn(app, @EditField_109ValueChanged, true);
+      app.EditField_131.Tag = '12_5';
       app.EditField_131.HorizontalAlignment = 'center';
       app.EditField_131.Layout.Row = 7;
       app.EditField_131.Layout.Column = 3;
@@ -2472,6 +2774,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_132
       app.EditField_132 = uieditfield(app.GridLayout2_2, 'text');
+      app.EditField_132.ValueChangedFcn = createCallbackFcn(app, @EditField_109ValueChanged, true);
+      app.EditField_132.Tag = '13_5';
       app.EditField_132.HorizontalAlignment = 'center';
       app.EditField_132.Layout.Row = 7;
       app.EditField_132.Layout.Column = 4;
@@ -2479,6 +2783,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_133
       app.EditField_133 = uieditfield(app.GridLayout2_2, 'text');
+      app.EditField_133.ValueChangedFcn = createCallbackFcn(app, @EditField_109ValueChanged, true);
+      app.EditField_133.Tag = '14_5';
       app.EditField_133.HorizontalAlignment = 'center';
       app.EditField_133.Layout.Row = 7;
       app.EditField_133.Layout.Column = 5;
@@ -2486,6 +2792,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_134
       app.EditField_134 = uieditfield(app.GridLayout2_2, 'text');
+      app.EditField_134.ValueChangedFcn = createCallbackFcn(app, @EditField_109ValueChanged, true);
+      app.EditField_134.Tag = '15_5';
       app.EditField_134.HorizontalAlignment = 'center';
       app.EditField_134.Layout.Row = 7;
       app.EditField_134.Layout.Column = 6;
@@ -2493,6 +2801,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_135
       app.EditField_135 = uieditfield(app.GridLayout2_2, 'text');
+      app.EditField_135.ValueChangedFcn = createCallbackFcn(app, @EditField_109ValueChanged, true);
+      app.EditField_135.Tag = '16_5';
       app.EditField_135.HorizontalAlignment = 'center';
       app.EditField_135.Layout.Row = 7;
       app.EditField_135.Layout.Column = 7;
@@ -2500,6 +2810,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_136
       app.EditField_136 = uieditfield(app.GridLayout2_2, 'text');
+      app.EditField_136.ValueChangedFcn = createCallbackFcn(app, @EditField_109ValueChanged, true);
+      app.EditField_136.Tag = '17_5';
       app.EditField_136.HorizontalAlignment = 'center';
       app.EditField_136.Layout.Row = 7;
       app.EditField_136.Layout.Column = 8;
@@ -2507,6 +2819,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_137
       app.EditField_137 = uieditfield(app.GridLayout2_2, 'text');
+      app.EditField_137.ValueChangedFcn = createCallbackFcn(app, @EditField_109ValueChanged, true);
+      app.EditField_137.Tag = '18_5';
       app.EditField_137.HorizontalAlignment = 'center';
       app.EditField_137.Layout.Row = 7;
       app.EditField_137.Layout.Column = 9;
@@ -2514,6 +2828,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_138
       app.EditField_138 = uieditfield(app.GridLayout2_2, 'text');
+      app.EditField_138.ValueChangedFcn = createCallbackFcn(app, @EditField_109ValueChanged, true);
+      app.EditField_138.Tag = '19_5';
       app.EditField_138.HorizontalAlignment = 'center';
       app.EditField_138.Layout.Row = 7;
       app.EditField_138.Layout.Column = 10;
@@ -2529,6 +2845,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_140
       app.EditField_140 = uieditfield(app.GridLayout2_2, 'text');
+      app.EditField_140.ValueChangedFcn = createCallbackFcn(app, @EditField_109ValueChanged, true);
+      app.EditField_140.Tag = '11_6';
       app.EditField_140.HorizontalAlignment = 'center';
       app.EditField_140.Layout.Row = 8;
       app.EditField_140.Layout.Column = 2;
@@ -2536,6 +2854,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_141
       app.EditField_141 = uieditfield(app.GridLayout2_2, 'text');
+      app.EditField_141.ValueChangedFcn = createCallbackFcn(app, @EditField_109ValueChanged, true);
+      app.EditField_141.Tag = '12_6';
       app.EditField_141.HorizontalAlignment = 'center';
       app.EditField_141.Layout.Row = 8;
       app.EditField_141.Layout.Column = 3;
@@ -2543,6 +2863,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_142
       app.EditField_142 = uieditfield(app.GridLayout2_2, 'text');
+      app.EditField_142.ValueChangedFcn = createCallbackFcn(app, @EditField_109ValueChanged, true);
+      app.EditField_142.Tag = '13_6';
       app.EditField_142.HorizontalAlignment = 'center';
       app.EditField_142.Layout.Row = 8;
       app.EditField_142.Layout.Column = 4;
@@ -2550,6 +2872,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_143
       app.EditField_143 = uieditfield(app.GridLayout2_2, 'text');
+      app.EditField_143.ValueChangedFcn = createCallbackFcn(app, @EditField_109ValueChanged, true);
+      app.EditField_143.Tag = '14_6';
       app.EditField_143.HorizontalAlignment = 'center';
       app.EditField_143.Layout.Row = 8;
       app.EditField_143.Layout.Column = 5;
@@ -2557,6 +2881,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_144
       app.EditField_144 = uieditfield(app.GridLayout2_2, 'text');
+      app.EditField_144.ValueChangedFcn = createCallbackFcn(app, @EditField_109ValueChanged, true);
+      app.EditField_144.Tag = '15_6';
       app.EditField_144.HorizontalAlignment = 'center';
       app.EditField_144.Layout.Row = 8;
       app.EditField_144.Layout.Column = 6;
@@ -2564,6 +2890,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_145
       app.EditField_145 = uieditfield(app.GridLayout2_2, 'text');
+      app.EditField_145.ValueChangedFcn = createCallbackFcn(app, @EditField_109ValueChanged, true);
+      app.EditField_145.Tag = '16_6';
       app.EditField_145.HorizontalAlignment = 'center';
       app.EditField_145.Layout.Row = 8;
       app.EditField_145.Layout.Column = 7;
@@ -2571,6 +2899,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_146
       app.EditField_146 = uieditfield(app.GridLayout2_2, 'text');
+      app.EditField_146.ValueChangedFcn = createCallbackFcn(app, @EditField_109ValueChanged, true);
+      app.EditField_146.Tag = '17_6';
       app.EditField_146.HorizontalAlignment = 'center';
       app.EditField_146.Layout.Row = 8;
       app.EditField_146.Layout.Column = 8;
@@ -2578,6 +2908,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_147
       app.EditField_147 = uieditfield(app.GridLayout2_2, 'text');
+      app.EditField_147.ValueChangedFcn = createCallbackFcn(app, @EditField_109ValueChanged, true);
+      app.EditField_147.Tag = '18_6';
       app.EditField_147.HorizontalAlignment = 'center';
       app.EditField_147.Layout.Row = 8;
       app.EditField_147.Layout.Column = 9;
@@ -2585,6 +2917,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_148
       app.EditField_148 = uieditfield(app.GridLayout2_2, 'text');
+      app.EditField_148.ValueChangedFcn = createCallbackFcn(app, @EditField_109ValueChanged, true);
+      app.EditField_148.Tag = '19_6';
       app.EditField_148.HorizontalAlignment = 'center';
       app.EditField_148.Layout.Row = 8;
       app.EditField_148.Layout.Column = 10;
@@ -2600,6 +2934,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_150
       app.EditField_150 = uieditfield(app.GridLayout2_2, 'text');
+      app.EditField_150.ValueChangedFcn = createCallbackFcn(app, @EditField_109ValueChanged, true);
+      app.EditField_150.Tag = '11_7';
       app.EditField_150.HorizontalAlignment = 'center';
       app.EditField_150.Layout.Row = 9;
       app.EditField_150.Layout.Column = 2;
@@ -2607,6 +2943,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_151
       app.EditField_151 = uieditfield(app.GridLayout2_2, 'text');
+      app.EditField_151.ValueChangedFcn = createCallbackFcn(app, @EditField_109ValueChanged, true);
+      app.EditField_151.Tag = '12_7';
       app.EditField_151.HorizontalAlignment = 'center';
       app.EditField_151.Layout.Row = 9;
       app.EditField_151.Layout.Column = 3;
@@ -2614,6 +2952,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_152
       app.EditField_152 = uieditfield(app.GridLayout2_2, 'text');
+      app.EditField_152.ValueChangedFcn = createCallbackFcn(app, @EditField_109ValueChanged, true);
+      app.EditField_152.Tag = '13_7';
       app.EditField_152.HorizontalAlignment = 'center';
       app.EditField_152.Layout.Row = 9;
       app.EditField_152.Layout.Column = 4;
@@ -2629,6 +2969,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_154
       app.EditField_154 = uieditfield(app.GridLayout2_2, 'text');
+      app.EditField_154.ValueChangedFcn = createCallbackFcn(app, @EditField_109ValueChanged, true);
+      app.EditField_154.Tag = '15_7';
       app.EditField_154.HorizontalAlignment = 'center';
       app.EditField_154.Layout.Row = 9;
       app.EditField_154.Layout.Column = 6;
@@ -2636,6 +2978,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_155
       app.EditField_155 = uieditfield(app.GridLayout2_2, 'text');
+      app.EditField_155.ValueChangedFcn = createCallbackFcn(app, @EditField_109ValueChanged, true);
+      app.EditField_155.Tag = '16_7';
       app.EditField_155.HorizontalAlignment = 'center';
       app.EditField_155.Layout.Row = 9;
       app.EditField_155.Layout.Column = 7;
@@ -2643,6 +2987,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_156
       app.EditField_156 = uieditfield(app.GridLayout2_2, 'text');
+      app.EditField_156.ValueChangedFcn = createCallbackFcn(app, @EditField_109ValueChanged, true);
+      app.EditField_156.Tag = '17_7';
       app.EditField_156.HorizontalAlignment = 'center';
       app.EditField_156.Layout.Row = 9;
       app.EditField_156.Layout.Column = 8;
@@ -2650,6 +2996,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_157
       app.EditField_157 = uieditfield(app.GridLayout2_2, 'text');
+      app.EditField_157.ValueChangedFcn = createCallbackFcn(app, @EditField_109ValueChanged, true);
+      app.EditField_157.Tag = '18_7';
       app.EditField_157.HorizontalAlignment = 'center';
       app.EditField_157.Layout.Row = 9;
       app.EditField_157.Layout.Column = 9;
@@ -2673,6 +3021,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_160
       app.EditField_160 = uieditfield(app.GridLayout2_2, 'text');
+      app.EditField_160.ValueChangedFcn = createCallbackFcn(app, @EditField_109ValueChanged, true);
+      app.EditField_160.Tag = '11_8';
       app.EditField_160.HorizontalAlignment = 'center';
       app.EditField_160.Layout.Row = 10;
       app.EditField_160.Layout.Column = 2;
@@ -2680,6 +3030,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_161
       app.EditField_161 = uieditfield(app.GridLayout2_2, 'text');
+      app.EditField_161.ValueChangedFcn = createCallbackFcn(app, @EditField_109ValueChanged, true);
+      app.EditField_161.Tag = '12_8';
       app.EditField_161.HorizontalAlignment = 'center';
       app.EditField_161.Layout.Row = 10;
       app.EditField_161.Layout.Column = 3;
@@ -2687,6 +3039,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_162
       app.EditField_162 = uieditfield(app.GridLayout2_2, 'text');
+      app.EditField_162.ValueChangedFcn = createCallbackFcn(app, @EditField_109ValueChanged, true);
+      app.EditField_162.Tag = '13_8';
       app.EditField_162.HorizontalAlignment = 'center';
       app.EditField_162.Layout.Row = 10;
       app.EditField_162.Layout.Column = 4;
@@ -2702,6 +3056,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_164
       app.EditField_164 = uieditfield(app.GridLayout2_2, 'text');
+      app.EditField_164.ValueChangedFcn = createCallbackFcn(app, @EditField_109ValueChanged, true);
+      app.EditField_164.Tag = '15_8';
       app.EditField_164.HorizontalAlignment = 'center';
       app.EditField_164.Layout.Row = 10;
       app.EditField_164.Layout.Column = 6;
@@ -2709,6 +3065,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_165
       app.EditField_165 = uieditfield(app.GridLayout2_2, 'text');
+      app.EditField_165.ValueChangedFcn = createCallbackFcn(app, @EditField_109ValueChanged, true);
+      app.EditField_165.Tag = '16_8';
       app.EditField_165.HorizontalAlignment = 'center';
       app.EditField_165.Layout.Row = 10;
       app.EditField_165.Layout.Column = 7;
@@ -2716,6 +3074,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_166
       app.EditField_166 = uieditfield(app.GridLayout2_2, 'text');
+      app.EditField_166.ValueChangedFcn = createCallbackFcn(app, @EditField_109ValueChanged, true);
+      app.EditField_166.Tag = '17_8';
       app.EditField_166.HorizontalAlignment = 'center';
       app.EditField_166.Layout.Row = 10;
       app.EditField_166.Layout.Column = 8;
@@ -2723,6 +3083,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
 
       % Create EditField_167
       app.EditField_167 = uieditfield(app.GridLayout2_2, 'text');
+      app.EditField_167.ValueChangedFcn = createCallbackFcn(app, @EditField_109ValueChanged, true);
+      app.EditField_167.Tag = '18_8';
       app.EditField_167.HorizontalAlignment = 'center';
       app.EditField_167.Layout.Row = 10;
       app.EditField_167.Layout.Column = 9;
