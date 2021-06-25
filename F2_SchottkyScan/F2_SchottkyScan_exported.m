@@ -2,53 +2,56 @@ classdef F2_SchottkyScan_exported < matlab.apps.AppBase
 
     % Properties that correspond to app components
     properties (Access = public)
-        SchottkyAppUIFigure         matlab.ui.Figure
-        GridLayout                  matlab.ui.container.GridLayout
-        LeftPanel                   matlab.ui.container.Panel
-        DevicePanel                 matlab.ui.container.Panel
-        KlystronDropDownLabel       matlab.ui.control.Label
-        KlystronDropDown            matlab.ui.control.DropDown
-        DiagnosticDropDownLabel     matlab.ui.control.Label
-        DiagnosticDropDown          matlab.ui.control.DropDown
-        PhaseToldegEditFieldLabel   matlab.ui.control.Label
-        PhaseToldegEditField        matlab.ui.control.NumericEditField
-        FC1SwitchLabel              matlab.ui.control.Label
-        FC1Switch                   matlab.ui.control.Switch
-        KLYSPDESEditFieldLabel      matlab.ui.control.Label
-        KLYSPDESEditField           matlab.ui.control.NumericEditField
-        KLYSPHASEditFieldLabel      matlab.ui.control.Label
-        KLYSPHASEditField           matlab.ui.control.NumericEditField
-        InStateLampLabel            matlab.ui.control.Label
-        InStateLamp                 matlab.ui.control.Lamp
-        SETPDESEditFieldLabel       matlab.ui.control.Label
-        SETPDESEditField            matlab.ui.control.NumericEditField
-        ScanPanel                   matlab.ui.container.Panel
-        PhaseStartEditFieldLabel    matlab.ui.control.Label
-        PhaseStartEditField         matlab.ui.control.NumericEditField
-        PhaseEndEditFieldLabel      matlab.ui.control.Label
-        PhaseEndEditField           matlab.ui.control.NumericEditField
-        StepsEditFieldLabel         matlab.ui.control.Label
-        StepsEditField              matlab.ui.control.NumericEditField
-        ShotsperstepEditFieldLabel  matlab.ui.control.Label
-        ShotsperstepEditField       matlab.ui.control.NumericEditField
-        StartButton                 matlab.ui.control.Button
-        AbortButton                 matlab.ui.control.Button
-        RestoreInitPhaseButton      matlab.ui.control.Button
-        StatusPanel                 matlab.ui.container.Panel
-        MessagesTextAreaLabel       matlab.ui.control.Label
-        MessagesTextArea            matlab.ui.control.TextArea
-        SettingPhaseLampLabel       matlab.ui.control.Label
-        SettingPhaseLamp            matlab.ui.control.Lamp
-        AcquiringDataLampLabel      matlab.ui.control.Label
-        AcquiringDataLamp           matlab.ui.control.Lamp
-        RightPanel                  matlab.ui.container.Panel
-        UIAxes                      matlab.ui.control.UIAxes
-        PrinttoeLogButton           matlab.ui.control.Button
-        SaveDataCheckBox            matlab.ui.control.CheckBox
-        AnalysisPanel               matlab.ui.container.Panel
-        PlotVariableButtonGroup     matlab.ui.container.ButtonGroup
-        ChargeButton                matlab.ui.control.RadioButton
-        QEButton                    matlab.ui.control.RadioButton
+        SchottkyAppUIFigure           matlab.ui.Figure
+        GridLayout                    matlab.ui.container.GridLayout
+        LeftPanel                     matlab.ui.container.Panel
+        DevicePanel                   matlab.ui.container.Panel
+        KlystronDropDownLabel         matlab.ui.control.Label
+        KlystronDropDown              matlab.ui.control.DropDown
+        DiagnosticDropDownLabel       matlab.ui.control.Label
+        DiagnosticDropDown            matlab.ui.control.DropDown
+        PhaseToldegEditFieldLabel     matlab.ui.control.Label
+        PhaseToldegEditField          matlab.ui.control.NumericEditField
+        FC1SwitchLabel                matlab.ui.control.Label
+        FC1Switch                     matlab.ui.control.Switch
+        GUNPDESEditFieldLabel         matlab.ui.control.Label
+        GUNPDESEditField              matlab.ui.control.NumericEditField
+        GUNPHASEditFieldLabel         matlab.ui.control.Label
+        GUNPHASEditField              matlab.ui.control.NumericEditField
+        InStateLampLabel              matlab.ui.control.Label
+        InStateLamp                   matlab.ui.control.Lamp
+        SetSlowFeedbackPDESEditFieldLabel  matlab.ui.control.Label
+        SetSlowFeedbackPDESEditField  matlab.ui.control.NumericEditField
+        ScanPanel                     matlab.ui.container.Panel
+        PhaseStartEditFieldLabel      matlab.ui.control.Label
+        PhaseStartEditField           matlab.ui.control.NumericEditField
+        PhaseEndEditFieldLabel        matlab.ui.control.Label
+        PhaseEndEditField             matlab.ui.control.NumericEditField
+        StepsEditFieldLabel           matlab.ui.control.Label
+        StepsEditField                matlab.ui.control.NumericEditField
+        ShotsperstepEditFieldLabel    matlab.ui.control.Label
+        ShotsperstepEditField         matlab.ui.control.NumericEditField
+        StartButton                   matlab.ui.control.Button
+        AbortButton                   matlab.ui.control.Button
+        RestoreInitPhaseButton        matlab.ui.control.Button
+        StatusPanel                   matlab.ui.container.Panel
+        MessagesTextAreaLabel         matlab.ui.control.Label
+        MessagesTextArea              matlab.ui.control.TextArea
+        SettingPhaseLampLabel         matlab.ui.control.Label
+        SettingPhaseLamp              matlab.ui.control.Lamp
+        AcquiringDataLampLabel        matlab.ui.control.Label
+        AcquiringDataLamp             matlab.ui.control.Lamp
+        RightPanel                    matlab.ui.container.Panel
+        UIAxes                        matlab.ui.control.UIAxes
+        PrinttoeLogButton             matlab.ui.control.Button
+        SaveDataCheckBox              matlab.ui.control.CheckBox
+        AnalysisPanel                 matlab.ui.container.Panel
+        PlotVariableButtonGroup       matlab.ui.container.ButtonGroup
+        ChargeButton                  matlab.ui.control.RadioButton
+        QEButton                      matlab.ui.control.RadioButton
+        SetdesiredphaseCheckBox       matlab.ui.control.CheckBox
+        PhaseOffsetEditFieldLabel     matlab.ui.control.Label
+        PhaseOffsetEditField          matlab.ui.control.NumericEditField
     end
 
     % Properties that correspond to apps with auto-reflow
@@ -136,9 +139,9 @@ classdef F2_SchottkyScan_exported < matlab.apps.AppBase
             app.aobj.getScanParams();
         end
 
-        % Value changed function: SETPDESEditField
-        function SETPDESEditFieldValueChanged(app, event)
-            value = app.SETPDESEditField.Value;
+        % Value changed function: SetSlowFeedbackPDESEditField
+        function SetSlowFeedbackPDESEditFieldValueChanged(app, event)
+            value = app.SetSlowFeedbackPDESEditField.Value;
             app.aobj.SetPhas(value);
         end
 
@@ -230,7 +233,7 @@ classdef F2_SchottkyScan_exported < matlab.apps.AppBase
             app.PhaseToldegEditField.Limits = [0 180];
             app.PhaseToldegEditField.ValueChangedFcn = createCallbackFcn(app, @PhaseToldegEditFieldValueChanged, true);
             app.PhaseToldegEditField.Position = [125 133 73 22];
-            app.PhaseToldegEditField.Value = 0.2;
+            app.PhaseToldegEditField.Value = 3;
 
             % Create FC1SwitchLabel
             app.FC1SwitchLabel = uilabel(app.DevicePanel);
@@ -246,25 +249,25 @@ classdef F2_SchottkyScan_exported < matlab.apps.AppBase
             app.FC1Switch.Position = [107 35 45 20];
             app.FC1Switch.Value = 'Out';
 
-            % Create KLYSPDESEditFieldLabel
-            app.KLYSPDESEditFieldLabel = uilabel(app.DevicePanel);
-            app.KLYSPDESEditFieldLabel.HorizontalAlignment = 'right';
-            app.KLYSPDESEditFieldLabel.Position = [216 163 72 22];
-            app.KLYSPDESEditFieldLabel.Text = 'KLYS PDES';
+            % Create GUNPDESEditFieldLabel
+            app.GUNPDESEditFieldLabel = uilabel(app.DevicePanel);
+            app.GUNPDESEditFieldLabel.HorizontalAlignment = 'right';
+            app.GUNPDESEditFieldLabel.Position = [288 163 68 22];
+            app.GUNPDESEditFieldLabel.Text = 'GUN PDES';
 
-            % Create KLYSPDESEditField
-            app.KLYSPDESEditField = uieditfield(app.DevicePanel, 'numeric');
-            app.KLYSPDESEditField.Position = [298 163 64 22];
+            % Create GUNPDESEditField
+            app.GUNPDESEditField = uieditfield(app.DevicePanel, 'numeric');
+            app.GUNPDESEditField.Position = [359 163 42 22];
 
-            % Create KLYSPHASEditFieldLabel
-            app.KLYSPHASEditFieldLabel = uilabel(app.DevicePanel);
-            app.KLYSPHASEditFieldLabel.HorizontalAlignment = 'right';
-            app.KLYSPHASEditFieldLabel.Position = [216 133 72 22];
-            app.KLYSPHASEditFieldLabel.Text = 'KLYS PHAS';
+            % Create GUNPHASEditFieldLabel
+            app.GUNPHASEditFieldLabel = uilabel(app.DevicePanel);
+            app.GUNPHASEditFieldLabel.HorizontalAlignment = 'right';
+            app.GUNPHASEditFieldLabel.Position = [287 133 68 22];
+            app.GUNPHASEditFieldLabel.Text = 'GUN PHAS';
 
-            % Create KLYSPHASEditField
-            app.KLYSPHASEditField = uieditfield(app.DevicePanel, 'numeric');
-            app.KLYSPHASEditField.Position = [298 133 64 22];
+            % Create GUNPHASEditField
+            app.GUNPHASEditField = uieditfield(app.DevicePanel, 'numeric');
+            app.GUNPHASEditField.Position = [359 133 42 22];
 
             % Create InStateLampLabel
             app.InStateLampLabel = uilabel(app.DevicePanel);
@@ -277,18 +280,19 @@ classdef F2_SchottkyScan_exported < matlab.apps.AppBase
             app.InStateLamp = uilamp(app.DevicePanel);
             app.InStateLamp.Position = [59 42 10 10];
 
-            % Create SETPDESEditFieldLabel
-            app.SETPDESEditFieldLabel = uilabel(app.DevicePanel);
-            app.SETPDESEditFieldLabel.HorizontalAlignment = 'right';
-            app.SETPDESEditFieldLabel.FontWeight = 'bold';
-            app.SETPDESEditFieldLabel.Position = [224 98 64 22];
-            app.SETPDESEditFieldLabel.Text = 'SET PDES';
+            % Create SetSlowFeedbackPDESEditFieldLabel
+            app.SetSlowFeedbackPDESEditFieldLabel = uilabel(app.DevicePanel);
+            app.SetSlowFeedbackPDESEditFieldLabel.HorizontalAlignment = 'right';
+            app.SetSlowFeedbackPDESEditFieldLabel.FontWeight = 'bold';
+            app.SetSlowFeedbackPDESEditFieldLabel.Position = [206 102 149 22];
+            app.SetSlowFeedbackPDESEditFieldLabel.Text = 'Set Slow Feedback PDES';
 
-            % Create SETPDESEditField
-            app.SETPDESEditField = uieditfield(app.DevicePanel, 'numeric');
-            app.SETPDESEditField.ValueChangedFcn = createCallbackFcn(app, @SETPDESEditFieldValueChanged, true);
-            app.SETPDESEditField.FontWeight = 'bold';
-            app.SETPDESEditField.Position = [298 98 64 22];
+            % Create SetSlowFeedbackPDESEditField
+            app.SetSlowFeedbackPDESEditField = uieditfield(app.DevicePanel, 'numeric');
+            app.SetSlowFeedbackPDESEditField.Limits = [-180 180];
+            app.SetSlowFeedbackPDESEditField.ValueChangedFcn = createCallbackFcn(app, @SetSlowFeedbackPDESEditFieldValueChanged, true);
+            app.SetSlowFeedbackPDESEditField.FontWeight = 'bold';
+            app.SetSlowFeedbackPDESEditField.Position = [359 102 42 22];
 
             % Create ScanPanel
             app.ScanPanel = uipanel(app.LeftPanel);
@@ -422,6 +426,7 @@ classdef F2_SchottkyScan_exported < matlab.apps.AppBase
             title(app.UIAxes, 'Schottky Scan')
             xlabel(app.UIAxes, 'KLYS LI10 2-1 Phase [deg] ')
             ylabel(app.UIAxes, 'Charge [pC]')
+            app.UIAxes.FontSize = 14;
             app.UIAxes.HandleVisibility = 'off';
             app.UIAxes.Position = [7 282 432 314];
 
@@ -460,6 +465,24 @@ classdef F2_SchottkyScan_exported < matlab.apps.AppBase
             app.QEButton.Enable = 'off';
             app.QEButton.Text = 'QE';
             app.QEButton.Position = [11 7 65 22];
+
+            % Create SetdesiredphaseCheckBox
+            app.SetdesiredphaseCheckBox = uicheckbox(app.AnalysisPanel);
+            app.SetdesiredphaseCheckBox.Text = 'Set desired phase';
+            app.SetdesiredphaseCheckBox.Position = [13 37 121 22];
+            app.SetdesiredphaseCheckBox.Value = true;
+
+            % Create PhaseOffsetEditFieldLabel
+            app.PhaseOffsetEditFieldLabel = uilabel(app.AnalysisPanel);
+            app.PhaseOffsetEditFieldLabel.HorizontalAlignment = 'right';
+            app.PhaseOffsetEditFieldLabel.Position = [15 7 74 22];
+            app.PhaseOffsetEditFieldLabel.Text = 'Phase Offset';
+
+            % Create PhaseOffsetEditField
+            app.PhaseOffsetEditField = uieditfield(app.AnalysisPanel, 'numeric');
+            app.PhaseOffsetEditField.Limits = [-180 180];
+            app.PhaseOffsetEditField.Position = [97 7 34 22];
+            app.PhaseOffsetEditField.Value = 50;
 
             % Show the figure after all components are created
             app.SchottkyAppUIFigure.Visible = 'on';
