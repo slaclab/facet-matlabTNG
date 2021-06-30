@@ -18,11 +18,14 @@ classdef fbSISO < handle
     SetpointDeadband(1,2) = [-eps,eps] % Deadband- only update feeddback when move out of this range of setpoint
     SetpointDES = 0 % desired setpoint value
     ControlVar % control variable (PV object)
+    ControlVarType string {mustBeMember(ControlVarType,["single","doublepm"])} = "single" % doublepm = 2 PVs +/- ControlVal
+    ControlProto string {mustBeMember(ControlProto,["EPICS","AIDA"])} = "EPICS"
     SetpointVar % setpoint variable to use (PV or BufferData object)
     QualVar % Setpoint Quality control (PV object)
     ControlStatusVar cell % Control variable status PV (can be list)
     ControlStatusGood cell % OK if ControlStatusVar PV evaluates to this (if set) (can be list)
     Running logical = true % Externally controlled running state
+    InvertControlVal logical = false % Flip sign on control value before writing (negates the FB gain)
   end
   properties(SetObservable)
     Enable logical = false
@@ -52,14 +55,19 @@ classdef fbSISO < handle
       if ~exist('controlPV','var') || ~isa(controlPV,'PV')
         error('Must provide PV object for control variable');
       end
-      if controlPV.mode ~= "rw"
-        error('Control Variable PV does not have write permission');
-      end
       if ~exist('setpoint','var') || (~isa(setpoint,'PV') && ~isa(setpoint,'BufferData'))
         error('Must provide either PV or BufferData object for setpoint variable');
       end
       obj.SetpointVar = setpoint ;
       obj.ControlVar = controlPV ;
+      if length(controlPV)==2
+        obj.ControlVarType="doublepm";
+      end
+      if ~isa(controlPV,'PV')
+        obj.ControlProto="AIDA";
+      elseif controlPV.mode ~= "rw"
+        error('Control Variable PV does not have write permission');
+      end
       addlistener(obj,'DataUpdated',@(~,~) obj.ProcDataUpdated) ;
       if isa(obj.SetpointVar,'PV')
         obj.SetpointVar.monitor = true ;
@@ -133,6 +141,8 @@ classdef fbSISO < handle
           txt = txt + ", Setpoint Limit HIGH" ;
         case 3
           txt = txt + ", Setpoint Readback INVALID" ;
+        case 4
+          txt = txt + ", Setpoint Readback NOT changing" ;
       end
       switch obj.QualState
         case 1
@@ -151,7 +161,12 @@ classdef fbSISO < handle
   end
   methods(Access=private)
     function ProcDataUpdated(obj)
-      persistent lasttic laststate
+      persistent lasttic laststate lastvals valc
+      nvals=5; % error if unchanging
+      if isempty(lastvals)
+        lastvals=linspace(1,nvals,nvals);
+        valc=1;
+      end
       if obj.is_shutdown
         return
       end
@@ -164,7 +179,11 @@ classdef fbSISO < handle
       end
       % Read control variable and check status
       obj.ControlState = 0 ;
-      obj.ControlVal = caget(obj.ControlVar) ;
+      if obj.ControlProto=="EPICS"
+        obj.ControlVal = caget(obj.ControlVar(1)) ;
+      else
+        obj.ControlVal = aidaget(obj.ControlVar(1));
+      end
       if isnan(obj.ControlVal)
         obj.ControlState = 3 ;
       end
@@ -192,6 +211,13 @@ classdef fbSISO < handle
         obj.SetpointState = 2 ;
         obj.SetpointVal = obj.SetpointLimits(2) ;
       end 
+      % Check for repeating values
+      lastvals(valc) = obj.SetpointVal ;
+      valc=valc+1; 
+      if valc>nvals; valc=1; end
+      if all(lastvals==lastvals(1))
+        obj.SetpointState = 4 ;
+      end
       if ~isempty(obj.QualVar)
         obj.QualVal = caget(obj.QualVar) ;
         obj.QualState=0;
@@ -207,7 +233,15 @@ classdef fbSISO < handle
       if ~isempty(obj.ControlStatusVar)
         for ic=1:length(obj.ControlStatusVar)
           obj.ControlStatusVal{ic} = caget(obj.ControlStatusVar{ic}) ;
-          if ~isequal(obj.ControlStatusVal{ic},obj.ControlStatusGood{ic})
+          goodstat=obj.ControlStatusGood{ic};
+          cs=3;
+          for istat=1:length(goodstat)
+            if isequal(obj.ControlStatusVal{ic},goodstat{istat})
+              cs=0;
+              break
+            end
+          end
+          if cs==3
             obj.ControlState = 3 ;
           end
         end
@@ -216,8 +250,21 @@ classdef fbSISO < handle
       if obj.state==0
         dc = GetFeedback(obj) ;
         if obj.WriteEnable && abs(dc)>0 && ~isnan(dc) && ~isnan(dc)
-%           fprintf('Feedback val = %g\n',obj.ControlVal+dc);
-          caput(obj.ControlVar,obj.ControlVal+dc) ;
+          if obj.ControlVarType=="doublepm"
+            if obj.ControlProto=="EPICS"
+              caput(obj.ControlVar(1),obj.ControlVal+dc) ;
+              caput(obj.ControlVar(2),-(obj.ControlVal+dc)) ;
+            else
+              obj.aidaput(obj.ControlVar(1),obj.ControlVal+dc) ;
+              obj.aidaput(obj.ControlVar(2),-(obj.ControlVal+dc)) ;
+            end
+          else
+            if obj.ControlProto=="EPICS"
+              caput(obj.ControlVar,obj.ControlVal+dc) ;
+            else
+              obj.aidaput(obj.ControlVar,obj.ControlVal+dc) ;
+            end
+          end
         end
       end
       if isempty(laststate) || obj.state ~= laststate
@@ -229,7 +276,7 @@ classdef fbSISO < handle
       end
     end
     function dc = GetFeedback(obj)
-      %GETFEEDBACK Get neww control variable offset
+      %GETFEEDBACK Get new control variable offset
       dc=0;
       if obj.SetpointState<3
         switch obj.Method
@@ -244,6 +291,22 @@ classdef fbSISO < handle
           otherwise
             error('This feedback method not yet implemented');
         end
+        if obj.InvertControlVal
+          dc=-dc;
+        end
+      end
+    end
+    function aidaput(pv,val)
+      aidainit;
+      import java.util.Vector;
+      import edu.stanford.slac.aida.lib.da.DaObject;
+      da = DaObject();
+      da.setParam('TRIM','NO');
+      try
+        da.setDaValue(char(pv),DaValue(java.lang.Float(val)));
+      catch ME
+        fprintf(2,'Error setting AIDA PV: %s\n',pv);
+        fprintf(2,'%s',ME.message)
       end
     end
   end
