@@ -1,37 +1,37 @@
-classdef DL1E_Settings_exported < matlab.apps.AppBase
+classdef BC14E_Settings_exported < matlab.apps.AppBase
 
   % Properties that correspond to app components
   properties (Access = public)
-    FeedbackSettingsUIFigure        matlab.ui.Figure
-    GridLayout                      matlab.ui.container.GridLayout
-    LeftPanel                       matlab.ui.container.Panel
-    GainEditFieldLabel              matlab.ui.control.Label
-    GainEditField                   matlab.ui.control.NumericEditField
-    DL1EnergyFeedbackSettingsLabel  matlab.ui.control.Label
-    ControlVariableL0bADESLimitsPanel  matlab.ui.container.Panel
-    EditField                       matlab.ui.control.NumericEditField
-    EditField_2                     matlab.ui.control.NumericEditField
-    LowLabel                        matlab.ui.control.Label
-    HighLabel                       matlab.ui.control.Label
-    SetpointBPM10731SaturationLimitsmmPanel  matlab.ui.container.Panel
-    EditField_3                     matlab.ui.control.NumericEditField
-    EditField_4                     matlab.ui.control.NumericEditField
-    LowLabel_2                      matlab.ui.control.Label
-    HighLabel_2                     matlab.ui.control.Label
+    FeedbackSettingsUIFigure  matlab.ui.Figure
+    GridLayout                matlab.ui.container.GridLayout
+    LeftPanel                 matlab.ui.container.Panel
+    GainEditFieldLabel        matlab.ui.control.Label
+    GainEditField             matlab.ui.control.NumericEditField
+    BC14EnergyFeedbackSettingsLabel  matlab.ui.control.Label
+    ControlVariableL2FBPhaseLimitsPanel  matlab.ui.container.Panel
+    EditField                 matlab.ui.control.NumericEditField
+    EditField_2               matlab.ui.control.NumericEditField
+    LowLabel                  matlab.ui.control.Label
+    HighLabel                 matlab.ui.control.Label
+    SetpointBPM14801SaturationLimitsmmPanel  matlab.ui.container.Panel
+    EditField_3               matlab.ui.control.NumericEditField
+    EditField_4               matlab.ui.control.NumericEditField
+    LowLabel_2                matlab.ui.control.Label
+    HighLabel_2               matlab.ui.control.Label
     SetpointFilterFreqHz0OFFEditFieldLabel  matlab.ui.control.Label
-    FilterFreqEditField             matlab.ui.control.NumericEditField
-    SetpointBPM10731DeadbandLimitsmmPanel  matlab.ui.container.Panel
-    EditField_5                     matlab.ui.control.NumericEditField
-    EditField_6                     matlab.ui.control.NumericEditField
-    LowLabel_3                      matlab.ui.control.Label
-    HighLabel_3                     matlab.ui.control.Label
-    SetpointBPM10731TMITLimitsNe9Panel  matlab.ui.container.Panel
-    EditField_7                     matlab.ui.control.NumericEditField
-    EditField_8                     matlab.ui.control.NumericEditField
-    LowLabel_4                      matlab.ui.control.Label
-    HighLabel_4                     matlab.ui.control.Label
-    RightPanel                      matlab.ui.container.Panel
-    UIAxes                          matlab.ui.control.UIAxes
+    FilterFreqEditField       matlab.ui.control.NumericEditField
+    SetpointBPM14801DeadbandLimitsmmPanel  matlab.ui.container.Panel
+    EditField_5               matlab.ui.control.NumericEditField
+    EditField_6               matlab.ui.control.NumericEditField
+    LowLabel_3                matlab.ui.control.Label
+    HighLabel_3               matlab.ui.control.Label
+    SetpointBPM14801TMITLimitsNe9Panel  matlab.ui.container.Panel
+    EditField_7               matlab.ui.control.NumericEditField
+    EditField_8               matlab.ui.control.NumericEditField
+    LowLabel_4                matlab.ui.control.Label
+    HighLabel_4               matlab.ui.control.Label
+    RightPanel                matlab.ui.container.Panel
+    UIAxes                    matlab.ui.control.UIAxes
   end
 
   % Properties that correspond to apps with auto-reflow
@@ -52,19 +52,20 @@ classdef DL1E_Settings_exported < matlab.apps.AppBase
     function startupFcn(app, FeedbackApp)
       app.aobj = FeedbackApp ;
       app.aobj.SettingsGui = app ;
-      app.aobj.Feedbacks(1).SetpointVar.axhan=app.UIAxes;
-      app.aobj.Feedbacks(1).SetpointVar.StripPlot=true;
-      gh.DL1E_Gain = app.GainEditField ;
-      gh.DL1E_ControlLimitLo = app. EditField ;
-      gh.DL1E_ControlLimitHi = app. EditField_2 ;
-      gh.DL1E_SetpointLimitLo = app.EditField_3 ;
-      gh.DL1E_SetpointLimitHi = app.EditField_4 ;
-      gh.DL1E_SetpointFilterFreq = app.FilterFreqEditField ;
-      gh.DL1E_SetpointDeadbandLo = app.EditField_5 ;
-      gh.DL1E_SetpointDeadbandHi = app.EditField_6 ;
-      gh.DL1E_TMITLo = app.EditField_7 ;
-      gh.DL1E_TMITHi = app.EditField_8 ;
-      app.aobj.DL1ESettingsGui(gh,"Attach");
+      app.aobj.SettingsGui_whichFeedback = 2 ;
+      app.aobj.Feedbacks(2).SetpointVar.axhan=app.UIAxes;
+      app.aobj.Feedbacks(2).SetpointVar.StripPlot=true;
+      gh.BC14E_Gain = app.GainEditField ;
+      gh.BC14E_ControlLimitLo = app. EditField ;
+      gh.BC14E_ControlLimitHi = app. EditField_2 ;
+      gh.BC14E_SetpointLimitLo = app.EditField_3 ;
+      gh.BC14E_SetpointLimitHi = app.EditField_4 ;
+      gh.BC14E_SetpointFilterFreq = app.FilterFreqEditField ;
+      gh.BC14E_SetpointDeadbandLo = app.EditField_5 ;
+      gh.BC14E_SetpointDeadbandHi = app.EditField_6 ;
+      gh.BC14E_TMITLo = app.EditField_7 ;
+      gh.BC14E_TMITHi = app.EditField_8 ;
+      app.aobj.SettingsGuiLink(gh,"Attach");
       fn=fieldnames(gh);
       for ifn=1:length(fn)
         gh.(fn{ifn}).Value = app.aobj.pvs.(fn{ifn}).val{1} ;
@@ -73,17 +74,17 @@ classdef DL1E_Settings_exported < matlab.apps.AppBase
 
     % Close request function: FeedbackSettingsUIFigure
     function FeedbackSettingsUIFigureCloseRequest(app, event)
-      gh.DL1E_Gain = app.GainEditField ;
-      gh.DL1E_ControlLimitLo = app. EditField ;
-      gh.DL1E_ControlLimitHi = app. EditField_2 ;
-      gh.DL1E_SetpointLimitLo = app.EditField_3 ;
-      gh.DL1E_SetpointLimitHi = app.EditField_4 ;
-      gh.DL1E_SetpointFilterFreq = app.FilterFreqEditField ;
-      gh.DL1E_SetpointDeadbandLo = app.EditField_5 ;
-      gh.DL1E_SetpointDeadbandHi = app.EditField_6 ;
-      gh.DL1E_TMITLo = app.EditField_7 ;
-      gh.DL1E_TMITHi = app.EditField_8 ;
-      app.aobj.DL1ESettingsGui(gh,"Detach");
+      gh.BC14E_Gain = app.GainEditField ;
+      gh.BC14E_ControlLimitLo = app. EditField ;
+      gh.BC14E_ControlLimitHi = app. EditField_2 ;
+      gh.BC14E_SetpointLimitLo = app.EditField_3 ;
+      gh.BC14E_SetpointLimitHi = app.EditField_4 ;
+      gh.BC14E_SetpointFilterFreq = app.FilterFreqEditField ;
+      gh.BC14E_SetpointDeadbandLo = app.EditField_5 ;
+      gh.BC14E_SetpointDeadbandHi = app.EditField_6 ;
+      gh.BC14E_TMITLo = app.EditField_7 ;
+      gh.BC14E_TMITHi = app.EditField_8 ;
+      app.aobj.SettingsGuiLink(gh,"Detach");
       app.aobj.Feedbacks(1).SetpointVar.StripPlot=false;
       app.aobj.Feedbacks(1).SetpointVar.axhan=[];
       app.aobj.SettingsGui=[];
@@ -150,64 +151,64 @@ classdef DL1E_Settings_exported < matlab.apps.AppBase
       app.GainEditField.Position = [122 417 100 22];
       app.GainEditField.Value = 1;
 
-      % Create DL1EnergyFeedbackSettingsLabel
-      app.DL1EnergyFeedbackSettingsLabel = uilabel(app.LeftPanel);
-      app.DL1EnergyFeedbackSettingsLabel.FontSize = 18;
-      app.DL1EnergyFeedbackSettingsLabel.FontWeight = 'bold';
-      app.DL1EnergyFeedbackSettingsLabel.FontColor = [0.9294 0.6941 0.1255];
-      app.DL1EnergyFeedbackSettingsLabel.Position = [11 450 272 23];
-      app.DL1EnergyFeedbackSettingsLabel.Text = 'DL1 Energy Feedback Settings';
+      % Create BC14EnergyFeedbackSettingsLabel
+      app.BC14EnergyFeedbackSettingsLabel = uilabel(app.LeftPanel);
+      app.BC14EnergyFeedbackSettingsLabel.FontSize = 18;
+      app.BC14EnergyFeedbackSettingsLabel.FontWeight = 'bold';
+      app.BC14EnergyFeedbackSettingsLabel.FontColor = [0 0.4471 0.7412];
+      app.BC14EnergyFeedbackSettingsLabel.Position = [11 450 284 23];
+      app.BC14EnergyFeedbackSettingsLabel.Text = 'BC14 Energy Feedback Settings';
 
-      % Create ControlVariableL0bADESLimitsPanel
-      app.ControlVariableL0bADESLimitsPanel = uipanel(app.LeftPanel);
-      app.ControlVariableL0bADESLimitsPanel.Title = 'Control Variable: L0b ADES Limits';
-      app.ControlVariableL0bADESLimitsPanel.Position = [17 322 260 85];
+      % Create ControlVariableL2FBPhaseLimitsPanel
+      app.ControlVariableL2FBPhaseLimitsPanel = uipanel(app.LeftPanel);
+      app.ControlVariableL2FBPhaseLimitsPanel.Title = 'Control Variable: L2 FB Phase Limits';
+      app.ControlVariableL2FBPhaseLimitsPanel.Position = [17 322 260 85];
 
       % Create EditField
-      app.EditField = uieditfield(app.ControlVariableL0bADESLimitsPanel, 'numeric');
+      app.EditField = uieditfield(app.ControlVariableL2FBPhaseLimitsPanel, 'numeric');
       app.EditField.HorizontalAlignment = 'center';
       app.EditField.Position = [13 17 100 22];
 
       % Create EditField_2
-      app.EditField_2 = uieditfield(app.ControlVariableL0bADESLimitsPanel, 'numeric');
+      app.EditField_2 = uieditfield(app.ControlVariableL2FBPhaseLimitsPanel, 'numeric');
       app.EditField_2.HorizontalAlignment = 'center';
       app.EditField_2.Position = [138 17 100 22];
-      app.EditField_2.Value = 100;
+      app.EditField_2.Value = 90;
 
       % Create LowLabel
-      app.LowLabel = uilabel(app.ControlVariableL0bADESLimitsPanel);
+      app.LowLabel = uilabel(app.ControlVariableL2FBPhaseLimitsPanel);
       app.LowLabel.Position = [49 38 28 22];
       app.LowLabel.Text = 'Low';
 
       % Create HighLabel
-      app.HighLabel = uilabel(app.ControlVariableL0bADESLimitsPanel);
+      app.HighLabel = uilabel(app.ControlVariableL2FBPhaseLimitsPanel);
       app.HighLabel.Position = [174 38 31 22];
       app.HighLabel.Text = 'High';
 
-      % Create SetpointBPM10731SaturationLimitsmmPanel
-      app.SetpointBPM10731SaturationLimitsmmPanel = uipanel(app.LeftPanel);
-      app.SetpointBPM10731SaturationLimitsmmPanel.Title = 'Setpoint: BPM10731 Saturation Limits [mm]';
-      app.SetpointBPM10731SaturationLimitsmmPanel.Position = [17 232 260 85];
+      % Create SetpointBPM14801SaturationLimitsmmPanel
+      app.SetpointBPM14801SaturationLimitsmmPanel = uipanel(app.LeftPanel);
+      app.SetpointBPM14801SaturationLimitsmmPanel.Title = 'Setpoint: BPM14801 Saturation Limits [mm]';
+      app.SetpointBPM14801SaturationLimitsmmPanel.Position = [17 232 260 85];
 
       % Create EditField_3
-      app.EditField_3 = uieditfield(app.SetpointBPM10731SaturationLimitsmmPanel, 'numeric');
+      app.EditField_3 = uieditfield(app.SetpointBPM14801SaturationLimitsmmPanel, 'numeric');
       app.EditField_3.HorizontalAlignment = 'center';
       app.EditField_3.Position = [13 17 100 22];
       app.EditField_3.Value = -5;
 
       % Create EditField_4
-      app.EditField_4 = uieditfield(app.SetpointBPM10731SaturationLimitsmmPanel, 'numeric');
+      app.EditField_4 = uieditfield(app.SetpointBPM14801SaturationLimitsmmPanel, 'numeric');
       app.EditField_4.HorizontalAlignment = 'center';
       app.EditField_4.Position = [138 17 100 22];
       app.EditField_4.Value = 5;
 
       % Create LowLabel_2
-      app.LowLabel_2 = uilabel(app.SetpointBPM10731SaturationLimitsmmPanel);
+      app.LowLabel_2 = uilabel(app.SetpointBPM14801SaturationLimitsmmPanel);
       app.LowLabel_2.Position = [49 38 28 22];
       app.LowLabel_2.Text = 'Low';
 
       % Create HighLabel_2
-      app.HighLabel_2 = uilabel(app.SetpointBPM10731SaturationLimitsmmPanel);
+      app.HighLabel_2 = uilabel(app.SetpointBPM14801SaturationLimitsmmPanel);
       app.HighLabel_2.Position = [174 38 31 22];
       app.HighLabel_2.Text = 'High';
 
@@ -222,57 +223,57 @@ classdef DL1E_Settings_exported < matlab.apps.AppBase
       app.FilterFreqEditField.Position = [172 18 100 22];
       app.FilterFreqEditField.Value = 0.1;
 
-      % Create SetpointBPM10731DeadbandLimitsmmPanel
-      app.SetpointBPM10731DeadbandLimitsmmPanel = uipanel(app.LeftPanel);
-      app.SetpointBPM10731DeadbandLimitsmmPanel.Title = 'Setpoint: BPM10731 Deadband Limits [mm]';
-      app.SetpointBPM10731DeadbandLimitsmmPanel.Position = [17 141 260 85];
+      % Create SetpointBPM14801DeadbandLimitsmmPanel
+      app.SetpointBPM14801DeadbandLimitsmmPanel = uipanel(app.LeftPanel);
+      app.SetpointBPM14801DeadbandLimitsmmPanel.Title = 'Setpoint: BPM14801 Deadband Limits [mm]';
+      app.SetpointBPM14801DeadbandLimitsmmPanel.Position = [17 141 260 85];
 
       % Create EditField_5
-      app.EditField_5 = uieditfield(app.SetpointBPM10731DeadbandLimitsmmPanel, 'numeric');
+      app.EditField_5 = uieditfield(app.SetpointBPM14801DeadbandLimitsmmPanel, 'numeric');
       app.EditField_5.HorizontalAlignment = 'center';
       app.EditField_5.Position = [13 17 100 22];
       app.EditField_5.Value = -0.2;
 
       % Create EditField_6
-      app.EditField_6 = uieditfield(app.SetpointBPM10731DeadbandLimitsmmPanel, 'numeric');
+      app.EditField_6 = uieditfield(app.SetpointBPM14801DeadbandLimitsmmPanel, 'numeric');
       app.EditField_6.HorizontalAlignment = 'center';
       app.EditField_6.Position = [138 17 100 22];
       app.EditField_6.Value = 0.2;
 
       % Create LowLabel_3
-      app.LowLabel_3 = uilabel(app.SetpointBPM10731DeadbandLimitsmmPanel);
+      app.LowLabel_3 = uilabel(app.SetpointBPM14801DeadbandLimitsmmPanel);
       app.LowLabel_3.Position = [49 38 28 22];
       app.LowLabel_3.Text = 'Low';
 
       % Create HighLabel_3
-      app.HighLabel_3 = uilabel(app.SetpointBPM10731DeadbandLimitsmmPanel);
+      app.HighLabel_3 = uilabel(app.SetpointBPM14801DeadbandLimitsmmPanel);
       app.HighLabel_3.Position = [174 38 31 22];
       app.HighLabel_3.Text = 'High';
 
-      % Create SetpointBPM10731TMITLimitsNe9Panel
-      app.SetpointBPM10731TMITLimitsNe9Panel = uipanel(app.LeftPanel);
-      app.SetpointBPM10731TMITLimitsNe9Panel.Title = 'Setpoint: BPM10731 TMIT Limits [Ne^9]';
-      app.SetpointBPM10731TMITLimitsNe9Panel.Position = [17 49 260 85];
+      % Create SetpointBPM14801TMITLimitsNe9Panel
+      app.SetpointBPM14801TMITLimitsNe9Panel = uipanel(app.LeftPanel);
+      app.SetpointBPM14801TMITLimitsNe9Panel.Title = 'Setpoint: BPM14801 TMIT Limits [Ne^9]';
+      app.SetpointBPM14801TMITLimitsNe9Panel.Position = [17 49 260 85];
 
       % Create EditField_7
-      app.EditField_7 = uieditfield(app.SetpointBPM10731TMITLimitsNe9Panel, 'numeric');
+      app.EditField_7 = uieditfield(app.SetpointBPM14801TMITLimitsNe9Panel, 'numeric');
       app.EditField_7.HorizontalAlignment = 'center';
       app.EditField_7.Position = [13 17 100 22];
       app.EditField_7.Value = 0.5;
 
       % Create EditField_8
-      app.EditField_8 = uieditfield(app.SetpointBPM10731TMITLimitsNe9Panel, 'numeric');
+      app.EditField_8 = uieditfield(app.SetpointBPM14801TMITLimitsNe9Panel, 'numeric');
       app.EditField_8.HorizontalAlignment = 'center';
       app.EditField_8.Position = [138 17 100 22];
       app.EditField_8.Value = 50;
 
       % Create LowLabel_4
-      app.LowLabel_4 = uilabel(app.SetpointBPM10731TMITLimitsNe9Panel);
+      app.LowLabel_4 = uilabel(app.SetpointBPM14801TMITLimitsNe9Panel);
       app.LowLabel_4.Position = [49 38 28 22];
       app.LowLabel_4.Text = 'Low';
 
       % Create HighLabel_4
-      app.HighLabel_4 = uilabel(app.SetpointBPM10731TMITLimitsNe9Panel);
+      app.HighLabel_4 = uilabel(app.SetpointBPM14801TMITLimitsNe9Panel);
       app.HighLabel_4.Position = [174 38 31 22];
       app.HighLabel_4.Text = 'High';
 
@@ -283,7 +284,7 @@ classdef DL1E_Settings_exported < matlab.apps.AppBase
 
       % Create UIAxes
       app.UIAxes = uiaxes(app.RightPanel);
-      title(app.UIAxes, 'BPM10731:X')
+      title(app.UIAxes, 'BPM14801')
       xlabel(app.UIAxes, 'time [s]')
       ylabel(app.UIAxes, 'X [mm]')
       app.UIAxes.Position = [4 6 588 470];
@@ -297,7 +298,7 @@ classdef DL1E_Settings_exported < matlab.apps.AppBase
   methods (Access = public)
 
     % Construct app
-    function app = DL1E_Settings_exported(varargin)
+    function app = BC14E_Settings_exported(varargin)
 
       % Create UIFigure and components
       createComponents(app)

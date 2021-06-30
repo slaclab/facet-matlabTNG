@@ -52,7 +52,7 @@ classdef fbSISO < handle
       %FBSISO
       % FB = fbSISO(controlPV,setpointPV)
       % FB = fbSISO(controlPV,SetPointBufferDataObject)
-      if ~exist('controlPV','var') || ~isa(controlPV,'PV')
+      if ~exist('controlPV','var')
         error('Must provide PV object for control variable');
       end
       if ~exist('setpoint','var') || (~isa(setpoint,'PV') && ~isa(setpoint,'BufferData'))
@@ -200,7 +200,7 @@ classdef fbSISO < handle
       else
         obj.SetpointVal = obj.SetpointVar.Value ;
       end
-      if isnan(obj.SetpointVal)
+      if isempty(obj.SetpointVal) || isnan(obj.SetpointVal)
         obj.SetpointState = 3 ;
       end
       if obj.SetpointVal < obj.SetpointLimits(1)
@@ -212,11 +212,13 @@ classdef fbSISO < handle
         obj.SetpointVal = obj.SetpointLimits(2) ;
       end 
       % Check for repeating values
-      lastvals(valc) = obj.SetpointVal ;
-      valc=valc+1; 
-      if valc>nvals; valc=1; end
-      if all(lastvals==lastvals(1))
-        obj.SetpointState = 4 ;
+      if obj.SetpointState == 0
+        lastvals(valc) = obj.SetpointVal ;
+        valc=valc+1; 
+        if valc>nvals; valc=1; end
+        if all(lastvals==lastvals(1))
+          obj.SetpointState = 4 ;
+        end
       end
       if ~isempty(obj.QualVar)
         obj.QualVal = caget(obj.QualVar) ;

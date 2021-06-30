@@ -5,8 +5,10 @@ classdef F2_Feedback_exported < matlab.apps.AppBase
     FACETIIFeedbackUIFigure       matlab.ui.Figure
     StripchartsMenu               matlab.ui.container.Menu
     DL1EnergyMenu                 matlab.ui.container.Menu
+    BC14EnergyMenu                matlab.ui.container.Menu
     SettingsMenu                  matlab.ui.container.Menu
     DL1EnergyFeedbackMenu         matlab.ui.container.Menu
+    BC14EnergyFeedbackMenu        matlab.ui.container.Menu
     DisplayEnergyUnitsMenu        matlab.ui.container.Menu
     DL1EnergyFeedbackPanel        matlab.ui.container.Panel
     SetpointEditField             matlab.ui.control.NumericEditField
@@ -21,51 +23,33 @@ classdef F2_Feedback_exported < matlab.apps.AppBase
     EditField_2                   matlab.ui.control.NumericEditField
     NotRunningButton              matlab.ui.control.Button
     BC14EnergyFeedbackPanel       matlab.ui.container.Panel
-    KLYSLI1441PDESGauge           matlab.ui.control.Gauge
-    KLYSLI1451PDESGauge           matlab.ui.control.Gauge
     SetpointEditField_2           matlab.ui.control.NumericEditField
     MeVLabel_2                    matlab.ui.control.Label
     Switch_2                      matlab.ui.control.Switch
     StatusLamp_2                  matlab.ui.control.Lamp
-    KLYSLI1441PDESLabel           matlab.ui.control.Label
-    KLYSLI1451PDESLabel           matlab.ui.control.Label
+    BC14KLYS1Label                matlab.ui.control.Label
+    BC14KLYS2Label                matlab.ui.control.Label
     Gauge_6                       matlab.ui.control.LinearGauge
     BPMSLI14801X1HLabel           matlab.ui.control.Label
     EditField_5                   matlab.ui.control.NumericEditField
     EditField_6                   matlab.ui.control.NumericEditField
-    EditField_7                   matlab.ui.control.NumericEditField
     NotRunningButton_5            matlab.ui.control.Button
-    DL1BunchLengthFeedbackPanel   matlab.ui.container.Panel
-    SetpointEditField_3           matlab.ui.control.NumericEditField
-    mmLabel                       matlab.ui.control.Label
-    Gauge_4                       matlab.ui.control.LinearGauge
-    StatusLamp_3                  matlab.ui.control.Lamp
-    Switch_3                      matlab.ui.control.Switch
-    Gauge_5                       matlab.ui.control.LinearGauge
-    KLYSIN1021PDESLabel           matlab.ui.control.Label
-    BZ10561Label                  matlab.ui.control.Label
-    EditField_3                   matlab.ui.control.NumericEditField
-    EditField_4                   matlab.ui.control.NumericEditField
-    NotRunningButton_2            matlab.ui.control.Button
+    Gauge_16                      matlab.ui.control.NinetyDegreeGauge
+    Gauge_17                      matlab.ui.control.NinetyDegreeGauge
     BC20EnergyFeedbackPanel       matlab.ui.container.Panel
-    KLYSLI1441PDESGauge_2         matlab.ui.control.Gauge
-    KLYSLI1451PDESGauge_2         matlab.ui.control.Gauge
     SetpointEditField_4           matlab.ui.control.NumericEditField
     MeVLabel_4                    matlab.ui.control.Label
     Switch_4                      matlab.ui.control.Switch
     StatusLamp_4                  matlab.ui.control.Lamp
-    KLYSLI1931PDESLabel           matlab.ui.control.Label
-    KLYSLI1951PDESLabel           matlab.ui.control.Label
     Gauge_7                       matlab.ui.control.LinearGauge
     BPMSLI202445X1HLabel          matlab.ui.control.Label
     EditField_8                   matlab.ui.control.NumericEditField
     EditField_9                   matlab.ui.control.NumericEditField
-    EditField_10                  matlab.ui.control.NumericEditField
-    KLYSLI1441PDESGauge_3         matlab.ui.control.Gauge
-    KLYSLI1451PDESGauge_3         matlab.ui.control.Gauge
-    KLYSLI1941PDESLabel           matlab.ui.control.Label
-    KLYSLI1961PDESLabel           matlab.ui.control.Label
     NotRunningButton_6            matlab.ui.control.Button
+    BC14KLYS1Label_2              matlab.ui.control.Label
+    BC14KLYS2Label_2              matlab.ui.control.Label
+    Gauge_18                      matlab.ui.control.NinetyDegreeGauge
+    Gauge_19                      matlab.ui.control.NinetyDegreeGauge
     BC11EnergyFeedbackPanel       matlab.ui.container.Panel
     SetpointEditField_5           matlab.ui.control.NumericEditField
     MeVLabel_5                    matlab.ui.control.Label
@@ -122,7 +106,6 @@ classdef F2_Feedback_exported < matlab.apps.AppBase
     function SwitchValueChanged(app, event)
       value = string(app.Switch.Value) == "On" ;
       caput(app.aobj.pvs.FeedbackEnable,double(bitset(app.aobj.Enabled,1,value)));
-      disp(value)
     end
 
     % Menu selected function: DL1EnergyMenu
@@ -142,7 +125,7 @@ classdef F2_Feedback_exported < matlab.apps.AppBase
       if app.aobj.GuiEnergyUnits
         value = (value - app.aobj.SetpointConversion{1}(1)) / app.aobj.SetpointConversion{1}(2) ;
       end
-      caput(app.aobj.pvs.DL1E_Offset,value*1e3) ;
+      caput(app.aobj.pvs.DL1E_Offset,value) ;
       app.aobj.SetpointOffsets(1) = value ;
     end
 
@@ -163,6 +146,33 @@ classdef F2_Feedback_exported < matlab.apps.AppBase
       app.aobj.shutdown;
       delete(app)
     end
+
+    % Value changed function: SetpointEditField_2
+    function SetpointEditField_2ValueChanged(app, event)
+      value = app.SetpointEditField_2.Value;
+      if app.aobj.GuiEnergyUnits
+        value = (value - app.aobj.SetpointConversion{2}(1)) / app.aobj.SetpointConversion{2}(2) ;
+      end
+      caput(app.aobj.pvs.BC14E_Offset,value) ;
+      app.aobj.SetpointOffsets(1) = value ;
+    end
+
+    % Menu selected function: BC14EnergyMenu
+    function BC14EnergyMenuSelected(app, event)
+      !StripTool /u1/facet/tools/StripTool/config/FB_BC14_E.stp &
+    end
+
+    % Menu selected function: BC14EnergyFeedbackMenu
+    function BC14EnergyFeedbackMenuSelected(app, event)
+      app.BC14EnergyFeedbackMenu.Enable = false ;
+      BC14E_Settings(app.aobj);
+    end
+
+    % Value changed function: Switch_2
+    function Switch_2ValueChanged(app, event)
+      value = string(app.Switch_2.Value) == "On" ;
+      caput(app.aobj.pvs.FeedbackEnable,double(bitset(app.aobj.Enabled,2,value)));
+    end
   end
 
   % Component initialization
@@ -173,7 +183,7 @@ classdef F2_Feedback_exported < matlab.apps.AppBase
 
       % Create FACETIIFeedbackUIFigure and hide until all components are created
       app.FACETIIFeedbackUIFigure = uifigure('Visible', 'off');
-      app.FACETIIFeedbackUIFigure.Position = [100 100 982 673];
+      app.FACETIIFeedbackUIFigure.Position = [100 100 983 537];
       app.FACETIIFeedbackUIFigure.Name = 'FACET-II Feedback';
       app.FACETIIFeedbackUIFigure.CloseRequestFcn = createCallbackFcn(app, @FACETIIFeedbackUIFigureCloseRequest, true);
 
@@ -186,6 +196,11 @@ classdef F2_Feedback_exported < matlab.apps.AppBase
       app.DL1EnergyMenu.MenuSelectedFcn = createCallbackFcn(app, @DL1EnergyMenuSelected, true);
       app.DL1EnergyMenu.Text = 'DL1 Energy';
 
+      % Create BC14EnergyMenu
+      app.BC14EnergyMenu = uimenu(app.StripchartsMenu);
+      app.BC14EnergyMenu.MenuSelectedFcn = createCallbackFcn(app, @BC14EnergyMenuSelected, true);
+      app.BC14EnergyMenu.Text = 'BC14 Energy';
+
       % Create SettingsMenu
       app.SettingsMenu = uimenu(app.FACETIIFeedbackUIFigure);
       app.SettingsMenu.Text = 'Settings';
@@ -194,6 +209,11 @@ classdef F2_Feedback_exported < matlab.apps.AppBase
       app.DL1EnergyFeedbackMenu = uimenu(app.SettingsMenu);
       app.DL1EnergyFeedbackMenu.MenuSelectedFcn = createCallbackFcn(app, @DL1EnergyFeedbackMenuSelected, true);
       app.DL1EnergyFeedbackMenu.Text = 'DL1 Energy Feedback ...';
+
+      % Create BC14EnergyFeedbackMenu
+      app.BC14EnergyFeedbackMenu = uimenu(app.SettingsMenu);
+      app.BC14EnergyFeedbackMenu.MenuSelectedFcn = createCallbackFcn(app, @BC14EnergyFeedbackMenuSelected, true);
+      app.BC14EnergyFeedbackMenu.Text = 'BC14 Energy Feedback ...';
 
       % Create DisplayEnergyUnitsMenu
       app.DisplayEnergyUnitsMenu = uimenu(app.SettingsMenu);
@@ -205,7 +225,7 @@ classdef F2_Feedback_exported < matlab.apps.AppBase
       app.DL1EnergyFeedbackPanel.ForegroundColor = [0.9294 0.6941 0.1255];
       app.DL1EnergyFeedbackPanel.Title = 'DL1 Energy Feedback';
       app.DL1EnergyFeedbackPanel.FontWeight = 'bold';
-      app.DL1EnergyFeedbackPanel.Position = [18 523 472 138];
+      app.DL1EnergyFeedbackPanel.Position = [18 387 472 138];
 
       % Create SetpointEditField
       app.SetpointEditField = uieditfield(app.DL1EnergyFeedbackPanel, 'numeric');
@@ -284,60 +304,50 @@ classdef F2_Feedback_exported < matlab.apps.AppBase
       app.BC14EnergyFeedbackPanel.ForegroundColor = [0 0 1];
       app.BC14EnergyFeedbackPanel.Title = 'BC14 Energy Feedback';
       app.BC14EnergyFeedbackPanel.FontWeight = 'bold';
-      app.BC14EnergyFeedbackPanel.Position = [18 142 473 227];
-
-      % Create KLYSLI1441PDESGauge
-      app.KLYSLI1441PDESGauge = uigauge(app.BC14EnergyFeedbackPanel, 'circular');
-      app.KLYSLI1441PDESGauge.Limits = [-180 180];
-      app.KLYSLI1441PDESGauge.Position = [200 34 117 117];
-      app.KLYSLI1441PDESGauge.Value = -60;
-
-      % Create KLYSLI1451PDESGauge
-      app.KLYSLI1451PDESGauge = uigauge(app.BC14EnergyFeedbackPanel, 'circular');
-      app.KLYSLI1451PDESGauge.Limits = [-180 180];
-      app.KLYSLI1451PDESGauge.Position = [327 34 117 117];
-      app.KLYSLI1451PDESGauge.Value = 60;
+      app.BC14EnergyFeedbackPanel.Position = [18 151 473 227];
 
       % Create SetpointEditField_2
       app.SetpointEditField_2 = uieditfield(app.BC14EnergyFeedbackPanel, 'numeric');
+      app.SetpointEditField_2.ValueChangedFcn = createCallbackFcn(app, @SetpointEditField_2ValueChanged, true);
       app.SetpointEditField_2.HorizontalAlignment = 'center';
-      app.SetpointEditField_2.Position = [8 130 100 29];
+      app.SetpointEditField_2.Position = [26 121 100 29];
 
       % Create MeVLabel_2
       app.MeVLabel_2 = uilabel(app.BC14EnergyFeedbackPanel);
       app.MeVLabel_2.FontSize = 16;
-      app.MeVLabel_2.Position = [130 133 38 22];
+      app.MeVLabel_2.Position = [138 124 38 22];
       app.MeVLabel_2.Text = 'MeV';
 
       % Create Switch_2
       app.Switch_2 = uiswitch(app.BC14EnergyFeedbackPanel, 'slider');
-      app.Switch_2.Enable = 'off';
-      app.Switch_2.Position = [61 7 72 32];
+      app.Switch_2.Orientation = 'vertical';
+      app.Switch_2.ValueChangedFcn = createCallbackFcn(app, @Switch_2ValueChanged, true);
+      app.Switch_2.Position = [36 24 32 72];
 
       % Create StatusLamp_2
       app.StatusLamp_2 = uilamp(app.BC14EnergyFeedbackPanel);
       app.StatusLamp_2.Position = [8 171 29 29];
       app.StatusLamp_2.Color = [0 0 0];
 
-      % Create KLYSLI1441PDESLabel
-      app.KLYSLI1441PDESLabel = uilabel(app.BC14EnergyFeedbackPanel);
-      app.KLYSLI1441PDESLabel.Position = [204 151 116 22];
-      app.KLYSLI1441PDESLabel.Text = 'KLYS:LI14:41:PDES';
+      % Create BC14KLYS1Label
+      app.BC14KLYS1Label = uilabel(app.BC14EnergyFeedbackPanel);
+      app.BC14KLYS1Label.Position = [223 135 116 22];
+      app.BC14KLYS1Label.Text = 'KLYS:LI14:41:PDES';
 
-      % Create KLYSLI1451PDESLabel
-      app.KLYSLI1451PDESLabel = uilabel(app.BC14EnergyFeedbackPanel);
-      app.KLYSLI1451PDESLabel.Position = [327 151 116 22];
-      app.KLYSLI1451PDESLabel.Text = 'KLYS:LI14:51:PDES';
+      % Create BC14KLYS2Label
+      app.BC14KLYS2Label = uilabel(app.BC14EnergyFeedbackPanel);
+      app.BC14KLYS2Label.Position = [338 135 116 22];
+      app.BC14KLYS2Label.Text = 'KLYS:LI14:51:PDES';
 
       % Create Gauge_6
       app.Gauge_6 = uigauge(app.BC14EnergyFeedbackPanel, 'linear');
       app.Gauge_6.Limits = [-100 100];
       app.Gauge_6.FontSize = 10;
-      app.Gauge_6.Position = [32 71 126 34];
+      app.Gauge_6.Position = [116 40 126 34];
 
       % Create BPMSLI14801X1HLabel
       app.BPMSLI14801X1HLabel = uilabel(app.BC14EnergyFeedbackPanel);
-      app.BPMSLI14801X1HLabel.Position = [40 103 117 22];
+      app.BPMSLI14801X1HLabel.Position = [124 72 117 22];
       app.BPMSLI14801X1HLabel.Text = 'BPMS:LI14:801:X1H';
 
       % Create EditField_5
@@ -345,21 +355,14 @@ classdef F2_Feedback_exported < matlab.apps.AppBase
       app.EditField_5.Editable = 'off';
       app.EditField_5.HorizontalAlignment = 'center';
       app.EditField_5.FontSize = 10;
-      app.EditField_5.Position = [33 47 125 22];
+      app.EditField_5.Position = [117 16 125 22];
 
       % Create EditField_6
       app.EditField_6 = uieditfield(app.BC14EnergyFeedbackPanel, 'numeric');
       app.EditField_6.Editable = 'off';
       app.EditField_6.HorizontalAlignment = 'center';
       app.EditField_6.FontSize = 10;
-      app.EditField_6.Position = [198 7 125 22];
-
-      % Create EditField_7
-      app.EditField_7 = uieditfield(app.BC14EnergyFeedbackPanel, 'numeric');
-      app.EditField_7.Editable = 'off';
-      app.EditField_7.HorizontalAlignment = 'center';
-      app.EditField_7.FontSize = 10;
-      app.EditField_7.Position = [329 7 125 22];
+      app.EditField_6.Position = [274 12 125 22];
 
       % Create NotRunningButton_5
       app.NotRunningButton_5 = uibutton(app.BC14EnergyFeedbackPanel, 'push');
@@ -368,140 +371,58 @@ classdef F2_Feedback_exported < matlab.apps.AppBase
       app.NotRunningButton_5.Position = [51 175 414 24];
       app.NotRunningButton_5.Text = 'Not Running';
 
-      % Create DL1BunchLengthFeedbackPanel
-      app.DL1BunchLengthFeedbackPanel = uipanel(app.FACETIIFeedbackUIFigure);
-      app.DL1BunchLengthFeedbackPanel.ForegroundColor = [0.9294 0.6941 0.1255];
-      app.DL1BunchLengthFeedbackPanel.Title = 'DL1 Bunch Length Feedback';
-      app.DL1BunchLengthFeedbackPanel.FontWeight = 'bold';
-      app.DL1BunchLengthFeedbackPanel.Position = [500 523 472 138];
+      % Create Gauge_16
+      app.Gauge_16 = uigauge(app.BC14EnergyFeedbackPanel, 'ninetydegree');
+      app.Gauge_16.Limits = [0 90];
+      app.Gauge_16.Orientation = 'southwest';
+      app.Gauge_16.Position = [247 47 90 90];
+      app.Gauge_16.Value = 60;
 
-      % Create SetpointEditField_3
-      app.SetpointEditField_3 = uieditfield(app.DL1BunchLengthFeedbackPanel, 'numeric');
-      app.SetpointEditField_3.HorizontalAlignment = 'center';
-      app.SetpointEditField_3.Position = [17 50 100 29];
-      app.SetpointEditField_3.Value = 0.7;
-
-      % Create mmLabel
-      app.mmLabel = uilabel(app.DL1BunchLengthFeedbackPanel);
-      app.mmLabel.FontSize = 16;
-      app.mmLabel.Position = [130 53 31 22];
-      app.mmLabel.Text = 'mm';
-
-      % Create Gauge_4
-      app.Gauge_4 = uigauge(app.DL1BunchLengthFeedbackPanel, 'linear');
-      app.Gauge_4.Limits = [0.5 1.5];
-      app.Gauge_4.FontSize = 10;
-      app.Gauge_4.Position = [184 33 126 34];
-      app.Gauge_4.Value = 0.7;
-
-      % Create StatusLamp_3
-      app.StatusLamp_3 = uilamp(app.DL1BunchLengthFeedbackPanel);
-      app.StatusLamp_3.Position = [8 85 29 29];
-      app.StatusLamp_3.Color = [0 0 0];
-
-      % Create Switch_3
-      app.Switch_3 = uiswitch(app.DL1BunchLengthFeedbackPanel, 'slider');
-      app.Switch_3.Enable = 'off';
-      app.Switch_3.Position = [66 13 62 28];
-
-      % Create Gauge_5
-      app.Gauge_5 = uigauge(app.DL1BunchLengthFeedbackPanel, 'linear');
-      app.Gauge_5.Limits = [-180 180];
-      app.Gauge_5.FontSize = 10;
-      app.Gauge_5.Position = [334 32 126 35];
-      app.Gauge_5.Value = 40;
-
-      % Create KLYSIN1021PDESLabel
-      app.KLYSIN1021PDESLabel = uilabel(app.DL1BunchLengthFeedbackPanel);
-      app.KLYSIN1021PDESLabel.Position = [338 65 118 22];
-      app.KLYSIN1021PDESLabel.Text = 'KLYS:IN10:21:PDES';
-
-      % Create BZ10561Label
-      app.BZ10561Label = uilabel(app.DL1BunchLengthFeedbackPanel);
-      app.BZ10561Label.HorizontalAlignment = 'center';
-      app.BZ10561Label.Position = [192 66 113 22];
-      app.BZ10561Label.Text = 'BZ10561';
-
-      % Create EditField_3
-      app.EditField_3 = uieditfield(app.DL1BunchLengthFeedbackPanel, 'numeric');
-      app.EditField_3.Editable = 'off';
-      app.EditField_3.HorizontalAlignment = 'center';
-      app.EditField_3.FontSize = 10;
-      app.EditField_3.Position = [185 9 125 22];
-
-      % Create EditField_4
-      app.EditField_4 = uieditfield(app.DL1BunchLengthFeedbackPanel, 'numeric');
-      app.EditField_4.Editable = 'off';
-      app.EditField_4.HorizontalAlignment = 'center';
-      app.EditField_4.FontSize = 10;
-      app.EditField_4.Position = [334 9 125 22];
-
-      % Create NotRunningButton_2
-      app.NotRunningButton_2 = uibutton(app.DL1BunchLengthFeedbackPanel, 'push');
-      app.NotRunningButton_2.FontSize = 8;
-      app.NotRunningButton_2.FontWeight = 'bold';
-      app.NotRunningButton_2.Position = [47 88 413 22];
-      app.NotRunningButton_2.Text = 'Not Running';
+      % Create Gauge_17
+      app.Gauge_17 = uigauge(app.BC14EnergyFeedbackPanel, 'ninetydegree');
+      app.Gauge_17.Limits = [-90 0];
+      app.Gauge_17.Orientation = 'southeast';
+      app.Gauge_17.Position = [337 47 90 90];
+      app.Gauge_17.Value = -60;
 
       % Create BC20EnergyFeedbackPanel
       app.BC20EnergyFeedbackPanel = uipanel(app.FACETIIFeedbackUIFigure);
       app.BC20EnergyFeedbackPanel.ForegroundColor = [0.4667 0.6745 0.1882];
       app.BC20EnergyFeedbackPanel.Title = 'BC20 Energy Feedback';
       app.BC20EnergyFeedbackPanel.FontWeight = 'bold';
-      app.BC20EnergyFeedbackPanel.Position = [500 12 473 357];
-
-      % Create KLYSLI1441PDESGauge_2
-      app.KLYSLI1441PDESGauge_2 = uigauge(app.BC20EnergyFeedbackPanel, 'circular');
-      app.KLYSLI1441PDESGauge_2.Limits = [-180 180];
-      app.KLYSLI1441PDESGauge_2.Position = [200 178 117 117];
-      app.KLYSLI1441PDESGauge_2.Value = -60;
-
-      % Create KLYSLI1451PDESGauge_2
-      app.KLYSLI1451PDESGauge_2 = uigauge(app.BC20EnergyFeedbackPanel, 'circular');
-      app.KLYSLI1451PDESGauge_2.Limits = [-180 180];
-      app.KLYSLI1451PDESGauge_2.Position = [327 178 117 117];
-      app.KLYSLI1451PDESGauge_2.Value = 60;
+      app.BC20EnergyFeedbackPanel.Position = [498 16 472 217];
 
       % Create SetpointEditField_4
       app.SetpointEditField_4 = uieditfield(app.BC20EnergyFeedbackPanel, 'numeric');
       app.SetpointEditField_4.HorizontalAlignment = 'center';
-      app.SetpointEditField_4.Position = [14 262 100 29];
+      app.SetpointEditField_4.Position = [25 123 100 29];
 
       % Create MeVLabel_4
       app.MeVLabel_4 = uilabel(app.BC20EnergyFeedbackPanel);
       app.MeVLabel_4.FontSize = 16;
-      app.MeVLabel_4.Position = [136 265 38 22];
+      app.MeVLabel_4.Position = [147 126 38 22];
       app.MeVLabel_4.Text = 'MeV';
 
       % Create Switch_4
       app.Switch_4 = uiswitch(app.BC20EnergyFeedbackPanel, 'slider');
+      app.Switch_4.Orientation = 'vertical';
       app.Switch_4.Enable = 'off';
-      app.Switch_4.Position = [55 76 84 37];
+      app.Switch_4.Position = [48 26 28 62];
 
       % Create StatusLamp_4
       app.StatusLamp_4 = uilamp(app.BC20EnergyFeedbackPanel);
-      app.StatusLamp_4.Position = [8 303 31 31];
+      app.StatusLamp_4.Position = [8 163 31 31];
       app.StatusLamp_4.Color = [0 0 0];
-
-      % Create KLYSLI1931PDESLabel
-      app.KLYSLI1931PDESLabel = uilabel(app.BC20EnergyFeedbackPanel);
-      app.KLYSLI1931PDESLabel.Position = [204 294 116 22];
-      app.KLYSLI1931PDESLabel.Text = 'KLYS:LI19:31:PDES';
-
-      % Create KLYSLI1951PDESLabel
-      app.KLYSLI1951PDESLabel = uilabel(app.BC20EnergyFeedbackPanel);
-      app.KLYSLI1951PDESLabel.Position = [327 294 116 22];
-      app.KLYSLI1951PDESLabel.Text = 'KLYS:LI19:51:PDES';
 
       % Create Gauge_7
       app.Gauge_7 = uigauge(app.BC20EnergyFeedbackPanel, 'linear');
       app.Gauge_7.Limits = [-100 100];
       app.Gauge_7.FontSize = 10;
-      app.Gauge_7.Position = [22 181 126 34];
+      app.Gauge_7.Position = [112 39 126 34];
 
       % Create BPMSLI202445X1HLabel
       app.BPMSLI202445X1HLabel = uilabel(app.BC20EnergyFeedbackPanel);
-      app.BPMSLI202445X1HLabel.Position = [26 213 124 22];
+      app.BPMSLI202445X1HLabel.Position = [116 71 124 22];
       app.BPMSLI202445X1HLabel.Text = 'BPMS:LI20:2445:X1H';
 
       % Create EditField_8
@@ -509,57 +430,52 @@ classdef F2_Feedback_exported < matlab.apps.AppBase
       app.EditField_8.Editable = 'off';
       app.EditField_8.HorizontalAlignment = 'center';
       app.EditField_8.FontSize = 10;
-      app.EditField_8.Position = [23 157 125 22];
+      app.EditField_8.Position = [113 15 125 22];
 
       % Create EditField_9
       app.EditField_9 = uieditfield(app.BC20EnergyFeedbackPanel, 'numeric');
       app.EditField_9.Editable = 'off';
       app.EditField_9.HorizontalAlignment = 'center';
       app.EditField_9.FontSize = 10;
-      app.EditField_9.Position = [195 9 125 22];
-
-      % Create EditField_10
-      app.EditField_10 = uieditfield(app.BC20EnergyFeedbackPanel, 'numeric');
-      app.EditField_10.Editable = 'off';
-      app.EditField_10.HorizontalAlignment = 'center';
-      app.EditField_10.FontSize = 10;
-      app.EditField_10.Position = [329 9 125 22];
-
-      % Create KLYSLI1441PDESGauge_3
-      app.KLYSLI1441PDESGauge_3 = uigauge(app.BC20EnergyFeedbackPanel, 'circular');
-      app.KLYSLI1441PDESGauge_3.Limits = [-180 180];
-      app.KLYSLI1441PDESGauge_3.Position = [200 33 117 117];
-      app.KLYSLI1441PDESGauge_3.Value = -60;
-
-      % Create KLYSLI1451PDESGauge_3
-      app.KLYSLI1451PDESGauge_3 = uigauge(app.BC20EnergyFeedbackPanel, 'circular');
-      app.KLYSLI1451PDESGauge_3.Limits = [-180 180];
-      app.KLYSLI1451PDESGauge_3.Position = [327 33 117 117];
-      app.KLYSLI1451PDESGauge_3.Value = 60;
-
-      % Create KLYSLI1941PDESLabel
-      app.KLYSLI1941PDESLabel = uilabel(app.BC20EnergyFeedbackPanel);
-      app.KLYSLI1941PDESLabel.Position = [201 153 116 22];
-      app.KLYSLI1941PDESLabel.Text = 'KLYS:LI19:41:PDES';
-
-      % Create KLYSLI1961PDESLabel
-      app.KLYSLI1961PDESLabel = uilabel(app.BC20EnergyFeedbackPanel);
-      app.KLYSLI1961PDESLabel.Position = [327 153 116 22];
-      app.KLYSLI1961PDESLabel.Text = 'KLYS:LI19:61:PDES';
+      app.EditField_9.Position = [270 27 125 22];
 
       % Create NotRunningButton_6
       app.NotRunningButton_6 = uibutton(app.BC20EnergyFeedbackPanel, 'push');
       app.NotRunningButton_6.FontSize = 8;
       app.NotRunningButton_6.FontWeight = 'bold';
-      app.NotRunningButton_6.Position = [47 315 417 18];
+      app.NotRunningButton_6.Position = [47 168 417 25];
       app.NotRunningButton_6.Text = 'Not Running';
+
+      % Create BC14KLYS1Label_2
+      app.BC14KLYS1Label_2 = uilabel(app.BC20EnergyFeedbackPanel);
+      app.BC14KLYS1Label_2.Position = [199 145 137 22];
+      app.BC14KLYS1Label_2.Text = 'KLYS:LI18:31+41:PDES';
+
+      % Create BC14KLYS2Label_2
+      app.BC14KLYS2Label_2 = uilabel(app.BC20EnergyFeedbackPanel);
+      app.BC14KLYS2Label_2.Position = [335 145 137 22];
+      app.BC14KLYS2Label_2.Text = 'KLYS:LI18:51+61:PDES';
+
+      % Create Gauge_18
+      app.Gauge_18 = uigauge(app.BC20EnergyFeedbackPanel, 'ninetydegree');
+      app.Gauge_18.Limits = [0 90];
+      app.Gauge_18.Orientation = 'southwest';
+      app.Gauge_18.Position = [244 57 90 90];
+      app.Gauge_18.Value = 60;
+
+      % Create Gauge_19
+      app.Gauge_19 = uigauge(app.BC20EnergyFeedbackPanel, 'ninetydegree');
+      app.Gauge_19.Limits = [-90 0];
+      app.Gauge_19.Orientation = 'southeast';
+      app.Gauge_19.Position = [334 57 90 90];
+      app.Gauge_19.Value = -60;
 
       % Create BC11EnergyFeedbackPanel
       app.BC11EnergyFeedbackPanel = uipanel(app.FACETIIFeedbackUIFigure);
       app.BC11EnergyFeedbackPanel.ForegroundColor = [0.851 0.3255 0.098];
       app.BC11EnergyFeedbackPanel.Title = 'BC11 Energy Feedback';
       app.BC11EnergyFeedbackPanel.FontWeight = 'bold';
-      app.BC11EnergyFeedbackPanel.Position = [18 381 472 138];
+      app.BC11EnergyFeedbackPanel.Position = [498 387 472 138];
 
       % Create SetpointEditField_5
       app.SetpointEditField_5 = uieditfield(app.BC11EnergyFeedbackPanel, 'numeric');
@@ -631,7 +547,7 @@ classdef F2_Feedback_exported < matlab.apps.AppBase
       app.BC11BunchLengthFeedbackPanel.ForegroundColor = [0.851 0.3255 0.098];
       app.BC11BunchLengthFeedbackPanel.Title = 'BC11 Bunch Length Feedback';
       app.BC11BunchLengthFeedbackPanel.FontWeight = 'bold';
-      app.BC11BunchLengthFeedbackPanel.Position = [500 381 472 138];
+      app.BC11BunchLengthFeedbackPanel.Position = [498 240 472 138];
 
       % Create SetpointEditField_6
       app.SetpointEditField_6 = uieditfield(app.BC11BunchLengthFeedbackPanel, 'numeric');
@@ -706,7 +622,7 @@ classdef F2_Feedback_exported < matlab.apps.AppBase
       app.BC14BunchLengthFeedbackPanel.ForegroundColor = [0 0 1];
       app.BC14BunchLengthFeedbackPanel.Title = 'BC14 Bunch Length Feedback';
       app.BC14BunchLengthFeedbackPanel.FontWeight = 'bold';
-      app.BC14BunchLengthFeedbackPanel.Position = [17 12 473 125];
+      app.BC14BunchLengthFeedbackPanel.Position = [18 17 473 125];
 
       % Create SetpointEditField_7
       app.SetpointEditField_7 = uieditfield(app.BC14BunchLengthFeedbackPanel, 'numeric');
