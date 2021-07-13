@@ -6,6 +6,7 @@ classdef fbSISO < handle
     StateChange
   end
   properties
+    Name string = "FB"
     WriteEnable logical = true % enable writing to PV control
     Method string {mustBeMember(Method,"PID")} = "PID"
     Kp {mustBeNonnegative} = 1
@@ -26,6 +27,7 @@ classdef fbSISO < handle
     ControlStatusGood cell % OK if ControlStatusVar PV evaluates to this (if set) (can be list)
     Running logical = true % Externally controlled running state
     InvertControlVal logical = false % Flip sign on control value before writing (negates the FB gain)
+    Debug uint8 = 0 % 1: write new control vals to console not controls
   end
   properties(SetObservable)
     Enable logical = false
@@ -45,6 +47,10 @@ classdef fbSISO < handle
   end
   properties(Access=private)
     is_shutdown logical = false
+    lasttic
+    laststate
+    lastvals
+    valc
   end
   
   methods
@@ -161,21 +167,20 @@ classdef fbSISO < handle
   end
   methods(Access=private)
     function ProcDataUpdated(obj)
-      persistent lasttic laststate lastvals valc
       nvals=5; % error if unchanging
-      if isempty(lastvals)
-        lastvals=linspace(1,nvals,nvals);
-        valc=1;
+      if isempty(obj.lastvals)
+        obj.lastvals=linspace(1,nvals,nvals);
+        obj.valc=1;
       end
       if obj.is_shutdown
         return
       end
       % Reject new values if LimitRate set and not enough time elapsed since last reading
-      if obj.LimitRate>0 && ~isempty(lasttic) && toc(lasttic)<obj.LimitRate
-        lasttic=tic;
+      if obj.LimitRate>0 && ~isempty(obj.lasttic) && toc(obj.lasttic)<obj.LimitRate
+        obj.lasttic=tic;
         return;
       elseif obj.LimitRate>0
-        lasttic=tic;
+        obj.lasttic=tic;
       end
       % Read control variable and check status
       obj.ControlState = 0 ;
@@ -213,10 +218,10 @@ classdef fbSISO < handle
       end 
       % Check for repeating values
       if obj.SetpointState == 0
-        lastvals(valc) = obj.SetpointVal ;
-        valc=valc+1; 
-        if valc>nvals; valc=1; end
-        if all(lastvals==lastvals(1))
+        obj.lastvals(obj.valc) = obj.SetpointVal ;
+        obj.valc=obj.valc+1; 
+        if obj.valc>nvals; obj.valc=1; end
+        if all(obj.lastvals==obj.lastvals(1))
           obj.SetpointState = 4 ;
         end
       end
@@ -254,24 +259,42 @@ classdef fbSISO < handle
         if obj.WriteEnable && abs(dc)>0 && ~isnan(dc) && ~isnan(dc)
           if obj.ControlVarType=="doublepm"
             if obj.ControlProto=="EPICS"
-              caput(obj.ControlVar(1),obj.ControlVal+dc) ;
-              caput(obj.ControlVar(2),-(obj.ControlVal+dc)) ;
+              if obj.Debug>0
+                fprintf('DEBUG (Not Setting) %s : %g\n',obj.ControlVar(1).pvname,obj.ControlVal+dc);
+                fprintf('DEBUG (Not Setting) %s : %g\n',obj.ControlVar(2).pvname,-(obj.ControlVal+dc));
+              else
+                caput(obj.ControlVar(1),obj.ControlVal+dc) ;
+                caput(obj.ControlVar(2),-(obj.ControlVal+dc)) ;
+              end
             else
-              obj.aidaput(obj.ControlVar(1),obj.ControlVal+dc) ;
-              obj.aidaput(obj.ControlVar(2),-(obj.ControlVal+dc)) ;
+              if obj.Debug>0
+                fprintf('DEBUG (Not Setting) %s : %g\n',obj.ControlVar(1),obj.ControlVal+dc);
+                fprintf('DEBUG (Not Setting) %s : %g\n',obj.ControlVar(2),-(obj.ControlVal+dc));
+              else
+                obj.aidaput(obj.ControlVar(1),obj.ControlVal+dc) ;
+                obj.aidaput(obj.ControlVar(2),-(obj.ControlVal+dc)) ;
+              end
             end
           else
             if obj.ControlProto=="EPICS"
-              caput(obj.ControlVar,obj.ControlVal+dc) ;
+              if obj.Debug>0
+                fprintf('DEBUG (Not Setting) %s : %g\n',obj.ControlVar.pvname,obj.ControlVal+dc);
+              else
+                caput(obj.ControlVar,obj.ControlVal+dc) ;
+              end
             else
-              obj.aidaput(obj.ControlVar,obj.ControlVal+dc) ;
+              if obj.Debug>0
+                fprintf('DEBUG (Not Setting) %s : %g\n',obj.ControlVar,obj.ControlVal+dc);
+              else
+                obj.aidaput(obj.ControlVar,obj.ControlVal+dc) ;
+              end
             end
           end
         end
       end
-      if isempty(laststate) || obj.state ~= laststate
+      if isempty(obj.laststate) || obj.state ~= obj.laststate
         notify(obj,"StateChange") ;
-        laststate=obj.state;
+        obj.laststate=obj.state;
       end
       if ~isa(obj.SetpointVar,'PV')
         notify(obj,"DataUpdated");
@@ -298,12 +321,15 @@ classdef fbSISO < handle
         end
       end
     end
+  end
+  methods(Static)
     function aidaput(pv,val)
       aidainit;
       import java.util.Vector;
       import edu.stanford.slac.aida.lib.da.DaObject;
+      import edu.stanford.slac.aida.lib.util.common.*;
       da = DaObject();
-      da.setParam('TRIM','NO');
+      da.setParam('TRIM','YES');
       try
         da.setDaValue(char(pv),DaValue(java.lang.Float(val)));
       catch ME

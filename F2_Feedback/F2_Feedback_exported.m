@@ -12,7 +12,7 @@ classdef F2_Feedback_exported < matlab.apps.AppBase
     DisplayEnergyUnitsMenu        matlab.ui.container.Menu
     DL1EnergyFeedbackPanel        matlab.ui.container.Panel
     SetpointEditField             matlab.ui.control.NumericEditField
-    MeVLabel                      matlab.ui.control.Label
+    mmLabel_5                     matlab.ui.control.Label
     Gauge                         matlab.ui.control.LinearGauge
     StatusLamp                    matlab.ui.control.Lamp
     Switch                        matlab.ui.control.Switch
@@ -24,21 +24,21 @@ classdef F2_Feedback_exported < matlab.apps.AppBase
     NotRunningButton              matlab.ui.control.Button
     BC14EnergyFeedbackPanel       matlab.ui.container.Panel
     SetpointEditField_2           matlab.ui.control.NumericEditField
-    MeVLabel_2                    matlab.ui.control.Label
+    mmLabel_4                     matlab.ui.control.Label
     Switch_2                      matlab.ui.control.Switch
     StatusLamp_2                  matlab.ui.control.Lamp
     BC14KLYS1Label                matlab.ui.control.Label
     BC14KLYS2Label                matlab.ui.control.Label
-    Gauge_6                       matlab.ui.control.LinearGauge
     BPMSLI14801X1HLabel           matlab.ui.control.Label
     EditField_5                   matlab.ui.control.NumericEditField
     EditField_6                   matlab.ui.control.NumericEditField
     NotRunningButton_5            matlab.ui.control.Button
     Gauge_16                      matlab.ui.control.NinetyDegreeGauge
     Gauge_17                      matlab.ui.control.NinetyDegreeGauge
+    Gauge_6                       matlab.ui.control.LinearGauge
     BC20EnergyFeedbackPanel       matlab.ui.container.Panel
     SetpointEditField_4           matlab.ui.control.NumericEditField
-    MeVLabel_4                    matlab.ui.control.Label
+    mmLabel_7                     matlab.ui.control.Label
     Switch_4                      matlab.ui.control.Switch
     StatusLamp_4                  matlab.ui.control.Lamp
     Gauge_7                       matlab.ui.control.LinearGauge
@@ -52,7 +52,7 @@ classdef F2_Feedback_exported < matlab.apps.AppBase
     Gauge_19                      matlab.ui.control.NinetyDegreeGauge
     BC11EnergyFeedbackPanel       matlab.ui.container.Panel
     SetpointEditField_5           matlab.ui.control.NumericEditField
-    MeVLabel_5                    matlab.ui.control.Label
+    mmLabel_6                     matlab.ui.control.Label
     Gauge_8                       matlab.ui.control.LinearGauge
     StatusLamp_5                  matlab.ui.control.Lamp
     Switch_5                      matlab.ui.control.Switch
@@ -233,11 +233,11 @@ classdef F2_Feedback_exported < matlab.apps.AppBase
       app.SetpointEditField.HorizontalAlignment = 'center';
       app.SetpointEditField.Position = [17 49 100 29];
 
-      % Create MeVLabel
-      app.MeVLabel = uilabel(app.DL1EnergyFeedbackPanel);
-      app.MeVLabel.FontSize = 16;
-      app.MeVLabel.Position = [130 52 38 22];
-      app.MeVLabel.Text = 'MeV';
+      % Create mmLabel_5
+      app.mmLabel_5 = uilabel(app.DL1EnergyFeedbackPanel);
+      app.mmLabel_5.FontSize = 16;
+      app.mmLabel_5.Position = [123 51 48 28];
+      app.mmLabel_5.Text = 'mm';
 
       % Create Gauge
       app.Gauge = uigauge(app.DL1EnergyFeedbackPanel, 'linear');
@@ -312,11 +312,11 @@ classdef F2_Feedback_exported < matlab.apps.AppBase
       app.SetpointEditField_2.HorizontalAlignment = 'center';
       app.SetpointEditField_2.Position = [26 121 100 29];
 
-      % Create MeVLabel_2
-      app.MeVLabel_2 = uilabel(app.BC14EnergyFeedbackPanel);
-      app.MeVLabel_2.FontSize = 16;
-      app.MeVLabel_2.Position = [138 124 38 22];
-      app.MeVLabel_2.Text = 'MeV';
+      % Create mmLabel_4
+      app.mmLabel_4 = uilabel(app.BC14EnergyFeedbackPanel);
+      app.mmLabel_4.FontSize = 16;
+      app.mmLabel_4.Position = [133 121 47 29];
+      app.mmLabel_4.Text = 'mm';
 
       % Create Switch_2
       app.Switch_2 = uiswitch(app.BC14EnergyFeedbackPanel, 'slider');
@@ -338,12 +338,6 @@ classdef F2_Feedback_exported < matlab.apps.AppBase
       app.BC14KLYS2Label = uilabel(app.BC14EnergyFeedbackPanel);
       app.BC14KLYS2Label.Position = [338 135 116 22];
       app.BC14KLYS2Label.Text = 'KLYS:LI14:51:PDES';
-
-      % Create Gauge_6
-      app.Gauge_6 = uigauge(app.BC14EnergyFeedbackPanel, 'linear');
-      app.Gauge_6.Limits = [-100 100];
-      app.Gauge_6.FontSize = 10;
-      app.Gauge_6.Position = [116 40 126 34];
 
       % Create BPMSLI14801X1HLabel
       app.BPMSLI14801X1HLabel = uilabel(app.BC14EnergyFeedbackPanel);
@@ -373,17 +367,30 @@ classdef F2_Feedback_exported < matlab.apps.AppBase
 
       % Create Gauge_16
       app.Gauge_16 = uigauge(app.BC14EnergyFeedbackPanel, 'ninetydegree');
-      app.Gauge_16.Limits = [0 90];
+      app.Gauge_16.Limits = [-90 0];
       app.Gauge_16.Orientation = 'southwest';
+      app.Gauge_16.ScaleDirection = 'counterclockwise';
       app.Gauge_16.Position = [247 47 90 90];
-      app.Gauge_16.Value = 60;
+      app.Gauge_16.Value = -60;
 
       % Create Gauge_17
       app.Gauge_17 = uigauge(app.BC14EnergyFeedbackPanel, 'ninetydegree');
-      app.Gauge_17.Limits = [-90 0];
+      app.Gauge_17.Limits = [0 90];
       app.Gauge_17.Orientation = 'southeast';
+      app.Gauge_17.ScaleDirection = 'counterclockwise';
       app.Gauge_17.Position = [337 47 90 90];
-      app.Gauge_17.Value = -60;
+      app.Gauge_17.Value = 60;
+
+      % Create Gauge_6
+      app.Gauge_6 = uigauge(app.BC14EnergyFeedbackPanel, 'linear');
+      app.Gauge_6.Limits = [-100 100];
+      app.Gauge_6.MajorTicks = [-100 -60 -20 20 60 100];
+      app.Gauge_6.MajorTickLabels = {''};
+      app.Gauge_6.MinorTicks = [-100 -92 -84 -76 -68 -60 -52 -44 -36 -28 -20 -12 -4 4 12 20 28 36 44 52 60 68 76 84 92 100];
+      app.Gauge_6.ScaleColors = [1 0 0;1 0 0;0.3922 0.8314 0.0745];
+      app.Gauge_6.ScaleColorLimits = [-100 -75;75 100;-25 25];
+      app.Gauge_6.FontSize = 10;
+      app.Gauge_6.Position = [116 42 125 29];
 
       % Create BC20EnergyFeedbackPanel
       app.BC20EnergyFeedbackPanel = uipanel(app.FACETIIFeedbackUIFigure);
@@ -397,17 +404,17 @@ classdef F2_Feedback_exported < matlab.apps.AppBase
       app.SetpointEditField_4.HorizontalAlignment = 'center';
       app.SetpointEditField_4.Position = [25 123 100 29];
 
-      % Create MeVLabel_4
-      app.MeVLabel_4 = uilabel(app.BC20EnergyFeedbackPanel);
-      app.MeVLabel_4.FontSize = 16;
-      app.MeVLabel_4.Position = [147 126 38 22];
-      app.MeVLabel_4.Text = 'MeV';
+      % Create mmLabel_7
+      app.mmLabel_7 = uilabel(app.BC20EnergyFeedbackPanel);
+      app.mmLabel_7.FontSize = 16;
+      app.mmLabel_7.Position = [147 126 31 22];
+      app.mmLabel_7.Text = 'mm';
 
       % Create Switch_4
       app.Switch_4 = uiswitch(app.BC20EnergyFeedbackPanel, 'slider');
       app.Switch_4.Orientation = 'vertical';
       app.Switch_4.Enable = 'off';
-      app.Switch_4.Position = [48 26 28 62];
+      app.Switch_4.Position = [47 26 29 65];
 
       % Create StatusLamp_4
       app.StatusLamp_4 = uilamp(app.BC20EnergyFeedbackPanel);
@@ -482,11 +489,11 @@ classdef F2_Feedback_exported < matlab.apps.AppBase
       app.SetpointEditField_5.HorizontalAlignment = 'center';
       app.SetpointEditField_5.Position = [17 49 100 29];
 
-      % Create MeVLabel_5
-      app.MeVLabel_5 = uilabel(app.BC11EnergyFeedbackPanel);
-      app.MeVLabel_5.FontSize = 16;
-      app.MeVLabel_5.Position = [130 52 38 22];
-      app.MeVLabel_5.Text = 'MeV';
+      % Create mmLabel_6
+      app.mmLabel_6 = uilabel(app.BC11EnergyFeedbackPanel);
+      app.mmLabel_6.FontSize = 16;
+      app.mmLabel_6.Position = [130 52 31 22];
+      app.mmLabel_6.Text = 'mm';
 
       % Create Gauge_8
       app.Gauge_8 = uigauge(app.BC11EnergyFeedbackPanel, 'linear');
