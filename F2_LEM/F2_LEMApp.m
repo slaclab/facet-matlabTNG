@@ -11,7 +11,7 @@ classdef F2_LEMApp < handle & matlab.mixin.Copyable & F2_common
     UseBendEDEF logical = true % Use DL1, BC11, BC14, BC20 bends to set Edef
     blen(1,4) = [735 735 438 90] % rms Bunch length in L0, L1, L2 & L3 (um)
     bq(1,4) = [2 2 2 2] % Bunch charge in L0, L1, L2 & L3 (nC)
-    linacsel(1,5) logical = [true true true true true] % use: L0, L1, L2, L3, S20
+    linacsel(1,5) logical = [false false true true false] % use: L0, L1, L2, L3, S20
     RescaleWithModel logical = false % Set true to rescale based on model rather than extant magnet settings
     KlysZeroPhases logical = false % Force all read phases to zero
     errorstate logical = false
@@ -143,6 +143,7 @@ classdef F2_LEMApp < handle & matlab.mixin.Copyable & F2_common
         obj.aobj.L2CheckBox.Enable=true;
         obj.aobj.L3CheckBox.Enable=true;
         obj.aobj.S20CheckBox.Enable=true;
+        obj.aobj.SetRegion(obj.linacsel);
       end
       
       obj.message("Initialization complete.");

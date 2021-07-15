@@ -310,7 +310,7 @@ classdef F2_LEM_exported < matlab.apps.AppBase
     aobj % App object
   end
   
-  methods (Access = private)
+  methods (Access = public)
     
     function SetRegion(app,regsel)
       reghan1=[app.L0CheckBox app.L1CheckBox app.L2CheckBox app.L3CheckBox app.S20CheckBox];
@@ -538,7 +538,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
       app.aobj.UpdateGUI;
     end
 
-    % Selection changed function: MagnetReferenceSourceButtonGroup
+    % Selection changed function: 
+    % MagnetReferenceSourceButtonGroup
     function MagnetReferenceSourceButtonGroupSelectionChanged(app, event)
       selectedButton = app.MagnetReferenceSourceButtonGroup.SelectedObject;
       app.aobj.RescaleWithModel = selectedButton == app.UseModelStrengthsButton ;
@@ -767,23 +768,28 @@ classdef F2_LEM_exported < matlab.apps.AppBase
     end
 
     % Value changed function: EditField_100, EditField_101, 
-    % EditField_102, EditField_103, EditField_104, EditField_105, 
-    % EditField_106, EditField_107, EditField_108, EditField_109, 
-    % EditField_111, EditField_112, EditField_113, EditField_114, 
-    % EditField_115, EditField_116, EditField_117, EditField_118, 
-    % EditField_119, EditField_120, EditField_121, EditField_122, 
-    % EditField_123, EditField_124, EditField_125, EditField_126, 
-    % EditField_127, EditField_128, EditField_130, EditField_131, 
-    % EditField_132, EditField_133, EditField_134, EditField_135, 
-    % EditField_136, EditField_137, EditField_138, EditField_140, 
-    % EditField_141, EditField_142, EditField_143, EditField_144, 
-    % EditField_145, EditField_146, EditField_147, EditField_148, 
-    % EditField_150, EditField_151, EditField_152, EditField_154, 
-    % EditField_155, EditField_156, EditField_157, EditField_160, 
-    % EditField_161, EditField_162, EditField_164, EditField_165, 
-    % EditField_166, EditField_167, EditField_90, EditField_91, 
-    % EditField_92, EditField_93, EditField_94, EditField_95, 
-    % EditField_96, EditField_97, EditField_98
+    % EditField_102, EditField_103, EditField_104, 
+    % EditField_105, EditField_106, EditField_107, 
+    % EditField_108, EditField_109, EditField_111, 
+    % EditField_112, EditField_113, EditField_114, 
+    % EditField_115, EditField_116, EditField_117, 
+    % EditField_118, EditField_119, EditField_120, 
+    % EditField_121, EditField_122, EditField_123, 
+    % EditField_124, EditField_125, EditField_126, 
+    % EditField_127, EditField_128, EditField_130, 
+    % EditField_131, EditField_132, EditField_133, 
+    % EditField_134, EditField_135, EditField_136, 
+    % EditField_137, EditField_138, EditField_140, 
+    % EditField_141, EditField_142, EditField_143, 
+    % EditField_144, EditField_145, EditField_146, 
+    % EditField_147, EditField_148, EditField_150, 
+    % EditField_151, EditField_152, EditField_154, 
+    % EditField_155, EditField_156, EditField_157, 
+    % EditField_160, EditField_161, EditField_162, 
+    % EditField_164, EditField_165, EditField_166, 
+    % EditField_167, EditField_90, EditField_91, EditField_92, 
+    % EditField_93, EditField_94, EditField_95, EditField_96, 
+    % EditField_97, EditField_98
     function EditField_109ValueChanged(app, event)
        % Setting overrides phase values
        t=regexp(event.Source.Tag,'(\d+)_(\d+)','tokens','once');
@@ -1319,7 +1325,6 @@ classdef F2_LEM_exported < matlab.apps.AppBase
       app.L0CheckBox.Enable = 'off';
       app.L0CheckBox.Text = 'L0';
       app.L0CheckBox.Position = [9 364 35 22];
-      app.L0CheckBox.Value = true;
 
       % Create L1CheckBox
       app.L1CheckBox = uicheckbox(app.LeftPanel);
@@ -1327,7 +1332,6 @@ classdef F2_LEM_exported < matlab.apps.AppBase
       app.L1CheckBox.Enable = 'off';
       app.L1CheckBox.Text = 'L1';
       app.L1CheckBox.Position = [74 364 35 22];
-      app.L1CheckBox.Value = true;
 
       % Create L2CheckBox
       app.L2CheckBox = uicheckbox(app.LeftPanel);
@@ -1356,8 +1360,7 @@ classdef F2_LEM_exported < matlab.apps.AppBase
       app.S20CheckBox.ValueChangedFcn = createCallbackFcn(app, @S20CheckBoxValueChanged, true);
       app.S20CheckBox.Enable = 'off';
       app.S20CheckBox.Text = 'S20';
-      app.S20CheckBox.Position = [266 364 43 22];
-      app.S20CheckBox.Value = true;
+      app.S20CheckBox.Position = [262 364 43 22];
 
       % Create DataValidLampLabel
       app.DataValidLampLabel = uilabel(app.LeftPanel);
@@ -3108,7 +3111,6 @@ classdef F2_LEM_exported < matlab.apps.AppBase
       % Create ForceallphasestozeroMenu
       app.ForceallphasestozeroMenu = uimenu(app.SettingsMenu);
       app.ForceallphasestozeroMenu.MenuSelectedFcn = createCallbackFcn(app, @ForceallphasestozeroMenuSelected, true);
-      app.ForceallphasestozeroMenu.Checked = 'on';
       app.ForceallphasestozeroMenu.Text = 'Force all phases to zero';
 
       % Create MultiknobMenu
