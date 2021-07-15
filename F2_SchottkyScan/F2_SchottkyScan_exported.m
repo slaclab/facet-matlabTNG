@@ -426,7 +426,6 @@ classdef F2_SchottkyScan_exported < matlab.apps.AppBase
             title(app.UIAxes, 'Schottky Scan')
             xlabel(app.UIAxes, 'KLYS LI10 2-1 Phase [deg] ')
             ylabel(app.UIAxes, 'Charge [pC]')
-            app.UIAxes.FontSize = 14;
             app.UIAxes.HandleVisibility = 'off';
             app.UIAxes.Position = [7 282 432 314];
 

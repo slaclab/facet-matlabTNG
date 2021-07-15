@@ -344,7 +344,8 @@ classdef F2_SchottkyScanApp < handle
         
         function calcScanPhases(obj)
             obj.getScanParams();
-            obj.machine_state.init_delta_PDES = obj.machine_state.init_klys_pdes - obj.machine_state.init_sfb_pdes;
+            %obj.machine_state.init_delta_PDES = obj.machine_state.init_klys_pdes - obj.machine_state.init_sfb_pdes;
+            obj.machine_state.init_delta_PDES = obj.machine_state.init_klys_pdes - obj.machine_state.init_gun_phas;
             if abs(obj.machine_state.init_sfb_pdes - obj.machine_state.init_gun_phas) > 5
                 obj.addMessage('Warning: Slow feedback not tracking gun phase');
             end
