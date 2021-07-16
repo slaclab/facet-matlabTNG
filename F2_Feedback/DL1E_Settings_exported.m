@@ -52,11 +52,12 @@ classdef DL1E_Settings_exported < matlab.apps.AppBase
     function startupFcn(app, FeedbackApp)
       app.aobj = FeedbackApp ;
       app.aobj.SettingsGui = app ;
+      app.aobj.SettingsGui_whichFeedback = 1 ;
       app.aobj.Feedbacks(1).SetpointVar.axhan=app.UIAxes;
       app.aobj.Feedbacks(1).SetpointVar.StripPlot=true;
       gh.DL1E_Gain = app.GainEditField ;
-      gh.DL1E_ControlLimitLo = app. EditField ;
-      gh.DL1E_ControlLimitHi = app. EditField_2 ;
+      gh.DL1E_ControlLimitLo = app.EditField ;
+      gh.DL1E_ControlLimitHi = app.EditField_2 ;
       gh.DL1E_SetpointLimitLo = app.EditField_3 ;
       gh.DL1E_SetpointLimitHi = app.EditField_4 ;
       gh.DL1E_SetpointFilterFreq = app.FilterFreqEditField ;
@@ -64,7 +65,7 @@ classdef DL1E_Settings_exported < matlab.apps.AppBase
       gh.DL1E_SetpointDeadbandHi = app.EditField_6 ;
       gh.DL1E_TMITLo = app.EditField_7 ;
       gh.DL1E_TMITHi = app.EditField_8 ;
-      app.aobj.DL1ESettingsGui(gh,"Attach");
+      app.aobj.SettingsGuiLink(gh,"Attach");
       fn=fieldnames(gh);
       for ifn=1:length(fn)
         gh.(fn{ifn}).Value = app.aobj.pvs.(fn{ifn}).val{1} ;
@@ -74,8 +75,8 @@ classdef DL1E_Settings_exported < matlab.apps.AppBase
     % Close request function: FeedbackSettingsUIFigure
     function FeedbackSettingsUIFigureCloseRequest(app, event)
       gh.DL1E_Gain = app.GainEditField ;
-      gh.DL1E_ControlLimitLo = app. EditField ;
-      gh.DL1E_ControlLimitHi = app. EditField_2 ;
+      gh.DL1E_ControlLimitLo = app.EditField ;
+      gh.DL1E_ControlLimitHi = app.EditField_2 ;
       gh.DL1E_SetpointLimitLo = app.EditField_3 ;
       gh.DL1E_SetpointLimitHi = app.EditField_4 ;
       gh.DL1E_SetpointFilterFreq = app.FilterFreqEditField ;
@@ -83,7 +84,7 @@ classdef DL1E_Settings_exported < matlab.apps.AppBase
       gh.DL1E_SetpointDeadbandHi = app.EditField_6 ;
       gh.DL1E_TMITLo = app.EditField_7 ;
       gh.DL1E_TMITHi = app.EditField_8 ;
-      app.aobj.DL1ESettingsGui(gh,"Detach");
+      app.aobj.SettingsGuiLink(gh,"Detach");
       app.aobj.Feedbacks(1).SetpointVar.StripPlot=false;
       app.aobj.Feedbacks(1).SetpointVar.axhan=[];
       app.aobj.SettingsGui=[];

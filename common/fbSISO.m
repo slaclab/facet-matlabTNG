@@ -8,6 +8,7 @@ classdef fbSISO < handle
   properties
     Name string = "FB"
     WriteEnable logical = true % enable writing to PV control
+    WriteRateMax = 0 % max rate at which to write to PV control (sec) [0= don't limit]
     Method string {mustBeMember(Method,"PID")} = "PID"
     Kp {mustBeNonnegative} = 1
     Ki {mustBeNonnegative} = 0
@@ -51,6 +52,7 @@ classdef fbSISO < handle
     laststate
     lastvals
     valc
+    lastwrite
   end
   
   methods
@@ -256,40 +258,51 @@ classdef fbSISO < handle
       % Process the feedback if enabled and not in error state
       if obj.state==0
         dc = GetFeedback(obj) ;
-        if obj.WriteEnable && abs(dc)>0 && ~isnan(dc) && ~isnan(dc)
-          if obj.ControlVarType=="doublepm"
-            if obj.ControlProto=="EPICS"
-              if obj.Debug>0
-                fprintf('DEBUG (Not Setting) %s : %g\n',obj.ControlVar(1).pvname,obj.ControlVal+dc);
-                fprintf('DEBUG (Not Setting) %s : %g\n',obj.ControlVar(2).pvname,-(obj.ControlVal+dc));
+        if isempty(obj.lastwrite) || etime(clock,obj.lastwrite) > obj.WriteRateMax
+          obj.lastwrite = clock ;
+          if obj.WriteEnable && abs(dc)>0 && ~isnan(dc) && ~isnan(dc)
+            if obj.ControlVarType=="doublepm"
+              if obj.ControlProto=="EPICS"
+                if obj.Debug>0
+                  fprintf('DEBUG (Not Setting) %s : %g\n',obj.ControlVar(1).pvname,obj.ControlVal+dc);
+                  fprintf('DEBUG (Not Setting) %s : %g\n',obj.ControlVar(2).pvname,-(obj.ControlVal+dc));
+                else
+                  caput(obj.ControlVar(1),obj.ControlVal+dc) ;
+                  caput(obj.ControlVar(2),-(obj.ControlVal+dc)) ;
+                end
               else
-                caput(obj.ControlVar(1),obj.ControlVal+dc) ;
-                caput(obj.ControlVar(2),-(obj.ControlVal+dc)) ;
+                if obj.Debug>0
+                  fprintf('DEBUG (Not Setting) %s : %g\n',obj.ControlVar(1),obj.ControlVal+dc);
+                  fprintf('DEBUG (Not Setting) %s : %g\n',obj.ControlVar(2),-(obj.ControlVal+dc));
+                else
+                  obj.aidaput(obj.ControlVar(1),obj.ControlVal+dc) ;
+                  obj.aidaput(obj.ControlVar(2),-(obj.ControlVal+dc)) ;
+                end
               end
             else
-              if obj.Debug>0
-                fprintf('DEBUG (Not Setting) %s : %g\n',obj.ControlVar(1),obj.ControlVal+dc);
-                fprintf('DEBUG (Not Setting) %s : %g\n',obj.ControlVar(2),-(obj.ControlVal+dc));
+              if obj.ControlProto=="EPICS"
+                if obj.Debug>0
+                  fprintf('DEBUG (Not Setting) %s : %g\n',obj.ControlVar.pvname,obj.ControlVal+dc);
+                else
+                  caput(obj.ControlVar,obj.ControlVal+dc) ;
+                end
               else
-                obj.aidaput(obj.ControlVar(1),obj.ControlVal+dc) ;
-                obj.aidaput(obj.ControlVar(2),-(obj.ControlVal+dc)) ;
-              end
-            end
-          else
-            if obj.ControlProto=="EPICS"
-              if obj.Debug>0
-                fprintf('DEBUG (Not Setting) %s : %g\n',obj.ControlVar.pvname,obj.ControlVal+dc);
-              else
-                caput(obj.ControlVar,obj.ControlVal+dc) ;
-              end
-            else
-              if obj.Debug>0
-                fprintf('DEBUG (Not Setting) %s : %g\n',obj.ControlVar,obj.ControlVal+dc);
-              else
-                obj.aidaput(obj.ControlVar,obj.ControlVal+dc) ;
+                if obj.Debug>0
+                  fprintf('DEBUG (Not Setting) %s : %g\n',obj.ControlVar,obj.ControlVal+dc);
+                else
+                  obj.aidaput(obj.ControlVar,obj.ControlVal+dc) ;
+                end
               end
             end
           end
+        else
+%           if obj.Debug>0
+%             if obj.ControlProto=="EPICS"
+%               fprintf('Skipping pvput due to rate limit for: %s (dt = %g)\n',obj.ControlVar(1).pvname,etime(clock,obj.lastwrite));
+%             else
+%               fprintf('Skipping pvput due to rate limit for: %s (dt = %g)\n',obj.ControlVar(1),etime(clock,obj.lastwrite));
+%             end
+%           end
         end
       end
       if isempty(obj.laststate) || obj.state ~= obj.laststate
@@ -329,6 +342,7 @@ classdef fbSISO < handle
       import edu.stanford.slac.aida.lib.da.DaObject;
       import edu.stanford.slac.aida.lib.util.common.*;
       da = DaObject();
+      da.reset;
       da.setParam('TRIM','YES');
       try
         da.setDaValue(char(pv),DaValue(java.lang.Float(val)));
