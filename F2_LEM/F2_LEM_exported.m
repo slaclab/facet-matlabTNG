@@ -1325,6 +1325,7 @@ classdef F2_LEM_exported < matlab.apps.AppBase
       app.L0CheckBox.Enable = 'off';
       app.L0CheckBox.Text = 'L0';
       app.L0CheckBox.Position = [9 364 35 22];
+      app.L0CheckBox.Value = true;
 
       % Create L1CheckBox
       app.L1CheckBox = uicheckbox(app.LeftPanel);
@@ -1332,6 +1333,7 @@ classdef F2_LEM_exported < matlab.apps.AppBase
       app.L1CheckBox.Enable = 'off';
       app.L1CheckBox.Text = 'L1';
       app.L1CheckBox.Position = [74 364 35 22];
+      app.L1CheckBox.Value = true;
 
       % Create L2CheckBox
       app.L2CheckBox = uicheckbox(app.LeftPanel);
@@ -1361,6 +1363,7 @@ classdef F2_LEM_exported < matlab.apps.AppBase
       app.S20CheckBox.Enable = 'off';
       app.S20CheckBox.Text = 'S20';
       app.S20CheckBox.Position = [262 364 43 22];
+      app.S20CheckBox.Value = true;
 
       % Create DataValidLampLabel
       app.DataValidLampLabel = uilabel(app.LeftPanel);
