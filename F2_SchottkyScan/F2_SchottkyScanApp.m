@@ -273,8 +273,9 @@ classdef F2_SchottkyScanApp < handle
         
         function setPhaseFromScan(obj)
             obj.machine_state.init_sfb_pdes = obj.data.opPhase;
+            obj.restoreInitPhas();
             %obj.setPhas(obj.machine_state.init_phas);
-            obj.setPhas(obj.data.opPhase + obj.machine_state.init_delta_PDES);
+            %obj.setPhas(obj.data.opPhase + obj.machine_state.init_delta_PDES);
             caput(obj.pvs.SFB_PDES,obj.data.opPhase);
             obj.addMessage(sprintf('Setting Slow feedback PDES to: %0.2f',obj.machine_state.init_sfb_pdes));
         end
@@ -361,6 +362,13 @@ classdef F2_SchottkyScanApp < handle
                 obj.addMessage('Warning: Slow feedback not tracking gun phase');
             end
             obj.scan_param.pdes_vals = obj.scan_param.step_vals - obj.machine_state.init_delta_PDES;
+            if max(obj.scan_param.pdes_vals) > 179
+                obj.addMessage('Error: Scan values include KLYS:LI10:21:PDES setpoint > 180. Aborting.');
+                obj.scan_state = false;
+                obj.mode = "IDLE";
+                obj.guihan.SettingPhaseLamp.Enable = false;
+            end
+                
         end
         
         function startScan(obj)
