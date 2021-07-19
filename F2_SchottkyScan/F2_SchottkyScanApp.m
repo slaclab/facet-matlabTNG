@@ -152,7 +152,12 @@ classdef F2_SchottkyScanApp < handle
                         lastPHAS = obj.pvs.GUN_21_PHAS.val{1};
             
                         %delta = abs(obj.pvs.KLYS_21_PHAS.val{1} - obj.pvs.KLYS_21_PDES.val{1});
-                        delta = abs(obj.pvs.GUN_21_PHAS.val{1} - obj.scan_param.step_vals(obj.scan_param.step));
+                        if lastPHAS < 0
+                            gun_phase = lastPHAS + 360;
+                        else
+                            gun_phase = lastPHAS;
+                        end
+                        delta = abs(gun_phase - obj.scan_param.step_vals(obj.scan_param.step));
                         
 %                         if obj.count == 0
 %                             obj.guihan.SettingPhaseLamp.Enable = ~obj.guihan.SettingPhaseLamp.Enable; % flashing lamp
@@ -174,7 +179,11 @@ classdef F2_SchottkyScanApp < handle
                         obj.scan_param.shot=obj.scan_param.shot+1;
                     
                         obj.data.Measurements(obj.scan_param.shot,obj.scan_param.step) = obj.data.conv*obj.pvs.(obj.data.devStr).val{1};
-                        obj.data.GunPhases(obj.scan_param.shot,obj.scan_param.step) = obj.pvs.GUN_21_PHAS.val{1};
+                        gun_phase = obj.pvs.GUN_21_PHAS.val{1};
+                        if gun_phase < 0
+                            gun_phase = gun_phase + 360;
+                        end
+                        obj.data.GunPhases(obj.scan_param.shot,obj.scan_param.step) = gun_phase;
                         if obj.data.devInd == 2
                             obj.data.QEs(obj.scan_param.shot,obj.scan_param.step) = obj.pvs.QE.val{1};
                         end
@@ -339,17 +348,19 @@ classdef F2_SchottkyScanApp < handle
             obj.machine_state.init_klys_phas = caget(obj.pvs.KLYS_21_PHAS);
             obj.machine_state.init_gun_phas = caget(obj.pvs.GUN_21_PHAS);
             obj.machine_state.init_fb_state = caget(obj.pvs.SFB_ENABLE);
+            obj.machine_state.init_klys_gun_delta = obj.machine_state.init_klys_phas - obj.machine_state.init_gun_phas;
+            obj.machine_state.init_delta_PDES = obj.machine_state.init_gun_phas - obj.machine_state.init_klys_pdes;
             obj.calcScanPhases();
         end
         
         function calcScanPhases(obj)
             obj.getScanParams();
             %obj.machine_state.init_delta_PDES = obj.machine_state.init_klys_pdes - obj.machine_state.init_sfb_pdes;
-            obj.machine_state.init_delta_PDES = obj.machine_state.init_klys_pdes - obj.machine_state.init_gun_phas;
+            %obj.machine_state.init_delta_PDES = obj.machine_state.init_klys_pdes - obj.machine_state.init_gun_phas;
             if abs(obj.machine_state.init_sfb_pdes - obj.machine_state.init_gun_phas) > 5
                 obj.addMessage('Warning: Slow feedback not tracking gun phase');
             end
-            obj.scan_param.pdes_vals = obj.scan_param.step_vals + obj.machine_state.init_delta_PDES;
+            obj.scan_param.pdes_vals = obj.scan_param.step_vals - obj.machine_state.init_delta_PDES;
         end
         
         function startScan(obj)
@@ -438,10 +449,11 @@ classdef F2_SchottkyScanApp < handle
         
         function setZeroCrossing(obj)
             
-            confFig = uifigure;
+            %confFig = uifigure;
             msg = sprintf('Set phase to %0.2f ?',obj.data.opPhase);
             title = 'Update Phase';
-            selection = uiconfirm(confFig,msg,title,'Options',{'Yes','No'},'DefaultOption',2);
+            %selection = uiconfirm(confFig,msg,title,'Options',{'Yes','No'},'DefaultOption',2);
+            selection = questdlg(msg,title,'No');
             
             if strcmp(selection,'Yes')
                 obj.setPhaseFromScan();
