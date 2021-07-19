@@ -4,6 +4,7 @@ classdef F2_common < handle
   properties(Constant)
     confdir = "/u1/facet/matlab/config"
     modeldir = "/usr/local/facet/tools/facet2-lattice/Lucretia/models"
+    LucretiaLattice = "/usr/local/facet/tools/facet2-lattice/Lucretia/models/FACET2e/FACET2e.mat"
   end
   properties(Dependent)
     datadir

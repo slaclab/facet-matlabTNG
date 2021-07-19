@@ -76,7 +76,7 @@ classdef F2_LEM_exported < matlab.apps.AppBase
     EditField_183              matlab.ui.control.EditField
     EditField_184              matlab.ui.control.EditField
     EditField_185              matlab.ui.control.EditField
-    CHIRPGeVLabel              matlab.ui.control.Label
+    CHIRPMeVLabel              matlab.ui.control.Label
     MagnetsTab_2               matlab.ui.container.Tab
     MagnetReferenceSourceButtonGroup  matlab.ui.container.ButtonGroup
     UseExtantStrengthsButton   matlab.ui.control.ToggleButton
@@ -450,6 +450,7 @@ classdef F2_LEM_exported < matlab.apps.AppBase
     function DL1ErefValueChanged(app, event)
       value = [app.DL1Eref.Value app.BC11Eref.Value app.BC14Eref.Value app.BC20Eref.Value] ;
       app.UseBendEDEFButton.Value = false ;
+      app.aobj.UseBendEDEF=false;
       app.aobj.SetLinacEref(value) ;
     end
 
@@ -457,6 +458,7 @@ classdef F2_LEM_exported < matlab.apps.AppBase
     function BC11ErefValueChanged(app, event)
       value = [app.DL1Eref.Value app.BC11Eref.Value app.BC14Eref.Value app.BC20Eref.Value] ;
       app.UseBendEDEFButton.Value = false ;
+      app.aobj.UseBendEDEF=false;
       app.aobj.SetLinacEref(value) ;
     end
 
@@ -464,6 +466,7 @@ classdef F2_LEM_exported < matlab.apps.AppBase
     function BC14ErefValueChanged(app, event)
       value = [app.DL1Eref.Value app.BC11Eref.Value app.BC14Eref.Value app.BC20Eref.Value] ;
       app.UseBendEDEFButton.Value = false ;
+      app.aobj.UseBendEDEF=false;
       app.aobj.SetLinacEref(value) ;
     end
 
@@ -471,6 +474,7 @@ classdef F2_LEM_exported < matlab.apps.AppBase
     function BC20ErefValueChanged(app, event)
       value = [app.DL1Eref.Value app.BC11Eref.Value app.BC14Eref.Value app.BC20Eref.Value] ;
       app.UseBendEDEFButton.Value = false ;
+      app.aobj.UseBendEDEF=false;
       app.aobj.SetLinacEref(value) ;
     end
 
@@ -538,8 +542,7 @@ classdef F2_LEM_exported < matlab.apps.AppBase
       app.aobj.UpdateGUI;
     end
 
-    % Selection changed function: 
-    % MagnetReferenceSourceButtonGroup
+    % Selection changed function: MagnetReferenceSourceButtonGroup
     function MagnetReferenceSourceButtonGroupSelectionChanged(app, event)
       selectedButton = app.MagnetReferenceSourceButtonGroup.SelectedObject;
       app.aobj.RescaleWithModel = selectedButton == app.UseModelStrengthsButton ;
@@ -768,28 +771,23 @@ classdef F2_LEM_exported < matlab.apps.AppBase
     end
 
     % Value changed function: EditField_100, EditField_101, 
-    % EditField_102, EditField_103, EditField_104, 
-    % EditField_105, EditField_106, EditField_107, 
-    % EditField_108, EditField_109, EditField_111, 
-    % EditField_112, EditField_113, EditField_114, 
-    % EditField_115, EditField_116, EditField_117, 
-    % EditField_118, EditField_119, EditField_120, 
-    % EditField_121, EditField_122, EditField_123, 
-    % EditField_124, EditField_125, EditField_126, 
-    % EditField_127, EditField_128, EditField_130, 
-    % EditField_131, EditField_132, EditField_133, 
-    % EditField_134, EditField_135, EditField_136, 
-    % EditField_137, EditField_138, EditField_140, 
-    % EditField_141, EditField_142, EditField_143, 
-    % EditField_144, EditField_145, EditField_146, 
-    % EditField_147, EditField_148, EditField_150, 
-    % EditField_151, EditField_152, EditField_154, 
-    % EditField_155, EditField_156, EditField_157, 
-    % EditField_160, EditField_161, EditField_162, 
-    % EditField_164, EditField_165, EditField_166, 
-    % EditField_167, EditField_90, EditField_91, EditField_92, 
-    % EditField_93, EditField_94, EditField_95, EditField_96, 
-    % EditField_97, EditField_98
+    % EditField_102, EditField_103, EditField_104, EditField_105, 
+    % EditField_106, EditField_107, EditField_108, EditField_109, 
+    % EditField_111, EditField_112, EditField_113, EditField_114, 
+    % EditField_115, EditField_116, EditField_117, EditField_118, 
+    % EditField_119, EditField_120, EditField_121, EditField_122, 
+    % EditField_123, EditField_124, EditField_125, EditField_126, 
+    % EditField_127, EditField_128, EditField_130, EditField_131, 
+    % EditField_132, EditField_133, EditField_134, EditField_135, 
+    % EditField_136, EditField_137, EditField_138, EditField_140, 
+    % EditField_141, EditField_142, EditField_143, EditField_144, 
+    % EditField_145, EditField_146, EditField_147, EditField_148, 
+    % EditField_150, EditField_151, EditField_152, EditField_154, 
+    % EditField_155, EditField_156, EditField_157, EditField_160, 
+    % EditField_161, EditField_162, EditField_164, EditField_165, 
+    % EditField_166, EditField_167, EditField_90, EditField_91, 
+    % EditField_92, EditField_93, EditField_94, EditField_95, 
+    % EditField_96, EditField_97, EditField_98
     function EditField_109ValueChanged(app, event)
        % Setting overrides phase values
        t=regexp(event.Source.Tag,'(\d+)_(\d+)','tokens','once');
@@ -1192,7 +1190,7 @@ classdef F2_LEM_exported < matlab.apps.AppBase
       app.L1Label_2.HorizontalAlignment = 'center';
       app.L1Label_2.FontSize = 16;
       app.L1Label_2.FontWeight = 'bold';
-      app.L1Label_2.Position = [81 284 70 24];
+      app.L1Label_2.Position = [81 274 70 24];
       app.L1Label_2.Text = 'L1';
 
       % Create L2Label
@@ -1200,7 +1198,7 @@ classdef F2_LEM_exported < matlab.apps.AppBase
       app.L2Label.HorizontalAlignment = 'center';
       app.L2Label.FontSize = 16;
       app.L2Label.FontWeight = 'bold';
-      app.L2Label.Position = [156 284 70 24];
+      app.L2Label.Position = [156 274 70 24];
       app.L2Label.Text = 'L2';
 
       % Create L3Label_5
@@ -1208,7 +1206,7 @@ classdef F2_LEM_exported < matlab.apps.AppBase
       app.L3Label_5.HorizontalAlignment = 'center';
       app.L3Label_5.FontSize = 16;
       app.L3Label_5.FontWeight = 'bold';
-      app.L3Label_5.Position = [231 284 70 24];
+      app.L3Label_5.Position = [231 274 70 24];
       app.L3Label_5.Text = 'L3';
 
       % Create phasedegLabel
@@ -1290,13 +1288,13 @@ classdef F2_LEM_exported < matlab.apps.AppBase
       app.EditField_185.Position = [230 150 68 29];
       app.EditField_185.Value = '0.000';
 
-      % Create CHIRPGeVLabel
-      app.CHIRPGeVLabel = uilabel(app.RFTab);
-      app.CHIRPGeVLabel.HorizontalAlignment = 'center';
-      app.CHIRPGeVLabel.FontSize = 16;
-      app.CHIRPGeVLabel.FontWeight = 'bold';
-      app.CHIRPGeVLabel.Position = [9 143 71 38];
-      app.CHIRPGeVLabel.Text = {'CHIRP'; '(GeV)'};
+      % Create CHIRPMeVLabel
+      app.CHIRPMeVLabel = uilabel(app.RFTab);
+      app.CHIRPMeVLabel.HorizontalAlignment = 'center';
+      app.CHIRPMeVLabel.FontSize = 16;
+      app.CHIRPMeVLabel.FontWeight = 'bold';
+      app.CHIRPMeVLabel.Position = [9 141 71 40];
+      app.CHIRPMeVLabel.Text = {'CHIRP'; '(MeV)'};
 
       % Create MagnetsTab_2
       app.MagnetsTab_2 = uitab(app.TabGroup);

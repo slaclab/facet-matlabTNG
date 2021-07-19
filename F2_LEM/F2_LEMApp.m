@@ -143,7 +143,14 @@ classdef F2_LEMApp < handle & matlab.mixin.Copyable & F2_common
         obj.aobj.L2CheckBox.Enable=true;
         obj.aobj.L3CheckBox.Enable=true;
         obj.aobj.S20CheckBox.Enable=true;
-        obj.aobj.SetRegion(obj.linacsel);
+%         obj.aobj.L0CheckBox.Value=false;
+%         obj.aobj.L1CheckBox.Value=false;
+%         obj.aobj.L2CheckBox.Value=true;
+%         obj.aobj.L3CheckBox.Value=true;
+%         obj.aobj.S20CheckBox.Value=false;
+        obj.aobj.SetRegion([0 0 1 1 0]);
+        obj.linacsel=[0 0 1 1 0];
+%         obj.aobj.SetRegion([0 0 1 1 0]);
       end
       
       obj.message("Initialization complete.");
@@ -234,6 +241,10 @@ classdef F2_LEMApp < handle & matlab.mixin.Copyable & F2_common
       else
         obj.message("Done with magnet scaling.");
       end
+      caput(obj.pvs.EDL1,obj.Eref(1)) ;
+      caput(obj.pvs.EBC11,obj.Eref(2)) ;
+      caput(obj.pvs.EBC14,obj.Eref(3)) ;
+      caput(obj.pvs.EBC20,obj.Eref(4)) ;
     end
     function UndoMagnetScale(obj)
       app=obj.aobj;
@@ -391,7 +402,7 @@ classdef F2_LEMApp < handle & matlab.mixin.Copyable & F2_common
           end
         end
         % Set energy profile and scale Model magnets
-        if obj.linacsel(isec)
+%         if obj.linacsel(isec)
           if isec<5
             stat = UpdateMomentumProfile(double(secid(isec)),double(secid(isec+1)),obj.bq(isec).*1e-9,eref(isec),1) ;
           else
@@ -403,7 +414,7 @@ classdef F2_LEMApp < handle & matlab.mixin.Copyable & F2_common
           if isec<5
             eref(isec+1) = BEAMLINE{secid(isec+1)}.P ;
           end
-        end
+%         end
       end
       for isec=1:4
         klyid = obj.LM.ModelKlysID(obj.Klys.KlysInUse & obj.Klys.KlysSectorMap==isec) ;
@@ -442,11 +453,11 @@ classdef F2_LEMApp < handle & matlab.mixin.Copyable & F2_common
       
       switch app.TabGroup.SelectedTab % left side Tab group
         case app.EREFSTab
-          app.GunEref.Value = obj.Eref(1) ;
-          app.DL1Eref.Value = obj.Eref(2) ;
-          app.BC11Eref.Value = obj.Eref(3) ;
-          app.BC14Eref.Value = obj.Eref(4) ;
-          app.BC20Eref.Value = obj.Eref(5) ;
+          app.GunEref.Value = round(obj.Eref(1).*1e3)./1e3 ;
+          app.DL1Eref.Value = round(obj.Eref(2)*1e3)/1e3 ;
+          app.BC11Eref.Value = round(obj.Eref(3)*1e3)/1e3 ;
+          app.BC14Eref.Value = round(obj.Eref(4)*1e3)/1e3 ;
+          app.BC20Eref.Value = round(obj.Eref(5)*1e3)/1e3 ;
           app.EditField.Value = obj.fact(1) ;
           if abs(obj.fref(1)-obj.fact(1))>0.0001; app.EditField.FontColor='red'; else; app.EditField.FontColor='black'; end
           app.EditField_2.Value = double(obj.fref(1)) ;
@@ -663,16 +674,18 @@ classdef F2_LEMApp < handle & matlab.mixin.Copyable & F2_common
       egun = caget(obj.pvs.EGUN) ;
       obj.Eref(1) = egun ;
       if obj.UseBendEDEF % Use bends to set Eref
+        disp('1');
         eref = [caget(obj.pvs.BendDL1) caget(obj.pvs.BendBC11) caget(obj.pvs.BendBC14) caget(obj.pvs.BendBC20)];
       elseif length(eref)~=4
-        error('4 element vector of energies (GeV) required');
+        disp('err');
+        if ~isempty(obj.aobj)
+          obj.message('!!!! Error setting ref energy');
+          return
+        else
+          error('Incorrect eref format');
+        end
       end
-      caput(obj.pvs.EDL1,eref(1)) ;
-      caput(obj.pvs.EBC11,eref(2)) ;
-      caput(obj.pvs.EBC14,eref(3)) ;
-      caput(obj.pvs.EBC20,eref(4)) ;
       itry=0;
-%       isel=find(obj.linacsel(2:5));
       isel=1:4;
       while any(abs(obj.Eref(1+isel)-eref(isel))>0.0001) && itry<15
         for iref=isel

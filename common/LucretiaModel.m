@@ -79,6 +79,7 @@ classdef LucretiaModel < handle & matlab.mixin.Copyable
     function set.UseRegion(obj,reg)
       obj.ModelDat=[]; % Clear indexing
       obj.UseRegion=reg;
+      obj.ModelClasses=obj.ModelClasses;
     end
     function set.ModelClasses(obj,cstr)
       global BEAMLINE
@@ -88,7 +89,7 @@ classdef LucretiaModel < handle & matlab.mixin.Copyable
       if isempty(BEAMLINE) || ismember("All",cstr)
         return
       end
-      if ~all(ismember(cstr,["QUAD","SBEN","SEXT","XCOR","YCOR","DRIF","MULT","LCAV","TCAV","MARK","PROF","INSTR"]))
+      if ~all(ismember(cstr,["QUAD","SBEN","SEXT","XCOR","YCOR","DRIF","MULT","LCAV","TCAV","MARK","PROF","INSTR","MONI"]))
         error('Bad BEAMLINE Class provided');
       end
       for iclass=1:length(cstr)
