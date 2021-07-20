@@ -56,6 +56,9 @@ classdef BufferData < handle
         obj.plot;
       end
     end
+    function flush(obj)
+      obj.DataRaw=timeseries;
+    end
     function AddData(obj,data,time)
       obj.DataRaw = addsample(obj.DataRaw,'Data',data,'Time',time) ;
       obj.TrimData();
