@@ -284,6 +284,7 @@ classdef F2_SchottkyScan_exported < matlab.apps.AppBase
             app.SetSlowFeedbackPDESEditFieldLabel = uilabel(app.DevicePanel);
             app.SetSlowFeedbackPDESEditFieldLabel.HorizontalAlignment = 'right';
             app.SetSlowFeedbackPDESEditFieldLabel.FontWeight = 'bold';
+            app.SetSlowFeedbackPDESEditFieldLabel.Enable = 'off';
             app.SetSlowFeedbackPDESEditFieldLabel.Position = [206 102 149 22];
             app.SetSlowFeedbackPDESEditFieldLabel.Text = 'Set Slow Feedback PDES';
 
@@ -292,6 +293,7 @@ classdef F2_SchottkyScan_exported < matlab.apps.AppBase
             app.SetSlowFeedbackPDESEditField.Limits = [-180 180];
             app.SetSlowFeedbackPDESEditField.ValueChangedFcn = createCallbackFcn(app, @SetSlowFeedbackPDESEditFieldValueChanged, true);
             app.SetSlowFeedbackPDESEditField.FontWeight = 'bold';
+            app.SetSlowFeedbackPDESEditField.Enable = 'off';
             app.SetSlowFeedbackPDESEditField.Position = [359 102 42 22];
 
             % Create ScanPanel
