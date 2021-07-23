@@ -2,9 +2,11 @@ classdef LucretiaModel < handle & matlab.mixin.Copyable
   %LUCRETIAMODEL Interface to Lucretia model
   properties
     Initial % Lucretia Initial structure
+    UseMissingEle logical = false % Remove elements listed in MissingEle string from consideration?
   end
   properties(Dependent)
     ModelP double % GeV
+    ModelBrho
     ModelBDES double % kG.m^(N-1)
     ModelBDES_Z double
     ModelRegionID(11,2) uint32 % Mapping from regions boundaries to BEAMLINE array
@@ -13,10 +15,13 @@ classdef LucretiaModel < handle & matlab.mixin.Copyable
     ModelNames string % MAD (Lucretia) model names (unique magnets)
     ModelID uint16 % BEAMLINE indices of all elements wihin range of UseRegion selection
     ModelUniqueID uint16 % BEAMLINE indices of all elements wihin range of UseRegion selection, for only 1 of each split element
+    MissingEleInd uint16
   end
   properties(Constant)
-    LucretiaModelVersion single = 1.0 
+    LucretiaModelVersion single = 1.0
+    MissingEle string = ["YC57145" "YC57146"]
     ModelRegionName(11,1) string = ["INJ";"L0";"DL1";"L1";"BC11";"L2";"BC14";"L3";"BC20";"FFS";"SPECTDUMP"]
+    GEV2KGM=33.35640952
   end
   properties(Access=private)
     ModelDat
@@ -77,14 +82,24 @@ classdef LucretiaModel < handle & matlab.mixin.Copyable
       [~,obj.DesignTwiss]=GetTwiss(1,length(BEAMLINE),obj.Initial.x.Twiss,obj.Initial.y.Twiss);
     end
     function set.UseRegion(obj,reg)
-      obj.ModelDat=[]; % Clear indexing
+      obj.clearindx; % Clear indexing
       obj.UseRegion=reg;
       obj.ModelClasses=obj.ModelClasses;
+    end
+    function clearindx(obj)
+      rid=[];
+      if isfield(obj.ModelDat,'RegionID')
+        rid=obj.ModelDat.RegionID;
+      end
+      obj.ModelDat=[];
+      if ~isempty(rid)
+        obj.ModelDat.RegionID=rid;
+      end
     end
     function set.ModelClasses(obj,cstr)
       global BEAMLINE
       cstr=string(cstr);
-      obj.ModelDat=[]; % Clear indexing
+      obj.clearindx; % Clear indexing
       obj.ModelDat.ClassID=[];
       if isempty(BEAMLINE) || ismember("All",cstr)
         return
@@ -110,6 +125,7 @@ classdef LucretiaModel < handle & matlab.mixin.Copyable
     function id = get.ModelUniqueID(obj)
       GetModelDat(obj,"UniqueModelID");
       id = obj.ModelID(ismember(obj.ModelID,obj.ModelDat.UniqueModelID)) ;
+      id(ismember(id,obj.MissingEleInd)) = [] ;
     end
     function names = get.ModelNames(obj)
       % MODELNAMES - model names for BEAMLINE indices for which UseRegion selected
@@ -120,6 +136,7 @@ classdef LucretiaModel < handle & matlab.mixin.Copyable
       end
       GetModelDat(obj,"ModelNames");
       names = obj.ModelDat.ModelNames(obj.ModelUniqueID) ;
+      names(ismember(names,obj.MissingEle))=[];
     end
     function names = get.ControlNames(obj)
       % MODELNAMES - control system reference names for BEAMLINE indices for which UseRegion selected
@@ -131,6 +148,19 @@ classdef LucretiaModel < handle & matlab.mixin.Copyable
       names = string(model_nameConvert(cellstr(obj.ModelNames))) ;
       names(obj.ModelNames=="QA10361") = "QUAD:IN10:361" ;
       names(obj.ModelNames=="QA10371") = "QUAD:IN10:371" ;
+      names(obj.ModelNames=="XC10311") = "XCOR:IN10:311" ;
+      names(obj.ModelNames=="XC10381") = "XCOR:IN10:381" ;
+      names(obj.ModelNames=="XC10411") = "XCOR:IN10:411" ;
+      names(obj.ModelNames=="YC10312") = "YCOR:IN10:312" ;
+      names(obj.ModelNames=="YC10382") = "YCOR:IN10:382" ;
+      names(obj.ModelNames=="YC10412") = "YCOR:IN10:412" ;
+      names(obj.ModelNames=="YC14780") = "YCOR:LI14:820" ;
+      names(obj.ModelNames=="Q2FF") = "LGPS:LI20:3091" ;
+      names(obj.ModelNames=="Q1FF") = "LGPS:LI20:3141" ;
+      names(obj.ModelNames=="Q0FF") = "LGPS:LI20:3151" ;
+      names(obj.ModelNames=="Q0D") = "LGPS:LI20:3204" ;
+      names(obj.ModelNames=="Q1D") = "LGPS:LI20:3261" ;
+      names(obj.ModelNames=="Q2D") = "LGPS:LI20:3311" ;
     end
     function id = get.ModelID(obj)
       global BEAMLINE
@@ -147,9 +177,27 @@ classdef LucretiaModel < handle & matlab.mixin.Copyable
       if isfield(obj.ModelDat,'ClassID') && ~isempty(obj.ModelDat.ClassID)
         id=id(ismember(id,obj.ModelDat.ClassID));
       end
+      id(ismember(id,obj.MissingEleInd))=[];
+    end
+    function id = get.MissingEleInd(obj)
+      global BEAMLINE
+      if ~obj.UseMissingEle
+        id=[];
+        return
+      end
+      if isfield(obj.ModelDat,'MissingEleInd')
+        id = obj.ModelDat.MissingEleInd;
+      else
+        for iele=1:length(obj.MissingEle)
+          id(iele) = findcells(BEAMLINE,'Name',char(obj.MissingEle(iele))) ;
+        end
+        obj.ModelDat.MissingEleInd = id ;
+      end
     end
     function id = get.ModelRegionID(obj)
-      GetModelDat(obj,"RegionID");
+      if ~isfield(obj.ModelDat,'RegionID') || isempty(obj.ModelDat.RegionID)
+        GetModelDat(obj,"RegionID");
+      end
       id = obj.ModelDat.RegionID ;
     end
     function P = get.ModelP(obj)
@@ -160,6 +208,9 @@ classdef LucretiaModel < handle & matlab.mixin.Copyable
       end
       P = arrayfun(@(x) BEAMLINE{x}.P,1:length(BEAMLINE)) ;
       P = P(obj.ModelUniqueID) ;
+    end
+    function Brho = get.ModelBrho(obj)
+      Brho = obj.ModelBDES ./ obj.GEV2KGM ./ obj.ModelP ;
     end
     function bdes = get.ModelBDES(obj)
       global BEAMLINE

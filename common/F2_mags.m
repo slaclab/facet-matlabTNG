@@ -1,4 +1,4 @@
-classdef F2_mags < handle
+classdef F2_mags < handle & matlab.mixin.Copyable & F2_common
   %F2_MAGS FACET-II magnet data
   events
     PVUpdated

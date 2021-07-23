@@ -17,6 +17,22 @@ classdef F2_common < handle
     end
   end
   methods(Static)
+    function aidaput(pv,val)
+      aidainit;
+      import java.util.Vector;
+      import edu.stanford.slac.aida.lib.da.DaObject;
+      import edu.stanford.slac.aida.lib.util.common.*;
+      da = DaObject();
+      da.setParam('TRIM','YES');
+      try
+        da.setDaValue(char(pv),DaValue(java.lang.Float(val)));
+      catch ME
+        da.reset;
+        fprintf(2,'Error setting AIDA PV: %s\n',pv);
+        fprintf(2,'%s',ME.message)
+      end
+      da.reset;
+    end
     function dnum = epics2mltime(tstamp)
       % Put epics time stamp as Matlab datenum format in gui requested
       % local time
