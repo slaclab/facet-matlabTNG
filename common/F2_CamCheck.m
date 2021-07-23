@@ -44,20 +44,23 @@ classdef F2_CamCheck < handle
             obj.camera_info = model_nameListFACETProf(true); % Camera List
             
             % Ignore transport cameras in DAQ
-            if strcmp(type,'DAQ'); obj.remove_transport(); end
+            if obj.DAQ_bool; obj.remove_transport(); end
             
             % Get camera IOC status, remove bad cameras if DAQ
             obj.add_SIOCs();
             
             % add info to CamCheck obj
-            obj.camNames = obj.camera_info{:,1};
-            obj.camPVs = obj.camera_info{:,2};
-            obj.regions = obj.camera_info{:,4};
-            obj.camTrigs = obj.camera_info{:,6};
-            obj.camPower = obj.camera_info{:,7};
+            obj.camNames = obj.camera_info(:,1);
+            obj.camPVs = obj.camera_info(:,2);
+            obj.regions = obj.camera_info(:,4);
+            obj.camTrigs = obj.camera_info(:,6);
+            obj.camPower = obj.camera_info(:,7);
             
             % Check for IOCs that are down and remove bad cameras if DAQ
             obj.checkIOCs();
+            
+            % Get live camera names
+            obj.getLiveNames();
             
         end
         
@@ -90,7 +93,7 @@ classdef F2_CamCheck < handle
             
             obj.siocs = cell(size(obj.camera_info(:,5)));
             for i = 1:numel(obj.camera_info(:,5))
-                ind = strcmp(obj.sioc_list(:,2),obj.camera_info{i,5});
+                ind = strcmp(obj.sioc_list(:,1),obj.camera_info{i,5});
                 obj.siocs{i} = obj.sioc_list{ind,2};                
             end
                          
@@ -101,18 +104,33 @@ classdef F2_CamCheck < handle
             for i = 1:numel(obj.siocs)
                 status = lcaGet([obj.siocs{i} ':HEARTBEATSUM'],0,'DBF_ENUM');
                 if status ~= 0
-                    dispMessage(['Warning: IOC ' obj.siocs{i} ' serving camera ' obj.camNames{i} ' is down.']);
+                    obj.dispMessage(['Warning: IOC ' obj.siocs{i} ' serving camera ' obj.camNames{i} ' is down.']);
                     if obj.DAQ_bool
-                        dispMessage(['Removing camera ' obj.camNames{i} ' from DAQ.']);
+                        obj.dispMessage(['Removing camera ' obj.camNames{i} ' from DAQ.']);
                         obj.camera_info(i,:) = [];
                         obj.camNames(i) = [];
                         obj.camPVs(i) = [];
                         obj.regions(i) = [];
                         obj.camTrigs(i) = [];
                         obj.camPower(i) = [];
+                        obj.siocs(i) = [];
                     end
                 end
             end
+        end
+        
+        function getLiveNames(obj)
+            % This should work if IOC test went ok
+            
+            liveNames = lcaGetSmart(strcat(obj.camPVs,':NAME'));
+            
+            % This should be unnessary if IOCs are live
+            ind = find(cellfun(@(x) isempty(x),liveNames));
+            if ind; liveNames(ind) = obj.camNames(ind,1); end
+            
+            obj.camNames = liveNames;
+            obj.camera_info(:,1) = liveNames;
+            
         end
                         
         
