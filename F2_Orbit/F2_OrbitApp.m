@@ -43,7 +43,7 @@ classdef F2_OrbitApp < handle & F2_common
   end
   methods
     function obj = F2_OrbitApp(appobj)
-      addpath('F2_LiveModel');
+      addpath('../F2_LiveModel');
       obj.LiveModel = F2_LiveModelApp ;
       obj.BPMS = F2_bpms(copy(obj.LiveModel.LM)) ;
       if exist('appobj','var')
