@@ -5,7 +5,7 @@ classdef F2_LiveModelApp < handle & F2_common
   end
   methods
     function obj = F2_LiveModelApp
-      addpath('F2_LEM');
+      addpath('../F2_LEM');
       obj.LEM=F2_LEMApp; % Makes LEM object and reads in live model
       obj.LEM.Mags.ReadB(true); % sets extant magnet strengths into model
       obj.LM=copy(obj.LEM.LM);
