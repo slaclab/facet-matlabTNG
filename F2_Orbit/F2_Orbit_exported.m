@@ -171,13 +171,17 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
     % Value changed function: ListBox_2
     function ListBox_2ValueChanged(app, event)
       value = app.ListBox_2.Value;
+      app.aobj.usexcor=true(size(app.aobj.usexcor));
       app.aobj.usexcor(~ismember(app.aobj.xcorid,value)) = false ;
+      app.TabGroupSelectionChanged;
     end
 
     % Value changed function: ListBox_3
     function ListBox_3ValueChanged(app, event)
       value = app.ListBox_3.Value;
+      app.aobj.useycor=true(size(app.aobj.useycor));
       app.aobj.useycor(~ismember(app.aobj.ycorid,value)) = false ;
+      app.TabGroupSelectionChanged;
     end
 
     % Value changed function: TolEditField
@@ -202,11 +206,15 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
       elseif app.lsqminnormButton.Value
         app.aobj.corsolv="lsqminnorm";
       end
+      app.CalcCorrectionButton.Enable=false;
+      drawnow;
       try
         app.aobj.corcalc;
       catch ME
+        app.CalcCorrectionButton.Enable=true;
         errordlg(sprintf('Calc error:\n%s',ME.message),'Orbit Calc Error');
       end
+      app.CalcCorrectionButton.Enable=true;
     end
 
     % Button pushed function: UpdateLiveModelButton
