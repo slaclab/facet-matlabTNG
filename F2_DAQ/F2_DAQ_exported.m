@@ -112,7 +112,7 @@ classdef F2_DAQ_exported < matlab.apps.AppBase
             value = app.ListBox.Value;
             items = app.ListBox.Items;
             data = app.ListBox.ItemsData;
-            ind = strcmp(items,value);
+            ind = strcmp(data,value);
             
             if ~isempty(ind)
                 items(ind) = [];
@@ -198,6 +198,59 @@ classdef F2_DAQ_exported < matlab.apps.AppBase
                     set(app.FirstDimensionPanel.Children,'Enable','On');
                     set(app.SecondDimensionPanel.Children,'Enable','On');
             end
+            
+        end
+
+        % Value changed function: ScanfunctionDropDown
+        function ScanfunctionDropDownValueChanged(app, event)
+            value = app.ScanfunctionDropDown.Value;
+            app.aobj.scanFuncSelected(value);
+        end
+
+        % Value changed function: ScanfunctionDropDown_2
+        function ScanfunctionDropDown_2ValueChanged(app, event)
+            value = app.ScanfunctionDropDown_2.Value;
+            app.aobj.scanFuncSelected_2(value);
+        end
+
+        % Value changed function: StartEditField, StepsEditField, 
+        % StopEditField
+        function StartEditFieldValueChanged(app, event)
+            start_value = app.StartEditField.Value;
+            end_value = app.StopEditField.Value;
+            steps_val = app.StepsEditField.Value;
+            
+            if steps_val == 0
+                return
+            end
+            
+            if start_value == end_value
+                return
+            end
+            
+            scan_vals = linspace(start_value,end_value,steps_val);
+            scan_str = num2str(scan_vals,'%0.2f, ');
+            app.ScanValuesTextArea.Value = scan_str;
+            
+        end
+
+        % Value changed function: StartEditField_2
+        function StartEditField_2ValueChanged(app, event)
+            start_value = app.StartEditField_2.Value;
+            end_value = app.StopEditField_2.Value;
+            steps_val = app.StepsEditField_2.Value;
+            
+            if steps_val == 0
+                return
+            end
+            
+            if start_value == end_value
+                return
+            end
+            
+            scan_vals = linspace(start_value,end_value,steps_val);
+            scan_str = num2str(scan_vals,'%0.2f, ');
+            app.ScanValuesTextArea_2.Value = scan_str;
             
         end
     end
@@ -460,6 +513,7 @@ classdef F2_DAQ_exported < matlab.apps.AppBase
             % Create ScanfunctionDropDown
             app.ScanfunctionDropDown = uidropdown(app.FirstDimensionPanel);
             app.ScanfunctionDropDown.Items = {'Use PV', 'Function 1', 'Function 2', 'Function 3'};
+            app.ScanfunctionDropDown.ValueChangedFcn = createCallbackFcn(app, @ScanfunctionDropDownValueChanged, true);
             app.ScanfunctionDropDown.Enable = 'off';
             app.ScanfunctionDropDown.Tooltip = {'Slow scan param'};
             app.ScanfunctionDropDown.Position = [9 226 169 22];
@@ -486,6 +540,7 @@ classdef F2_DAQ_exported < matlab.apps.AppBase
 
             % Create StartEditField
             app.StartEditField = uieditfield(app.FirstDimensionPanel, 'numeric');
+            app.StartEditField.ValueChangedFcn = createCallbackFcn(app, @StartEditFieldValueChanged, true);
             app.StartEditField.Enable = 'off';
             app.StartEditField.Position = [134 165 42 22];
 
@@ -498,6 +553,7 @@ classdef F2_DAQ_exported < matlab.apps.AppBase
 
             % Create StopEditField
             app.StopEditField = uieditfield(app.FirstDimensionPanel, 'numeric');
+            app.StopEditField.ValueChangedFcn = createCallbackFcn(app, @StartEditFieldValueChanged, true);
             app.StopEditField.Enable = 'off';
             app.StopEditField.Position = [134 130 42 22];
 
@@ -510,6 +566,7 @@ classdef F2_DAQ_exported < matlab.apps.AppBase
 
             % Create StepsEditField
             app.StepsEditField = uieditfield(app.FirstDimensionPanel, 'numeric');
+            app.StepsEditField.ValueChangedFcn = createCallbackFcn(app, @StartEditFieldValueChanged, true);
             app.StepsEditField.Enable = 'off';
             app.StepsEditField.Position = [134 93 42 22];
 
@@ -540,6 +597,7 @@ classdef F2_DAQ_exported < matlab.apps.AppBase
             % Create ScanfunctionDropDown_2
             app.ScanfunctionDropDown_2 = uidropdown(app.SecondDimensionPanel);
             app.ScanfunctionDropDown_2.Items = {'Use PV', 'Function 1', 'Function 2', 'Function 3'};
+            app.ScanfunctionDropDown_2.ValueChangedFcn = createCallbackFcn(app, @ScanfunctionDropDown_2ValueChanged, true);
             app.ScanfunctionDropDown_2.Enable = 'off';
             app.ScanfunctionDropDown_2.Tooltip = {'Fast scan param'};
             app.ScanfunctionDropDown_2.Position = [9 226 169 22];
@@ -566,6 +624,7 @@ classdef F2_DAQ_exported < matlab.apps.AppBase
 
             % Create StartEditField_2
             app.StartEditField_2 = uieditfield(app.SecondDimensionPanel, 'numeric');
+            app.StartEditField_2.ValueChangedFcn = createCallbackFcn(app, @StartEditField_2ValueChanged, true);
             app.StartEditField_2.Enable = 'off';
             app.StartEditField_2.Position = [134 165 42 22];
 

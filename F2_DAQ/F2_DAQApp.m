@@ -53,6 +53,9 @@ classdef F2_DAQApp < handle
             % Load non-BSA Lists
             obj.loadnonBSALists();
             
+            % Load scan functions
+            obj.loadScans();
+            
         end
         
         function runDAQ(obj)
@@ -118,7 +121,7 @@ classdef F2_DAQApp < handle
                 obj.DAQ_params.startVals(1) = obj.guihan.StartEditField.Value;
                 obj.DAQ_params.stopVals(1) = obj.guihan.StopEditField.Value;
                 obj.DAQ_params.nSteps(1) = obj.guihan.StepsEditField.Value;
-                obj.DAQ_params.scanVals{1} = obj.guihan.ScanValuesTextArea.Value;
+                obj.DAQ_params.scanVals{1} = str2num(obj.guihan.ScanValuesTextArea.Value{1});
                 
                 obj.DAQ_params.totalSteps = obj.DAQ_params.nSteps(1);
                 obj.DAQ_params.stepsAll = (1:obj.DAQ_params.nSteps(1))';
@@ -130,7 +133,7 @@ classdef F2_DAQApp < handle
                 obj.DAQ_params.startVals(2) = obj.guihan.StartEditField_2.Value;
                 obj.DAQ_params.stopVals(2) = obj.guihan.StopEditField_2.Value;
                 obj.DAQ_params.nSteps(2) = obj.guihan.StepsEditField_2.Value;
-                obj.DAQ_params.scanVals{2} = obj.guihan.ScanValuesTextArea_2.Value;
+                obj.DAQ_params.scanVals{2} = str2num(obj.guihan.ScanValuesTextArea_2.Value{1});
                 
                 obj.DAQ_params.totalSteps = obj.DAQ_params.nSteps(1)*obj.DAQ_params.nSteps(2);
                 obj.DAQ_params.stepsAll = zeros(obj.DAQ_params.totalSteps,2);
@@ -190,6 +193,32 @@ classdef F2_DAQApp < handle
             
             obj.addMessage(sprintf('Loaded %d non-BSA Lists.',numel(name_lists)));
         end
+        
+        function loadScans(obj)
+            file_lists = dir('scanFunc*');
+            name_lists = {};
+            for i = 1:numel(file_lists)
+                split = strsplit(file_lists(i).name,'.');
+                name_lists{end+1} = split{1};
+            end
+            name_lists = ['Use PV'; name_lists];
+            
+            obj.guihan.ScanfunctionDropDown.Items = name_lists;
+            obj.guihan.ScanfunctionDropDown_2.Items = name_lists;
+            
+            obj.addMessage(sprintf('Loaded %d Scan functions.',numel(name_lists)));
+        end
+        
+        function scanFuncSelected(obj,value)
+            scanFunc = feval(value);
+            obj.guihan.PVEditField.Value = scanFunc.control_PV;
+        end
+        
+        function scanFuncSelected_2(obj,value)
+            scanFunc = feval(value);
+            obj.guihan.PVEditField_2.Value = scanFunc.control_PV;
+        end
+            
         
         
         function addMessage(obj,message)
