@@ -354,7 +354,7 @@ classdef F2_runDAQ < handle
             end
             info_str = sprintf([info_str '\n' '\n']);
             
-            Comment  = [comment_str camera_str DAQ_str Data_str Path_str info_str];
+            %Comment  = [comment_str camera_str DAQ_str Data_str Path_str info_str];
             
             %FACET_DAQ2LOG(Comment,obj);
         end
