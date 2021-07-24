@@ -419,11 +419,12 @@ classdef F2_runDAQ < handle
             
             shutter_state = caget(obj.pvs.MPS_Shutter);
             caput(obj.pvs.MPS_Shutter,0);
+            pause(0.5);
             obj.dispMessage('Inserting shutter for backgrounds.');
             
             for i = 1:nBG
                 BGs(:,:,i) = lcaGet(obj.daq_pvs.Image_ArrayData);
-                pause(0.5);
+                pause(0.1);
             end
             
             if strcmp(shutter_state,'Yes')
