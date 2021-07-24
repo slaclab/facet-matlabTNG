@@ -419,7 +419,7 @@ classdef F2_runDAQ < handle
             
             shutter_state = caget(obj.pvs.MPS_Shutter);
             caput(obj.pvs.MPS_Shutter,0);
-            pause(0.5);
+            pause(1);
             obj.dispMessage('Inserting shutter for backgrounds.');
             
             for i = 1:nBG
@@ -430,7 +430,7 @@ classdef F2_runDAQ < handle
             if strcmp(shutter_state,'Yes')
                 caput(obj.pvs.MPS_Shutter,1);
                 obj.dispMessage('Extracting shutter.');
-                pause(0.5);
+                pause(1);
             end
             
             
@@ -444,7 +444,7 @@ classdef F2_runDAQ < handle
                 else
                     bg_array = reshape(bgs,[size_x,size_y,nBG]);
                 end
-                obj.data_struct.backgrounds.(obj.params.camNames{j}).backgrounds = bg_array;
+                obj.data_struct.backgrounds.(obj.params.camNames{j}) = bg_array;
             end
             
         end
