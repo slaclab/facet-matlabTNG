@@ -74,12 +74,16 @@ classdef F2_DAQApp < handle
             obj.DAQ_params.nBG = obj.guihan.BackgroundshotsEditField.Value;
             
             % Get camera info
-            [~,ia,~] = intersect(obj.camera_info(:,1),obj.guihan.ListBox.Items);
-            obj.DAQ_params.camNames = obj.camera_info(ia,1);
-            obj.DAQ_params.camPVs = obj.camera_info(ia,2);
-            obj.DAQ_params.camServers = obj.camera_info(ia,5);
-            obj.DAQ_params.camTrigs = obj.camera_info(ia,6);
-            obj.DAQ_params.num_CAM = numel(ia);
+            [~,ia,~] = intersect(obj.camCheck.camNames,obj.guihan.ListBox.Items);
+            list_bool = false(size(obj.camCheck.camNames));
+            list_bool(ia) = true;
+            obj.camCheck.downSelect(list_bool);
+            
+            obj.DAQ_params.camNames = obj.camCheck.camNames;
+            obj.DAQ_params.camPVs = obj.camCheck.camPVs;
+            obj.DAQ_params.camSIOCs = obj.camCheck.siocs;
+            obj.DAQ_params.camTrigs = obj.camCheck.camTrigs;
+            obj.DAQ_params.num_CAM = numel(obj.camCheck.camNames);
             
             % Scalar data lists
             obj.DAQ_params.BSA_list = obj.guihan.ListBoxBSA.Items;
@@ -143,23 +147,8 @@ classdef F2_DAQApp < handle
         function initCameras(obj)
         % Gets list of FACET cameras and adds it to DAQ GUI 
             
-            obj.camera_info = model_nameListFACETProf(true); % Camera List
-            
-            % Remove laser transport cameras because they dont have triggers
-            trnspt_cams = strcmp(obj.camera_info(:,4),'S20 Transprt');
-            obj.camera_info(trnspt_cams,:) = [];
-            
-            camera_pvs = obj.camera_info(:,2); % Camera PVs
-            camera_regions = obj.camera_info(:,4); % Camera regions
-            
-            % Get dynamic names
-            camera_names = lcaGetSmart(strcat(camera_pvs,':NAME'));
-            ind = find(cellfun(@(x) isempty(x),camera_names));
-            if ind; camera_names(ind) = obj.camera_info(ind,1); end
-            obj.camera_info(:,1) = camera_names;
-            
             % Organize cameras in GUI by region and load into GUI
-            region_list = unique(camera_regions);
+            region_list = unique(obj.camCheck.regions);
             region_node_list = [];
             camera_node_list = [];
             
@@ -167,9 +156,9 @@ classdef F2_DAQApp < handle
                 region_node_list = [region_node_list uitreenode(obj.guihan.Tree,'Text',region_list{i})];
             end
             
-            for j = 1:numel(camera_names)
-                r = find(strcmp(region_list,camera_regions{j}));
-                camera_node_list = [camera_node_list uitreenode(region_node_list(r),'Text',camera_names{j},'NodeData',camera_pvs{j})];
+            for j = 1:numel(obj.camCheck.camNames)
+                r = find(strcmp(region_list,obj.camCheck.regions{j}));
+                camera_node_list = [camera_node_list uitreenode(region_node_list(r),'Text',obj.camCheck.camNames{j},'NodeData',obj.camCheck.camPVs{j})];
             end
             
             obj.addMessage(sprintf('Loaded %d cameras.',numel(camera_node_list)));

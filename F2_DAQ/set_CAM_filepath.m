@@ -17,7 +17,8 @@ lcaPut(obj.daq_pvs.TIFF_FileTemplate, ff);
 for i=1:numel(filePrefix)
     
     fp = zeros(1,256);
-    path = obj.data_struct.save_info.(filePrefix{i});
+    %path = obj.save_info.(filePrefix{i});
+    path = obj.save_info.cam_paths{i};
 
     pathASCII = double(path);
     n_el = length(pathASCII);

@@ -132,6 +132,26 @@ classdef F2_CamCheck < handle
             obj.camera_info(:,1) = liveNames;
             
         end
+        
+        function downSelect(obj,ind)
+            % This function selects only the cams wanted by DAQ
+            obj.camera_info(~ind,:) = [];
+            obj.camNames(~ind) = [];
+            obj.camPVs(~ind) = [];
+            obj.regions(~ind) = [];
+            obj.camTrigs(~ind) = [];
+            obj.camPower(~ind) = [];
+            obj.siocs(~ind) = [];
+        end
+        
+        function bad_cam = checkConnect(obj)
+            % Check if camera is running
+            cmos_cams = strcmp(obj.regions,'S20 sCMOS');
+            connect_pvs = strcat(obj.camPVs,':AsynIO.CNCT');
+            connect_pvs(cmos_cams) = strcat(obj.camPVs(cmos_cams),':DetectorState_RBV');
+            cam_stat = lcaGet(connect_pvs,0,'DBF_ENUM');
+            bad_cam = cam_stat ~= 1;
+        end
                         
         
         function dispMessage(obj,message)

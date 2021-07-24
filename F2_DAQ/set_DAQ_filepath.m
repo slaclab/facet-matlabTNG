@@ -34,7 +34,7 @@ if(~exist(save_info.save_path, 'dir')); mkdir(save_info.save_path); end
 system(['chmod a+w ' save_info.save_path]);
 
 % Create sub directory for each camera
-save_info.cam_paths = cell(size(camnames));
+save_info.cam_paths = cell(size(camNames));
 for i=1:num_CAM
     save_info.cam_paths{i} = [save_info.save_path '/images/' camNames{i}];
     if(~exist(save_info.cam_paths{i}, 'dir')); mkdir(save_info.cam_paths{i}); end
