@@ -290,6 +290,10 @@ classdef F2_LEM_exported < matlab.apps.AppBase
     MessagesTab                matlab.ui.container.Tab
     TextArea                   matlab.ui.control.TextArea
     SettingsMenu               matlab.ui.container.Menu
+    MagnetSetDestinationMenu   matlab.ui.container.Menu
+    BDESMenu                   matlab.ui.container.Menu
+    BCONMenu                   matlab.ui.container.Menu
+    BDESBCONMenu               matlab.ui.container.Menu
     ForceallphasestozeroMenu   matlab.ui.container.Menu
     MultiknobMenu              matlab.ui.container.Menu
     AssignalltableentriesMenu  matlab.ui.container.Menu
@@ -542,7 +546,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
       app.aobj.UpdateGUI;
     end
 
-    % Selection changed function: MagnetReferenceSourceButtonGroup
+    % Selection changed function: 
+    % MagnetReferenceSourceButtonGroup
     function MagnetReferenceSourceButtonGroupSelectionChanged(app, event)
       selectedButton = app.MagnetReferenceSourceButtonGroup.SelectedObject;
       app.aobj.RescaleWithModel = selectedButton == app.UseModelStrengthsButton ;
@@ -771,23 +776,28 @@ classdef F2_LEM_exported < matlab.apps.AppBase
     end
 
     % Value changed function: EditField_100, EditField_101, 
-    % EditField_102, EditField_103, EditField_104, EditField_105, 
-    % EditField_106, EditField_107, EditField_108, EditField_109, 
-    % EditField_111, EditField_112, EditField_113, EditField_114, 
-    % EditField_115, EditField_116, EditField_117, EditField_118, 
-    % EditField_119, EditField_120, EditField_121, EditField_122, 
-    % EditField_123, EditField_124, EditField_125, EditField_126, 
-    % EditField_127, EditField_128, EditField_130, EditField_131, 
-    % EditField_132, EditField_133, EditField_134, EditField_135, 
-    % EditField_136, EditField_137, EditField_138, EditField_140, 
-    % EditField_141, EditField_142, EditField_143, EditField_144, 
-    % EditField_145, EditField_146, EditField_147, EditField_148, 
-    % EditField_150, EditField_151, EditField_152, EditField_154, 
-    % EditField_155, EditField_156, EditField_157, EditField_160, 
-    % EditField_161, EditField_162, EditField_164, EditField_165, 
-    % EditField_166, EditField_167, EditField_90, EditField_91, 
-    % EditField_92, EditField_93, EditField_94, EditField_95, 
-    % EditField_96, EditField_97, EditField_98
+    % EditField_102, EditField_103, EditField_104, 
+    % EditField_105, EditField_106, EditField_107, 
+    % EditField_108, EditField_109, EditField_111, 
+    % EditField_112, EditField_113, EditField_114, 
+    % EditField_115, EditField_116, EditField_117, 
+    % EditField_118, EditField_119, EditField_120, 
+    % EditField_121, EditField_122, EditField_123, 
+    % EditField_124, EditField_125, EditField_126, 
+    % EditField_127, EditField_128, EditField_130, 
+    % EditField_131, EditField_132, EditField_133, 
+    % EditField_134, EditField_135, EditField_136, 
+    % EditField_137, EditField_138, EditField_140, 
+    % EditField_141, EditField_142, EditField_143, 
+    % EditField_144, EditField_145, EditField_146, 
+    % EditField_147, EditField_148, EditField_150, 
+    % EditField_151, EditField_152, EditField_154, 
+    % EditField_155, EditField_156, EditField_157, 
+    % EditField_160, EditField_161, EditField_162, 
+    % EditField_164, EditField_165, EditField_166, 
+    % EditField_167, EditField_90, EditField_91, EditField_92, 
+    % EditField_93, EditField_94, EditField_95, EditField_96, 
+    % EditField_97, EditField_98
     function EditField_109ValueChanged(app, event)
        % Setting overrides phase values
        t=regexp(event.Source.Tag,'(\d+)_(\d+)','tokens','once');
@@ -803,6 +813,29 @@ classdef F2_LEM_exported < matlab.apps.AppBase
          event.Source.FontColor='red';
        end
        app.aobj.SaveOverrides;
+    end
+
+    % Menu selected function: MagnetSetDestinationMenu
+    function MagnetSetDestinationMenuSelected(app, event)
+      
+    end
+
+    % Menu selected function: BDESMenu
+    function BDESMenuSelected(app, event)
+      app.aobj.WriteDest = "BDES" ;
+      app.BDESMenu.Checked = true; app.BCONMenu.Checked = false; app.BDESBCONMenu.Checked = false ;
+    end
+
+    % Menu selected function: BCONMenu
+    function BCONMenuSelected(app, event)
+      app.aobj.WriteDest = "BCON" ;
+      app.BDESMenu.Checked = false; app.BCONMenu.Checked = true; app.BDESBCONMenu.Checked = false ;
+    end
+
+    % Menu selected function: BDESBCONMenu
+    function BDESBCONMenuSelected(app, event)
+      app.aobj.WriteDest = "BDESCON" ;
+      app.BDESMenu.Checked = false; app.BCONMenu.Checked = false; app.BDESBCONMenu.Checked = true ;
     end
   end
 
@@ -3108,6 +3141,27 @@ classdef F2_LEM_exported < matlab.apps.AppBase
       % Create SettingsMenu
       app.SettingsMenu = uimenu(app.FLEMFACETIILEMUIFigure);
       app.SettingsMenu.Text = 'Settings';
+
+      % Create MagnetSetDestinationMenu
+      app.MagnetSetDestinationMenu = uimenu(app.SettingsMenu);
+      app.MagnetSetDestinationMenu.MenuSelectedFcn = createCallbackFcn(app, @MagnetSetDestinationMenuSelected, true);
+      app.MagnetSetDestinationMenu.Text = 'Magnet Set Destination ';
+
+      % Create BDESMenu
+      app.BDESMenu = uimenu(app.MagnetSetDestinationMenu);
+      app.BDESMenu.MenuSelectedFcn = createCallbackFcn(app, @BDESMenuSelected, true);
+      app.BDESMenu.Text = 'BDES';
+
+      % Create BCONMenu
+      app.BCONMenu = uimenu(app.MagnetSetDestinationMenu);
+      app.BCONMenu.MenuSelectedFcn = createCallbackFcn(app, @BCONMenuSelected, true);
+      app.BCONMenu.Text = 'BCON';
+
+      % Create BDESBCONMenu
+      app.BDESBCONMenu = uimenu(app.MagnetSetDestinationMenu);
+      app.BDESBCONMenu.MenuSelectedFcn = createCallbackFcn(app, @BDESBCONMenuSelected, true);
+      app.BDESBCONMenu.Checked = 'on';
+      app.BDESBCONMenu.Text = 'BDES+BCON';
 
       % Create ForceallphasestozeroMenu
       app.ForceallphasestozeroMenu = uimenu(app.SettingsMenu);

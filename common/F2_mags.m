@@ -6,6 +6,7 @@ classdef F2_mags < handle & matlab.mixin.Copyable & F2_common
   properties
     WriteEnable logical = false % Set true to enable writing to control system BDES
     WriteAction string {mustBeMember(WriteAction,["TRIM","PERTURB"])} = "TRIM"
+    WriteDest string {mustBeMember(WriteDest,["BDES","BCON","BDESCON"])} = "BDES" % Write to BDES, BCON or both
     RelTolBDES double = 0.001 % Relative Tolerance for BDES errors
     RelTolBACT double = 0.1 % Relative Tolerance for BDES vs BACT errors
     AbsTolBDES double = 0.001 % Absolute Tolerance for BDES errors
@@ -135,7 +136,18 @@ classdef F2_mags < handle & matlab.mixin.Copyable & F2_common
           end
         end
         if obj.WriteEnable
-          control_magnetSetC(control_mags_bb',control_vals_bb','action',char(obj.WriteAction));
+          try
+            switch obj.WriteDest
+              case "BDES"
+                control_magnetSet(control_mags_bb',control_vals_bb','action',char(obj.WriteAction));
+              case "BCON"
+                control_magnetSetC(control_mags_bb',control_vals_bb','action',char(obj.WriteAction));
+              case "BDESCON"
+                control_magnetSetBC(control_mags_bb',control_vals_bb','action',char(obj.WriteAction));
+            end
+          catch
+            msg=[msg; "!!!!! Error reported setting magnets, check values"];
+          end
         else
           msg=[msg; "control_magnetSetC: " + string(control_mags_bb(:)) + " = " + string(control_vals_bb(:)) ] ;
         end
@@ -153,13 +165,31 @@ classdef F2_mags < handle & matlab.mixin.Copyable & F2_common
           end
         end
         if obj.WriteEnable
-          control_magnetSetC(control_mags_bb',control_vals_bb','action',char(obj.WriteAction));
+          try
+            switch obj.WriteDest
+              case "BDES"
+                control_magnetSet(control_mags_bb',control_vals_bb','action',char(obj.WriteAction));
+              case "BCON"
+                control_magnetSetC(control_mags_bb',control_vals_bb','action',char(obj.WriteAction));
+              case "BDESCON"
+                control_magnetSetBC(control_mags_bb',control_vals_bb','action',char(obj.WriteAction));
+            end
+          catch
+            msg=[msg; "!!!!! Error reported setting magnets, check values"];
+          end
         end
       end
       % Set the single PS magnets if any
       if ~isempty(control_mags)
         if obj.WriteEnable
-          control_magnetSetC(control_mags',control_vals','action',char(obj.WriteAction));
+          switch obj.WriteDest
+              case "BDES"
+                control_magnetSet(control_mags',control_vals','action',char(obj.WriteAction));
+              case "BCON"
+                control_magnetSetC(control_mags',control_vals','action',char(obj.WriteAction));
+              case "BDESCON"
+                control_magnetSetBC(control_mags',control_vals','action',char(obj.WriteAction));
+          end
         else
           msg = [msg; "control_magnetSetC: " + string(control_mags(:)) + " = " + string(control_vals(:)) ] ;
         end

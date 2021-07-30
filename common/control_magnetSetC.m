@@ -4,7 +4,7 @@ function bAct = control_magnetSetC(name, val, varargin)
 %  perturbes. Returns the new BACT as VAL. Depending on OPTS, the magnet
 %  can also be trimmed.
 
-% Writes to BCON after setting magnet - other functionality same as control_magnetSet
+% Writes to BCON instead of BDES etc - other functionality same as control_magnetSet
 
 % Features:
 
@@ -93,7 +93,6 @@ if any(~isSLC)
 
     % Set BDES if VAL is not empty.
     if ~isempty(val)
-        lcaPut(strcat(name(~isSLC),':BDES'),val(~isSLC));
         lcaPut(strcat(name(~isSLC),':BCON'),val(~isSLC));
     end
     % Trim or perturb magnets.
@@ -143,7 +142,6 @@ if any(isSLC)
 
     %if strcmp(opts.action,'PERTURB'), func='PTRB';end
     disp('Wait for SLC magnet trim ...');
-    bActSLC(~isColl)=magnetSet(nameSLCQ(~isColl),bDes(~isColl),'BDES',func);
     bActSLC(~isColl)=magnetSet(nameSLCQ(~isColl),bDes(~isColl),'BCON',func);
     bActSLC(isColl)=magnetSet(nameSLCQ(isColl),bDes(isColl),'VDES',func);
     bActSLC(isQTRM)=control_magnetGet(nameSLC(isQTRM));
