@@ -16,10 +16,13 @@ classdef F2_LiveModelApp < handle & F2_common
       obj.LEM.Mags.ReadB(true); % sets extant magnet strengths into model
       fprintf('Done.');
     end
-    function WriteModel(obj)
+    function WriteModel(obj,fname)
       global BEAMLINE PS GIRDER WF KLYSTRON
-      LEM=copy(obj.LEM); %#ok<PROP>
-      save(obj.confdir+"/F2_LiveModel/LiveModel.mat",'LEM','BEAMLINE','PS','GIRDER','WF','KLYSTRON');
+      LEM=copy(obj.LEM); %#ok<PROPLC>
+      if ~exist('fname','var') || isempty(fname)
+        fname = obj.confdir+"/F2_LiveModel/LiveModel.mat" ;
+      end
+      save(fname,'LEM','BEAMLINE','PS','GIRDER','WF','KLYSTRON');
     end
   end
 end
