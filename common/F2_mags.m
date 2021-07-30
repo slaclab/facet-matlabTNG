@@ -135,9 +135,9 @@ classdef F2_mags < handle & matlab.mixin.Copyable & F2_common
           end
         end
         if obj.WriteEnable
-          control_magnetSet(control_mags_bb',control_vals_bb','action',char(obj.WriteAction));
+          control_magnetSetC(control_mags_bb',control_vals_bb','action',char(obj.WriteAction));
         else
-          msg=[msg; "control_magnetSet: " + string(control_mags_bb(:)) + " = " + string(control_vals_bb(:)) ] ;
+          msg=[msg; "control_magnetSetC: " + string(control_mags_bb(:)) + " = " + string(control_vals_bb(:)) ] ;
         end
         % This doesn't quite get there according to the QUAS values, do
         % fine-trim of boosts to get QUAS values to agree with required
@@ -153,15 +153,15 @@ classdef F2_mags < handle & matlab.mixin.Copyable & F2_common
           end
         end
         if obj.WriteEnable
-          control_magnetSet(control_mags_bb',control_vals_bb','action',char(obj.WriteAction));
+          control_magnetSetC(control_mags_bb',control_vals_bb','action',char(obj.WriteAction));
         end
       end
       % Set the single PS magnets if any
       if ~isempty(control_mags)
         if obj.WriteEnable
-          control_magnetSet(control_mags',control_vals','action',char(obj.WriteAction));
+          control_magnetSetC(control_mags',control_vals','action',char(obj.WriteAction));
         else
-          msg = [msg; "control_magnetSet: " + string(control_mags(:)) + " = " + string(control_vals(:)) ] ;
+          msg = [msg; "control_magnetSetC: " + string(control_mags(:)) + " = " + string(control_vals(:)) ] ;
         end
       end
       
