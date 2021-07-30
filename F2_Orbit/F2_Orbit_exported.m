@@ -31,7 +31,6 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
     UIAxes2                      matlab.ui.control.UIAxes
     UIAxes3                      matlab.ui.control.UIAxes
     DispersionTab                matlab.ui.container.Tab
-    UIAxes4                      matlab.ui.control.UIAxes
     UIAxes5                      matlab.ui.control.UIAxes
     DoDispCalcButton             matlab.ui.control.Button
     UIAxes5_2                    matlab.ui.control.UIAxes
@@ -41,8 +40,6 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
     PlotModelFitButton           matlab.ui.control.StateButton
     MIATab                       matlab.ui.container.Tab
     UIAxes6                      matlab.ui.control.UIAxes
-    ModeSelectPanel              matlab.ui.container.Panel
-    DropDown                     matlab.ui.control.DropDown
     PlotOptionPanel              matlab.ui.container.Panel
     DropDown_2                   matlab.ui.control.DropDown
     NmodesLabel                  matlab.ui.control.Label
@@ -56,6 +53,7 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
     PlotButton                   matlab.ui.control.Button
     modeEditFieldLabel           matlab.ui.control.Label
     modeEditField                matlab.ui.control.EditField
+    UIAxes6_2                    matlab.ui.control.UIAxes
     RegionSelectPanel            matlab.ui.container.Panel
     GridLayout                   matlab.ui.container.GridLayout
     INJButton                    matlab.ui.control.StateButton
@@ -155,7 +153,7 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
         case app.CorrectorsTab
           app.aobj.plotcor([app.UIAxes2 app.UIAxes3]);
         case app.DispersionTab
-          app.aobj.plotdisp([app.UIAxes4 app.UIAxes5 app.UIAxes5_2],app.PlotModelFitButton.Value) ;
+          app.aobj.plotdisp([app.UIAxes5 app.UIAxes5_2],app.PlotModelFitButton.Value) ;
         case app.MIATab
           app.DropDown_2ValueChanged;
       end
@@ -314,15 +312,15 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
       end
       drawnow
       app.TabGroupSelectionChanged;
-      app.EditField.Value = sum(abs(dd.dispx),'omitnan') ;
-      app.EditField_2.Value = sum(abs(dd.dispy),'omitnan') ;
+      app.EditField.Value = sum(abs(dd.x),'omitnan') ;
+      app.EditField_2.Value = sum(abs(dd.y),'omitnan') ;
     end
 
     % Value changed function: DropDown_2
     function DropDown_2ValueChanged(app, event)
       value = app.DropDown_2.Value;
       nmodes=app.NmodesEditField.Value;
-      ah = app.UIAxes6;
+      ah = [app.UIAxes6 app.UIAxes6_2] ;
       app.DropDown_2.Enable = false;
       drawnow
       try
@@ -367,6 +365,11 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
     % Value changed function: PlotModelFitButton_2
     function PlotModelFitButton_2ValueChanged(app, event)
       app.TabGroupSelectionChanged;
+    end
+
+    % Value changed function: NmodesEditField
+    function NmodesEditFieldValueChanged(app, event)
+      app.DropDown_2ValueChanged;
     end
   end
 
@@ -551,19 +554,12 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
       app.DispersionTab = uitab(app.TabGroup);
       app.DispersionTab.Title = 'Dispersion';
 
-      % Create UIAxes4
-      app.UIAxes4 = uiaxes(app.DispersionTab);
-      title(app.UIAxes4, '')
-      xlabel(app.UIAxes4, 'X')
-      ylabel(app.UIAxes4, 'Y')
-      app.UIAxes4.Position = [3 429 683 110];
-
       % Create UIAxes5
       app.UIAxes5 = uiaxes(app.DispersionTab);
       title(app.UIAxes5, '')
       xlabel(app.UIAxes5, 'X')
       ylabel(app.UIAxes5, 'Y')
-      app.UIAxes5.Position = [2 216 687 211];
+      app.UIAxes5.Position = [3 279 687 279];
 
       % Create DoDispCalcButton
       app.DoDispCalcButton = uibutton(app.DispersionTab, 'push');
@@ -576,7 +572,7 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
       title(app.UIAxes5_2, '')
       xlabel(app.UIAxes5_2, 'X')
       ylabel(app.UIAxes5_2, 'Y')
-      app.UIAxes5_2.Position = [3 5 687 211];
+      app.UIAxes5_2.Position = [3 5 687 267];
 
       % Create SumDispersionPanel
       app.SumDispersionPanel = uipanel(app.DispersionTab);
@@ -608,18 +604,7 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
       title(app.UIAxes6, '')
       xlabel(app.UIAxes6, 'X')
       ylabel(app.UIAxes6, 'Y')
-      app.UIAxes6.Position = [13 21 656 522];
-
-      % Create ModeSelectPanel
-      app.ModeSelectPanel = uipanel(app.MIATab);
-      app.ModeSelectPanel.Title = 'Mode Select';
-      app.ModeSelectPanel.Position = [683 425 141 71];
-
-      % Create DropDown
-      app.DropDown = uidropdown(app.ModeSelectPanel);
-      app.DropDown.Items = {'Mode 1', 'Mode 2', 'Mode 3', 'Mode 4', 'Mode 5', 'Mode 6', 'Mode 7', 'Mode 8', 'Mode 9', 'Mode 10'};
-      app.DropDown.Position = [12 16 113 22];
-      app.DropDown.Value = 'Mode 1';
+      app.UIAxes6.Position = [13 277 656 266];
 
       % Create PlotOptionPanel
       app.PlotOptionPanel = uipanel(app.MIATab);
@@ -643,6 +628,7 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
       app.NmodesEditField = uieditfield(app.PlotOptionPanel, 'numeric');
       app.NmodesEditField.Limits = [1 100];
       app.NmodesEditField.ValueDisplayFormat = '%d';
+      app.NmodesEditField.ValueChangedFcn = createCallbackFcn(app, @NmodesEditFieldValueChanged, true);
       app.NmodesEditField.Position = [74 9 54 22];
       app.NmodesEditField.Value = 10;
 
@@ -695,6 +681,13 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
       app.modeEditField = uieditfield(app.CorrelatePanel, 'text');
       app.modeEditField.Editable = 'off';
       app.modeEditField.Position = [55 100 69 22];
+
+      % Create UIAxes6_2
+      app.UIAxes6_2 = uiaxes(app.MIATab);
+      title(app.UIAxes6_2, '')
+      xlabel(app.UIAxes6_2, 'X')
+      ylabel(app.UIAxes6_2, 'Y')
+      app.UIAxes6_2.Position = [11 9 656 266];
 
       % Create RegionSelectPanel
       app.RegionSelectPanel = uipanel(app.FACETIIOrbitToolUIFigure);

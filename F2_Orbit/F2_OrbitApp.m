@@ -186,9 +186,9 @@ classdef F2_OrbitApp < handle & F2_common
           end
           dcor = pinv(U*S*V') * B ;
         case "lsqlin"
-          xmin=[-obj.cordat_x.thetamax(obj.usexcor); -obj.cordat_y.thetamax(obj.useycor)];
-          xmax=[obj.cordat_x.thetamax(obj.usexcor); obj.cordat_y.thetamax(obj.useycor)];
-          dcor = lsqlin(A,B,[],[],[],[],xmin,xmax);
+          dxmin = [-obj.cordat_x.thetamax(obj.usexcor); -obj.cordat_y.thetamax(obj.useycor)] - [obj.cordat_x.theta(obj.usexcor); obj.cordat_y.theta(obj.useycor)] ;
+          dxmax = [obj.cordat_x.thetamax(obj.usexcor); obj.cordat_y.thetamax(obj.useycor)] - [obj.cordat_x.theta(obj.usexcor); obj.cordat_y.theta(obj.useycor)] ;
+          dcor = lsqlin(A,B,[],[],[],[],dxmin,dxmax);
       end
       % Store correction kicks and expected BPM response
       obj.dtheta_x(obj.usexcor) = dcor(1:sum(obj.usexcor)) ;
@@ -214,22 +214,18 @@ classdef F2_OrbitApp < handle & F2_common
         bmax = lcaGet(obj.xcormaxpv(obj.usexcor)) ; % BDES / kGm
         P = arrayfun(@(x) BEAMLINE{x}.P,id) ;
         bdes = bdes1 + obj.dtheta_x(obj.usexcor).*obj.LM.GEV2KGM.*P(:) ;
-        isepics = ismember(obj.xcornames(obj.usexcor),obj.epicsxcor);
         pvnames = obj.xcorcnames(obj.usexcor) ;
-        pvnames(isepics) = pvnames(isepics) + ":BCTRL" ;
-        pvnames(~isepics) = pvnames(~isepics) + "//BDES" ;
+        try
+          control_magnetSet(pvnames(:),bdes(:));
+        catch ME
+          fprintf(2,' !!!!!! error setting X correctors\n%s',ME.message);
+        end
         for icor=1:length(bdes1)
           fprintf('CAPUT: %s = %g -> %g',pvnames(icor),bdes1(icor),bdes(icor));
           if abs(bdes(icor))>bmax(icor)
             fprintf(' !!!!!! exceeds BMAX=%g\n',bmax(icor));
-          else
-            fprintf('\n');
-            if isepics(icor)
-              lcaPutNoWait(char(pvnames(icor)),bdes(icor));
-            else
-              obj.aidaput(char(pvnames(icor)),bdes(icor));
-            end
           end
+          fprintf('\n');
         end
       end
       if obj.usey
@@ -239,22 +235,18 @@ classdef F2_OrbitApp < handle & F2_common
         bmax = lcaGet(obj.ycormaxpv(obj.useycor)) ; % BDES / kGm
         P = arrayfun(@(x) BEAMLINE{x}.P,id) ;
         bdes = bdes1 + obj.dtheta_y(obj.useycor).*obj.LM.GEV2KGM.* P(:) ;
-        isepics = ismember(obj.ycornames(obj.useycor),obj.epicsycor);
         pvnames = obj.ycorcnames(obj.useycor) ;
-        pvnames(isepics) = pvnames(isepics) + ":BCTRL" ;
-        pvnames(~isepics) = pvnames(~isepics) + "//BDES" ;
+        try
+          control_magnetSet(pvnames(:),bdes(:));
+        catch ME
+          fprintf(2,' !!!!!! error setting Y correctors\n%s',ME.message);
+        end
         for icor=1:length(bdes1)
           fprintf('CAPUT: %s = %g -> %g',pvnames(icor),bdes1(icor),bdes(icor));
           if abs(bdes(icor))>bmax(icor)
             fprintf(' !!!!!! exceeds BMAX=%g\n',bmax(icor));
-          else
-            fprintf('\n');
-            if isepics(icor)
-              lcaPutNoWait(char(pvnames(icor)),bdes(icor));
-            else
-              obj.aidaput(char(pvnames(icor)),bdes(icor));
-            end
           end
+          fprintf('\n');
         end
       end
       obj.calcperformed=false;
@@ -342,7 +334,7 @@ classdef F2_OrbitApp < handle & F2_common
         dat = obj.svdcorr(dp(iebpm,:),10) ; % reconstituted BPM readings using mode most correlated to energy
         if iebpm==length(id)
           id1=find(obj.BPMS.readid>=id(iebpm),1);
-          id2=obj.BPMS.readid(end);
+          id2=length(obj.BPMS.readid);
         else
           id1=find(obj.BPMS.readid>=id(iebpm),1);
           id2=find(obj.BPMS.readid<id(iebpm+1),1,'last');
@@ -350,14 +342,15 @@ classdef F2_OrbitApp < handle & F2_common
         id0=id1;
         while id0<=id2
           dp0=dp(iebpm,:) .* BEAMLINE{obj.BPMS.readid(id(iebpm))}.P / BEAMLINE{obj.BPMS.readid(id0)}.P; % assumed dP/P @ BPM location
-          gid = ~isnan(obj.xdat(id0,:)) ;
+          gid = ~isnan(obj.BPMS.xdat(id0,:)) ;
           [q,dq] = noplot_polyfit(dp0(gid),dat.xdat(id0,gid),1,1) ;
           dispx(id0) = q(2) ;
           dispx_err(id0) = dq(2) ;
-          gid = ~isnan(obj.ydat(id0,:)) ;
+          gid = ~isnan(obj.BPMS.ydat(id0,:)) ;
           [q,dq] = noplot_polyfit(dp0(gid),dat.ydat(id0,gid),1,1) ;
           dispy(id0) = q(2) ;
           dispy_err(id0) = dq(2) ;
+          id0=id0+1;
         end
       end
       dispdat.ebpm=id;
@@ -381,13 +374,13 @@ classdef F2_OrbitApp < handle & F2_common
       dat = obj.svdanal(nmode) ;
       rx=zeros(1,nmode); ry=rx; px=rx; py=rx;
       for imode=1:nmode
-        xv = dat.xd*dat.Vxt(imode,:)' ; xv(badid)=[];
+        xv = dat.xd*dat.Vtx(imode,:)' ; xv(badid)=[];
         [r,p]=corrcoef(corvec,xv);
         if p<0.05
           rx(imode)=r;
           px(imode)=p;
         end
-        yv = dat.yd*dat.Vyt(imode,:)' ; yv(badid)=[];
+        yv = dat.yd*dat.Vty(imode,:)' ; yv(badid)=[];
         [r,p]=corrcoef(corvec,yv);
         if p<0.05
           ry(imode)=r;
@@ -397,10 +390,10 @@ classdef F2_OrbitApp < handle & F2_common
       [~,xmode]=max(rx);
       [~,ymode]=max(ry);
       S=zeros(size(dat.Sx)); S(xmode,xmode)=dat.Sx(xmode,xmode);
-      res.xdat = dat.Ux*S*Vxt'; res.xdat=xdat';
+      res.xdat = dat.Ux*S*dat.Vtx'; res.xdat=res.xdat';
       res.xdat(isnan(obj.BPMS.xdat))=nan; res.ydat(isnan(obj.BPMS.ydat))=nan;
       S=zeros(size(dat.Sy)); S(ymode,ymode)=dat.Sy(ymode,ymode);
-      res.ydat = dat.Uy*S*Vyt'; res.ydat=ydat';
+      res.ydat = dat.Uy*S*dat.Vty'; res.ydat=res.ydat';
       res.sdat_x = dat.xd*dat.Vtx(xmode,:)' ;
       res.sdat_y = dat.yd*dat.Vty(ymode,:)' ;
       res.xmode=xmode;
@@ -422,9 +415,9 @@ classdef F2_OrbitApp < handle & F2_common
         [~,Sx1]=svd(xd(:,1:ibpm));
         [~,Sy1]=svd(yd(:,1:ibpm));
         sz=size(Sx1);
-        imax=max([nmode sz(2)]);
-        dof{1}(:,ibpm)=diag(Sx1(1:imax,1:imax));
-        dof{2}(:,ibpm)=diag(Sy1(1:imax,1:imax));
+        imax=min([nmode sz(2)]);
+        dof{1}(1:imax,ibpm)=diag(Sx1(1:imax,1:imax));
+        dof{2}(1:imax,ibpm)=diag(Sy1(1:imax,1:imax));
       end
       dat.Ux=Ux; dat.Sx=Sx; dat.Vtx=Vtx;
       dat.Uy=Uy; dat.Sy=Sy; dat.Vty=Vty;
@@ -432,9 +425,9 @@ classdef F2_OrbitApp < handle & F2_common
       dat.xd=xd; dat.yd=yd;
       if ~isempty(obj.aobj)
         obj.aobj.DropDown.Items = "Mode " + string(1:length(svals)) ;
-        obj.aobj.NmodesEdit.Limits=[1,length(svals)];
-        if obj.aobj.NmodesEdit.Value > length(svals)
-          obj.aobj.NmodesEdit.Value = length(svals) ;
+        obj.aobj.NmodesEditField.Limits=[1,length(svals)];
+        if obj.aobj.NmodesEditField.Value > length(svals)
+          obj.aobj.NmodesEditField.Value = length(svals) ;
         end
         if ~ismember(obj.aobj.DropDown.Value,obj.aobj.DropDown.Items)
           obj.aobj.DropDown.Value = obj.aobj.DropDown.Items(1) ;
@@ -454,8 +447,8 @@ classdef F2_OrbitApp < handle & F2_common
           semilogy(abs(diag(R)),'o')
         otherwise
           id = ismember(obj.BPMS.readid,obj.bpmid(obj.usebpm)) ;
-          xm = mean(obj.BPMS.xdat(id,:),2,'omitnan').*1e-3 ;
-          ym = mean(obj.BPMS.ydat(id,:),2,'omitnan').*1e-3 ;
+          xm = mean(obj.BPMS.xdat(id,:),2,'omitnan') ;
+          ym = mean(obj.BPMS.ydat(id,:),2,'omitnan') ;
           obj.getr;
           A = obj.RM ;
           B = -[xm(:); ym(:)] ;
@@ -484,9 +477,8 @@ classdef F2_OrbitApp < handle & F2_common
       end
       if ~exist('ahan','var') || isempty(ahan)
         figure
-        ahan(1)=subplot(3,1,1);sq
-        ahan(2)=subplot(3,1,2);
-        ahan(3)=subplot(3,1,3);
+        ahan(1)=subplot(2,1,1);
+        ahan(2)=subplot(2,1,2);
       end
       dd=obj.DispData;
       id=obj.bpmid(obj.usebpm) ;
@@ -511,83 +503,73 @@ classdef F2_OrbitApp < handle & F2_common
       end
       
       % Do plots
-      pl=errorbar(ahan(2),z,dispx,dispx_err,'.'); grid(ahan(2),'on'); xlabel('Z [m]'); ylabel('\eta_x [mm]');
+      pl=errorbar(ahan(1),z,dispx,dispx_err,'.'); grid(ahan(1),'on'); xlabel(ahan(1),'Z [m]'); ylabel(ahan(1),'\eta_x [mm]');
       pl.DataTipTemplate.DataTipRows(1).Label = 'Linac Z (m)' ;
       pl.DataTipTemplate.DataTipRows(2).Label = '\eta_x (mm)' ;
       pl.DataTipTemplate.DataTipRows(end+1) = dataTipTextRow('Name',names);
       if domodelfit
-        hold(ahan(2),'on');
-        plot(ahan(2),z,obj.DispFit(1:length(dispx)));
-        hold(ahan(2),'off');
+        hold(ahan(1),'on');
+        plot(ahan(1),z,obj.DispFit(1:length(dispx)));
+        hold(ahan(1),'off');
       end
-      pl=errorbar(ahan(3),z,dispy,dispy_err,'.'); grid(ahan(3),'on'); xlabel('Z [m]'); ylabel('\eta_y [mm]');
+      pl=errorbar(ahan(2),z,dispy,dispy_err,'.'); grid(ahan(2),'on'); xlabel(ahan(2),'Z [m]'); ylabel(ahan(2),'\eta_y [mm]');
       pl.DataTipTemplate.DataTipRows(1).Label = 'Linac Z (m)' ;
       pl.DataTipTemplate.DataTipRows(2).Label = '\eta_y (mm)' ;
       pl.DataTipTemplate.DataTipRows(end+1) = dataTipTextRow('Name',names);
       if domodelfit
-        hold(ahan(3),'on');
-        plot(ahan(3),z,obj.DispFit(length(dispx)+1:end));
-        hold(ahan(3),'off');
+        hold(ahan(2),'on');
+        plot(ahan(2),z,obj.DispFit(length(dispx)+1:end));
+        hold(ahan(2),'off');
       end
-      plot(ahan(1),z,dispx);
-      AddMagnetPlotZ(id(1),id(end),ahan(1),'replace');
     end
     function plotmia(obj,nmode,cmd,ahan)
       global BEAMLINE
       if ~exist('ahan','var') || isempty(ahan)
         figure;
-        ahan=axes;
+        ahan(1)=subplot(2,1,1);
+        ahan(2)=subplot(2,1,2);
+      else
+        ahan(1).reset; ahan(2).reset;
       end
       dat = obj.svdanal(nmode) ;
-      nmode=max([nmode length(dat.svals)]);
-      subplot(ahan); subplot(111);
+      nmode=min([nmode length(dat.svals)]);
       switch string(cmd)
         case "SingularValues"
-          subplot(2,1,1);
-          semilogy(1:nmode,dat.svals(:,1)./max(dat.svals(:,1))); xlabel('H Mode #'); ylabel('Normalized Mode Amplitude'); grid on;
-          subplot(2,1,2);
-          semilogy(1:nmode,dat.svals(:,2)./max(dat.svals(:,2))); xlabel('V Mode #'); ylabel('Normalized Mode Amplitude'); grid on;
+          semilogy(ahan(1),1:nmode,dat.svals(1:nmode,1)); xlabel(ahan(1),'H Mode #'); ylabel(ahan(1),'X Mode Amplitude'); grid(ahan(1),'on');
+          semilogy(ahan(2),1:nmode,dat.svals(1:nmode,2)); xlabel(ahan(2),'V Mode #'); ylabel(ahan(2),'Y Mode Amplitude'); grid(ahan(2),'on');
         case "EigenValue"
-          t = (1:obj.BPMS.nread)./ obj.BPMS.beamrate ;
-          subplot(2,1,1);
+          t = double(1:obj.BPMS.nread)./ double(obj.BPMS.beamrate) ;
           val = dat.xd*dat.Vtx(nmode,:)' ;
-          pl=plot(t,val); xlabel('t [sec]'); ylabel('X Mode Amplitude'); grid on
+          pl=plot(ahan(1),t,val); xlabel(ahan(1),'t [sec]'); ylabel(ahan(1),'X Mode Amplitude'); grid(ahan(1),'on');
           pl.DataTipTemplate.DataTipRows(1).Label = 'time (s)' ;
           pl.DataTipTemplate.DataTipRows(2).Label = 'X Mode Amp' ;
-          subplot(2,1,2);
           val=dat.yd*dat.Vty(nmode,:)';
-          pl=plot(t,val); xlabel('t [sec]'); ylabel('X Mode Amplitude'); grid on
+          pl=plot(ahan(2),t,val); xlabel(ahan(2),'t [sec]'); ylabel(ahan(2),'X Mode Amplitude'); grid(ahan(2),'on');
           pl.DataTipTemplate.DataTipRows(1).Label = 'time (s)' ;
           pl.DataTipTemplate.DataTipRows(2).Label = 'Y Mode Amp' ;
         case "EigenVector"
           id=ismember(obj.BPMS.readid,obj.bpmid(obj.usebpm));
           z=arrayfun(@(x) BEAMLINE{x}.Coordi(x),obj.BPMS.readid(id));
-          subplot(2,1,1)
-          pl=plot(z,dat.Vtx(nmode,id)); xlabel('Z [m]'); ylabel('X Eigenvector Amplitude');
+          pl=plot(ahan(1),z,dat.Vtx(nmode,id)); xlabel(ahan(1),'Z [m]'); ylabel(ahan(1),'X Eigenvector Amplitude');
           pl.DataTipTemplate.DataTipRows(1).Label = 'Linac Z (m)' ;
           pl.DataTipTemplate.DataTipRows(2).Label = 'X Mode Amp' ;
           pl.DataTipTemplate.DataTipRows(end+1) = dataTipTextRow('Name',obj.BPMS.names(id));
-          subplot(2,1,2)
-          pl=plot(z,dat.Vty(nmode,id)); xlabel('Z [m]'); ylabel('Y Eigenvector Amplitude');
+          pl=plot(ahan(2),z,dat.Vty(nmode,id)); xlabel(ahan(2),'Z [m]'); ylabel(ahan(2),'Y Eigenvector Amplitude');
           pl.DataTipTemplate.DataTipRows(1).Label = 'Linac Z (m)' ;
           pl.DataTipTemplate.DataTipRows(2).Label = 'Y Mode Amp' ;
           pl.DataTipTemplate.DataTipRows(end+1) = dataTipTextRow('Name',obj.BPMS.names(id));
         case "FFT"
           [freq_x,fft_x,freq_y,fft_y]=obj.svdfft(nmode);
-          subplot(2,1,1);
-          plot(freq_x,fft_x); xlabel('f [Hz]'); ylabel('|P1(f)| (X Mode)'); grid on
-          subplot(2,1,2);
-          plot(freq_y,fft_y); xlabel('f [Hz]'); ylabel('|P1(f)| (Y Mode)'); grid on
+          plot(ahan(1),freq_x,fft_x); xlabel(ahan(1),'f [Hz]'); ylabel(ahan(1),'|P1(f)| (X Mode)'); grid(ahan(1),'on');
+          plot(ahan(2),freq_y,fft_y); xlabel(ahan(2),'f [Hz]'); ylabel(ahan(2),'|P1(f)| (Y Mode)'); grid(ahan(2),'on');
         case "DoF"
           id=ismember(obj.BPMS.readid,obj.bpmid(obj.usebpm));
           z=arrayfun(@(x) BEAMLINE{x}.Coordi(x),obj.BPMS.readid(id));
-          subplot(2,1,1)
-          pl=plot(z,dat.dof{1}(id,1:nmode)); xlabel('Z [m]'); grid on; ylabel('');
+          pl=plot(ahan(1),z,dat.dof{1}(id,1:nmode)); xlabel(ahan(1),'Z [m]'); grid(ahan(1),'on'); ylabel(ahan(1),'');
           pl.DataTipTemplate.DataTipRows(1).Label = 'Linac Z (m)' ;
           pl.DataTipTemplate.DataTipRows(2).Label = 'X Mode Amp' ;
           pl.DataTipTemplate.DataTipRows(end+1) = dataTipTextRow('Name',obj.BPMS.names(id));
-          subplot(2,1,2)
-          pl=plot(z,dat.dof{2}(id,1:nmode)); xlabel('Z [m]'); grid on; ylabel('');
+          pl=plot(ahan(2),z,dat.dof{2}(id,1:nmode)); xlabel(ahan(2),'Z [m]'); grid(ahan(2),'on'); ylabel(ahan(2),'');
           pl.DataTipTemplate.DataTipRows(1).Label = 'Linac Z (m)' ;
           pl.DataTipTemplate.DataTipRows(2).Label = 'Y Mode Amp' ;
           pl.DataTipTemplate.DataTipRows(end+1) = dataTipTextRow('Name',obj.BPMS.names(id));
@@ -612,13 +594,11 @@ classdef F2_OrbitApp < handle & F2_common
             c_pred = a*r33_13+alpha*r34_13;
             kicky(ibpm) = (c-c_pred)/c_pred;
           end
-          subplot(2,1,1)
-          pl=plot(z,kickx); xlabel('Z [m]'); ylabel(''); grid on
+          pl=plot(ahan(1),z,kickx); xlabel(ahan(1),'Z [m]'); ylabel(ahan(1),''); grid(ahan(1),'on');
           pl.DataTipTemplate.DataTipRows(1).Label = 'Linac Z (m)' ;
           pl.DataTipTemplate.DataTipRows(2).Label = 'X Kick' ;
           pl.DataTipTemplate.DataTipRows(end+1) = dataTipTextRow('Name',obj.BPMS.names(id));
-          subplot(2,1,2)
-          pl=plot(z,kicky); xlabel('Z [m]'); ylabel(''); grid on
+          pl=plot(ahan(2),z,kicky); xlabel(ahan(2),'Z [m]'); ylabel(ahan(2),''); grid(ahan(2),'on');
           pl.DataTipTemplate.DataTipRows(1).Label = 'Linac Z (m)' ;
           pl.DataTipTemplate.DataTipRows(2).Label = 'Y Kick' ;
           pl.DataTipTemplate.DataTipRows(end+1) = dataTipTextRow('Name',obj.BPMS.names(id));
@@ -668,30 +648,30 @@ classdef F2_OrbitApp < handle & F2_common
       end
       
       % Plot min/max values if any of the correctors are close
-      if any(obj.cordat_x.theta(obj.usexcor)./obj.cordat_x.thetamax(obj.usexcor) > 0.9) || ...
-          obj.calcperformed && any(newtheta_x./obj.cordat_x.thetamax(obj.usexcor) > 0.9)
+%       if any(obj.cordat_x.theta(obj.usexcor)./obj.cordat_x.thetamax(obj.usexcor) > 0.9) || ...
+%           obj.calcperformed && any(newtheta_x./obj.cordat_x.thetamax(obj.usexcor) > 0.9)
         hold(ahan(1),'on');
         plot(ahan(1),obj.cordat_x.z(obj.usexcor),obj.cordat_x.thetamax(obj.usexcor),'k--');
         hold(ahan(1),'off');
-      end
-      if any(obj.cordat_x.theta(obj.usexcor)./obj.cordat_x.thetamax(obj.usexcor) < -0.9) || ...
-          obj.calcperformed && any(newtheta_x./obj.cordat_x.thetamax(obj.usexcor) < -0.9)
+%       end
+%       if any(obj.cordat_x.theta(obj.usexcor)./obj.cordat_x.thetamax(obj.usexcor) < -0.9) || ...
+%           obj.calcperformed && any(newtheta_x./obj.cordat_x.thetamax(obj.usexcor) < -0.9)
         hold(ahan(1),'on');
         plot(ahan(1),obj.cordat_x.z(obj.usexcor),-obj.cordat_x.thetamax(obj.usexcor),'k--');
         hold(ahan(1),'off');
-      end
-      if any(obj.cordat_y.theta(obj.useycor)./obj.cordat_y.thetamax(obj.useycor) > 0.9) || ...
-          obj.calcperformed && any(newtheta_y./obj.cordat_y.thetamax(obj.useycor) > 0.9)
+%       end
+%       if any(obj.cordat_y.theta(obj.useycor)./obj.cordat_y.thetamax(obj.useycor) > 0.9) || ...
+%           obj.calcperformed && any(newtheta_y./obj.cordat_y.thetamax(obj.useycor) > 0.9)
         hold(ahan(2),'on');
         plot(ahan(2),obj.cordat_y.z(obj.useycor),obj.cordat_y.thetamax(obj.useycor),'k--');
         hold(ahan(2),'off');
-      end
-      if any(obj.cordat_y.theta(obj.useycor)./obj.cordat_y.thetamax(obj.useycor) < -0.9) || ...
-          obj.calcperformed && any(newtheta_y./obj.cordat_y.thetamax(obj.useycor) < -0.9)
+%       end
+%       if any(obj.cordat_y.theta(obj.useycor)./obj.cordat_y.thetamax(obj.useycor) < -0.9) || ...
+%           obj.calcperformed && any(newtheta_y./obj.cordat_y.thetamax(obj.useycor) < -0.9)
         hold(ahan(2),'on');
         plot(ahan(2),obj.cordat_y.z(obj.useycor),-obj.cordat_y.thetamax(obj.useycor),'k--');
         hold(ahan(2),'off');
-      end
+%       end
       
     end
     function plotbpm(obj,ahan,domodelfit)
