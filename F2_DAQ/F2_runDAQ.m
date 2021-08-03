@@ -262,37 +262,55 @@ classdef F2_runDAQ < handle
             pulse_IDs = lcaGet(sprintf('%sHST%d',obj.pulseIDPV,obj.eDefNum),n_use)';
             seconds = lcaGet(sprintf('%sHST%d',obj.secPV,obj.eDefNum),n_use)';
             nSeconds = lcaGet(sprintf('%sHST%d',obj.nSecPV,obj.eDefNum),n_use)';
+            slac_time = seconds + nSeconds/1e9;
+            
             UIDs = obj.generateUIDs(pulse_IDs);
             steps = obj.step*ones(size(pulse_IDs));
             
-            %obj.addData(obj.data_struct.pulseID.scalar_PID,pulse_IDs);
-            %obj.addData(obj.data_struct.pulseID.scalar_UID,UIDs);
-            %obj.addData(obj.data_struct.pulseID.steps,steps);
-            
             obj.data_struct.pulseID.scalar_PID = [obj.data_struct.pulseID.scalar_PID; pulse_IDs];
             obj.data_struct.pulseID.scalar_UID = [obj.data_struct.pulseID.scalar_UID; UIDs];
-            obj.data_struct.pulseID.scalar_steps = [obj.data_struct.pulseID.steps; steps];
+            obj.data_struct.pulseID.steps      = [obj.data_struct.pulseID.steps; steps];
+            obj.data_struct.pulseID.SLAC_time  = [obj.data_struct.pulseID.SLAC_time; slac_time];
+            
+            obj.getBSAdata();
+            
+            eDefRelease(obj.eDefNum);
+            
+            obj.getNonBSAdata(slac_time);
+            
+            obj.getCamData();
+                        
+            obj.dispMessage('Quality control complete.');
+        end
+        
+        function getBSAdata(obj)
             
             for i = 1:numel(obj.params.BSA_list)
                 
                 for j = 1:numel(obj.data_struct.metadata.(obj.params.BSA_list{i}).PVs)
                     pv = obj.data_struct.metadata.(obj.params.BSA_list{i}).PVs{j};
                     new_vals = lcaGet([pv 'HST' num2str(obj.eDefNum)],n_use);
-                    %obj.addData(obj.data_struct.scalars.(obj.params.BSA_list{i}).(strrep(PV,':','_')),new_vals);
                     obj.data_struct.scalars.(obj.params.BSA_list{i}).(strrep(pv,':','_')) = ...
                         [obj.data_struct.scalars.(obj.params.BSA_list{i}).(strrep(pv,':','_')); new_vals'];
                 end
             end
             obj.data_struct.scalars.steps = [obj.data_struct.scalars.steps; steps];
-            
-            eDefRelease(obj.eDefNum);
-            
-            obj.getCamData();
-            
-            %obj.checkCameraPID();
-            
-            obj.dispMessage('Quality control complete.');
         end
+        
+        function getNonBSAdata(obj,slac_time)
+            
+            obj.async_data.interpolate(slac_time);
+            
+            for i = 1:numel(obj.params.nonBSA_list)
+                
+                for j = 1:numel(obj.data_struct.metadata.(obj.params.nonBSA_list{i}).PVs)
+                    pv = obj.data_struct.metadata.(obj.params.nonBSA_list{i}).PVs{j};
+                    obj.data_struct.scalars.(obj.params.nonBSA_list{i}).(strrep(pv,':','_')) = ...
+                        [obj.data_struct.scalars.(obj.params.nonBSA_list{i}).(strrep(pv,':','_')); obj.async_data.interpData.(strrep(pv,':','_'))];
+                end
+            end
+        end
+            
         
         function getCamData(obj)
             for i = 1:obj.params.num_CAM
@@ -311,7 +329,6 @@ classdef F2_runDAQ < handle
                 pid_list = zeros(n_imgs,1);
                 for j = 1:n_imgs
                     tiff_header = tiff_read_header(locs{j});
-                    %pid_list(j) = bitand(tiff_header.private_65003, hex2dec('0001FFFF'));
                     pid_list(j) = tiff_header.private_65001;
                 end
                 UIDs = obj.generateUIDs(pid_list);
@@ -354,65 +371,7 @@ classdef F2_runDAQ < handle
             end
             obj.data_struct.pulseID.common_UIDs = COMMON_UID;
             obj.data_struct.pulseID.common_PIDs = obj.data_struct.pulseID.scalar_PID(obj.data_struct.pulseID.common_scalar_index);
-        end
-                
-            
-            
-                
-        
-%         function checkCameraPID(obj)
-%             
-%             COMMON_PID = obj.data_struct.pulseID.scalar_PID;
-%             
-%             obj.data_struct.images = struct();
-%             
-%             for i = 1:obj.params.num_CAM
-%                 
-%                 imgs = dir([obj.save_info.cam_paths{i} '/*.tif']);
-%                 n_imgs = numel(imgs);
-%                 obj.daq_status(i,1) = n_imgs;
-%                 obj.daq_status(i,2) = obj.params.n_shot;
-%                 if n_imgs < obj.params.n_shot
-%                     obj.dispMessage([obj.params.camNames{i} ' didn"t save all the shots']);
-%                 end
-%                 
-%                 obj.data_struct.images.(obj.params.camNames{i}).loc = strcat([obj.save_info.cam_paths{i} '/'],{imgs.name}');
-%                 
-%                 pid_list = zeros(n_imgs,1);
-%                 for j = 1:n_imgs
-%                     tiff_header = tiff_read_header(obj.data_struct.images.(obj.params.camNames{i}).loc{j});
-%                     pid_list(j) = bitand(tiff_header.private_65003, hex2dec('0001FFFF'));
-%                 end
-%                 obj.data_struct.images.(obj.params.camNames{i}).pid = pid_list;
-%                 
-%                 [~,~,camera_index] = intersect(obj.data_struct.pulseID.scalar_PID,pid_list);
-%                 obj.data_struct.images.(obj.params.camNames{i}).scalar_PID_index = camera_index;
-%     
-%                 COMMON_PID = intersect(COMMON_PID,pid_list);
-% 
-%                 
-%             end
-%             
-%             [~,~,scalar_index] = intersect(COMMON_PID,obj.data_struct.pulseID.scalar_PID);
-%             
-%             obj.data_struct.pulseID.common_scalar_index = scalar_index;
-%             
-%             % second loop for common index
-%             for i = 1:obj.params.num_CAM
-%                 
-%                 [~,~,camera_index] = intersect(COMMON_PID,obj.data_struct.images.(obj.params.camNames{i}).pid);
-%                 
-%                 obj.data_struct.images.(obj.params.camNames{i}).common_pid_index = camera_index;
-%                 obj.data_struct.pulseID.([obj.params.camNames{i} '_index']) = camera_index;
-%                 
-%                 obj.daq_status(i,3) = numel(camera_index);
-%                 
-%             end
-%             
-%             obj.data_struct.pulseID.common_pulseIDs = COMMON_PID;
-%             
-%             
-%         end
+        end                
         
         function UIDs = generateUIDs(obj,pulseIDs)
             UIDs = 1e9*obj.Instance + 1e6*obj.step + pulseIDs;
@@ -563,17 +522,12 @@ classdef F2_runDAQ < handle
             
         end
         
-%         function addData(obj,field,new_data)
-%             
-%             if isempty(field)
-%                 if iscell(new_data)
-%                     field = 
-        
         function setupDataStruct(obj)
             obj.data_struct.pulseID = struct();
             obj.data_struct.pulseID.scalar_PID = [];
             obj.data_struct.pulseID.scalar_UID = [];
             obj.data_struct.pulseID.steps = [];
+            obj.data_struct.pulseID.SLAC_time = [];
             
             obj.data_struct.scalars = struct();
             obj.data_struct.scalars.steps = [];

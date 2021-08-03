@@ -11,6 +11,8 @@ classdef async_data < handle
     pvlist
     pvs
     bufflist
+    nPV
+    interpData
     
   end
   properties(Access=private)
@@ -25,13 +27,42 @@ classdef async_data < handle
       cntx=PV.Initialize(PVtype.EPICS);
       obj.pvlist = PV.empty;
       obj.bufflist = BufferData.empty;
-      for i = 1:numel(nonBSA_list)
+      obj.nPV = numel(nonBSA_list);
+      for i = 1:obj.nPV
           obj.pvlist(end+1) = PV(cntx,'Name',strrep(nonBSA_list{i},':','_'),'pvname',nonBSA_list{i},'monitor',true);
           obj.bufflist(end+1) = BufferData('Name',strrep(nonBSA_list{i},':','_'),'DataPV',obj.pvlist(end),'MaxDataRate',obj.DataRate,'Enable',0);
       end
       obj.pvs=struct(obj.pvlist);
       
     end
+    
+    function interpolate(obj,time)
+        
+        if ~strcmp(obj.bufflist(2).Name,"PATT_SYS1_1_SEC") || ~strcmp(obj.bufflist(3).Name,"PATT_SYS1_1_NSEC")
+            error('Cannot interpolate without SLAC timing data');
+        else
+            buff_zero = obj.bufflist(2).DataRaw.Data(1) + obj.bufflist(3).DataRaw.Data(1)/1e9;
+            ts_zero = obj.bufflist(2).DataRaw.Time(1);
+            delta = ts_zero(1) - buff_zero(1);
+            bsa_time = time + delta;
+        end
+        
+        obj.interpData = struct();
+        
+        for i = 1:obj.nPV
+            
+            if numel(obj.bufflist(i).DataRaw.Data) == 1
+                vals = obj.bufflist(i).DataRaw.Data(1)*ones(size(bsa_time));
+                obj.interpData.(obj.bufflist(i).Name) = vals;
+            else
+                vals = interp1(obj.bufflist(i).DataRaw.Time,obj.bufflist(i).DataRaw.Data,bsa_time,'nearest','extrap');
+                obj.interpData.(obj.bufflist(i).Name) = vals;
+            end
+            
+        end
+        
+    end
+        
     
     function enable(obj)
         
