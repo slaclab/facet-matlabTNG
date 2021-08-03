@@ -1,19 +1,24 @@
-classdef scanFunc_QUAD_IN10_511
+classdef use_PV
     properties
         pvlist PV
         pvs
         initial_control
         initial_readback
     end
-    properties(Constant)
-        control_PV = "QUAD:IN10:511:BCTRL"
-        readback_PV = "QUAD:IN10:511:BACT"
-        tolerance = 0.01;
-    end
     
     methods 
         
-        function obj = scanFunc_QUAD_IN10_511()
+        function obj = usePV(PV_name)
+            
+            obj.control_PV = PV_name;
+            
+            split_pv = strsplit(PV_name,':');
+            
+            if strcmp(split_pv{end},'BDES') || strcmp(split_pv{end},'BCTRL')
+                
+                
+                
+                
         
             context = PV.Initialize(PVtype.EPICS_labca);
             obj.pvlist=[...

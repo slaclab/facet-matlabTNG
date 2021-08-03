@@ -1,4 +1,4 @@
-classdef scanFunc_QUAD_IN10_511
+classdef scanFunc_dummy
     properties
         pvlist PV
         pvs
@@ -6,14 +6,14 @@ classdef scanFunc_QUAD_IN10_511
         initial_readback
     end
     properties(Constant)
-        control_PV = "QUAD:IN10:511:BCTRL"
-        readback_PV = "QUAD:IN10:511:BACT"
+        control_PV = "SIOC:SYS1:ML02:AO399"
+        readback_PV = "SIOC:SYS1:ML02:AO399"
         tolerance = 0.01;
     end
     
     methods 
         
-        function obj = scanFunc_QUAD_IN10_511()
+        function obj = scanFunc_dummy()
         
             context = PV.Initialize(PVtype.EPICS_labca);
             obj.pvlist=[...

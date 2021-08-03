@@ -29,6 +29,8 @@ classdef F2_runDAQ < handle
         maxbeat=1e7 % max heartbeat count, wrap to zero
         maxImSize = 1440744
         pulseIDPV = 'PATT:SYS1:1:PULSEID'
+        secPV = 'PATT:SYS1:1:SEC'
+        nSecPV = 'PATT:SYS1:1:NSEC'
     end
     
     methods
@@ -94,7 +96,7 @@ classdef F2_runDAQ < handle
             obj.data_struct.metadata.Event = obj.event_info;
             
             % Fill in BSA data
-            obj.bsa_list = {obj.pulseIDPV};
+            obj.bsa_list = {obj.pulseIDPV; obj.secPV; obj.nSecPV;};
             for i = 1:numel(obj.params.BSA_list)
                 pvList = feval(obj.params.BSA_list{i});
                 pvDesc = lcaGetSmart(strcat(pvList,'.DESC'));
@@ -106,7 +108,7 @@ classdef F2_runDAQ < handle
             end
             
             % Fill in non-BSA data
-            obj.nonbsa_list = {obj.pulseIDPV};
+            obj.nonbsa_list = {obj.pulseIDPV; obj.secPV; obj.nSecPV;};
             for i = 1:numel(obj.params.nonBSA_list)
                 pvList = feval(obj.params.nonBSA_list{i});
                 pvDesc = lcaGetSmart(strcat(pvList,'.DESC'));
@@ -116,7 +118,7 @@ classdef F2_runDAQ < handle
                 
                 obj.nonbsa_list = [obj.nonbsa_list; pvList];
             end
-            %obj.async_data = async_data(obj.nonbsa_list);
+            obj.async_data = async_data(obj.nonbsa_list);
             
             % Fill in the rest of the data struct
             obj.setupDataStruct();
@@ -190,7 +192,7 @@ classdef F2_runDAQ < handle
             obj.dispMessage(sprintf('Starting DAQ Step %d. Time estimate %0.1f seconds.',obj.step, waitTime));
             
             % reset nonBSA data
-            %obj.async_data.flush();
+            obj.async_data.flush();
             
             % disable camera triggers
             lcaPut(obj.params.camTrigs,0);
@@ -210,7 +212,7 @@ classdef F2_runDAQ < handle
             lcaPutNoWait(obj.daq_pvs.TIFF_Capture,1);
             lcaPutNoWait(obj.params.camTrigs,1);
             
-            %obj.async_data.enable();
+            obj.async_data.enable();
             
             tic;
             while toc < waitTime
@@ -218,7 +220,7 @@ classdef F2_runDAQ < handle
             end
             
             eDefOff(obj.eDefNum);
-            %obj.async_data.disable();
+            obj.async_data.disable();
             obj.dispMessage('Acquisition complete. Cameras saving data.');
             
             fnum_rbv = lcaGet(obj.daq_pvs.TIFF_FileNumber_RBV);
@@ -256,8 +258,10 @@ classdef F2_runDAQ < handle
         
         function collectData(obj)
             
-            n_use = lcaGet(sprintf('PATT:SYS1:1:PULSEIDHST%d.NUSE',obj.eDefNum));
-            pulse_IDs = lcaGet(sprintf('PATT:SYS1:1:PULSEIDHST%d',obj.eDefNum),n_use)';
+            n_use = lcaGet(sprintf('%sHST%d.NUSE',obj.pulseIDPV,obj.eDefNum));
+            pulse_IDs = lcaGet(sprintf('%sHST%d',obj.pulseIDPV,obj.eDefNum),n_use)';
+            seconds = lcaGet(sprintf('%sHST%d',obj.secPV,obj.eDefNum),n_use)';
+            nSeconds = lcaGet(sprintf('%sHST%d',obj.nSecPV,obj.eDefNum),n_use)';
             UIDs = obj.generateUIDs(pulse_IDs);
             steps = obj.step*ones(size(pulse_IDs));
             
