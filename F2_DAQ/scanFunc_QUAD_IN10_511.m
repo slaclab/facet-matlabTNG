@@ -4,6 +4,7 @@ classdef scanFunc_QUAD_IN10_511
         pvs
         initial_control
         initial_readback
+        daqhandle
     end
     properties(Constant)
         control_PV = "QUAD:IN10:511:BCTRL"
@@ -13,7 +14,9 @@ classdef scanFunc_QUAD_IN10_511
     
     methods 
         
-        function obj = scanFunc_QUAD_IN10_511()
+        function obj = scanFunc_QUAD_IN10_511(daqhandle)
+            
+            obj.daqhandle = daqhandle;
         
             context = PV.Initialize(PVtype.EPICS_labca);
             obj.pvlist=[...
@@ -31,6 +34,7 @@ classdef scanFunc_QUAD_IN10_511
         function delta = set_value(obj,value)
             
             caput(obj.pvs.control,value);
+            obj.daqhandle.dispMessage(sprintf('Setting %s to %0.2f', obj.pvs.control.name, value));
             
             current_value = caget(obj.pvs.readback);
             
@@ -40,6 +44,7 @@ classdef scanFunc_QUAD_IN10_511
             end
             
             delta = current_value - value;
+            obj.daqhandle.dispMessage(sprintf('%s readback is %0.2f', obj.pvs.readback.name, current_value));
             
         end
         

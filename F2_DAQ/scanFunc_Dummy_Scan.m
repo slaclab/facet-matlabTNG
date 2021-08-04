@@ -1,9 +1,10 @@
-classdef scanFunc_dummy
+classdef scanFunc_Dummy_Scan
     properties
         pvlist PV
         pvs
         initial_control
         initial_readback
+        daqhandle
     end
     properties(Constant)
         control_PV = "SIOC:SYS1:ML02:AO399"
@@ -13,7 +14,7 @@ classdef scanFunc_dummy
     
     methods 
         
-        function obj = scanFunc_dummy()
+        function obj = scanFunc_Dummy_Scan(daqhandle)
         
             context = PV.Initialize(PVtype.EPICS_labca);
             obj.pvlist=[...
@@ -31,6 +32,7 @@ classdef scanFunc_dummy
         function delta = set_value(obj,value)
             
             caput(obj.pvs.control,value);
+            obj.daqhandle.dispMessage(sprintf('Setting %s to %0.2f', obj.pvs.control.name, value));
             
             current_value = caget(obj.pvs.readback);
             
@@ -40,6 +42,7 @@ classdef scanFunc_dummy
             end
             
             delta = current_value - value;
+            obj.daqhandle.dispMessage(sprintf('%s readback is %0.2f', obj.pvs.readback.name, current_value));
             
         end
         

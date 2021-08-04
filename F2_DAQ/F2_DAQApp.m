@@ -199,9 +199,10 @@ classdef F2_DAQApp < handle
             name_lists = {};
             for i = 1:numel(file_lists)
                 split = strsplit(file_lists(i).name,'.');
-                name_lists{end+1} = split{1};
+                split = strsplit(split{1},'scanFunc_');
+                name_lists{end+1} = split{2};
             end
-            name_lists = ['Use PV'; name_lists];
+            %name_lists = ['Use PV'; name_lists];
             
             obj.guihan.ScanfunctionDropDown.Items = name_lists;
             obj.guihan.ScanfunctionDropDown_2.Items = name_lists;
