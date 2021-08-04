@@ -58,7 +58,7 @@ classdef F2_Feedback_exported < matlab.apps.AppBase
     StatusLamp_5                  matlab.ui.control.Lamp
     Switch_5                      matlab.ui.control.Switch
     Gauge_9                       matlab.ui.control.LinearGauge
-    KLYSLI1111ADESLabel           matlab.ui.control.Label
+    KLYSLI1111DRVRLabel           matlab.ui.control.Label
     BPMSLI11333X1HLabel           matlab.ui.control.Label
     EditField_11                  matlab.ui.control.NumericEditField
     EditField_12                  matlab.ui.control.NumericEditField
@@ -71,7 +71,7 @@ classdef F2_Feedback_exported < matlab.apps.AppBase
     StatusLamp_6                  matlab.ui.control.Lamp
     Switch_6                      matlab.ui.control.Switch
     Gauge_11                      matlab.ui.control.LinearGauge
-    KLYSLI1121ADESLabel           matlab.ui.control.Label
+    KLYSLI1121DRVRLabel           matlab.ui.control.Label
     BL11359Label_2                matlab.ui.control.Label
     EditField_13                  matlab.ui.control.NumericEditField
     EditField_14                  matlab.ui.control.NumericEditField
@@ -303,6 +303,7 @@ classdef F2_Feedback_exported < matlab.apps.AppBase
       % Create Switch
       app.Switch = uiswitch(app.DL1EnergyFeedbackPanel, 'slider');
       app.Switch.ValueChangedFcn = createCallbackFcn(app, @SwitchValueChanged, true);
+      app.Switch.Interruptible = 'off';
       app.Switch.Position = [66 12 62 28];
 
       % Create Gauge_3
@@ -557,11 +558,11 @@ classdef F2_Feedback_exported < matlab.apps.AppBase
       app.Gauge_9.Position = [334 31 126 35];
       app.Gauge_9.Value = 40;
 
-      % Create KLYSLI1111ADESLabel
-      app.KLYSLI1111ADESLabel = uilabel(app.BC11EnergyFeedbackPanel);
-      app.KLYSLI1111ADESLabel.HorizontalAlignment = 'center';
-      app.KLYSLI1111ADESLabel.Position = [338 64 120 22];
-      app.KLYSLI1111ADESLabel.Text = 'KLYS:LI11:11:ADES';
+      % Create KLYSLI1111DRVRLabel
+      app.KLYSLI1111DRVRLabel = uilabel(app.BC11EnergyFeedbackPanel);
+      app.KLYSLI1111DRVRLabel.HorizontalAlignment = 'center';
+      app.KLYSLI1111DRVRLabel.Position = [338 64 120 22];
+      app.KLYSLI1111DRVRLabel.Text = 'KLYS:LI11:11:DRVR';
 
       % Create BPMSLI11333X1HLabel
       app.BPMSLI11333X1HLabel = uilabel(app.BC11EnergyFeedbackPanel);
@@ -642,11 +643,11 @@ classdef F2_Feedback_exported < matlab.apps.AppBase
       app.Gauge_11.FontSize = 10;
       app.Gauge_11.Position = [334 29 126 35];
 
-      % Create KLYSLI1121ADESLabel
-      app.KLYSLI1121ADESLabel = uilabel(app.BC11BunchLengthFeedbackPanel);
-      app.KLYSLI1121ADESLabel.HorizontalAlignment = 'center';
-      app.KLYSLI1121ADESLabel.Position = [340 62 115 22];
-      app.KLYSLI1121ADESLabel.Text = 'KLYS:LI11:21:ADES';
+      % Create KLYSLI1121DRVRLabel
+      app.KLYSLI1121DRVRLabel = uilabel(app.BC11BunchLengthFeedbackPanel);
+      app.KLYSLI1121DRVRLabel.HorizontalAlignment = 'center';
+      app.KLYSLI1121DRVRLabel.Position = [339 62 117 22];
+      app.KLYSLI1121DRVRLabel.Text = 'KLYS:LI11:21:DRVR';
 
       % Create BL11359Label_2
       app.BL11359Label_2 = uilabel(app.BC11BunchLengthFeedbackPanel);

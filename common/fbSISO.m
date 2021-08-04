@@ -346,6 +346,11 @@ classdef fbSISO < handle
       da.setParam('TRIM','YES');
       try
         da.setDaValue(char(pv),DaValue(java.lang.Float(val)));
+        if endsWith(string(pv),"DRVR") % Need to poke phase control to cause drive amplitude to trim in SCP
+          ppv = regexprep(pv,"(DRVR)$","KPHR") ;
+          pval = aidaget(char(ppv)) ;
+          da.setDaValue(char(ppv),DaValue(java.lang.Float(pval)));
+        end
       catch ME
         fprintf(2,'Error setting AIDA PV: %s\n',pv);
         fprintf(2,'%s',ME.message)

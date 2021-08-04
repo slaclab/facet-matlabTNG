@@ -8,7 +8,7 @@ classdef BC11E_Settings_exported < matlab.apps.AppBase
     GainEditFieldLabel        matlab.ui.control.Label
     GainEditField             matlab.ui.control.NumericEditField
     BC11EnergyFeedbackSettingsLabel  matlab.ui.control.Label
-    ControlVariable111AmplLimitsPanel  matlab.ui.container.Panel
+    ControlVariable111DRVRLimitsPanel  matlab.ui.container.Panel
     EditField                 matlab.ui.control.NumericEditField
     EditField_2               matlab.ui.control.NumericEditField
     LowLabel                  matlab.ui.control.Label
@@ -159,30 +159,30 @@ classdef BC11E_Settings_exported < matlab.apps.AppBase
       app.BC11EnergyFeedbackSettingsLabel.Position = [11 450 284 23];
       app.BC11EnergyFeedbackSettingsLabel.Text = 'BC11 Energy Feedback Settings';
 
-      % Create ControlVariable111AmplLimitsPanel
-      app.ControlVariable111AmplLimitsPanel = uipanel(app.LeftPanel);
-      app.ControlVariable111AmplLimitsPanel.Title = 'Control Variable: 11-1 Ampl Limits';
-      app.ControlVariable111AmplLimitsPanel.Position = [17 322 260 85];
+      % Create ControlVariable111DRVRLimitsPanel
+      app.ControlVariable111DRVRLimitsPanel = uipanel(app.LeftPanel);
+      app.ControlVariable111DRVRLimitsPanel.Title = 'Control Variable: 11-1 DRVR Limits';
+      app.ControlVariable111DRVRLimitsPanel.Position = [17 322 260 85];
 
       % Create EditField
-      app.EditField = uieditfield(app.ControlVariable111AmplLimitsPanel, 'numeric');
+      app.EditField = uieditfield(app.ControlVariable111DRVRLimitsPanel, 'numeric');
       app.EditField.HorizontalAlignment = 'center';
       app.EditField.Position = [13 17 100 22];
       app.EditField.Value = 5;
 
       % Create EditField_2
-      app.EditField_2 = uieditfield(app.ControlVariable111AmplLimitsPanel, 'numeric');
+      app.EditField_2 = uieditfield(app.ControlVariable111DRVRLimitsPanel, 'numeric');
       app.EditField_2.HorizontalAlignment = 'center';
       app.EditField_2.Position = [138 17 100 22];
       app.EditField_2.Value = 60;
 
       % Create LowLabel
-      app.LowLabel = uilabel(app.ControlVariable111AmplLimitsPanel);
+      app.LowLabel = uilabel(app.ControlVariable111DRVRLimitsPanel);
       app.LowLabel.Position = [49 38 28 22];
       app.LowLabel.Text = 'Low';
 
       % Create HighLabel
-      app.HighLabel = uilabel(app.ControlVariable111AmplLimitsPanel);
+      app.HighLabel = uilabel(app.ControlVariable111DRVRLimitsPanel);
       app.HighLabel.Position = [174 38 31 22];
       app.HighLabel.Text = 'High';
 
