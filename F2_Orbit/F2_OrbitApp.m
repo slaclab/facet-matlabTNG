@@ -28,7 +28,7 @@ classdef F2_OrbitApp < handle & F2_common
     solvtol % tolerance for orbit solution QR factorization tolerance (only use if set)
     usex logical = true % apply x corrections when asked?
     usey logical = true % apply y corrections when asked?
-    nmode uint8 = inf % # of svd modes to include in correction (for corsolv="svd"_
+    nmode uint8 = inf % # of svd modes to include in correction (for corsolv="svd")
   end
   properties(SetAccess=private)
     cordat_x % XCOR data
@@ -58,7 +58,6 @@ classdef F2_OrbitApp < handle & F2_common
   methods
     function obj = F2_OrbitApp(appobj)
       global BEAMLINE
-      addpath('../F2_LiveModel');
       obj.LiveModel = F2_LiveModelApp ;
       obj.BPMS = F2_bpms(copy(obj.LiveModel.LM)) ;
       if exist('appobj','var')

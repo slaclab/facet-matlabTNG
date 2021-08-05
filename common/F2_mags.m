@@ -22,10 +22,16 @@ classdef F2_mags < handle & matlab.mixin.Copyable & F2_common
     LM LucretiaModel
   end
   properties(SetAccess=private)
-    BDES_err
-    BACT_err
-    BDES_cntrl
-    BACT_cntrl
+    BDES_err % logical vector of BDES values away from desired
+    BACT_err % logical vector of BACT values away from desired
+    BDES_cntrl % BDES values read from control system
+    BACT_cntrl % BACT values read from control system
+    BMIN % BMAX from control system
+    BMAX % BMIN from control system where available (else set based on BMAX)
+  end
+  properties(Dependent)
+    KDES_cntrl
+    KACT_cntrl
   end
   properties(Constant)
     version single = 1.0
@@ -39,10 +45,10 @@ classdef F2_mags < handle & matlab.mixin.Copyable & F2_common
       obj.LM.ModelClasses = obj.MagClasses ;
     end
     function [bdes,bact] = ReadB(obj,SetModel)
-      %READB Get magnet strengths from control system
+      %READB Get magnet strengths from control system or achiver if UseArchive property = true
       %ReadB([SetModel])
       % SetModel (Optional) : also set read B fields into Lucretia model
-      [bact,bdes] = control_magnetGet(cellstr(obj.LM.ControlNames)) ; bdes=bdes(:)'; bact=bact(:)';
+      [bact,bdes] = obj.MagnetGet(cellstr(obj.LM.ControlNames)) ; bdes=bdes(:)'; bact=bact(:)';
       obj.BDES_err = false(size(bdes)) ;
       obj.BACT_err = obj.BDES_err ;
       if length(obj.BDES) == length(bdes)
@@ -56,6 +62,21 @@ classdef F2_mags < handle & matlab.mixin.Copyable & F2_common
       if exist('SetModel','var') && SetModel
         obj.LM.ModelBDES = bdes ;
       end
+      maxpv = obj.LM.ControlNames+":BMAX" ;
+      lgps = find(startsWith(maxpv,"LGPS")) ;
+      for ipv=lgps(:)'
+        t=regexp(maxpv(ipv),"LGPS:(\w+):(\d+)",'tokens','once');
+        maxpv(ipv) = t(1) + ":LGPS:" + t(2) + "BMAX" ;
+      end
+      minpv = regexprep(maxpv,"(BMAX)$","BMIN") ;
+      dominpv = true(size(minpv)); dominpv(contains(minpv,["QUAS","LGPS","SXTS"])) = false ;
+      obj.BMAX = lcaGet(cellstr(maxpv)) ; % obj.BMAX(val>=0) = val(val>=0) ; obj.BMIN(val<0) = val(val<0) ;
+      obj.BMIN = zeros(size(obj.BMAX)) ;
+      obj.BMIN(dominpv) = lcaGet(cellstr(minpv(dominpv))) ;
+      isinv = obj.BMAX<obj.BMIN ;
+      tempmax = obj.BMAX(isinv) ;
+      obj.BMAX(isinv) = obj.BMIN(isinv) ;
+      obj.BMIN(isinv) = tempmax ;
     end
     function msg=WriteBDES(obj)
       %SETBDES Write BDES property values to control system
@@ -208,7 +229,17 @@ classdef F2_mags < handle & matlab.mixin.Copyable & F2_common
         end
       end
     end
-    function set.UseSector(obj,dosec)
+    function SetBDES_err(obj,val,id)
+      if ~exist('id','var') || isempty(id)
+        id=1:length(obj.BDES_err);
+      end
+      if any(id<1) || any(id>length(obj.BDES_err))
+        error('ID error');
+      end
+      obj.BDES_err(id)=logical(val);
+    end
+    % set/get methods
+      function set.UseSector(obj,dosec)
       if ~isequal(dosec,obj.UseSector)
         obj.BDES=[];
         obj.BDES_err=[];
@@ -256,14 +287,8 @@ classdef F2_mags < handle & matlab.mixin.Copyable & F2_common
         obj.BACT_err(abs(obj.BDES-obj.BACT_cntrl) < obj.AbsTolBACT) = false ;
       end
     end
-    function SetBDES_err(obj,val,id)
-      if ~exist('id','var') || isempty(id)
-        id=1:length(obj.BDES_err);
-      end
-      if any(id<1) || any(id>length(obj.BDES_err))
-        error('ID error');
-      end
-      obj.BDES_err(id)=logical(val);
+    function kdes = get.KDES_cntrl(obj)
+      kdes = obj.BDES_cntrl./obj.LM.ModelL./obj.LM.ModelP./PhysConstants.GEV2TM ;
     end
   end
 end
