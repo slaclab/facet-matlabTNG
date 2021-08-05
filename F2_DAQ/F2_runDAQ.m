@@ -272,7 +272,9 @@ classdef F2_runDAQ < handle
             obj.data_struct.pulseID.steps      = [obj.data_struct.pulseID.steps; steps];
             obj.data_struct.pulseID.SLAC_time  = [obj.data_struct.pulseID.SLAC_time; slac_time];
             
-            obj.getBSAdata();
+            obj.data_struct.scalars.steps = [obj.data_struct.scalars.steps; steps];
+            
+            obj.getBSAdata(n_use);
             
             eDefRelease(obj.eDefNum);
             
@@ -283,7 +285,7 @@ classdef F2_runDAQ < handle
             obj.dispMessage('Quality control complete.');
         end
         
-        function getBSAdata(obj)
+        function getBSAdata(obj,n_use)
             
             for i = 1:numel(obj.params.BSA_list)
                 
@@ -294,7 +296,7 @@ classdef F2_runDAQ < handle
                         [obj.data_struct.scalars.(obj.params.BSA_list{i}).(strrep(pv,':','_')); new_vals'];
                 end
             end
-            obj.data_struct.scalars.steps = [obj.data_struct.scalars.steps; steps];
+            
         end
         
         function getNonBSAdata(obj,slac_time)
@@ -536,6 +538,13 @@ classdef F2_runDAQ < handle
                 for j=1:numel(obj.data_struct.metadata.(obj.params.BSA_list{i}).PVs)
                     pv = obj.data_struct.metadata.(obj.params.BSA_list{i}).PVs{j};
                     obj.data_struct.scalars.(obj.params.BSA_list{i}).(strrep(pv,':','_')) = [];
+                end
+            end
+            for i = 1:numel(obj.params.nonBSA_list)
+                obj.data_struct.scalars.(obj.params.nonBSA_list{i}) = struct();
+                for j=1:numel(obj.data_struct.metadata.(obj.params.nonBSA_list{i}).PVs)
+                    pv = obj.data_struct.metadata.(obj.params.nonBSA_list{i}).PVs{j};
+                    obj.data_struct.scalars.(obj.params.nonBSA_list{i}).(strrep(pv,':','_')) = [];
                 end
             end
             

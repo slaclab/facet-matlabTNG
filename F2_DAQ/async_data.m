@@ -40,19 +40,29 @@ classdef async_data < handle
         
         if ~strcmp(obj.bufflist(2).Name,"PATT_SYS1_1_SEC") || ~strcmp(obj.bufflist(3).Name,"PATT_SYS1_1_NSEC")
             error('Cannot interpolate without SLAC timing data');
-        else
+        elseif numel(obj.bufflist(2).DataRaw.Data) > 0 && numel(obj.bufflist(3).DataRaw.Data) > 0
             buff_zero = obj.bufflist(2).DataRaw.Data(1) + obj.bufflist(3).DataRaw.Data(1)/1e9;
             ts_zero = obj.bufflist(2).DataRaw.Time(1);
             delta = ts_zero(1) - buff_zero(1);
             bsa_time = time + delta;
+        else
+            for i = 1:obj.nPV
+                caget(obj.bufflist(i).DataPV);
+                obj.bufflist(i).DataUpdate();
+            end
         end
         
         obj.interpData = struct();
         
         for i = 1:obj.nPV
             
-            if numel(obj.bufflist(i).DataRaw.Data) == 1
-                vals = obj.bufflist(i).DataRaw.Data(1)*ones(size(bsa_time));
+            if numel(obj.bufflist(i).DataRaw.Data) == 0
+                caget(obj.bufflist(i).DataPV);
+                obj.bufflist(i).DataUpdate();
+                vals = obj.bufflist(i).DataRaw.Data(1)*ones(size(time));
+                obj.interpData.(obj.bufflist(i).Name) = vals;
+            elseif numel(obj.bufflist(i).DataRaw.Data) == 1
+                vals = obj.bufflist(i).DataRaw.Data(1)*ones(size(time));
                 obj.interpData.(obj.bufflist(i).Name) = vals;
             else
                 vals = interp1(obj.bufflist(i).DataRaw.Time,obj.bufflist(i).DataRaw.Data,bsa_time,'nearest','extrap');
