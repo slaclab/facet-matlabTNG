@@ -13,7 +13,7 @@ classdef F2_mags < handle & matlab.mixin.Copyable & F2_common
     AbsTolBACT double = 0.1 % Absolute Tolerance for BDES vs BACT errors
   end
   properties(SetObservable)
-    BDES double
+    BDES double % Store location for BDES values to write
     UseSector(1,5) logical = true(1,5) % L0, L1, L2, L3, S20
     MagClasses string {mustBeMember(MagClasses,["QUAD" "SEXT" "SBEN" "XCOR" "YCOR"])} = ["QUAD" "SEXT" "SBEN" "XCOR" "YCOR"]
   end
