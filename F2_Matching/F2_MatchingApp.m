@@ -10,6 +10,7 @@ classdef F2_MatchingApp < handle & F2_common
   end
   properties(SetAccess=private)
     MatchQuadNames string = ["QUAD:IN10:425" "QUAD:IN10:441" "QUAD:IN10:511" "QUAD:IN10:525"]
+    TwissFit(1,8) = [1 1 0 0 1 1 5 5] % beta_x,beta_y,alpha_x,alpha_y,bmag_x,bmag_y,nemit_x,nemit_y fitted twiss parameters at profile device (nemit in um-rad)
   end
   properties(SetAccess=private,SetObservable)
     goodmatch logical = false
@@ -19,13 +20,15 @@ classdef F2_MatchingApp < handle & F2_common
     TwissMatch
     TwissPreMatch
     MatchQuadInitVals
-    MatchQuadID
+    MatchQuadID % ID into LiveModel.Mags
     InitRestore
     ProfModelInd
     MatchQuadModelInd
+    LEMQuadID
   end
   properties(SetObservable,AbortSet)
-    ModelSource string {mustBeMember(ModelSource,["Live" "Archive" "Design"])} = "Live"
+    ModelSource string {mustBeMember(ModelSource,["Live" "Archive" "Design"])} = "Archive"
+    ModelDate(1,6) = [2021,7,1,12,1,1] % [yr,mnth,day,hr,min,sec]
   end
   properties(SetObservable)
     ProfName string = "PROF:IN10:571"
@@ -34,7 +37,6 @@ classdef F2_MatchingApp < handle & F2_common
   end
   properties(Dependent)
     quadscan_k
-    fitdata
   end
   properties(Constant)
     EmitDataProfs = "PROF:IN10:571" % profile devices for which there are emittance PVs
@@ -46,37 +48,33 @@ classdef F2_MatchingApp < handle & F2_common
       if exist('ghan','var') && ~isempty(ghan)
         obj.guihan=ghan;
       end
-      obj.LiveModel = F2_LiveModelApp ;
+      obj.LiveModel = F2_LiveModelApp ; % Initially update live model (default)
       obj.LM=copy(obj.LiveModel.LM);
-      obj.LM.UseModelClasses="PROF";
+      obj.LM.ModelClasses="PROF";
       obj.ProfModelInd = obj.LM.ModelUniqueID(obj.LM.ControlNames==obj.ProfName) ;
       obj.ProfModelInd = obj.ProfModelInd(1) ;
+      obj.UseArchive = true ; % default to getting data from archive from now on
+      obj.LEMQuadID = obj.LiveModel.LEM.Mags.LM.ModelClassList == "QUAD" ; % Tag quadrupoles in LEM magnet list
+      obj.LiveModel.LEM.Mags.WriteEnable=false;
     end
     function DoMatch(obj)
       %DOMATCH Perform matching to profile monitor device based on fitted Twiss parameters and live model
       global BEAMLINE PS
       obj.goodmatch = false ;
       obj.MatchQuadInitVals = []; obj.TwissPreMatch=[]; obj.TwissMatch=[];
-      if ~isefield(obj.QuadScanData,'fit')
-        fprintf(2,'No data to fit');
-        return
-      end
-      LM_mags=copy(obj.LiveModel.LEM.Mags.LM);
-      id_prof = obj.QuadScanData.ProfInd ;
-      LM_all=obj.LiveModel.LM;
-      pele=LM_all.ModelUniqueID(id_prof);
+      LM_mags=obj.LiveModel.LEM.Mags.LM;
+      pele=obj.ProfModelInd;
       betax_design = obj.LiveModel.DesignTwiss.betax(pele) ;
       betay_design = obj.LiveModel.DesignTwiss.betay(pele) ;
       alphax_design = obj.LiveModel.DesignTwiss.alphax(pele) ;
       alphay_design = obj.LiveModel.DesignTwiss.alphay(pele) ;
-      betax_fit = obj.QuadScanData.fit.betax ;
-      betay_fit = obj.QuadScanData.fit.betay ;
-      alphax_fit = obj.QuadScanData.fit.alphax ;
-      alphay_fit = obj.QuadScanData.fit.alphay ;
+      betax_fit = obj.TwissFit(1) ;
+      betay_fit = obj.TwissFit(2) ;
+      alphax_fit = obj.TwissFit(3) ;
+      alphay_fit = obj.TwissFit(4) ;
       
       % Form list of matching quads
-      LM_mags.ModelClasses = "QUAD" ;
-      iquads = LM_mags.ModelUniqueID < pele ;
+      iquads = LM_mags.ModelUniqueID(:) < pele & obj.LEMQuadID(:) ;
       if sum(iquads)<double(obj.NumMatchQuads)
         error('Insufficient matching quads available');
       end
@@ -91,7 +89,7 @@ classdef F2_MatchingApp < handle & F2_common
       obj.MatchQuadInitVals = ps_init.*10 ;
       
       % If matching on PR10571 or WS10561 then get initial Twiss parameters and record them in PVs
-      if ismember(obj.QuadScanData.ProfName,obj.InitMatchProf)
+      if ismember(obj.ProfName,obj.InitMatchProf)
         i1=1;
       else % match from entrance of first matching quad
         i1=PS(quadps(1)).Element(1);
@@ -118,11 +116,11 @@ classdef F2_MatchingApp < handle & F2_common
       M.addMatch(pele,'alpha_y',alphay_fit,1e-3);
       M.doMatch;
       display(M);
-      if any(abs(M.matchVals-[betax_fit betay_fit alphax_fit alphay_fit])>[betax_fit/100 betay_fit/100 0.01 0.01])
+      if any(abs(M.optimVals-[betax_fit betay_fit alphax_fit alphay_fit])>[betax_fit/100 betay_fit/100 0.01 0.01])
         error('Match failed');
       end
       obj.InitMatch=M.initStruc;
-      [~,T]=GetTwiss(i1,i2,obj.InitMatch.x.Twiss,obj.InitMatch.y.Twiss);
+      [~,T]=GetTwiss(i1,pele,obj.InitMatch.x.Twiss,obj.InitMatch.y.Twiss);
       obj.TwissPreMatch=T;
       
       % Calculate re-match to fitted Twiss parameters at profile monitor device
@@ -137,32 +135,39 @@ classdef F2_MatchingApp < handle & F2_common
       for ips=1:length(quadps)
         M.addVariable('PS', quadps(ips),'Ampl',bmin(ips),bmax(ips));
       end
-      M.addMatch(pele,'alpha_x',alphax_design,1e-3);
-      M.addMatch(pele,'alpha_y',alphay_design,1e-3);
       M.addMatch(pele,'beta_x',betax_design,betax_design/1e3);
       M.addMatch(pele,'beta_y',betay_design,betay_design/1e3);
+      M.addMatch(pele,'alpha_x',alphax_design,1e-3);
+      M.addMatch(pele,'alpha_y',alphay_design,1e-3);
       M.doMatch;
       display(M);
-      [~,T]=GetTwiss(i1,i2,obj.InitMatch.x.Twiss,obj.InitMatch.y.Twiss);
+      [~,T]=GetTwiss(i1,pele,obj.InitMatch.x.Twiss,obj.InitMatch.y.Twiss);
       obj.TwissMatch=T;
-      
-      % Restore pre-matched magnet strengths in model
-      for ips=1:length(quadps)
-        PS(ips).Ampl = ps_init(ips) ;
-      end
       
       % Check match in range and store in Mags BDES field
       if any(M.varVals>bmax | M.varVals<bmin)
+        for ips=1:length(quadps)
+          PS(quadps(ips)).Ampl = ps_init(ips) ;
+        end
         error('Required quad match values outside limits');
       end
-      if any(abs(M.matchVals-[alphax_design alphay_design betax_design betay_design])>[0.01 0.01 betax_design/100 betay_design/100])
-        error('Match failed');
+      if any(abs(M.optimVals-[betax_design betay_design alphax_design alphay_design])>[betax_design/100 betay_design/100 0.01 0.01])
+        for ips=1:length(quadps)
+          PS(quadps(ips)).Ampl = ps_init(ips) ;
+        end
+        error('Match failed to converge to required accuracy');
       end
+      
       obj.MatchQuadID = idm ;
-      obj.LiveModel.LEM.Mags.BDES(idm) = M.varVals ;
-      obj.LiveModel.LEM.Mags.BDES_err(~idm) = false ; % set just matching quads to be written
+      obj.LiveModel.LEM.Mags.BDES(idm) = M.varVals * 10 ;
+      obj.LiveModel.LEM.Mags.SetBDES_err(false,~idm) ; % set just matching quads to be written
       obj.QuadScanData.twissmatch = M.matchVals ;
-      obj.QuadScanData.quadmatch = M.varVals ;
+      obj.QuadScanData.quadmatch = M.varVals * 10 ;
+      
+      % Restore pre-matched magnet strengths in model
+      for ips=1:length(quadps)
+        PS(quadps(ips)).Ampl = ps_init(ips) ;
+      end
       
       obj.goodmatch = true ;
       obj.UndoAvailable = false ;
@@ -175,15 +180,19 @@ classdef F2_MatchingApp < handle & F2_common
         error('No stored match quad settings to restore');
       end
       obj.LiveModel.LEM.Mags.BDES(obj.MatchQuadID) = obj.MatchQuadInitVals ;
-      obj.LiveModel.LEM.Mags.BDES_err(~obj.MatchQuadID) = false ;
-      obj.LiveModel.LEM.Mags.BDES_err(obj.MatchQuadID) = true ;
+      obj.LiveModel.LEM.Mags.SetBDES_err(false,~obj.MatchQuadID) ;
+      obj.LiveModel.LEM.Mags.SetBDES_err(true,obj.MatchQuadID) ;
       msg = obj.LiveModel.LEM.Mags.WriteBDES ;
       obj.LiveModel.Initial = obj.InitRestore;
-      obj.InitMatch = obj.InitRestore ;
       obj.goodmatch = false ;
       obj.UndoAvailable = false ;
+      
+      if obj.ModelSource ~= "Design"
+        obj.LiveModel.UpdateModel ;
+      end
+      
     end
-    function msg = WriteMatchQuads(obj)
+    function msg = WriteMatchingQuads(obj)
       %WRITEMATCHQUADS Write matched quadrupole fields to control system and update any Twiss PVs
       
       % Require DoMatch to have successfully run
@@ -195,6 +204,10 @@ classdef F2_MatchingApp < handle & F2_common
       msg = obj.LiveModel.LEM.Mags.WriteBDES ;
       
       obj.UndoAvailable = true ;
+      
+      if obj.ModelSource ~= "Design"
+        obj.LiveModel.UpdateModel ;
+      end
       
     end
     function LoadQuadScanData(obj)
@@ -221,14 +234,15 @@ classdef F2_MatchingApp < handle & F2_common
       % Update live model to match data file date
       if obj.UseArchive
         dd = dir(fullfile(pn,fn));
-        obj.ArchiveDate = datevec(dd.datenum) ;
+        obj.ModelDate = datevec(dd.datenum) ;
         obj.LiveModel.UseArchive = true ;
-        obj.LiveModel.ArchiveDate = obj.ArchiveDate ;
+        obj.LiveModel.ArchiveDate = obj.ModelDate ;
       else
-        obj.ArchiveDate = datevec(now) ;
         obj.LiveModel.UseArchive = false;
       end
-      obj.LiveModel.UpdateModel ;
+      if obj.ModelSource ~= "Design"
+        obj.LiveModel.UpdateModel ;
+      end
       dat = load(fullfile(pn,fn));
       obj.QuadScanData.QuadName = string(regexprep(dat.data.ctrlPV(1).name,'(:BCTRL)|(:BDES)$','')) ;
       stat = logical([dat.data.status]) ;
@@ -236,10 +250,10 @@ classdef F2_MatchingApp < handle & F2_common
       obj.QuadScanData.nscan = sum(stat) ;
       if isfield(dat.data,'profPV')
         xpv = find(endsWith(string(arrayfun(@(x) x.name,dat.data.profPV(:,1),'UniformOutput',false)),"XRMS"),1) ;
-        obj.QuadScanData.ProfName = string(regexprep(dat.data.profPV(xpv).name,':XRMS$','')) ;
-        obj.QuadScanData.ProfInd = find(LM_all.ControlNames==obj.QuadScanData.ProfName,1) ;
+        obj.ProfName = string(regexprep(dat.data.profPV(xpv).name,':XRMS$','')) ;
+        obj.QuadScanData.ProfInd = find(LM_all.ControlNames==obj.ProfName,1) ;
       else
-        obj.QuadScanData.ProfName = [] ;
+        error('No profile monitor data found');
       end
       fitm=["Gaussian" "Asymmetric"];
       for ii=1:2
@@ -263,19 +277,19 @@ classdef F2_MatchingApp < handle & F2_common
       %WRITEENMITDATA Write twiss and emittance data to PVs
       if ~isempty(obj.QuadScanData) && isfield(obj.QuadScanData,'fit') && ismember(obj.ProfName,obj.EmitDataProfs)
         if contains(obj.DimSelect,"X")
-          lcaPutNoWait(spritnf('%s:BETA_X',obj.QuadScanData.ProfName),obj.QuadScanData.fit.betax);
-          lcaPutNoWait(spritnf('%s:ALPHA_X',obj.QuadScanData.ProfName),obj.QuadScanData.fit.alphax);
-          lcaPutNoWait(spritnf('%s:BMAG_X',obj.QuadScanData.ProfName),obj.QuadScanData.fit.bmagx);
-          lcaPutNoWait(spritnf('%s:EMITN_X',obj.QuadScanData.ProfName),obj.QuadScanData.fit.emitnx*1e6);
+          lcaPutNoWait(sprintf('%s:BETA_X',obj.ProfName),obj.TwissFit(1));
+          lcaPutNoWait(sprintf('%s:ALPHA_X',obj.ProfName),obj.TwissFit(3));
+          lcaPutNoWait(sprintf('%s:BMAG_X',obj.ProfName),obj.TwissFit(5));
+          lcaPutNoWait(sprintf('%s:EMITN_X',obj.ProfName),obj.TwissFit(7));
         end
         if contains(obj.DimSelect,"Y")
-          lcaPutNoWait(spritnf('%s:BETA_Y',obj.QuadScanData.ProfName),obj.QuadScanData.fit.betay);
-          lcaPutNoWait(spritnf('%s:ALPHA_Y',obj.QuadScanData.ProfName),obj.QuadScanData.fit.alphay);
-          lcaPutNoWait(spritnf('%s:BMAG_Y',obj.QuadScanData.ProfName),obj.QuadScanData.fit.bmagy);
-          lcaPutNoWait(spritnf('%s:EMITN_Y',obj.QuadScanData.ProfName),obj.QuadScanData.fit.emitny*1e6);
+          lcaPutNoWait(sprintf('%s:BETA_Y',obj.ProfName),obj.TwissFit(2));
+          lcaPutNoWait(sprintf('%s:ALPHA_Y',obj.ProfName),obj.TwissFit(4));
+          lcaPutNoWait(sprintf('%s:BMAG_Y',obj.ProfName),obj.TwissFit(6));
+          lcaPutNoWait(sprintf('%s:EMITN_Y',obj.ProfName),obj.TwissFit(8));
         end
         % Write initial match conditions to PVs
-        if ismember(obj.QuadScanData.ProfName,obj.InitMatchProf)
+        if ismember(obj.ProfName,obj.InitMatchProf)
           if contains(obj.DimSelect,"X")
             lcaPutNowWait(char(obj.LiveModel.Initial_betaxPV),obj.InitMatch.x.Twiss.beta) ;
             lcaPutNowWait(char(obj.LiveModel.Initial_betaxPV),obj.InitMatch.y.Twiss.beta) ;
@@ -291,14 +305,20 @@ classdef F2_MatchingApp < handle & F2_common
     end
     function ReadEmitData(obj)
       if ismember(obj.ProfName,obj.EmitDataProfs)
-        obj.QuadScanData.fit.betax = lcaGet(spritnf('%s:BETA_X',obj.QuadScanData.ProfName));
-        obj.QuadScanData.fit.betay = lcaGet(spritnf('%s:BETA_Y',obj.QuadScanData.ProfName));
-        obj.QuadScanData.fit.alphax = lcaGet(spritnf('%s:ALPHA_X',obj.QuadScanData.ProfName));
-        obj.QuadScanData.fit.alphay = lcaGet(spritnf('%s:ALPHA_Y',obj.QuadScanData.ProfName));
-        obj.QuadScanData.fit.bmagx = lcaGet(spritnf('%s:BMAG_X',obj.QuadScanData.ProfName));
-        obj.QuadScanData.fit.bmagy = lcaGet(spritnf('%s:BMAG_Y',obj.QuadScanData.ProfName));
-        obj.QuadScanData.fit.emitnx = lcaGet(spritnf('%s:EMITN_X',obj.QuadScanData.ProfName))*1e-6;
-        obj.QuadScanData.fit.emitny = lcaGet(spritnf('%s:EMITN_Y',obj.QuadScanData.ProfName))*1e-6;
+        [betax,pvtime] = lcaGet(sprintf('%s:BETA_X',obj.ProfName));
+        betay = lcaGet(sprintf('%s:BETA_Y',obj.ProfName));
+        alphax = lcaGet(sprintf('%s:ALPHA_X',obj.ProfName));
+        alphay = lcaGet(sprintf('%s:ALPHA_Y',obj.ProfName));
+        bmagx = lcaGet(sprintf('%s:BMAG_X',obj.ProfName));
+        bmagy = lcaGet(sprintf('%s:BMAG_Y',obj.ProfName));
+        emitnx = lcaGet(sprintf('%s:EMITN_X',obj.ProfName));
+        emitny = lcaGet(sprintf('%s:EMITN_Y',obj.ProfName));
+        obj.TwissFit=[betax betay alphax alphay bmagx bmagy emitnx emitny];
+        % Set achive date to match PV write date if not already set by reading quad values
+        if ~isfield(obj.QuadScanData,'QuadName')
+          obj.ModelDate = datevec(F2_common.epics2mltime(pvtime)) ;
+          obj.LiveModel.ArchiveDate = obj.ModelDate ;
+        end
       end
     end
     function FitQuadScanData(obj)
@@ -336,7 +356,7 @@ classdef F2_MatchingApp < handle & F2_common
       sig22 = (C-sig11-2*d*sig12) / d^2 ;
       rgamma = LM_mags.ModelP(id)/0.511e-3;
       emit = sqrt(sig11*sig22 - sig12^2) ;
-      obj.QuadScanData.fit.emitnx = rgamma * emit ;
+      obj.TwissFit(7) = rgamma * emit * 1e6 ;
       alpha = - sig12/emit ;
       beta = sig11/emit ;
       % Propogate Twiss back to start of Model quadrupole and then forward to profile monitor location
@@ -348,10 +368,10 @@ classdef F2_MatchingApp < handle & F2_common
       S_prof = R2(1:2,1:2)*S0*R2(1:2,1:2)';
       T=S_prof./emit ;
       if contains(obj.DimSelect,"X")
-        obj.QuadScanData.fit.betax = T(1,1) ;
-        obj.QuadScanData.fit.alphax = -T(1,2) ;
-        obj.QuadScanData.fit.bmagx = bmag(DesignTwiss.betax(pele),DesignTwiss.alphax(pele),...
-          obj.QuadScanData.fit.betax,obj.QuadScanData.fit.alphax);
+        obj.TwissFit(1) = T(1,1) ;
+        obj.TwissFit(3) = -T(1,2) ;
+        obj.TwissFit(5) = bmag(DesignTwiss.betax(pele),DesignTwiss.alphax(pele),...
+          obj.TwissFit(1),obj.TwissFit(3));
       end
       % -- y
       d=R(3,4);
@@ -361,7 +381,7 @@ classdef F2_MatchingApp < handle & F2_common
       sig22 = (C-sig11-2*d*sig12) / d^2 ;
       rgamma = LM_mags.ModelP(id)/0.511e-3;
       emit = sqrt(sig11*sig22 - sig12^2) ;
-      obj.QuadScanData.fit.emitny = rgamma * emit ;
+      obj.TwissFit(7) = rgamma * emit * 1e6 ;
       alpha = - sig12/emit ;
       beta = sig11/emit ;
       % Propogate Twiss back to start of Model quadrupole and then forward to profile monitor location
@@ -370,14 +390,14 @@ classdef F2_MatchingApp < handle & F2_common
       S_prof = R2(3:4)*S0*R2(3:4)';
       T=S_prof./emit ;
       if contains(obj.DimSelect,"Y")
-        obj.QuadScanData.fit.betay = T(1,1) ;
-        obj.QuadScanData.fit.alphay = -T(1,2) ;
-        obj.QuadScanData.fit.bmagy = bmag(obj.LiveModel.DesignTwiss.betay(pele),obj.LiveModel.DesignTwiss.alphay(pele),...
-          obj.QuadScanData.fit.betay,obj.QuadScanData.fit.alphay);
+        obj.TwissFit(2) = T(1,1) ;
+        obj.TwissFit(4) = -T(1,2) ;
+        obj.TwissFit(6) = bmag(obj.LiveModel.DesignTwiss.betay(pele),obj.LiveModel.DesignTwiss.alphay(pele),...
+          obj.TwissFit(2),obj.TwissFit(4));
       end
     end
     function PlotQuadScanData(obj)
-      if ~isefield(obj.QuadScanData,'x')
+      if ~isfield(obj.QuadScanData,'x')
         return
       end
       k = obj.quadscan_k ;
@@ -410,68 +430,86 @@ classdef F2_MatchingApp < handle & F2_common
       end
       ah.reset;
       yyaxis(ah,'left');
-      i1=obj.MatchQuadModelInd(1); i2=obj.ProfModelInd;
+      if ismember(obj.ProfName,obj.InitMatchProf)
+        i1=1;
+      else
+        i1=obj.MatchQuadModelInd(1);
+      end
+      i2=obj.ProfModelInd;
       z=arrayfun(@(x) BEAMLINE{x}.Coordi(3),i1:i2);
       txt=string.empty;
       if ~isempty(obj.TwissPreMatch)
-        plot(ah,z,obj.TwissPreMatch.betax); hold(ah,'on');
+        plot(ah,z,obj.TwissPreMatch.betax(1:end-1)); hold(ah,'on');
         txt(end+1)="\beta_x (current)";
       end
       if ~isempty(obj.TwissMatch)
-        plot(ah,z,obj.TwissMatch.betax); hold(ah,'on');
+        plot(ah,z,obj.TwissMatch.betax(1:end-1)); hold(ah,'on');
         txt(end+1)="\beta_x (matched)";
       end
-      plot(ah,z,obj.LiveModel.DesignTwiss.betax); hold(ah,'off');
+      plot(ah,z,obj.LiveModel.DesignTwiss.betax(i1:i2)); hold(ah,'off');
+      grid(ah,'on');
       txt(end+1)="\beta_x (design)";
       xlabel(ah,'Z [m]'); ylabel(ah,'\beta_x [m]');
       yyaxis(ah,'right');
       if ~isempty(obj.TwissPreMatch)
-        plot(ah,z,obj.TwissPreMatch.betay); hold(ah,'on');
+        plot(ah,z,obj.TwissPreMatch.betay(1:end-1)); hold(ah,'on');
         txt(end+1)="\beta_y (current)";
       end
       if ~isempty(obj.TwissMatch)
-        plot(ah,z,obj.TwissMatch.betay); hold(ah,'on');
+        plot(ah,z,obj.TwissMatch.betay(1:end-1)); hold(ah,'on');
         txt(end+1)="\beta_y (matched)";
       end
-      plot(ah,z,obj.LiveModel.DesignTwiss.betay); hold(ah,'off');
+      plot(ah,z,obj.LiveModel.DesignTwiss.betay(i1:i2)); hold(ah,'off');
       txt(end+1)="\beta_y (design)";
       ylabel(ah,'\beta_y [m]');
       yyaxis(ah,'left');
       legend(ah,txt) ;
-      AddMagnetPlotZ(i1,i2,ah);
+%       AddMagnetPlotZ(i1,i2,ah,'replace');
     end
     function tab = TwissTable(obj)
       param = ["beta_x";"beta_y";"alpha_x"; "alpha_y";"bmag_x";"bmag_y";"nemit_x";"nemit_y"] ;
-      meas = struct2array(obj.QuadScanData.fit) ;
+      meas = obj.TwissFit ;
       if isfield(obj.QuadScanData,'twissmatch')
         match = [obj.QuadScanData.twissmatch nan nan nan nan];
       else
-        match = nan(1,6) ;
+        match = nan(1,8) ;
       end
       dt=obj.LiveModel.DesignTwiss;
       pi=obj.ProfModelInd;
-      I=obj.LiveModel.Initial ;
-      design = [dt.betax(pi) dt.betay(pi) dt.alphax(pi) dt.alphay(pi) 1 1 I.x.NEmit I.y.NEmit] ;
+      I=obj.LiveModel.DesignInitial ;
+      design = [dt.betax(pi) dt.betay(pi) dt.alphax(pi) dt.alphay(pi) 1 1 I.x.NEmit*1e6 I.y.NEmit*1e6] ;
       tab=table(param(:),meas(:),match(:),design(:));
-      tab.Properties.VariableNames=["beta_x";"beta_y";"alpha_x"; "alpha_y";"bmag_x";"bmag_y";"nemit_x";"nemit_y"];
+      tab.Properties.VariableNames=["Param";"Meas.";"Match";"Design"];
     end
     function tab = MagnetTable(obj)
       global BEAMLINE
       Z = arrayfun(@(x) BEAMLINE{x}.Coordi(3),obj.MatchQuadModelInd) ;
       E = arrayfun(@(x) BEAMLINE{x}.P,obj.MatchQuadModelInd) ;
       obj.LM.ModelClasses="QUAD";
-      bdes = obj.LM.BDES_cntrl(obj.MatchQuadID) ;
-      bact = obj.LM.BDES_cntrl(obj.MatchQuadID) ;
+      bdes = obj.LiveModel.LEM.Mags.LM.ModelBDES(obj.MatchQuadID) ;
+      if obj.ModelSource~="Design"
+        bact = bdes ;
+      else
+        bact = obj.LiveModel.LEM.Mags.BDES_cntrl(obj.MatchQuadID) ;
+      end
       if isfield(obj.QuadScanData,'quadmatch')
         bmatch = obj.QuadScanData.quadmatch ;
       else
         bmatch = nan(size(bdes)) ;
       end
-      b_design = arrayfun(@(x) obj.LiveModel.DesignBEAMLINE(x).B*20,obj.MatchQuadModelInd) ;
-      tab=table(obj.MatchQuadNames(:),Z(:),E(:),bdes(:),bact(:),bmatch(:),b_design(:));
+      b_design = arrayfun(@(x) obj.LiveModel.LM.DesignBeamline{x}.B*20,obj.MatchQuadModelInd) ;
+      tab=table(obj.MatchQuadNames(:),string(num2str(Z(:),6)),E(:),bdes(:),bact(:),bmatch(:),b_design(:));
       tab.Properties.VariableNames=["Name";"Z";"E (GeV)";"BDES";"BACT";"BMATCH";"B_DESIGN"];
     end
     % Get/Set
+    function set.ModelDate(obj,val)
+      obj.ModelDate=val;
+      obj.ArchiveDate=val;
+      obj.LiveModel.ArchiveDate=val;
+      if ~isempty(obj.guihan) && obj.ModelSource=="Archive"
+        obj.guihan.ModelDateEditField.Value=datestr(val);
+      end
+    end
     function set.UndoAvailable(obj,val)
       obj.UndoAvailable=val;
       if ~isempty(obj.guihan)
@@ -484,23 +522,25 @@ classdef F2_MatchingApp < handle & F2_common
         obj.guihan.SetMatchingQuadsButton.Enable=obj.goodmatch;
       end
     end
-    function fdata = get.fitdata(obj)
-      if isfield(obj.QuadScanData,'fit') && ~isempty(obj.QuadScanData.fit)
-        fdata=obj.QuadScanData.fit;
-      else
-        fdata=[];
-      end
-    end
     function set.ModelSource(obj,src)
       switch string(src)
         case "Live"
           obj.UseArchive=false;
+          if ~isempty(obj.guihan)
+            obj.guihan.ModelDateEditField.Value="LIVE";
+          end
         case "Archive"
           obj.UseArchive=true;
+          if ~isempty(obj.guihan)
+            obj.guihan.ModelDateEditField.Value=datestr(obj.ModelDate);
+          end
         case "Design"
+          if ~isempty(obj.guihan)
+            obj.guihan.ModelDateEditField.Value="USE DESIGN";
+          end
           obj.UseArchive=false;
       end
-      obj.LiveModel.ModelSource=src;
+      obj.LiveModel.ModelSource=src; % causes Live and Design model updates, Archive waits until explicite UpdateModel call
       obj.ModelSource=src;
       obj.goodmatch=false;
       obj.UndoAvailable=false;
@@ -512,9 +552,13 @@ classdef F2_MatchingApp < handle & F2_common
       end
       id = obj.QuadScanData.QuadInd ;
       LM_mags=obj.LiveModel.LEM.Mags.LM;
-      kdes = obj.QuadScanData.QuadVal./LM_mags.ModelL(id)./obj.LM.ModelP(id)./PhysConstants.GEV2TM ;
+      kdes = obj.QuadScanData.QuadVal./LM_mags.ModelL(id)./LM_mags.ModelP(id)./PhysConstants.GEV2TM ;
     end
     function set.ProfName(obj,name)
+      if string(name) == "<Select From Below>" % default startup condition for GUI
+        return
+      end
+      obj.LM.ModelClasses="PROF";
       pind = obj.LM.ModelUniqueID(obj.LM.ControlNames==string(name)) ;
       if isempty(pind)
         error('Profile monitor not found in model')
@@ -523,11 +567,15 @@ classdef F2_MatchingApp < handle & F2_common
         obj.ProfName=string(name);
       end
       obj.QuadScanData=[];
-      obj.ReadEmitData; % Reads emittance data from PVs if there are any
+      obj.ReadEmitData; % Reads emittance data from PVs if there are any and sets archive date
+      if obj.ModelSource ~= "Design"
+        obj.LiveModel.UpdateModel ;
+      end
       obj.NumMatchQuads=obj.NumMatchQuads; % triggers filling matching quad data
     end
     function set.NumMatchQuads(obj,num)
       obj.NumMatchQuads=num;
+      obj.QuadScanData=[];
       obj.LM.ModelClasses="QUAD";
       iquads = obj.LM.ModelUniqueID < obj.ProfModelInd ;
       idq=find(iquads,double(obj.NumMatchQuads),'last') ;

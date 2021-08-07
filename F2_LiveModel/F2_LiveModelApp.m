@@ -5,7 +5,6 @@ classdef F2_LiveModelApp < handle & F2_common
   end
   properties(SetAccess=private)
     DesignTwiss
-    DesignBEAMLINE
     DesignInitial
   end
   properties(SetObservable)
@@ -13,10 +12,10 @@ classdef F2_LiveModelApp < handle & F2_common
     ModelSource string {mustBeMember(ModelSource,["Live" "Archive" "Design"])} = "Live"
   end
   properties(Constant)
-    Initial_betaxPV = "SIOC:ML01:AO401"
-    Initial_betayPV = "SIOC:ML01:AO402"
-    Initial_alphaxPV = "SIOC:ML01:AO403"
-    Initial_alphayPV = "SIOC:ML01:AO404"
+    Initial_betaxPV = "SIOC:SYS1:ML01:AO401"
+    Initial_betayPV = "SIOC:SYS1:ML01:AO402"
+    Initial_alphaxPV = "SIOC:SYS1:ML01:AO403"
+    Initial_alphayPV = "SIOC:SYS1:ML01:AO404"
     Initial_emitxPV = "PROF:IN10:571:EMITN_X"
     Initial_emityPV = "PROF:IN10:571:EMITN_Y"
   end
@@ -26,9 +25,8 @@ classdef F2_LiveModelApp < handle & F2_common
       % Get data from design model
       obj.LM=LucretiaModel;
       [~,obj.DesignTwiss] = GetTwiss(1,length(BEAMLINE),obj.LM.Initial.x.Twiss,obj.LM.Initial.y.Twiss) ;
-      obj.DesignBEAMLINE = BEAMLINE ;
-      obj.DesignInitial = LM.Initial ;
-      obj.Initial = LM.Initial;
+      obj.DesignInitial = obj.LM.Initial ;
+      obj.Initial = obj.LM.Initial;
       obj.Initial.x.NEmit = lcaGet(char(obj.Initial_emitxPV)).*1e-6 ;
       obj.Initial.y.NEmit = lcaGet(char(obj.Initial_emityPV)).*1e-6 ;
       obj.Initial.x.beta = lcaGet(char(obj.Initial_betaxPV)) ;
@@ -47,6 +45,7 @@ classdef F2_LiveModelApp < handle & F2_common
         case "Live"
           obj.UseArchive=false;
           obj.LEM.UseArchive=false;
+          obj.UpdateModel;
         case "Archive"
           obj.UseArchive=true;
           obj.LEM.UseArchive=true;

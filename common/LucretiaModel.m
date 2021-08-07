@@ -5,6 +5,7 @@ classdef LucretiaModel < handle & matlab.mixin.Copyable
     UseMissingEle logical = false % Remove elements listed in MissingEle string from consideration?
   end
   properties(Dependent)
+    ModelClassList string
     ModelP double % GeV
     ModelBrho
     ModelBDES double % kG.m^(N-1)
@@ -35,6 +36,7 @@ classdef LucretiaModel < handle & matlab.mixin.Copyable
     ModelKlysZ(8,10) = zeros(8,10) % Central z location of each structure
     ModelDesignFile string
     DesignTwiss % Twiss parameters for design model
+    DesignBeamline % Original BEAMLINE from source lattice file
     RefTwiss % Some other reference Twiss parameter set
   end
   properties(SetObservable)
@@ -55,6 +57,7 @@ classdef LucretiaModel < handle & matlab.mixin.Copyable
       dd=dir(LucretiaFile);
       obj.ModelDesignFile = string(regexprep(dd.name,'\.mat$','')) ;
       BEAMLINE = ld.BEAMLINE ;
+      obj.DesignBeamline = BEAMLINE;
       KLYSTRON=[]; PS=[]; WF=[];
       obj.Initial = ld.Initial ;
       SetElementSlices(1,length(BEAMLINE));
@@ -254,6 +257,16 @@ classdef LucretiaModel < handle & matlab.mixin.Copyable
       ind = ismember(obj.ModelDat.ModelBDES_i,obj.ModelUniqueID) ;
       bdes=obj.ModelDat.ModelBDES_Z(ind) ;
     end
+    function classes = get.ModelClassList(obj)
+      global BEAMLINE
+      if isempty(BEAMLINE)
+        classes=[];
+        return
+      end
+      GetModelDat(obj,"ModelClasses");
+      ind = ismember(1:length(BEAMLINE),obj.ModelUniqueID) ;
+      classes=obj.ModelDat.ModelClasses(ind) ;
+    end
     function L = get.ModelBDES_L(obj)
       global BEAMLINE
       if isempty(BEAMLINE)
@@ -363,6 +376,8 @@ classdef LucretiaModel < handle & matlab.mixin.Copyable
               obj.ModelDat.RegionID = id ;
             case "ModelNames"
               obj.ModelDat.ModelNames = string(cellfun(@(x) x.Name,BEAMLINE,'UniformOutput',false)) ;
+            case "ModelClasses"
+              obj.ModelDat.ModelClasses = string(cellfun(@(x) x.Class,BEAMLINE,'UniformOutput',false)) ;
             case "UniqueModelID"
               slice_ele = findcells(BEAMLINE,'Slices') ;
               noslice_ele = 1:length(BEAMLINE) ; noslice_ele(slice_ele) = [] ;
