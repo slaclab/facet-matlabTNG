@@ -116,16 +116,17 @@ classdef F2_Matching_exported < matlab.apps.AppBase
       drawnow
       try
         app.aobj.LoadQuadScanData;
+        app.aobj.FitQuadScanData;
       catch ME
         app.message(["No quad scan data transfer performed...";string(ME.message)],true);
         return
       end
-      app.message(["Requesting data transfer from Correlation Plot Software...";"Done."]);
       if ~ismember(app.aobj.ProfName,string(app.DropDown.Items)) % Add profile monitor to list if it isn't there
-        app.DropDown.Items=[string(app.DropDown.Items);app.aobj.ProfName];
-        app.DropDown.Value=app.aobj.ProfName;
+        app.DropDown.Items=[string(app.DropDown.Items) app.aobj.ProfName];
       end
+      app.DropDown.Value=app.aobj.ProfName;
       app.DropDownValueChanged ; % populates tables
+      app.message(["Requesting data transfer from Correlation Plot Software...";"Done."]);
     end
 
     % Value changed function: UseXDataButton
@@ -136,7 +137,7 @@ classdef F2_Matching_exported < matlab.apps.AppBase
       else
         str="X" ;
         if ~value
-          app.UseXDataButton.Value=true;
+          app.UseYDataButton.Value=true;
         end
       end
       app.aobj.DimSelect=str;
@@ -150,7 +151,7 @@ classdef F2_Matching_exported < matlab.apps.AppBase
       else
         str="Y" ;
         if ~value
-          app.UseYDataButton.Value=true;
+          app.UseXDataButton.Value=true;
         end
       end
       app.aobj.DimSelect=str;
@@ -172,13 +173,7 @@ classdef F2_Matching_exported < matlab.apps.AppBase
     % Button pushed function: WriteTwissMeastoPVButton
     function WriteTwissMeastoPVButtonPushed(app, event)
       app.aobj.WriteEmitData;
-      if ~app.UseXDataButton.Value
-        app.message("Emittance data for X only written",true);
-      elseif ~app.UseYDataButton.Value
-        app.message("Emittance data for Y only written",true);
-      else
-        app.message("Emittance data written to PVs");
-      end
+      app.message("Emittance data written to PVs");
     end
 
     % Button pushed function: DoMatchingButton

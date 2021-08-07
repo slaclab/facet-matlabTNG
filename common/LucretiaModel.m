@@ -9,8 +9,8 @@ classdef LucretiaModel < handle & matlab.mixin.Copyable
     ModelP double % GeV
     ModelBrho
     ModelBDES double % kG.m^(N-1)
-    ModelBDES_Z double
-    ModelBDES_L double % m
+    ModelBDES_Z double % Z coord of all elements with magnetic field
+    ModelBDES_L double % effective length of all elements with magnetic field
     ModelKDES
     ModelRegionID(11,2) uint32 % Mapping from regions boundaries to BEAMLINE array
     ModelRegionE(11,2) single % Region boundary  energy (GeV)
@@ -25,6 +25,7 @@ classdef LucretiaModel < handle & matlab.mixin.Copyable
     MissingEle string = ["YC57145" "YC57146"]
     ModelRegionName(11,1) string = ["INJ";"L0";"DL1";"L1";"BC11";"L2";"BC14";"L3";"BC20";"FFS";"SPECTDUMP"]
     GEV2KGM=33.35640952
+    GEV2TM=3.335640952
   end
   properties(Access=private)
     ModelDat

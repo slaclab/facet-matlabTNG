@@ -24,7 +24,7 @@ classdef F2_common < handle
       %[bact,bdes] = MagnetGet(name)
       % name in cellstr format
       if obj.UseArchive
-        [bact,bdes] = archive_magnetGet(name) ;
+        [bact,bdes] = archive_magnetGet(name,obj.ArchiveDate) ;
       else
         [bact,bdes] = control_magnetGet(name) ;
       end

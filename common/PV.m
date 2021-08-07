@@ -644,7 +644,7 @@ classdef PV < handle
 %             caput(obj,1);
 %           end
         case 'uinumericeditfield'
-          val=double(src.Value);
+          val=double(src.Value); %#ok<*PROPLC>
           if ~isempty(obj.limits)
             if val<obj.limits(1) || val>obj.limits(2)
               fprintf(obj.STDERR,'Trying to write value outside of set limits, aborting...\n');
@@ -687,7 +687,7 @@ classdef PV < handle
     end
     function pvtab = table(obj)
       %TABLE Generate a table object from object list
-      pvname={obj.pvname}';
+      pvname={obj.pvname}'; %#ok<*PROP>
       monitor=[obj.monitor]';
       val={obj.val}';
       for ival=1:length(val) % try and convert everything to simple numeric array, the rest stay as cell vectors
@@ -787,7 +787,7 @@ classdef PV < handle
       end
     end
     function set.UseArchive(obj,val)
-      if logical(val) && ob.monitor
+      if logical(val) && obj.monitor
         obj.stop % stop any auto updating of monitored values
       end
       obj.UseArchive=logical(val);

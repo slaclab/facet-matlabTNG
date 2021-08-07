@@ -1,5 +1,7 @@
 classdef F2_mags < handle & matlab.mixin.Copyable & F2_common
   %F2_MAGS FACET-II magnet data
+  %
+  % BDES in kG units (Lucretia is T for B fields)
   events
     PVUpdated
   end
@@ -305,7 +307,7 @@ classdef F2_mags < handle & matlab.mixin.Copyable & F2_common
       end
     end
     function kdes = get.KDES_cntrl(obj)
-      kdes = obj.BDES_cntrl./obj.LM.ModelL./obj.LM.ModelP./PhysConstants.GEV2TM ;
+      kdes = obj.BDES_cntrl./obj.LM.ModelL./obj.LM.ModelP./LucretiaModel.GEV2KGM ;
     end
   end
 end
