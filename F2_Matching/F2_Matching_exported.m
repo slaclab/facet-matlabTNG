@@ -8,14 +8,36 @@ classdef F2_Matching_exported < matlab.apps.AppBase
     UsearchivematchingdatadateMenu  matlab.ui.container.Menu
     UsecurrentlivemodelMenu         matlab.ui.container.Menu
     UsedesignmodelMenu              matlab.ui.container.Menu
+    PlotMenu                        matlab.ui.container.Menu
+    ShowlegendMenu                  matlab.ui.container.Menu
     TabGroup                        matlab.ui.container.TabGroup
     MagnetsTab                      matlab.ui.container.Tab
     UITable                         matlab.ui.control.Table
-    QuadScanPlotTab                 matlab.ui.container.Tab
+    QuadScanFitTab                  matlab.ui.container.Tab
     UIAxes                          matlab.ui.control.UIAxes
     UIAxes_2                        matlab.ui.control.UIAxes
+    XAnalyticFitemitbmagPanel       matlab.ui.container.Panel
+    GridLayout                      matlab.ui.container.GridLayout
+    EditField                       matlab.ui.control.NumericEditField
+    EditField_2                     matlab.ui.control.NumericEditField
+    XModelFitemitbmagPanel          matlab.ui.container.Panel
+    GridLayout_2                    matlab.ui.container.GridLayout
+    EditField_3                     matlab.ui.control.NumericEditField
+    EditField_4                     matlab.ui.control.NumericEditField
+    YAnalyticFitemitbmagPanel       matlab.ui.container.Panel
+    GridLayout_3                    matlab.ui.container.GridLayout
+    EditField_5                     matlab.ui.control.NumericEditField
+    EditField_6                     matlab.ui.control.NumericEditField
+    YModelFitemitbmagPanel_2        matlab.ui.container.Panel
+    GridLayout_4                    matlab.ui.container.GridLayout
+    EditField_7                     matlab.ui.control.NumericEditField
+    EditField_8                     matlab.ui.control.NumericEditField
+    ProfileFitMethodButtonGroup     matlab.ui.container.ButtonGroup
+    GaussianButton                  matlab.ui.control.RadioButton
+    AsymmetricGaussianButton        matlab.ui.control.RadioButton
     OpticsPlotTab                   matlab.ui.container.Tab
     UIAxes2                         matlab.ui.control.UIAxes
+    UIAxes2_2                       matlab.ui.control.UIAxes
     MessagesPanel                   matlab.ui.container.Panel
     TextArea                        matlab.ui.control.TextArea
     OptimizerDropDownLabel          matlab.ui.control.Label
@@ -26,7 +48,10 @@ classdef F2_Matching_exported < matlab.apps.AppBase
     DropDown                        matlab.ui.control.DropDown
     TwissProfileDevicePanel         matlab.ui.container.Panel
     UITable2                        matlab.ui.control.Table
-    WriteTwissMeastoPVButton        matlab.ui.control.Button
+    WritetoPVsButton                matlab.ui.control.Button
+    TwissFitMethodButtonGroup       matlab.ui.container.ButtonGroup
+    AnalyticButton                  matlab.ui.control.RadioButton
+    ModelButton                     matlab.ui.control.RadioButton
     DoMatchingButton                matlab.ui.control.Button
     SetMatchingQuadsButton          matlab.ui.control.Button
     GetQuadScanDataandfitTwissPanel  matlab.ui.container.Panel
@@ -63,6 +88,8 @@ classdef F2_Matching_exported < matlab.apps.AppBase
     function startupFcn(app)
       app.message("Loading and initializing model...");
       app.DropDown.Enable=false;
+      app.GetDatafromCorrPlotButton.Enable=false;
+      app.DoMatchingButton.Enable=false;
       drawnow
       try
         app.aobj = F2_MatchingApp(app) ;
@@ -70,9 +97,11 @@ classdef F2_Matching_exported < matlab.apps.AppBase
         app.message(["Error initializing model...";string(ME.message)],true);
         return
       end
-      app.message(["Loading and initializing model...","Done."]);
-      app.DropDownValueChanged ; % populates tables
       app.DropDown.Enable=true;
+      app.GetDatafromCorrPlotButton.Enable=true;
+      app.DoMatchingButton.Enable=true;
+      app.DropDownValueChanged ; % populates table
+      app.message(["Loading and initializing model...","Done."]);
     end
 
     % Value changed function: DropDown
@@ -103,7 +132,7 @@ classdef F2_Matching_exported < matlab.apps.AppBase
     function TabGroupSelectionChanged(app, event)
       selectedTab = app.TabGroup.SelectedTab;
       switch selectedTab
-        case app.QuadScanPlotTab
+        case app.QuadScanFitTab
           app.aobj.PlotQuadScanData;
         case app.OpticsPlotTab
           app.aobj.PlotTwiss;
@@ -115,7 +144,11 @@ classdef F2_Matching_exported < matlab.apps.AppBase
       app.message("Requesting data transfer from Correlation Plot Software...");
       drawnow
       try
-        app.aobj.LoadQuadScanData;
+        didload=app.aobj.LoadQuadScanData;
+        if ~didload
+          app.message("Data loading aborted",true);
+          return
+        end
         app.aobj.FitQuadScanData;
       catch ME
         app.message(["No quad scan data transfer performed...";string(ME.message)],true);
@@ -170,8 +203,8 @@ classdef F2_Matching_exported < matlab.apps.AppBase
       app.aobj.Optimizer = value ;
     end
 
-    % Button pushed function: WriteTwissMeastoPVButton
-    function WriteTwissMeastoPVButtonPushed(app, event)
+    % Button pushed function: WritetoPVsButton
+    function WritetoPVsButtonPushed(app, event)
       app.aobj.WriteEmitData;
       app.message("Emittance data written to PVs");
     end
@@ -186,8 +219,8 @@ classdef F2_Matching_exported < matlab.apps.AppBase
         app.message(["Matching Error...";string(ME.message)],true);
         return
       end
-      app.message(["Running matching job, see matlab window for details..."; "Done."]);
       app.DropDownValueChanged ; % populates tables
+      app.message(["Running matching job, see matlab window for details..."; "Done."]);
     end
 
     % Button pushed function: SetMatchingQuadsButton
@@ -278,6 +311,45 @@ classdef F2_Matching_exported < matlab.apps.AppBase
       app.DropDownValueChanged ; % populates tables
       app.message(["Design Model will be used";"Updating Model... Done."]);
     end
+
+    % Menu selected function: ShowlegendMenu
+    function ShowlegendMenuSelected(app, event)
+      if app.ShowlegendMenu.Checked
+        app.ShowlegendMenu.Checked=false;
+      else
+        app.ShowlegendMenu.Checked=true;
+      end
+      app.aobj.ShowPlotLegend=app.ShowlegendMenu.Checked;
+      app.DropDownValueChanged ; % populates tables
+    end
+
+    % Selection changed function: TwissFitMethodButtonGroup
+    function TwissFitMethodButtonGroupSelectionChanged(app, event)
+      selectedButton = app.TwissFitMethodButtonGroup.SelectedObject;
+      switch selectedButton
+        case app.AnalyticButton
+          app.aobj.TwissFitSource="Analytic";
+        case app.ModelButton
+          app.aobj.TwissFitSource="Model";
+      end
+      app.DropDownValueChanged ; % populates tables
+    end
+
+    % Selection changed function: ProfileFitMethodButtonGroup
+    function ProfileFitMethodButtonGroupSelectionChanged(app, event)
+      selectedButton = app.ProfileFitMethodButtonGroup.SelectedObject;
+      switch selectedButton
+        case app.GaussianButton
+          app.aobj.ProfFitMethod="Gaussian";
+        case app.AsymmetricGaussianButton
+          app.aobj.ProfFitMethod="Asymmetric";
+      end
+      app.message("Re-fitting data...");
+      drawnow
+      app.aobj.FitQuadScanData ; %
+      app.DropDownValueChanged ; % populates tables
+      app.message(["Re-fitting data...";"Done."]);
+    end
   end
 
   % Component initialization
@@ -303,18 +375,28 @@ classdef F2_Matching_exported < matlab.apps.AppBase
       % Create UsearchivematchingdatadateMenu
       app.UsearchivematchingdatadateMenu = uimenu(app.ModelMenu);
       app.UsearchivematchingdatadateMenu.MenuSelectedFcn = createCallbackFcn(app, @UsearchivematchingdatadateMenuSelected, true);
-      app.UsearchivematchingdatadateMenu.Checked = 'on';
       app.UsearchivematchingdatadateMenu.Text = 'Use archive matching data date';
 
       % Create UsecurrentlivemodelMenu
       app.UsecurrentlivemodelMenu = uimenu(app.ModelMenu);
       app.UsecurrentlivemodelMenu.MenuSelectedFcn = createCallbackFcn(app, @UsecurrentlivemodelMenuSelected, true);
+      app.UsecurrentlivemodelMenu.Checked = 'on';
       app.UsecurrentlivemodelMenu.Text = 'Use current live model';
 
       % Create UsedesignmodelMenu
       app.UsedesignmodelMenu = uimenu(app.ModelMenu);
       app.UsedesignmodelMenu.MenuSelectedFcn = createCallbackFcn(app, @UsedesignmodelMenuSelected, true);
       app.UsedesignmodelMenu.Text = 'Use design model';
+
+      % Create PlotMenu
+      app.PlotMenu = uimenu(app.FACETIIOpticsMatchingUIFigure);
+      app.PlotMenu.Text = 'Plot';
+
+      % Create ShowlegendMenu
+      app.ShowlegendMenu = uimenu(app.PlotMenu);
+      app.ShowlegendMenu.MenuSelectedFcn = createCallbackFcn(app, @ShowlegendMenuSelected, true);
+      app.ShowlegendMenu.Checked = 'on';
+      app.ShowlegendMenu.Text = 'Show legend';
 
       % Create TabGroup
       app.TabGroup = uitabgroup(app.FACETIIOpticsMatchingUIFigure);
@@ -331,23 +413,140 @@ classdef F2_Matching_exported < matlab.apps.AppBase
       app.UITable.RowName = {};
       app.UITable.Position = [4 8 744 439];
 
-      % Create QuadScanPlotTab
-      app.QuadScanPlotTab = uitab(app.TabGroup);
-      app.QuadScanPlotTab.Title = 'Quad Scan Plot';
+      % Create QuadScanFitTab
+      app.QuadScanFitTab = uitab(app.TabGroup);
+      app.QuadScanFitTab.Title = 'Quad Scan Fit';
 
       % Create UIAxes
-      app.UIAxes = uiaxes(app.QuadScanPlotTab);
+      app.UIAxes = uiaxes(app.QuadScanFitTab);
       title(app.UIAxes, '')
       xlabel(app.UIAxes, 'X')
       ylabel(app.UIAxes, 'Y')
-      app.UIAxes.Position = [10 225 733 214];
+      app.UIAxes.Position = [10 225 557 214];
 
       % Create UIAxes_2
-      app.UIAxes_2 = uiaxes(app.QuadScanPlotTab);
+      app.UIAxes_2 = uiaxes(app.QuadScanFitTab);
       title(app.UIAxes_2, '')
       xlabel(app.UIAxes_2, 'X')
       ylabel(app.UIAxes_2, 'Y')
-      app.UIAxes_2.Position = [10 8 733 211];
+      app.UIAxes_2.Position = [10 8 557 211];
+
+      % Create XAnalyticFitemitbmagPanel
+      app.XAnalyticFitemitbmagPanel = uipanel(app.QuadScanFitTab);
+      app.XAnalyticFitemitbmagPanel.Title = 'X Analytic Fit (emit/bmag)';
+      app.XAnalyticFitemitbmagPanel.Position = [575 353 164 66];
+
+      % Create GridLayout
+      app.GridLayout = uigridlayout(app.XAnalyticFitemitbmagPanel);
+      app.GridLayout.RowHeight = {'1x'};
+
+      % Create EditField
+      app.EditField = uieditfield(app.GridLayout, 'numeric');
+      app.EditField.ValueDisplayFormat = '%.2f';
+      app.EditField.Editable = 'off';
+      app.EditField.HorizontalAlignment = 'center';
+      app.EditField.Layout.Row = 1;
+      app.EditField.Layout.Column = 2;
+
+      % Create EditField_2
+      app.EditField_2 = uieditfield(app.GridLayout, 'numeric');
+      app.EditField_2.ValueDisplayFormat = '%.2f';
+      app.EditField_2.Editable = 'off';
+      app.EditField_2.HorizontalAlignment = 'center';
+      app.EditField_2.Layout.Row = 1;
+      app.EditField_2.Layout.Column = 1;
+
+      % Create XModelFitemitbmagPanel
+      app.XModelFitemitbmagPanel = uipanel(app.QuadScanFitTab);
+      app.XModelFitemitbmagPanel.Title = 'X Model Fit (emit/bmag)';
+      app.XModelFitemitbmagPanel.Position = [576 271 164 66];
+
+      % Create GridLayout_2
+      app.GridLayout_2 = uigridlayout(app.XModelFitemitbmagPanel);
+      app.GridLayout_2.RowHeight = {'1x'};
+
+      % Create EditField_3
+      app.EditField_3 = uieditfield(app.GridLayout_2, 'numeric');
+      app.EditField_3.ValueDisplayFormat = '%.2f';
+      app.EditField_3.Editable = 'off';
+      app.EditField_3.HorizontalAlignment = 'center';
+      app.EditField_3.Layout.Row = 1;
+      app.EditField_3.Layout.Column = 2;
+
+      % Create EditField_4
+      app.EditField_4 = uieditfield(app.GridLayout_2, 'numeric');
+      app.EditField_4.ValueDisplayFormat = '%.2f';
+      app.EditField_4.Editable = 'off';
+      app.EditField_4.HorizontalAlignment = 'center';
+      app.EditField_4.Layout.Row = 1;
+      app.EditField_4.Layout.Column = 1;
+
+      % Create YAnalyticFitemitbmagPanel
+      app.YAnalyticFitemitbmagPanel = uipanel(app.QuadScanFitTab);
+      app.YAnalyticFitemitbmagPanel.Title = 'Y Analytic Fit (emit/bmag)';
+      app.YAnalyticFitemitbmagPanel.Position = [575 111 164 66];
+
+      % Create GridLayout_3
+      app.GridLayout_3 = uigridlayout(app.YAnalyticFitemitbmagPanel);
+      app.GridLayout_3.RowHeight = {'1x'};
+
+      % Create EditField_5
+      app.EditField_5 = uieditfield(app.GridLayout_3, 'numeric');
+      app.EditField_5.ValueDisplayFormat = '%.2f';
+      app.EditField_5.Editable = 'off';
+      app.EditField_5.HorizontalAlignment = 'center';
+      app.EditField_5.Layout.Row = 1;
+      app.EditField_5.Layout.Column = 2;
+
+      % Create EditField_6
+      app.EditField_6 = uieditfield(app.GridLayout_3, 'numeric');
+      app.EditField_6.ValueDisplayFormat = '%.2f';
+      app.EditField_6.Editable = 'off';
+      app.EditField_6.HorizontalAlignment = 'center';
+      app.EditField_6.Layout.Row = 1;
+      app.EditField_6.Layout.Column = 1;
+
+      % Create YModelFitemitbmagPanel_2
+      app.YModelFitemitbmagPanel_2 = uipanel(app.QuadScanFitTab);
+      app.YModelFitemitbmagPanel_2.Title = 'Y Model Fit (emit/bmag)';
+      app.YModelFitemitbmagPanel_2.Position = [576 29 164 66];
+
+      % Create GridLayout_4
+      app.GridLayout_4 = uigridlayout(app.YModelFitemitbmagPanel_2);
+      app.GridLayout_4.RowHeight = {'1x'};
+
+      % Create EditField_7
+      app.EditField_7 = uieditfield(app.GridLayout_4, 'numeric');
+      app.EditField_7.ValueDisplayFormat = '%.2f';
+      app.EditField_7.Editable = 'off';
+      app.EditField_7.HorizontalAlignment = 'center';
+      app.EditField_7.Layout.Row = 1;
+      app.EditField_7.Layout.Column = 2;
+
+      % Create EditField_8
+      app.EditField_8 = uieditfield(app.GridLayout_4, 'numeric');
+      app.EditField_8.ValueDisplayFormat = '%.2f';
+      app.EditField_8.Editable = 'off';
+      app.EditField_8.HorizontalAlignment = 'center';
+      app.EditField_8.Layout.Row = 1;
+      app.EditField_8.Layout.Column = 1;
+
+      % Create ProfileFitMethodButtonGroup
+      app.ProfileFitMethodButtonGroup = uibuttongroup(app.QuadScanFitTab);
+      app.ProfileFitMethodButtonGroup.SelectionChangedFcn = createCallbackFcn(app, @ProfileFitMethodButtonGroupSelectionChanged, true);
+      app.ProfileFitMethodButtonGroup.Title = 'Profile Fit Method';
+      app.ProfileFitMethodButtonGroup.Position = [576 188 164 75];
+
+      % Create GaussianButton
+      app.GaussianButton = uiradiobutton(app.ProfileFitMethodButtonGroup);
+      app.GaussianButton.Text = 'Gaussian';
+      app.GaussianButton.Position = [11 29 74 22];
+
+      % Create AsymmetricGaussianButton
+      app.AsymmetricGaussianButton = uiradiobutton(app.ProfileFitMethodButtonGroup);
+      app.AsymmetricGaussianButton.Text = 'Asymmetric Gaussian';
+      app.AsymmetricGaussianButton.Position = [11 7 140 22];
+      app.AsymmetricGaussianButton.Value = true;
 
       % Create OpticsPlotTab
       app.OpticsPlotTab = uitab(app.TabGroup);
@@ -358,7 +557,14 @@ classdef F2_Matching_exported < matlab.apps.AppBase
       title(app.UIAxes2, '')
       xlabel(app.UIAxes2, 'X')
       ylabel(app.UIAxes2, 'Y')
-      app.UIAxes2.Position = [11 13 731 417];
+      app.UIAxes2.Position = [11 13 731 319];
+
+      % Create UIAxes2_2
+      app.UIAxes2_2 = uiaxes(app.OpticsPlotTab);
+      title(app.UIAxes2_2, '')
+      xlabel(app.UIAxes2_2, 'X')
+      ylabel(app.UIAxes2_2, 'Y')
+      app.UIAxes2_2.Position = [11 334 731 107];
 
       % Create MessagesPanel
       app.MessagesPanel = uipanel(app.FACETIIOpticsMatchingUIFigure);
@@ -372,20 +578,20 @@ classdef F2_Matching_exported < matlab.apps.AppBase
       % Create OptimizerDropDownLabel
       app.OptimizerDropDownLabel = uilabel(app.FACETIIOpticsMatchingUIFigure);
       app.OptimizerDropDownLabel.HorizontalAlignment = 'right';
-      app.OptimizerDropDownLabel.Position = [71 308 57 22];
+      app.OptimizerDropDownLabel.Position = [71 316 57 22];
       app.OptimizerDropDownLabel.Text = 'Optimizer';
 
       % Create OptimizerDropDown
       app.OptimizerDropDown = uidropdown(app.FACETIIOpticsMatchingUIFigure);
       app.OptimizerDropDown.Items = {'fminsearch', 'lsqnonlin'};
       app.OptimizerDropDown.ValueChangedFcn = createCallbackFcn(app, @OptimizerDropDownValueChanged, true);
-      app.OptimizerDropDown.Position = [143 308 100 22];
+      app.OptimizerDropDown.Position = [143 316 100 22];
       app.OptimizerDropDown.Value = 'lsqnonlin';
 
       % Create MatchingQuadsSpinnerLabel
       app.MatchingQuadsSpinnerLabel = uilabel(app.FACETIIOpticsMatchingUIFigure);
       app.MatchingQuadsSpinnerLabel.HorizontalAlignment = 'right';
-      app.MatchingQuadsSpinnerLabel.Position = [24 343 104 22];
+      app.MatchingQuadsSpinnerLabel.Position = [24 347 104 22];
       app.MatchingQuadsSpinnerLabel.Text = '# Matching Quads';
 
       % Create MatchingQuadsSpinner
@@ -394,7 +600,7 @@ classdef F2_Matching_exported < matlab.apps.AppBase
       app.MatchingQuadsSpinner.ValueDisplayFormat = '%d';
       app.MatchingQuadsSpinner.ValueChangedFcn = createCallbackFcn(app, @MatchingQuadsSpinnerValueChanged, true);
       app.MatchingQuadsSpinner.Interruptible = 'off';
-      app.MatchingQuadsSpinner.Position = [143 343 100 22];
+      app.MatchingQuadsSpinner.Position = [143 347 100 22];
       app.MatchingQuadsSpinner.Value = 4;
 
       % Create ProfileMeasurementDevicePanel
@@ -413,7 +619,7 @@ classdef F2_Matching_exported < matlab.apps.AppBase
       % Create TwissProfileDevicePanel
       app.TwissProfileDevicePanel = uipanel(app.FACETIIOpticsMatchingUIFigure);
       app.TwissProfileDevicePanel.Title = 'Twiss @ Profile Device';
-      app.TwissProfileDevicePanel.Position = [8 7 238 285];
+      app.TwissProfileDevicePanel.Position = [8 7 238 298];
 
       % Create UITable2
       app.UITable2 = uitable(app.TwissProfileDevicePanel);
@@ -421,13 +627,30 @@ classdef F2_Matching_exported < matlab.apps.AppBase
       app.UITable2.ColumnWidth = {55, 55, 55, 55};
       app.UITable2.RowName = {};
       app.UITable2.ColumnEditable = [false false false false];
-      app.UITable2.Position = [9 49 224 210];
+      app.UITable2.Position = [9 62 224 210];
 
-      % Create WriteTwissMeastoPVButton
-      app.WriteTwissMeastoPVButton = uibutton(app.TwissProfileDevicePanel, 'push');
-      app.WriteTwissMeastoPVButton.ButtonPushedFcn = createCallbackFcn(app, @WriteTwissMeastoPVButtonPushed, true);
-      app.WriteTwissMeastoPVButton.Position = [45 11 148 31];
-      app.WriteTwissMeastoPVButton.Text = 'Write Twiss  Meas. to PV';
+      % Create WritetoPVsButton
+      app.WritetoPVsButton = uibutton(app.TwissProfileDevicePanel, 'push');
+      app.WritetoPVsButton.ButtonPushedFcn = createCallbackFcn(app, @WritetoPVsButtonPushed, true);
+      app.WritetoPVsButton.Position = [151 4 81 53];
+      app.WritetoPVsButton.Text = 'Write to PVs';
+
+      % Create TwissFitMethodButtonGroup
+      app.TwissFitMethodButtonGroup = uibuttongroup(app.TwissProfileDevicePanel);
+      app.TwissFitMethodButtonGroup.SelectionChangedFcn = createCallbackFcn(app, @TwissFitMethodButtonGroupSelectionChanged, true);
+      app.TwissFitMethodButtonGroup.Title = 'Twiss Fit Method';
+      app.TwissFitMethodButtonGroup.Position = [9 5 136 52];
+
+      % Create AnalyticButton
+      app.AnalyticButton = uiradiobutton(app.TwissFitMethodButtonGroup);
+      app.AnalyticButton.Text = 'Analytic';
+      app.AnalyticButton.Position = [7 6 65 22];
+
+      % Create ModelButton
+      app.ModelButton = uiradiobutton(app.TwissFitMethodButtonGroup);
+      app.ModelButton.Text = 'Model';
+      app.ModelButton.Position = [77 6 52 22];
+      app.ModelButton.Value = true;
 
       % Create DoMatchingButton
       app.DoMatchingButton = uibutton(app.FACETIIOpticsMatchingUIFigure, 'push');
