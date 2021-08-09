@@ -31,6 +31,8 @@ classdef F2_runDAQ < handle
         pulseIDPV = 'PATT:SYS1:1:PULSEID'
         secPV = 'PATT:SYS1:1:SEC'
         nSecPV = 'PATT:SYS1:1:NSEC'
+        
+        version = 1.0 % this is the datastruct version, update on change
     end
     
     methods
@@ -52,6 +54,7 @@ classdef F2_runDAQ < handle
                 PV(context,'name',"DAQ_Abort",'pvname',"SIOC:SYS1:ML02:AO353",'mode',"rw",'monitor',true); % Abort request
                 PV(context,'name',"DAQ_Instance",'pvname',"SIOC:SYS1:ML02:AO400",'mode',"rw",'monitor',true); % Number of times DAQ is run
                 PV(context,'name',"MPS_Shutter",'pvname',"IOC:SYS1:MP01:MSHUTCTL",'mode',"rw",'monitor',true); % MPS Shutter
+                PV(context,'name',"MPS_Shutter_RBV",'pvname',"SHUT:LT10:950:IN_MPS",'mode',"rw",'monitor',true); % MPS Shutter
                 PV(context,'name',"BSA_nRuns",'pvname',"SIOC:SYS1:ML02:AO500",'mode',"rw",'monitor',true); % BSA thing
                 ] ;
             pset(obj.pvlist,'debug',0);
@@ -386,6 +389,13 @@ classdef F2_runDAQ < handle
 
             save(save_str,'data_struct');
             
+            obj.dispMessage('Converting data to HDF5');
+            try
+                matlab2hdf5(data_struct,save_str);
+            catch
+                obj.dispMessage('Failed to convert to HDF5');
+            end
+            
         end
         
         function write2eLog(obj)
@@ -488,24 +498,41 @@ classdef F2_runDAQ < handle
         
         function grab_BG(obj)
             
+            do_shutter = true;
+            
             nBG = obj.params.nBG;
             obj.data_struct.backgrounds.nBG = nBG;
             BGs = zeros(obj.params.num_CAM,obj.maxImSize,nBG);
             
-            shutter_state = caget(obj.pvs.MPS_Shutter);
-            caput(obj.pvs.MPS_Shutter,0);
-            pause(1);
-            obj.dispMessage('Inserting shutter for backgrounds.');
+            if do_shutter
+                shutter_state = caget(obj.pvs.MPS_Shutter);
+                caput(obj.pvs.MPS_Shutter,0);
+                obj.dispMessage('Inserting shutter for backgrounds.');
+                
+                shut_rbv = caget(obj.pvs.MPS_Shutter_RBV);
+                shut_count = 0;
+                while ~strcmp(shut_rbv,'IS_IN')
+                    shut_rbv = caget(obj.pvs.MPS_Shutter_RBV);
+                    pause(0.1);
+                    shut_count = shut_count + 1;
+                    if shut_count > 10
+                        obj.dispMessage('Warning: could not insert shutter.');
+                        break;
+                    end
+                end
+            end
             
             for i = 1:nBG
                 BGs(:,:,i) = lcaGet(obj.daq_pvs.Image_ArrayData);
                 pause(0.1);
             end
             
-            if strcmp(shutter_state,'Yes')
-                caput(obj.pvs.MPS_Shutter,1);
-                obj.dispMessage('Extracting shutter.');
-                pause(1);
+            if do_shutter
+                if strcmp(shutter_state,'Yes')
+                    caput(obj.pvs.MPS_Shutter,1);
+                    obj.dispMessage('Extracting shutter.');
+                    pause(1);
+                end
             end
             
             
@@ -525,6 +552,7 @@ classdef F2_runDAQ < handle
         end
         
         function setupDataStruct(obj)
+            obj.data_struct.version = obj.version;
             obj.data_struct.pulseID = struct();
             obj.data_struct.pulseID.scalar_PID = [];
             obj.data_struct.pulseID.scalar_UID = [];
