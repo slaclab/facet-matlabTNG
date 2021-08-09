@@ -26,6 +26,7 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
     svdButton                    matlab.ui.control.RadioButton
     lsqlinButton                 matlab.ui.control.RadioButton
     PlotModelFitButton_2         matlab.ui.control.StateButton
+    UndoCorrectionButton         matlab.ui.control.Button
     CorrectorsTab                matlab.ui.container.Tab
     GridLayout2                  matlab.ui.container.GridLayout
     UIAxes2                      matlab.ui.control.UIAxes
@@ -153,6 +154,14 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
         case app.CorrectorsTab
           app.aobj.plotcor([app.UIAxes2 app.UIAxes3]);
         case app.DispersionTab
+          try
+            dd=app.aobj.svddisp;
+          catch ME
+            errordlg(sprintf('Dispersion calc error:\n%s',ME.message),'Disp Calc Error');
+            return
+          end
+          app.EditField.Value = sum(abs(dd.x),'omitnan') ;
+          app.EditField_2.Value = sum(abs(dd.y),'omitnan') ;
           app.aobj.plotdisp([app.UIAxes5 app.UIAxes5_2],app.PlotModelFitButton.Value) ;
         case app.MIATab
           app.DropDown_2ValueChanged;
@@ -294,7 +303,10 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
         app.aobj.applycalc;
       catch ME
         errordlg(sprintf('Failed to apply orbit correction:\n%s',ME.message),'Correction Error');
+        return
       end
+      app.UndoCorrectionButton.Enable=true;
+      app.DoCorrectionButton.Enable=false;
     end
 
     % Button pushed function: DoDispCalcButton
@@ -371,6 +383,18 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
     function NmodesEditFieldValueChanged(app, event)
       app.DropDown_2ValueChanged;
     end
+
+    % Button pushed function: UndoCorrectionButton
+    function UndoCorrectionButtonPushed(app, event)
+      try
+        app.aobj.undocor;
+      catch ME
+        errordlg(sprintf('Failed to undo orbit correction:\n%s',ME.message),'Correction Error');
+        return
+      end
+      app.UndoCorrectionButton.Enable=false;
+      app.DoCorrectionButton.Enable=false;
+    end
   end
 
   % Component initialization
@@ -439,7 +463,7 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
       app.CalcCorrectionButton = uibutton(app.OrbitTab, 'push');
       app.CalcCorrectionButton.ButtonPushedFcn = createCallbackFcn(app, @CalcCorrectionButtonPushed, true);
       app.CalcCorrectionButton.Interruptible = 'off';
-      app.CalcCorrectionButton.Position = [714 377 100 29];
+      app.CalcCorrectionButton.Position = [715 419 100 29];
       app.CalcCorrectionButton.Text = 'Calc Correction';
 
       % Create DoCorrectionButton
@@ -447,7 +471,7 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
       app.DoCorrectionButton.ButtonPushedFcn = createCallbackFcn(app, @DoCorrectionButtonPushed, true);
       app.DoCorrectionButton.Interruptible = 'off';
       app.DoCorrectionButton.Enable = 'off';
-      app.DoCorrectionButton.Position = [714 341 100 29];
+      app.DoCorrectionButton.Position = [715 383 100 29];
       app.DoCorrectionButton.Text = 'Do Correction';
 
       % Create USEXButton
@@ -481,7 +505,6 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
       app.lscovButton = uiradiobutton(app.CorrectionSolverButtonGroup);
       app.lscovButton.Text = 'lscov';
       app.lscovButton.Position = [11 144 58 22];
-      app.lscovButton.Value = true;
 
       % Create pinvButton
       app.pinvButton = uiradiobutton(app.CorrectionSolverButtonGroup);
@@ -519,12 +542,21 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
       app.lsqlinButton = uiradiobutton(app.CorrectionSolverButtonGroup);
       app.lsqlinButton.Text = 'lsqlin';
       app.lsqlinButton.Position = [11 59 51 22];
+      app.lsqlinButton.Value = true;
 
       % Create PlotModelFitButton_2
       app.PlotModelFitButton_2 = uibutton(app.OrbitTab, 'state');
       app.PlotModelFitButton_2.ValueChangedFcn = createCallbackFcn(app, @PlotModelFitButton_2ValueChanged, true);
       app.PlotModelFitButton_2.Text = 'Plot Model Fit';
       app.PlotModelFitButton_2.Position = [706 25 115 38];
+
+      % Create UndoCorrectionButton
+      app.UndoCorrectionButton = uibutton(app.OrbitTab, 'push');
+      app.UndoCorrectionButton.ButtonPushedFcn = createCallbackFcn(app, @UndoCorrectionButtonPushed, true);
+      app.UndoCorrectionButton.Interruptible = 'off';
+      app.UndoCorrectionButton.Enable = 'off';
+      app.UndoCorrectionButton.Position = [711.5 346 105 29];
+      app.UndoCorrectionButton.Text = 'Undo Correction';
 
       % Create CorrectorsTab
       app.CorrectorsTab = uitab(app.TabGroup);
