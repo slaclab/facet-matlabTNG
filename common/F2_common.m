@@ -6,6 +6,10 @@ classdef F2_common < handle
     modeldir = "/usr/local/facet/tools/facet2-lattice/Lucretia/models"
     LucretiaLattice = "/usr/local/facet/tools/facet2-lattice/Lucretia/models/FACET2e/FACET2e.mat"
   end
+  properties
+    UseArchive logical = false % Extract data from archive if true, else get live data
+    ArchiveDate(1,6) = [2021,7,1,12,1,1] % [yr,mnth,day,hr,min,sec]
+  end
   properties(Dependent)
     datadir
   end
@@ -14,6 +18,16 @@ classdef F2_common < handle
       ds=datestr(now,29);
       dname = "/u1/facet/matlab/data/" + regexp(ds,'^\d+','match','once') + "/" + ...
         regexp(ds,'^\d+-\d+','match','once') + "/" + ds ;
+    end
+    function [bact,bdes] = MagnetGet(obj,name)
+      %MAGNETGET Get magnet BDES & BACT data from live EPICS or archive
+      %[bact,bdes] = MagnetGet(name)
+      % name in cellstr format
+      if obj.UseArchive
+        [bact,bdes] = archive_magnetGet(name,obj.ArchiveDate) ;
+      else
+        [bact,bdes] = control_magnetGet(name) ;
+      end
     end
   end
   methods(Static)

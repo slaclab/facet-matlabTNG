@@ -1,4 +1,4 @@
-function runapp(appname)
+function appobj = runapp(appname)
 %RUNAPP Run FACET-II application from Matlab environment
 
 if ~nargin || ~exist(appname,'dir')

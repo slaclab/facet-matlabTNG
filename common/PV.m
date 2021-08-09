@@ -29,9 +29,11 @@ classdef PV < handle
     timeout double {mustBePositive} = 3 % timout in s for waiting for a new value asynchrounously
     RunStartDelay = 3 % Wait this long after issuing Run method command to start polling of PVs (e.g. to allow startup scripts to complete)
     alarm uint8 = 0 % monitor alarm severity if >0 [=1 returns NaN for val if MAJOR alarm, =2 returns NaN for val if MINOR or MAJOR alarm)
+    ArchiveDate(1,6) = [2021,7,1,12,1,1] % [yr,mnth,day,hr,min,sec]
   end
   properties(SetObservable)
     guihan = 0 % gui handle to assoicate with this PV (e.g. to write out a variable or control a switch etc) (can be vector of handles)
+    UseArchive logical = false % Extract data from archive if true, else get live data
   end
   properties(SetAccess=protected)
     pvdatatype % Data type used by java channel access client (set on constuction to force, else use default determined from control system) can be cell array of length pvname or scalar java class
@@ -253,7 +255,15 @@ classdef PV < handle
         if obj.type == PVtype.EPICS && islogical(obj.channel{ipv}) && ~obj.channel{ipv}
           error('Channel cleared (with Cleanup method?) for PV: %s',obj.pvname(ipv));
         end
-        if asyn && isempty(obj.future{ipv}) % Launch asynchronous get thrread
+        if obj.UseArchive % Get data from EPICS archiver
+          st=datenum(obj.ArchiveDate); et=st;
+          [v,t]=archive_dataGet(char(obj.pvname(ipv)),st,et);
+          cavals = cell2mat(cellfun(@(x) x(1),v,'UniformOutput',false)) ;
+          if ~isempty(obj.nmax)
+            cavals=cavals(1:min([length(cavals),obj.nmax]));
+          end
+          catime = cell2mat(cellfun(@(x) x(1),t,'UniformOutput',false)) ;
+        elseif asyn && isempty(obj.future{ipv}) % Launch asynchronous get thrread
           obj.future{ipv} = obj.channel{ipv}.getAsync();
           obj.future_tic(ipv) = tic ;
           if obj.alarm>0
@@ -634,7 +644,7 @@ classdef PV < handle
 %             caput(obj,1);
 %           end
         case 'uinumericeditfield'
-          val=double(src.Value);
+          val=double(src.Value); %#ok<*PROPLC>
           if ~isempty(obj.limits)
             if val<obj.limits(1) || val>obj.limits(2)
               fprintf(obj.STDERR,'Trying to write value outside of set limits, aborting...\n');
@@ -677,7 +687,7 @@ classdef PV < handle
     end
     function pvtab = table(obj)
       %TABLE Generate a table object from object list
-      pvname={obj.pvname}';
+      pvname={obj.pvname}'; %#ok<*PROP>
       monitor=[obj.monitor]';
       val={obj.val}';
       for ival=1:length(val) % try and convert everything to simple numeric array, the rest stay as cell vectors
@@ -775,6 +785,12 @@ classdef PV < handle
       for ipv=1:length(obj.time)
         tsout{ipv}=toffset+floor(obj.time{ipv}+tzoffset*3600)*1e3/86400000;
       end
+    end
+    function set.UseArchive(obj,val)
+      if logical(val) && obj.monitor
+        obj.stop % stop any auto updating of monitored values
+      end
+      obj.UseArchive=logical(val);
     end
   end
   methods(Access=protected)

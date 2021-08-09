@@ -2,6 +2,7 @@ if ~isdeployed
   addpath ../epics/extensions/labca_3_7_2/bin/linux-x86_64/labca/
   addpath ../matlabTNG/common
   addpath ../matlabTNG/web
+  addpath ../matlabTNG/F2_LiveModel
   ldir="/usr/local/facet/tools/Lucretia/src/" ;
   addpath(ldir+"BeamGeneration");
   addpath(ldir+"LatticeGeneration");

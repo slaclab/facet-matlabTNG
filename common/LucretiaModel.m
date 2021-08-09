@@ -5,10 +5,13 @@ classdef LucretiaModel < handle & matlab.mixin.Copyable
     UseMissingEle logical = false % Remove elements listed in MissingEle string from consideration?
   end
   properties(Dependent)
+    ModelClassList string
     ModelP double % GeV
     ModelBrho
     ModelBDES double % kG.m^(N-1)
-    ModelBDES_Z double
+    ModelBDES_Z double % Z coord of all elements with magnetic field
+    ModelBDES_L double % effective length of all elements with magnetic field
+    ModelKDES
     ModelRegionID(11,2) uint32 % Mapping from regions boundaries to BEAMLINE array
     ModelRegionE(11,2) single % Region boundary  energy (GeV)
     ControlNames string % Names used by control system
@@ -22,6 +25,7 @@ classdef LucretiaModel < handle & matlab.mixin.Copyable
     MissingEle string = ["YC57145" "YC57146"]
     ModelRegionName(11,1) string = ["INJ";"L0";"DL1";"L1";"BC11";"L2";"BC14";"L3";"BC20";"FFS";"SPECTDUMP"]
     GEV2KGM=33.35640952
+    GEV2TM=3.335640952
   end
   properties(Access=private)
     ModelDat
@@ -33,6 +37,7 @@ classdef LucretiaModel < handle & matlab.mixin.Copyable
     ModelKlysZ(8,10) = zeros(8,10) % Central z location of each structure
     ModelDesignFile string
     DesignTwiss % Twiss parameters for design model
+    DesignBeamline % Original BEAMLINE from source lattice file
     RefTwiss % Some other reference Twiss parameter set
   end
   properties(SetObservable)
@@ -41,9 +46,9 @@ classdef LucretiaModel < handle & matlab.mixin.Copyable
   end
   methods
     function obj = LucretiaModel(LucretiaFile)
-      global BEAMLINE PS KLYSTRON
-      if ~exist('LucretiaFile','var')
-        error('Must provide Lucretia beamline file');
+      global BEAMLINE PS KLYSTRON WF
+      if ~exist('LucretiaFile','var') % use default file location if not provided
+        LucretiaFile = "/usr/local/facet/tools/facet2-lattice/Lucretia/models/FACET2e/FACET2e.mat" ;
       end
       % Load Lucretia BEAMLINE database and configure
       ld = load(LucretiaFile,'BEAMLINE','Initial') ;
@@ -53,7 +58,8 @@ classdef LucretiaModel < handle & matlab.mixin.Copyable
       dd=dir(LucretiaFile);
       obj.ModelDesignFile = string(regexprep(dd.name,'\.mat$','')) ;
       BEAMLINE = ld.BEAMLINE ;
-      KLYSTRON=[]; PS=[];
+      obj.DesignBeamline = BEAMLINE;
+      KLYSTRON=[]; PS=[]; WF=[];
       obj.Initial = ld.Initial ;
       SetElementSlices(1,length(BEAMLINE));
       SetElementBlocks(1,length(BEAMLINE));
@@ -213,6 +219,9 @@ classdef LucretiaModel < handle & matlab.mixin.Copyable
     function Brho = get.ModelBrho(obj)
       Brho = obj.ModelBDES ./ obj.GEV2KGM ./ obj.ModelP ;
     end
+    function KDES = get.ModelKDES(obj)
+      KDES = obj.ModelBDES./obj.ModelBDES_L./obj.ModelP./obj.GEV2KGM ;
+    end
     function bdes = get.ModelBDES(obj)
       global BEAMLINE
       if isempty(BEAMLINE)
@@ -245,9 +254,29 @@ classdef LucretiaModel < handle & matlab.mixin.Copyable
         bdes=[];
         return
       end
-      GetModelDat(obj,["ModelBDES_Z" "ModelBDES_i"]);
+      GetModelDat(obj,["ModelBDES_i" "ModelBDES_Z"]);
       ind = ismember(obj.ModelDat.ModelBDES_i,obj.ModelUniqueID) ;
       bdes=obj.ModelDat.ModelBDES_Z(ind) ;
+    end
+    function classes = get.ModelClassList(obj)
+      global BEAMLINE
+      if isempty(BEAMLINE)
+        classes=[];
+        return
+      end
+      GetModelDat(obj,"ModelClasses");
+      ind = ismember(1:length(BEAMLINE),obj.ModelUniqueID) ;
+      classes=obj.ModelDat.ModelClasses(ind) ;
+    end
+    function L = get.ModelBDES_L(obj)
+      global BEAMLINE
+      if isempty(BEAMLINE)
+        L=[];
+        return
+      end
+      GetModelDat(obj,["ModelBDES_i" "ModelBDES_L"]);
+      ind = ismember(obj.ModelDat.ModelBDES_i,obj.ModelUniqueID) ;
+      L=obj.ModelDat.ModelBDES_L(ind) ;
     end
     function StoreRefTwiss(obj)
       %STOREREFTWISS Get current Twiss function values and store in RefTwiss object parameter
@@ -348,10 +377,25 @@ classdef LucretiaModel < handle & matlab.mixin.Copyable
               obj.ModelDat.RegionID = id ;
             case "ModelNames"
               obj.ModelDat.ModelNames = string(cellfun(@(x) x.Name,BEAMLINE,'UniformOutput',false)) ;
+            case "ModelClasses"
+              obj.ModelDat.ModelClasses = string(cellfun(@(x) x.Class,BEAMLINE,'UniformOutput',false)) ;
             case "UniqueModelID"
               slice_ele = findcells(BEAMLINE,'Slices') ;
               noslice_ele = 1:length(BEAMLINE) ; noslice_ele(slice_ele) = [] ;
               obj.ModelDat.UniqueModelID = sort([noslice_ele arrayfun(@(x) BEAMLINE{x}.Slices(1),slice_ele)]) ;
+            case "ModelBDES_L"
+              GetModelDat(obj,"ModelBDES_i");
+              obj.ModelDat.ModelBDES_L = zeros(1,length(obj.ModelDat.ModelBDES_i)) ;
+              for id=1:length(obj.ModelDat.ModelBDES_i)
+                ele=obj.ModelDat.ModelBDES_i(id);
+                if isfield(BEAMLINE{ele},'Slices')
+                  for sele=BEAMLINE{ele}.Slices
+                    obj.ModelDat.ModelBDES_L(id) = obj.ModelDat.ModelBDES_L(id) + BEAMLINE{ele}.L ;
+                  end
+                else
+                  obj.ModelDat.ModelBDES_L(id) = BEAMLINE{ele}.L ;
+                end
+              end
             case "ModelBDES_i"
               obj.ModelDat.ModelBDES_i = findcells(BEAMLINE,'B') ;
             case "ModelBDES_Z"

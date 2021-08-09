@@ -1,5 +1,7 @@
 classdef F2_mags < handle & matlab.mixin.Copyable & F2_common
   %F2_MAGS FACET-II magnet data
+  %
+  % BDES in kG units (Lucretia is T for B fields)
   events
     PVUpdated
   end
@@ -13,7 +15,9 @@ classdef F2_mags < handle & matlab.mixin.Copyable & F2_common
     AbsTolBACT double = 0.1 % Absolute Tolerance for BDES vs BACT errors
   end
   properties(SetObservable)
-    BDES double
+    BDES double % Store location for BDES values to write
+  end
+  properties(SetObservable,AbortSet)
     UseSector(1,5) logical = true(1,5) % L0, L1, L2, L3, S20
     MagClasses string {mustBeMember(MagClasses,["QUAD" "SEXT" "SBEN" "XCOR" "YCOR"])} = ["QUAD" "SEXT" "SBEN" "XCOR" "YCOR"]
   end
@@ -22,10 +26,16 @@ classdef F2_mags < handle & matlab.mixin.Copyable & F2_common
     LM LucretiaModel
   end
   properties(SetAccess=private)
-    BDES_err
-    BACT_err
-    BDES_cntrl
-    BACT_cntrl
+    BDES_err % logical vector of BDES values away from desired
+    BACT_err % logical vector of BACT values away from desired
+    BDES_cntrl % BDES values read from control system
+    BACT_cntrl % BACT values read from control system
+    BMIN % BMAX from control system
+    BMAX % BMIN from control system where available (else set based on BMAX)
+  end
+  properties(Dependent)
+    KDES_cntrl
+    KACT_cntrl
   end
   properties(Constant)
     version single = 1.0
@@ -39,10 +49,10 @@ classdef F2_mags < handle & matlab.mixin.Copyable & F2_common
       obj.LM.ModelClasses = obj.MagClasses ;
     end
     function [bdes,bact] = ReadB(obj,SetModel)
-      %READB Get magnet strengths from control system
+      %READB Get magnet strengths from control system or achiver if UseArchive property = true
       %ReadB([SetModel])
       % SetModel (Optional) : also set read B fields into Lucretia model
-      [bact,bdes] = control_magnetGet(cellstr(obj.LM.ControlNames)) ; bdes=bdes(:)'; bact=bact(:)';
+      [bact,bdes] = obj.MagnetGet(cellstr(obj.LM.ControlNames)) ; bdes=bdes(:)'; bact=bact(:)';
       obj.BDES_err = false(size(bdes)) ;
       obj.BACT_err = obj.BDES_err ;
       if length(obj.BDES) == length(bdes)
@@ -55,6 +65,25 @@ classdef F2_mags < handle & matlab.mixin.Copyable & F2_common
       obj.BACT_cntrl = bact ;
       if exist('SetModel','var') && SetModel
         obj.LM.ModelBDES = bdes ;
+      end
+      % Write BMIN/BMAX values
+      if isempty(obj.BMAX) % only need to update when changing magnet selection
+        maxpv = obj.LM.ControlNames+":BMAX" ;
+        lgps = find(startsWith(maxpv,"LGPS")) ;
+        for ipv=lgps(:)'
+          t=regexp(maxpv(ipv),"LGPS:(\w+):(\d+)",'tokens','once');
+          maxpv(ipv) = t(1) + ":LGPS:" + t(2) + ":BMAX" ;
+        end
+        minpv = regexprep(maxpv,"(BMAX)$","BMIN") ;
+        dominpv = true(size(minpv)); dominpv(contains(minpv,["QUAS","LGPS","SXTS"])) = false ;
+        dominpv(~startsWith(minpv,"QUAD")) = false ;
+        obj.BMAX = lcaGet(cellstr(maxpv)) ; % obj.BMAX(val>=0) = val(val>=0) ; obj.BMIN(val<0) = val(val<0) ;
+        obj.BMIN = zeros(size(obj.BMAX)) ;
+        obj.BMIN(dominpv) = lcaGet(cellstr(minpv(dominpv))) ;
+        isinv = obj.BMAX<obj.BMIN ;
+        tempmax = obj.BMAX(isinv) ;
+        obj.BMAX(isinv) = obj.BMIN(isinv) ;
+        obj.BMIN(isinv) = tempmax ;
       end
     end
     function msg=WriteBDES(obj)
@@ -149,7 +178,7 @@ classdef F2_mags < handle & matlab.mixin.Copyable & F2_common
             msg=[msg; "!!!!! Error reported setting magnets, check values"];
           end
         else
-          msg=[msg; "control_magnetSetC: " + string(control_mags_bb(:)) + " = " + string(control_vals_bb(:)) ] ;
+          msg=[msg; "control_magnetSet: " + string(control_mags_bb(:)) + " = " + string(control_vals_bb(:)) ] ;
         end
         % This doesn't quite get there according to the QUAS values, do
         % fine-trim of boosts to get QUAS values to agree with required
@@ -191,7 +220,7 @@ classdef F2_mags < handle & matlab.mixin.Copyable & F2_common
                 control_magnetSetBC(control_mags',control_vals','action',char(obj.WriteAction));
           end
         else
-          msg = [msg; "control_magnetSetC: " + string(control_mags(:)) + " = " + string(control_vals(:)) ] ;
+          msg = [msg; "control_magnetSet: " + string(control_mags(:)) + " = " + string(control_vals(:)) ] ;
         end
       end
       
@@ -207,13 +236,32 @@ classdef F2_mags < handle & matlab.mixin.Copyable & F2_common
           msg(end+1) = sprintf("!!!!!! %s: BACT out of Tol: BDES= %g Act= %g",mnames(imag),obj.BDES(imag),bact(imag));
         end
       end
-    end
-    function set.UseSector(obj,dosec)
-      if ~isequal(dosec,obj.UseSector)
-        obj.BDES=[];
-        obj.BDES_err=[];
-        obj.BACT_err=[];
+      if ~obj.WriteEnable
+        disp(msg);
       end
+    end
+    function SetBDES_err(obj,val,id)
+      if ~exist('id','var') || isempty(id)
+        id=true(size(obj.BDES_err));
+      end
+      if ~islogical(id)
+        if any(id<1) || any(id>length(obj.BDES_err))
+          error('ID error');
+        end
+      elseif length(id)~=length(obj.BDES_err)
+        error('If supply logical vector, must be same length as BDES_err');
+      end
+      obj.BDES_err(id)=logical(val);
+    end
+    % set/get methods
+    function set.UseSector(obj,dosec)
+      obj.BDES=[];
+      obj.BDES_err=[];
+      obj.BACT_err=[];
+      obj.BMAX=[];
+      obj.BMIN=[];
+      obj.BDES_cntrl=[];
+      obj.BACT_cntrl=[];
       doreg=false(11,1);
       if dosec(1) % L0
         doreg(1:3)=true;
@@ -234,11 +282,13 @@ classdef F2_mags < handle & matlab.mixin.Copyable & F2_common
       obj.UseSector=dosec;
     end
     function set.MagClasses(obj,cstr)
-      if ~isequal(cstr,obj.MagClasses)
-        obj.BDES=[];
-        obj.BDES_err=[];
-        obj.BACT_err=[];
-      end
+      obj.BDES=[];
+      obj.BDES_err=[];
+      obj.BACT_err=[];
+      obj.BMAX=[];
+      obj.BMIN=[];
+      obj.BDES_cntrl=[];
+      obj.BACT_cntrl=[];
       obj.LM.ModelClasses = cstr ;
       obj.MagClasses=cstr;
     end
@@ -256,14 +306,8 @@ classdef F2_mags < handle & matlab.mixin.Copyable & F2_common
         obj.BACT_err(abs(obj.BDES-obj.BACT_cntrl) < obj.AbsTolBACT) = false ;
       end
     end
-    function SetBDES_err(obj,val,id)
-      if ~exist('id','var') || isempty(id)
-        id=1:length(obj.BDES_err);
-      end
-      if any(id<1) || any(id>length(obj.BDES_err))
-        error('ID error');
-      end
-      obj.BDES_err(id)=logical(val);
+    function kdes = get.KDES_cntrl(obj)
+      kdes = obj.BDES_cntrl./obj.LM.ModelL./obj.LM.ModelP./LucretiaModel.GEV2KGM ;
     end
   end
 end
