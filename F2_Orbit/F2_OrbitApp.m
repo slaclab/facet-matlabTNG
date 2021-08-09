@@ -37,10 +37,14 @@ classdef F2_OrbitApp < handle & F2_common
     dtheta_y % calculated y corrector kicks (rad)
     xbpm_cor % calculated corrected x bpm vals (mm)
     ybpm_cor % calculated corrected y bpm vals (mm)
-    ebpms_disp(1,4)
-    DispData % Dispersion data calculated with svddisp method
+    ebpms_disp(1,4) % dispersion at energy BPMS in mm
+    DispData % Dispersion data calculated with svddisp method (mm)
     DispFit % Fitted [dispersion_x; dispersion_y] at each BPM in selected regopm calculated with plotdisp method
     XFit % Fitted orbit [x;y] at each BPM in selected regopm calculated with plotbpm method
+  end
+  properties(SetAccess=private,Hidden)
+    bdesx_restore % bdes values store when written for undo function
+    bdesy_restore % bdes values store when written for undo function
   end
   properties(SetObservable)
     UseRegion(1,11) logical = true(1,11) % ["INJ";"L0";"DL1";"L1";"BC11";"L2";"BC14";"L3";"BC20";"FFS";"SPECTDUMP"]
@@ -111,7 +115,7 @@ classdef F2_OrbitApp < handle & F2_common
       [~,T]=GetTwiss(1,length(BEAMLINE),Initial.x.Twiss,Initial.y.Twiss);
       for ibpm=1:length(obj.ebpms)
         bpmind = findcells(BEAMLINE,'Name',char(obj.ebpms(ibpm))) ;
-        obj.ebpms_disp(ibpm) = T.etax(bpmind) ;
+        obj.ebpms_disp(ibpm) = T.etax(bpmind)*1e3 ;
       end
     end
     function acquire(obj,npulse)
@@ -200,16 +204,45 @@ classdef F2_OrbitApp < handle & F2_common
         obj.aobj.updateplots; % update plots
       end
     end
+    function undocor(obj)
+      %UNDOCOR Undo correction - put correctors back to previous values
+      if obj.usex
+        pvnames = obj.xcorcnames(obj.usexcor) ;
+        if length(obj.bdesx_restore) ~=length(pvnames)
+          error('No horizontal corrector restore data');
+        end
+        try
+          control_magnetSet(pvnames(:),obj.bdesx_restore(:));
+        catch ME
+          fprintf(2,' !!!!!! error setting X correctors\n%s',ME.message);
+        end
+      end
+      if obj.usey
+        pvnames = obj.ycorcnames(obj.useycor) ;
+        if length(obj.bdesy_restore) ~=length(pvnames)
+          error('No vertical corrector restore data');
+        end
+        try
+          control_magnetSet(pvnames(:),obj.bdesy_restore(:));
+        catch ME
+          fprintf(2,' !!!!!! error setting Y correctors\n%s',ME.message);
+        end
+      end
+      obj.calcperformed=false;
+    end
     function applycalc(obj)
       %APPLYCALC Set corrector magnets using calculated orbit steering data
       global BEAMLINE
       if ~obj.calcperformed
         error('Calculation not performed');
       end
+      obj.bdesx_restore=[];
+      obj.bdesy_restore=[];
       if obj.usex
         obj.LM.ModelClasses="XCOR";
         id = obj.xcorid(obj.usexcor) ;
         bdes1 = lcaGet(obj.xcorpv(obj.usexcor)) ; % BDES / kGm
+        obj.bdesx_restore=bdes1;
         bmax = lcaGet(obj.xcormaxpv(obj.usexcor)) ; % BDES / kGm
         P = arrayfun(@(x) BEAMLINE{x}.P,id) ;
         bdes = bdes1 + obj.dtheta_x(obj.usexcor).*obj.LM.GEV2KGM.*P(:) ;
@@ -231,6 +264,7 @@ classdef F2_OrbitApp < handle & F2_common
         obj.LM.ModelClasses="YCOR";
         id = obj.ycorid(obj.useycor) ;
         bdes1 = lcaGet(obj.ycorpv(obj.useycor)) ; % BDES / kGm
+        obj.bdesy_restore=bdes1;
         bmax = lcaGet(obj.ycormaxpv(obj.useycor)) ; % BDES / kGm
         P = arrayfun(@(x) BEAMLINE{x}.P,id) ;
         bdes = bdes1 + obj.dtheta_y(obj.useycor).*obj.LM.GEV2KGM.* P(:) ;
@@ -330,7 +364,7 @@ classdef F2_OrbitApp < handle & F2_common
       dp = obj.BPMS.xdat(id,:) ./ obj.ebpms_disp(ide)' ; % dP/P @ energy BPMS
       dispx=nan(1,length(obj.BPMS.names)); dispy=dispx; dispx_err=dispx; dispy_err=dispx;
       for iebpm=1:length(id)
-        dat = obj.svdcorr(dp(iebpm,:),10) ; % reconstituted BPM readings using mode most correlated to energy
+        dat = obj.svdresponse(1,id(iebpm),10) ; % reconstituted BPM readings using mode most responsive to energy BPM
         if iebpm==length(id)
           id1=find(obj.BPMS.readid>=id(iebpm),1);
           id2=length(obj.BPMS.readid);
@@ -361,7 +395,11 @@ classdef F2_OrbitApp < handle & F2_common
       obj.DispData = dispdat ;
     end
     function res = svdcorr(obj,corvec,nmode)
-      
+      %SVDCORR Find mode most highly correlated to provided vector
+      %results = svdcorr(corvec,nmode)
+      %  corvec: vector same length as nread BPMs
+      %  nmode: number of highest value eigenmodes to consider
+      %  results: reconstituted data from correlated mode
       if length(corvec)~=obj.BPMS.nread
         error('Correlation vector must be same length as # BPM pulses recorded');
       end
@@ -399,6 +437,62 @@ classdef F2_OrbitApp < handle & F2_common
       res.ymode=ymode;
       res.rx=rx(xmode); res.px=px(xmode);
       res.ry=ry(ymode); res.py=py(ymode);
+    end
+    function res = svdresponse(obj,dim,nbpm,nmode)
+      %SVDRESPONSE Find mode most whose eigenvectors have the strongest response at given location
+      %results = svdresponse(nbpm,nmode)
+      %  dim: 1: consider horizontal BPM response 2: consider vertical BPM response
+      %  nbpm: index of BPM looking for the stringest response in
+      %  nmode: number of highest value eigenmodes to consider
+      %  results: reconstituted data from eigenmode with strongest response
+      
+      % Perform SVD
+      xd=obj.BPMS.xdat'; xd(isnan(xd))=0; xd=xd-mean(xd);
+      yd=obj.BPMS.ydat'; yd(isnan(yd))=0; yd=yd-mean(yd);
+      
+      % Check inputs
+      sz=size(xd);
+      if nbpm<1 || nbpm>sz(2)
+        error('Requested BPM index not found');
+      end
+      
+      % Add response BPM to out of plane BPM readings
+      if dim==1
+        yd(:,end+1) = xd(:,nbpm);
+      else
+        xd(:,end+1) = yd(:,nbpm);
+      end
+      [Ux,Sx,Vtx]=svd(xd);
+      [Uy,Sy,Vty]=svd(yd);
+      
+      resp=zeros(2,nmode);
+      for imode=1:nmode
+        S=zeros(size(Sx)); S(imode,imode)=Sx(imode,imode);
+        xmode = Ux * S * Vtx' ;
+        S=zeros(size(Sy)); S(imode,imode)=Sy(imode,imode);
+        ymode = Uy * S * Vty' ;
+        if dim==1
+          resp(1,imode) = std(xmode(:,nbpm));
+          resp(2,imode) = std(ymode(:,end));
+        else
+          resp(1,imode) = std(xmode(:,end));
+          resp(2,imode) = std(ymode(:,nbpm));
+        end
+      end
+      [~,ixmode]=max(resp(1,:));
+      [~,iymode]=max(resp(2,:));
+      S=zeros(size(Sx)); S(ixmode,ixmode)=Sx(ixmode,ixmode); 
+      res.xdat = Ux * S * Vtx' ; res.xdat=res.xdat';
+      if dim==2
+        res.xdat=res.xdat(1:end-1,:);
+      end
+      S=zeros(size(Sy)); S(iymode,iymode)=Sy(iymode,iymode); 
+      res.ydat = Uy * S * Vty' ; res.ydat=res.ydat';
+      if dim==1
+        res.ydat=res.ydat(1:end-1);
+      end
+      res.xmode=ixmode;
+      res.ymode=iymode;
     end
     function dat = svdanal(obj,nmode)
       if ~exist('nmode','var') || isempty(nmode) || nmode>length(obj.BPMS.names)
@@ -495,7 +589,7 @@ classdef F2_OrbitApp < handle & F2_common
           A(ibpm,:) = [R(1,1) R(1,2) R(1,3) R(1,4)];
           A(ibpm+length(dispx),:) = [R(3,1) R(3,2) R(3,3) R(3,4)];
         end
-        disp0 = lscov([dispx(:);dispy(:)],A,1./[dispx_err(:);dispy_err(:)].^2) ;
+        disp0 = lscov(A,[dispx(:);dispy(:)],1./[dispx_err(:);dispy_err(:)].^2) ;
         obj.DispFit = A * disp0(:) ;
       else
         domodelfit=false;
@@ -707,7 +801,7 @@ classdef F2_OrbitApp < handle & F2_common
           A(ibpm,:) = [R(1,1) R(1,2) R(1,3) R(1,4)];
           A(ibpm+length(xm),:) = [R(3,1) R(3,2) R(3,3) R(3,4)];
         end
-        x0 = lscov([xm(:);ym(:)],A,1./[xstd(:);ystd(:)].^2) ;
+        x0 = lscov(A,[xm(:);ym(:)],1./[xstd(:);ystd(:)].^2) ;
         obj.XFit = A * x0(:) ;
       else
         domodelfit=false;

@@ -564,7 +564,7 @@ classdef F2_Matching_exported < matlab.apps.AppBase
       title(app.UIAxes2_2, '')
       xlabel(app.UIAxes2_2, 'X')
       ylabel(app.UIAxes2_2, 'Y')
-      app.UIAxes2_2.Position = [11 334 731 107];
+      app.UIAxes2_2.Position = [25 334 696 107];
 
       % Create MessagesPanel
       app.MessagesPanel = uipanel(app.FACETIIOpticsMatchingUIFigure);

@@ -277,7 +277,7 @@ classdef F2_MatchingApp < handle & F2_common
     end
     function WriteEmitData(obj)
       %WRITEENMITDATA Write twiss and emittance data to PVs
-      if ~isempty(obj.QuadScanData) && isfield(obj.QuadScanData,'fit') && ismember(obj.ProfName,obj.EmitDataProfs)
+      if ~isempty(obj.QuadScanData) && ismember(obj.ProfName,obj.EmitDataProfs)
         lcaPutNoWait(sprintf('%s:BETA_X',obj.ProfName),obj.TwissFit(1));
         lcaPutNoWait(sprintf('%s:ALPHA_X',obj.ProfName),obj.TwissFit(3));
         lcaPutNoWait(sprintf('%s:BMAG_X',obj.ProfName),obj.TwissFit(5));
@@ -287,7 +287,7 @@ classdef F2_MatchingApp < handle & F2_common
         lcaPutNoWait(sprintf('%s:BMAG_Y',obj.ProfName),obj.TwissFit(6));
         lcaPutNoWait(sprintf('%s:EMITN_Y',obj.ProfName),obj.TwissFit(8));
         % Write initial match conditions to PVs
-        if ismember(obj.ProfName,obj.InitMatchProf) && obj.goodmatch
+        if ~isempty(obj.InitMatch) && ismember(obj.ProfName,obj.InitMatchProf) && obj.goodmatch
           lcaPutNowWait(char(obj.LiveModel.Initial_betaxPV),obj.InitMatch.x.Twiss.beta) ;
           lcaPutNowWait(char(obj.LiveModel.Initial_betaxPV),obj.InitMatch.y.Twiss.beta) ;
           lcaPutNowWait(char(obj.LiveModel.Initial_betaxPV),obj.InitMatch.x.Twiss.alpha) ;
@@ -296,7 +296,9 @@ classdef F2_MatchingApp < handle & F2_common
           lcaPutNowWait(char(obj.LiveModel.Initial_emityPV),obj.InitMatch.y.NEmit*1e6) ;
         end
         obj.InitRestore = obj.LiveModel.Initial ;
-        obj.LiveModel.Initial=obj.InitMatch ;
+        if ~isempty(obj.InitMatch)
+          obj.LiveModel.Initial=obj.InitMatch ;
+        end
       end
     end
     function ReadEmitData(obj)
@@ -460,7 +462,7 @@ classdef F2_MatchingApp < handle & F2_common
       ypl1=(q(1)-dq(1))+(q(2)-dq(2)).*k+(q(3)-dq(3)).*k.^2; 
       ypl2=(q(1)+dq(1))+(q(2)+dq(2)).*k+(q(3)+dq(3)).*k.^2;
       ypl=[ypl1(:) ypl2(:)-ypl1(:)];
-      apl=area(ah1,abs(k),ypl); apl(1).FaceColor='none'; apl(1).LineStyle='none'; apl(2).FaceColor=[0.3010 0.7450 0.9330]; apl(2).LineStyle='none'; apl(2).FaceAlpha=0.2;
+      apl=area(ah1,abs(k),ypl); apl(1).FaceColor='none'; apl(1).LineStyle='none'; apl(2).FaceColor=[0.3010 0.7450 0.9330]; apl(2).LineStyle='none'; apl(2).FaceAlpha=0.5;
       if length(obj.ModelQuadScan)==length(k)
         plot(ah1,abs(k),obj.ModelQuadScan(1,:).^2,'r','LineWidth',2);
         if obj.ShowPlotLegend; legend(ah1,["Data" "" "Polynomial Fit" "Model Fit"]); else; legend(ah1,'off'); end
@@ -477,7 +479,7 @@ classdef F2_MatchingApp < handle & F2_common
       ypl1=(q(1)-dq(1))+(q(2)-dq(2)).*k+(q(3)-dq(3)).*k.^2; 
       ypl2=(q(1)+dq(1))+(q(2)+dq(2)).*k+(q(3)+dq(3)).*k.^2;
       ypl=[ypl1(:) ypl2(:)-ypl1(:)];
-      apl=area(ah2,abs(k),ypl); apl(1).FaceColor='none'; apl(1).LineStyle='none'; apl(2).FaceColor=[0.3010 0.7450 0.9330]; apl(2).LineStyle='none'; apl(2).FaceAlpha=0.2;
+      apl=area(ah2,abs(k),ypl); apl(1).FaceColor='none'; apl(1).LineStyle='none'; apl(2).FaceColor=[0.3010 0.7450 0.9330]; apl(2).LineStyle='none'; apl(2).FaceAlpha=0.5;
       if length(obj.ModelQuadScan)==length(k)
         plot(ah2,abs(k),obj.ModelQuadScan(2,:).^2,'r','LineWidth',2);
         if obj.ShowPlotLegend; legend(ah2,["Data" "" "Polynomial Fit" "Model Fit"]); else; legend(ah2,'off'); end
