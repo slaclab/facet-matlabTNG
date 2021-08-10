@@ -38,6 +38,7 @@ classdef F2_DAQ_exported < matlab.apps.AppBase
         DisplayNonBSA                  matlab.ui.control.Button
         IncludeSCPCheckBox             matlab.ui.control.CheckBox
         DisplaySCP                     matlab.ui.control.Button
+        nonBSAArraysCheckBox           matlab.ui.control.CheckBox
         ScanPanel                      matlab.ui.container.Panel
         ScanTypeDropDownLabel          matlab.ui.control.Label
         ScanTypeDropDown               matlab.ui.control.DropDown
@@ -481,6 +482,11 @@ classdef F2_DAQ_exported < matlab.apps.AppBase
             app.DisplaySCP.Enable = 'off';
             app.DisplaySCP.Position = [111 7 61 23];
             app.DisplaySCP.Text = 'Display';
+
+            % Create nonBSAArraysCheckBox
+            app.nonBSAArraysCheckBox = uicheckbox(app.PVListsPanel);
+            app.nonBSAArraysCheckBox.Text = 'Include non-BSA Arrays';
+            app.nonBSAArraysCheckBox.Position = [222 7 152 22];
 
             % Create ScanPanel
             app.ScanPanel = uipanel(app.FACETIIDAQUIFigure);

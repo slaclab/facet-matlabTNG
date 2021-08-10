@@ -1,5 +1,7 @@
 function matlab2hdf5(data_structure,file_name)
 
+file_name = [file_name '.h5'];
+
 % First get structure of file to write
 path_list = get_path(data_structure,{},'');
 

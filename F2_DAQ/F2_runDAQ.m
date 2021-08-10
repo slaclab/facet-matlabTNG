@@ -18,6 +18,7 @@ classdef F2_runDAQ < handle
         async_data
         bsa_list
         nonbsa_list
+        nonbsa_array_list
         scanFunctions
         eDefNum
         daq_status
@@ -27,7 +28,8 @@ classdef F2_runDAQ < handle
     end
     properties(Constant)
         maxbeat=1e7 % max heartbeat count, wrap to zero
-        maxImSize = 1440744
+        %maxImSize = 1440744
+        maxImSize = 4177920
         pulseIDPV = 'PATT:SYS1:1:PULSEID'
         secPV = 'PATT:SYS1:1:SEC'
         nSecPV = 'PATT:SYS1:1:NSEC'
@@ -121,8 +123,22 @@ classdef F2_runDAQ < handle
                 
                 obj.nonbsa_list = [obj.nonbsa_list; pvList];
             end
-            obj.async_data = async_data(obj.nonbsa_list);
+            obj.async_data = acq_nonBSA_data(obj.nonbsa_list,obj);
             
+            % Fill in non-BSA arrays
+            if obj.params.include_nonBSA_arrays
+                for i = 1:numel(obj.params.nonBSA_Array_list)
+                    pvList = feval(obj.params.nonBSA_Array_list{i});
+                    pvDesc = lcaGetSmart(strcat(pvList,'.DESC'));
+                    
+                    obj.data_struct.metadata.(obj.params.nonBSA_Array_list{i}).PVs = pvList;
+                    obj.data_struct.metadata.(obj.params.nonBSA_Array_list{i}).Desc = pvDesc;
+                
+                    obj.nonbsa_array_list = [obj.nonbsa_array_list; pvList];
+                    
+                end
+            end
+                        
             % Fill in the rest of the data struct
             obj.setupDataStruct();
             
@@ -215,15 +231,16 @@ classdef F2_runDAQ < handle
             lcaPutNoWait(obj.daq_pvs.TIFF_Capture,1);
             lcaPutNoWait(obj.params.camTrigs,1);
             
-            obj.async_data.enable();
+            %obj.async_data.enable();
             
             tic;
             while toc < waitTime
-                pause(0.1);
+                obj.async_data.addData();
+                pause(0.99);
             end
             
             eDefOff(obj.eDefNum);
-            obj.async_data.disable();
+            %obj.async_data.disable();
             obj.dispMessage('Acquisition complete. Cameras saving data.');
             
             fnum_rbv = lcaGet(obj.daq_pvs.TIFF_FileNumber_RBV);
@@ -310,8 +327,8 @@ classdef F2_runDAQ < handle
                 
                 for j = 1:numel(obj.data_struct.metadata.(obj.params.nonBSA_list{i}).PVs)
                     pv = obj.data_struct.metadata.(obj.params.nonBSA_list{i}).PVs{j};
-                    obj.data_struct.scalars.(obj.params.nonBSA_list{i}).(strrep(pv,':','_')) = ...
-                        [obj.data_struct.scalars.(obj.params.nonBSA_list{i}).(strrep(pv,':','_')); obj.async_data.interpData.(strrep(pv,':','_'))];
+                    obj.data_struct.scalars.(obj.params.nonBSA_list{i}).(remove_dots(pv)) = ...
+                        [obj.data_struct.scalars.(obj.params.nonBSA_list{i}).(remove_dots(pv)); obj.async_data.interpData.(remove_dots(pv))];
                 end
             end
         end
@@ -470,7 +487,7 @@ classdef F2_runDAQ < handle
             for i = 1:obj.params.num_CAM
                 if bad_cam(i)
                     message = ['Camera ' obj.params.camNames{i} ' is disconnected.'];
-                    reply = qstdlg(message,'Camera Down','Wait and retry','Abort DAQ');
+                    reply = questdlg(message,'Camera Down','Wait and retry','Abort DAQ');
                     switch reply
                         case 'Wait and retry'
                             obj.checkCams();
@@ -498,7 +515,8 @@ classdef F2_runDAQ < handle
         
         function grab_BG(obj)
             
-            do_shutter = true;
+            % this is debugging background
+            do_shutter = false;
             
             nBG = obj.params.nBG;
             obj.data_struct.backgrounds.nBG = nBG;
@@ -523,7 +541,8 @@ classdef F2_runDAQ < handle
             end
             
             for i = 1:nBG
-                BGs(:,:,i) = lcaGet(obj.daq_pvs.Image_ArrayData);
+                im_array = lcaGet(obj.daq_pvs.Image_ArrayData);
+                BGs(:,1:max(size(im_array)),i) = im_array;
                 pause(0.1);
             end
             
@@ -565,14 +584,25 @@ classdef F2_runDAQ < handle
                 obj.data_struct.scalars.(obj.params.BSA_list{i}) = struct();
                 for j=1:numel(obj.data_struct.metadata.(obj.params.BSA_list{i}).PVs)
                     pv = obj.data_struct.metadata.(obj.params.BSA_list{i}).PVs{j};
-                    obj.data_struct.scalars.(obj.params.BSA_list{i}).(strrep(pv,':','_')) = [];
+                    obj.data_struct.scalars.(obj.params.BSA_list{i}).(remove_dots(pv)) = [];
                 end
             end
             for i = 1:numel(obj.params.nonBSA_list)
                 obj.data_struct.scalars.(obj.params.nonBSA_list{i}) = struct();
                 for j=1:numel(obj.data_struct.metadata.(obj.params.nonBSA_list{i}).PVs)
                     pv = obj.data_struct.metadata.(obj.params.nonBSA_list{i}).PVs{j};
-                    obj.data_struct.scalars.(obj.params.nonBSA_list{i}).(strrep(pv,':','_')) = [];
+                    obj.data_struct.scalars.(obj.params.nonBSA_list{i}).(remove_dots(pv)) = [];
+                end
+            end
+            
+            if obj.params.include_nonBSA_arrays
+                obj.data_struct.arrays = struct();
+                for i = 1:numel(obj.params.nonBSA_Array_list)
+                    obj.data_struct.arrays.(obj.params.nonBSA_Array_list{i}) = struct();
+                    for j=1:numel(obj.data_struct.metadata.(obj.params.nonBSA_Array_list{i}).PVs)
+                        pv = obj.data_struct.metadata.(obj.params.nonBSA_Array_list{i}).PVs{j};
+                        obj.data_struct.arrays.(obj.params.nonBSA_Array_list{i}).(remove_dots(pv)) = [];
+                    end
                 end
             end
             

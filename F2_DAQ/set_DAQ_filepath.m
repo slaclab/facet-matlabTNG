@@ -13,8 +13,8 @@ camNames = obj.params.camNames;
 
 time = clock;
 year = num2str(time(1));
-month = num2str(time(2));
-day = num2str(time(3));
+month = num2str(time(2),'%02d');
+day = num2str(time(3),'%02d');
 
 
 % Add timestamp info to struct
