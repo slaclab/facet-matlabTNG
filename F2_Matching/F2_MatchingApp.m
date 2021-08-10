@@ -126,8 +126,8 @@ classdef F2_MatchingApp < handle & F2_common
         error('Match failed');
       end
       obj.InitMatch=M.initStruc;
-      obj.InitMatch.x.NEmit = obj.TwissFit(7) ;
-      obj.InitMatch.y.NEmit = obj.TwissFit(8) ;
+      obj.InitMatch.x.NEmit = obj.TwissFit(7)*1e-6 ;
+      obj.InitMatch.y.NEmit = obj.TwissFit(8)*1e-6 ;
       [~,T]=GetTwiss(i1,pele,obj.InitMatch.x.Twiss,obj.InitMatch.y.Twiss);
       obj.TwissPreMatch=T;
       
@@ -288,12 +288,12 @@ classdef F2_MatchingApp < handle & F2_common
         lcaPutNoWait(sprintf('%s:EMITN_Y',obj.ProfName),obj.TwissFit(8));
         % Write initial match conditions to PVs
         if ~isempty(obj.InitMatch) && ismember(obj.ProfName,obj.InitMatchProf) && obj.goodmatch
-          lcaPutNowWait(char(obj.LiveModel.Initial_betaxPV),obj.InitMatch.x.Twiss.beta) ;
-          lcaPutNowWait(char(obj.LiveModel.Initial_betaxPV),obj.InitMatch.y.Twiss.beta) ;
-          lcaPutNowWait(char(obj.LiveModel.Initial_betaxPV),obj.InitMatch.x.Twiss.alpha) ;
-          lcaPutNowWait(char(obj.LiveModel.Initial_betaxPV),obj.InitMatch.y.Twiss.alpha) ;
-          lcaPutNowWait(char(obj.LiveModel.Initial_emitxPV),obj.InitMatch.x.NEmit*1e6) ;
-          lcaPutNowWait(char(obj.LiveModel.Initial_emityPV),obj.InitMatch.y.NEmit*1e6) ;
+          lcaPutNoWait(char(obj.LiveModel.Initial_betaxPV),obj.InitMatch.x.Twiss.beta) ;
+          lcaPutNoWait(char(obj.LiveModel.Initial_betaxPV),obj.InitMatch.y.Twiss.beta) ;
+          lcaPutNoWait(char(obj.LiveModel.Initial_betaxPV),obj.InitMatch.x.Twiss.alpha) ;
+          lcaPutNoWait(char(obj.LiveModel.Initial_betaxPV),obj.InitMatch.y.Twiss.alpha) ;
+          lcaPutNoWait(char(obj.LiveModel.Initial_emitxPV),obj.InitMatch.x.NEmit*1e6) ;
+          lcaPutNoWait(char(obj.LiveModel.Initial_emityPV),obj.InitMatch.y.NEmit*1e6) ;
         end
         obj.InitRestore = obj.LiveModel.Initial ;
         if ~isempty(obj.InitMatch)
@@ -396,7 +396,6 @@ classdef F2_MatchingApp < handle & F2_common
       sig12 = (B-2*d*Lq*sig11)/(2*d^2*Lq) ;
       sig22 = (C-sig11-2*d*sig12) / d^2 ;
       emit = sqrt(sig11*sig22 - sig12^2) ;
-      obj.TwissFitAnalytic(7) = rgamma * emit * 1e6 ;
       alpha = - sig12/emit ;
       beta = sig11/emit ;
       % Propogate Twiss back to start of Model quadrupole and then forward to profile monitor location
@@ -409,11 +408,15 @@ classdef F2_MatchingApp < handle & F2_common
       S_prof = R2(1:2,1:2)*S0*R2(1:2,1:2)';
       T=S_prof./emit ;
       if contains(obj.DimSelect,"X")
-        obj.TwissFitAnalytic(1) = T(1,1) ;
-        obj.TwissFitAnalytic(3) = -T(1,2) ;
-        obj.TwissFitAnalytic(5) = bmag(DesignTwiss.betax(pele),DesignTwiss.alphax(pele),...
-          obj.TwissFitAnalytic(1),obj.TwissFitAnalytic(3));
-        fprintf('Fitted Horizontal Twiss parameters: beta_x = %g alpha_x = %g\n',T(1,1),-T(1,2));
+        if ~isreal(T)
+          obj.TwissFitAnalytic(2:2:end)=nan;
+        else
+          obj.TwissFitAnalytic(7) = rgamma * emit * 1e6 ;
+          obj.TwissFitAnalytic(1) = T(1,1) ;
+          obj.TwissFitAnalytic(3) = -T(1,2) ;
+          obj.TwissFitAnalytic(5) = bmag(DesignTwiss.betax(pele),DesignTwiss.alphax(pele),...
+            obj.TwissFitAnalytic(1),obj.TwissFitAnalytic(3));
+        end
       end
       % -- y
       d=R(3,4);
@@ -422,7 +425,7 @@ classdef F2_MatchingApp < handle & F2_common
       sig12 = (B-2*d*Lq*sig11)/(2*d^2*Lq) ;
       sig22 = (C-sig11-2*d*sig12) / d^2 ;
       emit = sqrt(sig11*sig22 - sig12^2) ;
-      obj.TwissFitAnalytic(8) = rgamma * emit * 1e6 ;
+      
       alpha = - sig12/emit ;
       beta = sig11/emit ;
       % Propogate Twiss back to start of Model quadrupole and then forward to profile monitor location
@@ -431,15 +434,23 @@ classdef F2_MatchingApp < handle & F2_common
       S_prof = R2(3:4,3:4)*S0*R2(3:4,3:4)';
       T=S_prof./emit ;
       if contains(obj.DimSelect,"Y")
-        obj.TwissFitAnalytic(2) = T(1,1) ;
-        obj.TwissFitAnalytic(4) = -T(1,2) ;
-        obj.TwissFitAnalytic(6) = bmag(obj.LiveModel.DesignTwiss.betay(pele),obj.LiveModel.DesignTwiss.alphay(pele),...
-          obj.TwissFitAnalytic(2),obj.TwissFitAnalytic(4));
-        fprintf('Fitted Vertical Twiss parameters: beta_y = %g alpha_y = %g\n',T(1,1),-T(1,2));
+        if ~isreal(T)
+          obj.TwissFitAnalytic(2:2:end)=nan;
+        else
+          obj.TwissFitAnalytic(8) = rgamma * emit * 1e6 ;
+          obj.TwissFitAnalytic(2) = T(1,1) ;
+          obj.TwissFitAnalytic(4) = -T(1,2) ;
+          obj.TwissFitAnalytic(6) = bmag(obj.LiveModel.DesignTwiss.betay(pele),obj.LiveModel.DesignTwiss.alphay(pele),...
+            obj.TwissFitAnalytic(2),obj.TwissFitAnalytic(4));
+        end
       end
     end
     function PlotQuadScanData(obj)
       if ~isfield(obj.QuadScanData,'x')
+        if ~isempty(obj.guihan)
+          obj.guihan.UIAxes.reset;
+          obj.guihan.UIAxes_2.reset;
+        end
         return
       end
       k = obj.quadscan_k ;
@@ -491,12 +502,13 @@ classdef F2_MatchingApp < handle & F2_common
       grid(ah2,'on');
       hold(ah2,'off');
       if ~isempty(obj.guihan) % Fill emit / bmag values for Model and Analytic fit results
-        obj.guihan.EditField_2.Value = obj.TwissFitAnalytic(7) ;
-        obj.guihan.EditField.Value = obj.TwissFitAnalytic(5) ;
+        TA=obj.TwissFitAnalytic; TA(isnan(TA))=0;
+        obj.guihan.EditField_2.Value = TA(7) ;
+        obj.guihan.EditField.Value = TA(5) ;
         obj.guihan.EditField_4.Value = obj.TwissFitModel(7) ;
         obj.guihan.EditField_3.Value = obj.TwissFitModel(5) ;
-        obj.guihan.EditField_6.Value = obj.TwissFitAnalytic(8) ;
-        obj.guihan.EditField_5.Value = obj.TwissFitAnalytic(6) ;
+        obj.guihan.EditField_6.Value = TA(8) ;
+        obj.guihan.EditField_5.Value = TA(6) ;
         obj.guihan.EditField_8.Value = obj.TwissFitModel(8) ;
         obj.guihan.EditField_7.Value = obj.TwissFitModel(6) ;
       end
