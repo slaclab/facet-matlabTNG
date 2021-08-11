@@ -92,6 +92,14 @@ classdef F2_DAQApp < handle
             obj.DAQ_params.BSA_list = obj.guihan.ListBoxBSA.Items;
             obj.DAQ_params.nonBSA_list = obj.guihan.ListBoxNonBSA.Items;
             
+            % Array lists
+            if obj.guihan.nonBSAArraysCheckBox.Value
+                obj.loadnonBSA_ArrayLists();
+            else
+                obj.DAQ_params.include_nonBSA_arrays = false;
+            end
+                
+            
             scan_type = obj.guihan.ScanTypeDropDown.Value;
             switch scan_type
                 case 'Single Step'
@@ -192,6 +200,20 @@ classdef F2_DAQApp < handle
             obj.guihan.nonBSADataListBox.Items = name_lists;
             
             obj.addMessage(sprintf('Loaded %d non-BSA Lists.',numel(name_lists)));
+        end
+        
+        function loadnonBSA_ArrayLists(obj)
+            
+            file_lists = dir('array_nonBSA_List*');
+            name_lists = {};
+            for i = 1:numel(file_lists)
+                split = strsplit(file_lists(i).name,'.');
+                name_lists{end+1} = split{1};
+            end
+            obj.DAQ_params.nonBSA_Array_list = name_lists;
+            obj.DAQ_params.include_nonBSA_arrays = true;
+            
+            obj.addMessage(sprintf('Loaded %d non-BSA Array Lists.',numel(name_lists)));
         end
         
         function loadScans(obj)
