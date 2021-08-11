@@ -34,6 +34,7 @@ classdef F2_SchottkyScanApp < handle
             obj.pvlist=[...
                 PV(context,'name',"Instance",'pvname',"SIOC:SYS1:ML00:AO401",'mode',"rw",'monitor',true); % Number of times code is run
                 PV(context,'name',"State",'pvname',"SIOC:SYS1:ML00:AO402",'mode',"rw",'monitor',true); % Current scan state
+                PV(context,'name',"ZeroOffset",'pvname',"SIOC:SYS1:ML00:AO404",'mode',"rw",'monitor',true); % Current scan state
                 
                 PV(context,'name',"KLYS_21_PDES",'pvname',"KLYS:LI10:21:PDES",'monitor',true,'mode',"rw"); % KLYS LI10 21 PDES
                 PV(context,'name',"KLYS_21_PHAS",'pvname',"KLYS:LI10:21:PHAS",'monitor',true); % KLYS LI10 21 PHAS
@@ -78,8 +79,9 @@ classdef F2_SchottkyScanApp < handle
             % Set GUI callbacks for phase PVs
             %obj.pvs.KLYS_21_PHAS.guihan = apph.KLYSPHASEditField ;
             %obj.pvs.KLYS_21_PDES.guihan = apph.KLYSPDESEditField ;
-            obj.pvs.GUN_21_PHAS.guihan = apph.GUNPHASEditField ;
-            obj.pvs.SFB_PDES.guihan = apph.GUNPDESEditField ;
+            obj.pvs.GUN_21_PHAS.guihan = apph.GUNPHASEditField;
+            obj.pvs.SFB_PDES.guihan = apph.GUNPDESEditField;
+            obj.pvs.ZeroOffset.guihan = apph.PhaseOffsetEditField;
             
             
             % Set GUI callbacks for FC cup in/out
