@@ -146,7 +146,7 @@ classdef F2_runDAQ < handle
             % Fill in scan functions
             obj.scanFunctions = struct();
             for i = 1:numel(obj.params.scanFuncs)
-                obj.scanFunctions.(obj.params.scanFuncs{i}) = feval(obj.params.scanFuncs{i});
+                obj.scanFunctions.(obj.params.scanFuncs{i}) = feval(['scanFunc_' obj.params.scanFuncs{i}],obj);
             end
             
             

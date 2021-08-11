@@ -5,6 +5,7 @@ classdef scanFunc_Dummy_Scan
         initial_control
         initial_readback
         daqhandle
+        freerun = true
     end
     properties(Constant)
         control_PV = "SIOC:SYS1:ML02:AO399"
@@ -15,6 +16,12 @@ classdef scanFunc_Dummy_Scan
     methods 
         
         function obj = scanFunc_Dummy_Scan(daqhandle)
+            
+            % Check if scanfunc called by DAQ
+            if exist('daqhandle','var')
+                obj.daqhandle=daqhandle;
+                obj.freerun = false;
+            end
         
             context = PV.Initialize(PVtype.EPICS_labca);
             obj.pvlist=[...

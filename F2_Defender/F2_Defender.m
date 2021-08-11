@@ -11,6 +11,7 @@ classdef F2_Defender < handle
         
         PBDefender
         FilterDefender
+        PicoDefender
     end
     properties(Hidden)
         listeners
@@ -42,6 +43,7 @@ classdef F2_Defender < handle
             obj.Disable = caget(obj.pvs.Disable);
             
             obj.PBDefender = PBDefender(obj);
+            obj.PicoDefender = PicoDefender(obj);
             
             obj.listeners = addlistener(obj,'PVUpdated',@(~,~) obj.defender_loop);
             run(obj.pvlist,false,1,obj,'PVUpdated');
@@ -69,6 +71,7 @@ classdef F2_Defender < handle
             %%%%%%%%%%%%%%%%%%%%%%%%%%%
             
             obj.PBDefender.check_status();
+            obj.PicoDefender.check_status();
             
             
         end

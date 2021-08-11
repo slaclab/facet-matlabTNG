@@ -8,14 +8,19 @@ classdef scanFunc_Use_PV
         initial_readback
         daqhandle
         tolerance
+        freerun = true
     end
     
     methods 
         
         function obj = scanFunc_Use_PV(daqhandle,PV_name)
             
-            obj.daqhandle = daqhandle;
-            
+            % Check if scanfunc called by DAQ
+            if exist('daqhandle','var')
+                obj.daqhandle=daqhandle;
+                obj.freerun = false;
+            end
+                        
             obj.control_PV = PV_name;
             
             split_pv = strsplit(PV_name,':');

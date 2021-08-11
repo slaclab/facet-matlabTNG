@@ -233,13 +233,15 @@ classdef F2_DAQApp < handle
         end
         
         function scanFuncSelected(obj,value)
-            scanFunc = feval(value);
+            scanFunc = feval(['scanFunc_' value]);
             obj.guihan.PVEditField.Value = scanFunc.control_PV;
+            obj.guihan.ToleranceEditField.Value = scanFunc.tolerance;
         end
         
         function scanFuncSelected_2(obj,value)
-            scanFunc = feval(value);
+            scanFunc = feval(['scanFunc_' value]);
             obj.guihan.PVEditField_2.Value = scanFunc.control_PV;
+            obj.guihan.ToleranceEditField_2.Value = scanFunc.tolerance;
         end
             
         

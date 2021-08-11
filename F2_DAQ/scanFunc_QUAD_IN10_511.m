@@ -5,6 +5,7 @@ classdef scanFunc_QUAD_IN10_511
         initial_control
         initial_readback
         daqhandle
+        freerun = true
     end
     properties(Constant)
         control_PV = "QUAD:IN10:511:BCTRL"
@@ -16,8 +17,12 @@ classdef scanFunc_QUAD_IN10_511
         
         function obj = scanFunc_QUAD_IN10_511(daqhandle)
             
-            obj.daqhandle = daqhandle;
-        
+            % Check if scanfunc called by DAQ
+            if exist('daqhandle','var')
+                obj.daqhandle=daqhandle;
+                obj.freerun = false;
+            end
+                    
             context = PV.Initialize(PVtype.EPICS_labca);
             obj.pvlist=[...
                 PV(context,'name',"control",'pvname',obj.control_PV,'mode',"rw",'monitor',true); % Control PV
