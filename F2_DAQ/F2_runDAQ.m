@@ -516,7 +516,7 @@ classdef F2_runDAQ < handle
         function grab_BG(obj)
             
             % this is debugging background
-            do_shutter = false;
+            do_shutter = true;
             
             nBG = obj.params.nBG;
             obj.data_struct.backgrounds.nBG = nBG;
@@ -541,7 +541,17 @@ classdef F2_runDAQ < handle
             end
             
             for i = 1:nBG
-                im_array = lcaGet(obj.daq_pvs.Image_ArrayData);
+                im_array = lcaGetSmart(obj.daq_pvs.Image_ArrayData);
+                im_check = sum(im_array,2);
+                bad_ims = isnan(im_check) | im_check==0;
+                if any(bad_ims)
+                    im_array(bad_ims,:) = lcaGetSmart(obj.daq_pvs.Image_ArrayData(bad_ims));
+                    im_check = sum(im_array,2);
+                    bad_ims = isnan(im_check) | im_check==0;
+                    if any(bad_ims)
+                        obj.dispMessage('Warning: could not get background images.');
+                    end
+                end
                 BGs(:,1:max(size(im_array)),i) = im_array;
                 pause(0.1);
             end
