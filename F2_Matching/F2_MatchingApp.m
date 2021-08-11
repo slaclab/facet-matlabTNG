@@ -29,6 +29,7 @@ classdef F2_MatchingApp < handle & F2_common
     ProfModelInd
     MatchQuadModelInd
     LEMQuadID
+    ScanDataSelect
   end
   properties(SetObservable,AbortSet)
     ModelSource string {mustBeMember(ModelSource,["Live" "Archive" "Design"])} = "Live"
@@ -257,11 +258,23 @@ classdef F2_MatchingApp < handle & F2_common
       obj.QuadScanData.QuadVal = [dat.data.ctrlPV(stat).val] ;
       obj.QuadScanData.nscan = sum(stat) ;
       fitm=["Gaussian" "Asymmetric"];
+      sz=size(dat.data.beam);
       for ii=1:2
-        xdat=reshape([dat.data.beam(:,1,ii).xStat],5,length(stat)); xdat=xdat(3,stat);
-        xdat_err=reshape([dat.data.beam(:,1,ii).xStatStd],5,length(stat)); xdat_err=xdat_err(3,stat);
-        ydat=reshape([dat.data.beam(:,1,ii).yStat],5,length(stat)); ydat=ydat(3,stat);
-        ydat_err=reshape([dat.data.beam(:,1,ii).yStatStd],5,length(stat)); ydat_err=ydat_err(3,stat);
+        xdat=reshape([dat.data.beam(:,:,ii).xStat],5,length(stat),sz(2));
+        ydat=reshape([dat.data.beam(:,:,ii).yStat],5,length(stat),sz(2));
+        if sz(2)>1
+          xdat_err=std(squeeze(xdat(3,:,:)),[],2);
+          xdat=mean(squeeze(xdat(3,:,:)),2);
+          ydat_err=std(squeeze(ydat(3,:,:)),[],2);
+          ydat=mean(squeeze(ydat(3,:,:)),2);
+        else
+          xdat=squeeze(xdat(3,:,:));
+          xerr=reshape([dat.data.beam(:,:,ii).xStatStd],5,length(stat),sz(2));
+          xdat_err=squeeze(xerr(3,:,:));
+          ydat=squeeze(ydat(3,:,:));
+          yerr=reshape([dat.data.beam(:,:,ii).yStatStd],5,length(stat),sz(2));
+          ydat_err=squeeze(yerr(3,:,:));
+        end
         obj.QuadScanData.x.(fitm(ii)) = xdat ;
         obj.QuadScanData.xerr.(fitm(ii)) = xdat_err ;
         obj.QuadScanData.y.(fitm(ii)) = ydat ;
