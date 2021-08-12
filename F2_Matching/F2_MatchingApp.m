@@ -193,7 +193,9 @@ classdef F2_MatchingApp < handle & F2_common
       obj.LiveModel.LEM.Mags.SetBDES_err(false,~obj.MatchQuadID) ;
       obj.LiveModel.LEM.Mags.SetBDES_err(true,obj.MatchQuadID) ;
       msg = obj.LiveModel.LEM.Mags.WriteBDES ;
-      obj.LiveModel.Initial = obj.InitRestore;
+      if ~isempty(obj.InitRestore)
+        obj.LiveModel.Initial = obj.InitRestore;
+      end
       obj.goodmatch = false ;
       obj.UndoAvailable = false ;
       
@@ -236,7 +238,7 @@ classdef F2_MatchingApp < handle & F2_common
       % If there is a QUAD scan file in the current day's directory, default to loading that
       files = dir(obj.datadir);
       qscanfiles = startsWith(string(arrayfun(@(x) x.name,files,'UniformOutput',false)),"CorrelationPlot-QUAD") | ...
-       ~isempty(regexp(string(arrayfun(@(x) x.name,files,'UniformOutput',false)),"CorrelationPlot-LI%d%d:QUAD", 'once')) | ...
+       cellfun(@(xx) ~isempty(xx),regexp(string(arrayfun(@(x) x.name,files,'UniformOutput',false)),"CorrelationPlot-LI%d%d:QUAD", 'once')) | ...
        startsWith(string(arrayfun(@(x) x.name,files,'UniformOutput',false)),"Emittance-scan") ;
       if any(qscanfiles)
         [~,latestfile]=max(datenum({files(qscanfiles).date}));
