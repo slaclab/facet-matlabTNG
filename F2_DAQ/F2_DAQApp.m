@@ -34,6 +34,7 @@ classdef F2_DAQApp < handle
             obj.pvlist=[...
                 PV(context,'name',"GUI_Instance",'pvname',"SIOC:SYS1:ML02:AO351",'mode',"rw",'monitor',true); % Number of times GUI is run
                 PV(context,'name',"DAQ_Instance",'pvname',"SIOC:SYS1:ML02:AO400",'mode',"rw",'monitor',true); % Number of times DAQ is run
+                PV(context,'name',"Reset",'pvname',"SIOC:SYS1:ML02:AO352",'mode',"rw",'monitor',true); % DAQ Running
                 ] ;
             pset(obj.pvlist,'debug',0) ;
             obj.pvs = struct(obj.pvlist);
@@ -55,6 +56,12 @@ classdef F2_DAQApp < handle
             
             % Load scan functions
             obj.loadScans();
+            
+        end
+        
+        function resetDAQ(obj)
+            
+            caput(obj.pvs.Reset,0);
             
         end
         
