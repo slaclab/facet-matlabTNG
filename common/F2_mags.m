@@ -19,7 +19,7 @@ classdef F2_mags < handle & matlab.mixin.Copyable & F2_common
   end
   properties(SetObservable,AbortSet)
     UseSector(1,5) logical = true(1,5) % L0, L1, L2, L3, S20
-    MagClasses string {mustBeMember(MagClasses,["QUAD" "SEXT" "SBEN" "XCOR" "YCOR"])} = ["QUAD" "SEXT" "SBEN" "XCOR" "YCOR"]
+    MagClasses string {mustBeMember(MagClasses,["QUAD" "SEXT" "SBEN" "XCOR" "YCOR" "SOLENOID"])} = ["QUAD" "SEXT" "SBEN" "XCOR" "YCOR" "SOLENOID"]
   end
   properties(SetAccess=private)
     Initial

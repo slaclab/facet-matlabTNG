@@ -7,6 +7,10 @@ classdef F2_LiveModelApp < handle & F2_common
     DesignTwiss
     DesignInitial
   end
+  properties(Access=private)
+    InjSolInd
+    InjSolBkInd
+  end
   properties(SetObservable)
     Initial % Lucretia initial structure for start of lattice
     ModelSource string {mustBeMember(ModelSource,["Live" "Archive" "Design"])} = "Live"

@@ -413,7 +413,7 @@ classdef F2_Feedback_exported < matlab.apps.AppBase
 
       % Create Gauge_16
       app.Gauge_16 = uigauge(app.BC14EnergyFeedbackPanel, 'ninetydegree');
-      app.Gauge_16.Limits = [-90 0];
+      app.Gauge_16.Limits = [-180 0];
       app.Gauge_16.Orientation = 'southwest';
       app.Gauge_16.ScaleDirection = 'counterclockwise';
       app.Gauge_16.Position = [247 47 90 90];
@@ -421,7 +421,7 @@ classdef F2_Feedback_exported < matlab.apps.AppBase
 
       % Create Gauge_17
       app.Gauge_17 = uigauge(app.BC14EnergyFeedbackPanel, 'ninetydegree');
-      app.Gauge_17.Limits = [0 90];
+      app.Gauge_17.Limits = [0 180];
       app.Gauge_17.Orientation = 'southeast';
       app.Gauge_17.ScaleDirection = 'counterclockwise';
       app.Gauge_17.Position = [337 47 90 90];

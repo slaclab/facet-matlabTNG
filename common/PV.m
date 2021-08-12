@@ -90,6 +90,7 @@ classdef PV < handle
       SetMode(obj,obj.mode);
     end
     function set.guihan(obj,han)
+      if han==0; return; end
       for ihan=1:length(han)
         if ~ishandle(han(ihan))
           error('Not a valid GUI handle!');
