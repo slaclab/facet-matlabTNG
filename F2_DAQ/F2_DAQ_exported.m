@@ -76,6 +76,7 @@ classdef F2_DAQ_exported < matlab.apps.AppBase
         RunButton                      matlab.ui.control.StateButton
         AbortButton                    matlab.ui.control.StateButton
         MessagesTextArea               matlab.ui.control.TextArea
+        ResetDAQButton                 matlab.ui.control.StateButton
     end
 
     
@@ -199,9 +200,12 @@ classdef F2_DAQ_exported < matlab.apps.AppBase
                 case '1D Scan'
                     set(app.FirstDimensionPanel.Children,'Enable','On');
                     set(app.SecondDimensionPanel.Children,'Enable','Off');
+                    app.aobj.scanFuncSelected(value);
                 case '2D Scan'
                     set(app.FirstDimensionPanel.Children,'Enable','On');
                     set(app.SecondDimensionPanel.Children,'Enable','On');
+                    app.aobj.scanFuncSelected(value);
+                    app.aobj.scanFuncSelected_2(value);
             end
             
         end
@@ -257,6 +261,12 @@ classdef F2_DAQ_exported < matlab.apps.AppBase
             scan_vals = linspace(start_value,end_value,steps_val);
             scan_str = num2str(scan_vals,'%0.2f, ');
             app.ScanValuesTextArea_2.Value = scan_str;
+            
+        end
+
+        % Value changed function: ResetDAQButton
+        function ResetDAQButtonValueChanged(app, event)
+            app.aobj.resetDAQ()
             
         end
     end
@@ -718,14 +728,23 @@ classdef F2_DAQ_exported < matlab.apps.AppBase
 
             % Create AbortButton
             app.AbortButton = uibutton(app.RunPanel, 'state');
+            app.AbortButton.Enable = 'off';
             app.AbortButton.Text = 'Abort';
             app.AbortButton.BackgroundColor = [0.949 0.0863 0.0863];
             app.AbortButton.FontWeight = 'bold';
-            app.AbortButton.Position = [295 84 100 23];
+            app.AbortButton.Position = [117 84 100 23];
 
             % Create MessagesTextArea
             app.MessagesTextArea = uitextarea(app.RunPanel);
             app.MessagesTextArea.Position = [13 8 382 69];
+
+            % Create ResetDAQButton
+            app.ResetDAQButton = uibutton(app.RunPanel, 'state');
+            app.ResetDAQButton.ValueChangedFcn = createCallbackFcn(app, @ResetDAQButtonValueChanged, true);
+            app.ResetDAQButton.Tooltip = {'Only do this if you know that someone else isn''t trying to run the DAQ. Ask your friends!'};
+            app.ResetDAQButton.Text = 'Reset DAQ';
+            app.ResetDAQButton.BackgroundColor = [0.8 0.8 0.8];
+            app.ResetDAQButton.Position = [293 84 100 23];
 
             % Show the figure after all components are created
             app.FACETIIDAQUIFigure.Visible = 'on';
