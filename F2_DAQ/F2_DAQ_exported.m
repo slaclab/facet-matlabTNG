@@ -239,7 +239,8 @@ classdef F2_DAQ_exported < matlab.apps.AppBase
             
         end
 
-        % Value changed function: StartEditField_2
+        % Value changed function: StartEditField_2, 
+        % StepsEditField_2, StopEditField_2
         function StartEditField_2ValueChanged(app, event)
             start_value = app.StartEditField_2.Value;
             end_value = app.StopEditField_2.Value;
@@ -660,6 +661,7 @@ classdef F2_DAQ_exported < matlab.apps.AppBase
 
             % Create StopEditField_2
             app.StopEditField_2 = uieditfield(app.SecondDimensionPanel, 'numeric');
+            app.StopEditField_2.ValueChangedFcn = createCallbackFcn(app, @StartEditField_2ValueChanged, true);
             app.StopEditField_2.Enable = 'off';
             app.StopEditField_2.Position = [134 123 42 22];
 
@@ -672,6 +674,7 @@ classdef F2_DAQ_exported < matlab.apps.AppBase
 
             % Create StepsEditField_2
             app.StepsEditField_2 = uieditfield(app.SecondDimensionPanel, 'numeric');
+            app.StepsEditField_2.ValueChangedFcn = createCallbackFcn(app, @StartEditField_2ValueChanged, true);
             app.StepsEditField_2.Enable = 'off';
             app.StepsEditField_2.Position = [134 86 42 22];
 
