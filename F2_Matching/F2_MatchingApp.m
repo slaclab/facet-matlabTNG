@@ -9,6 +9,7 @@ classdef F2_MatchingApp < handle & F2_common
     DimSelect string {mustBeMember(DimSelect,["X" "Y" "XY"])} = "XY"
     LM
     ShowPlotLegend logical = true
+    UseMatchQuad logical % Which matching quads to use
   end
   properties(SetAccess=private)
     MatchQuadNames string = ["QUAD:IN10:425" "QUAD:IN10:441" "QUAD:IN10:511" "QUAD:IN10:525"] 
@@ -85,7 +86,7 @@ classdef F2_MatchingApp < handle & F2_common
       if sum(iquads)<double(obj.NumMatchQuads)
         error('Insufficient matching quads available');
       end
-      id1=find(iquads,double(obj.NumMatchQuads),'last') ;
+      id1=find(iquads,double(obj.NumMatchQuads),'last') ; id1=id1(obj.UseMatchQuad);
       quadps = arrayfun(@(x) BEAMLINE{x}.PS,LM_mags.ModelUniqueID(id1)) ;
       idm=ismember(obj.LiveModel.LEM.Mags.LM.ModelUniqueID,LM_mags.ModelUniqueID(id1)) ;
       bmin = obj.LiveModel.LEM.Mags.BMIN(idm)./10;
@@ -224,6 +225,9 @@ classdef F2_MatchingApp < handle & F2_common
       
       didload=false;
       
+      obj.TwissMatch=[];
+      obj.TwissPreMatch=[];
+      obj.InitMatch=[];
       obj.goodmatch = false ;
       obj.QuadScanData = [] ;
       LM_mags=obj.LiveModel.LEM.Mags.LM;
@@ -231,7 +235,9 @@ classdef F2_MatchingApp < handle & F2_common
       
       % If there is a QUAD scan file in the current day's directory, default to loading that
       files = dir(obj.datadir);
-      qscanfiles = startsWith(string(arrayfun(@(x) x.name,files,'UniformOutput',false)),"CorrelationPlot-QUAD") ;
+      qscanfiles = startsWith(string(arrayfun(@(x) x.name,files,'UniformOutput',false)),"CorrelationPlot-QUAD") | ...
+       ~isempty(regexp(string(arrayfun(@(x) x.name,files,'UniformOutput',false)),"CorrelationPlot-LI%d%d:QUAD", 'once')) | ...
+       startsWith(string(arrayfun(@(x) x.name,files,'UniformOutput',false)),"Emittance-scan") ;
       if any(qscanfiles)
         [~,latestfile]=max(datenum({files(qscanfiles).date}));
         ifile=find(qscanfiles); ifile=ifile(latestfile);
@@ -246,22 +252,49 @@ classdef F2_MatchingApp < handle & F2_common
       dd = dir(fullfile(pn,fn));
       obj.ModelDate = datevec(dd.datenum) ;
       dat = load(fullfile(pn,fn));
-      if isfield(dat.data,'profPV')
+      if startsWith(string(fn),'Emittance') % data from emittance_gui?
+        iscorplot=false;
+      else % data from corr plot
+        iscorplot=true;
+      end
+      if iscorplot
         xpv = find(endsWith(string(arrayfun(@(x) x.name,dat.data.profPV(:,1),'UniformOutput',false)),"XRMS"),1) ;
         obj.ProfName = string(regexprep(dat.data.profPV(xpv).name,':XRMS$','')) ; % also updates model
-        obj.QuadScanData.ProfInd = find(LM_all.ControlNames==obj.ProfName,1) ;
+        obj.QuadScanData.QuadName = string(regexprep(dat.data.ctrlPV(1).name,'(:BCTRL)|(:BDES)$','')) ;
       else
-        error('No profile monitor data found');
+        obj.ProfName = string(dat.data.name{1}) ;
+        obj.QuadScanData.QuadName = string(dat.data.quadName) ;
       end
-      obj.QuadScanData.QuadName = string(regexprep(dat.data.ctrlPV(1).name,'(:BCTRL)|(:BDES)$','')) ;
-      stat = logical([dat.data.status]) ;
-      obj.QuadScanData.QuadVal = [dat.data.ctrlPV(stat).val] ;
+      obj.QuadScanData.ProfInd = find(LM_all.ControlNames==obj.ProfName,1) ;
+      if iscorplot
+        stat = logical([dat.data.status]) ;
+      else
+        stat = logical([dat.data.use]) ;
+      end
+      if iscorplot
+        obj.QuadScanData.QuadVal = [dat.data.ctrlPV(stat).val] ;
+      else
+        obj.QuadScanData.QuadVal = dat.data.quadVal(stat) ;
+      end
       obj.QuadScanData.nscan = sum(stat) ;
       fitm=["Gaussian" "Asymmetric"];
-      sz=size(dat.data.beam);
+      if iscorplot
+        sz=size(dat.data.beam);
+      else
+        sz=size(dat.data.beamList) ;
+      end
       for ii=1:2
-        xdat=reshape([dat.data.beam(:,:,ii).xStat],5,length(stat),sz(2));
-        ydat=reshape([dat.data.beam(:,:,ii).yStat],5,length(stat),sz(2));
+        if iscorplot
+          xdat = reshape([dat.data.beam(stat,:,ii).xStat],5,sum(stat),sz(2)) ;
+          ydat = reshape([dat.data.beam(stat,:,ii).yStat],5,sum(stat),sz(2)) ;
+          xerr = reshape([dat.data.beam(stat,:,ii).xStatStd],5,sum(stat),sz(2)) ;
+          yerr = reshape([dat.data.beam(stat,:,ii).yStatStd],5,sum(stat),sz(2)) ;
+        else
+          xdat = reshape([dat.data.beamList(stat,:,ii).xStat],5,sum(stat),sz(2)) ;
+          ydat = reshape([dat.data.beamList(stat,:,ii).yStat],5,sum(stat),sz(2)) ;
+          xerr = reshape([dat.data.beamList(stat,:,ii).xStatStd],5,sum(stat),sz(2)) ;
+          yerr = reshape([dat.data.beamList(stat,:,ii).yStatStd],5,sum(stat),sz(2)) ;
+        end
         if sz(2)>1
           xdat_err=std(squeeze(xdat(3,:,:)),[],2);
           xdat=mean(squeeze(xdat(3,:,:)),2);
@@ -269,10 +302,8 @@ classdef F2_MatchingApp < handle & F2_common
           ydat=mean(squeeze(ydat(3,:,:)),2);
         else
           xdat=squeeze(xdat(3,:,:));
-          xerr=reshape([dat.data.beam(:,:,ii).xStatStd],5,length(stat),sz(2));
           xdat_err=squeeze(xerr(3,:,:));
           ydat=squeeze(ydat(3,:,:));
-          yerr=reshape([dat.data.beam(:,:,ii).yStatStd],5,length(stat),sz(2));
           ydat_err=squeeze(yerr(3,:,:));
         end
         obj.QuadScanData.x.(fitm(ii)) = xdat ;
@@ -345,10 +376,11 @@ classdef F2_MatchingApp < handle & F2_common
       qele = LM_mags.ModelUniqueID(qid);
       ips = BEAMLINE{qele}.PS;
       ps0 = PS(ips).Ampl;
-      x = obj.QuadScanData.x.(obj.ProfFitMethod).*1e-6 ;
-      xerr = obj.QuadScanData.xerr.(obj.ProfFitMethod).*1e-6 ;
-      y = obj.QuadScanData.y.(obj.ProfFitMethod).*1e-6 ;
-      yerr = obj.QuadScanData.yerr.(obj.ProfFitMethod).*1e-6 ;
+      k = obj.quadscan_k ;
+      x = obj.QuadScanData.x.(obj.ProfFitMethod).*1e-6 ; 
+      xerr = obj.QuadScanData.xerr.(obj.ProfFitMethod).*1e-6 ; 
+      y = obj.QuadScanData.y.(obj.ProfFitMethod).*1e-6 ; 
+      yerr = obj.QuadScanData.yerr.(obj.ProfFitMethod).*1e-6 ; 
       rgamma = LM_mags.ModelP(qid)/0.511e-3;
       
       % Get Twiss at profile device using Model (RmatAtoB)
@@ -396,7 +428,6 @@ classdef F2_MatchingApp < handle & F2_common
       % Twiss parameters using analytic approach
       %https://indico.cern.ch/event/703517/contributions/2886144/attachments/1602810/2541739/2018-02-19_Emittance_measurement_with_quadrupole_scan.pdf
       PS(ips).Ampl=0;
-      k = obj.quadscan_k ;
       qx=noplot_polyfit(-k,x.^2,2.*x.*xerr,2);
       qy=noplot_polyfit(k,y.^2,2.*y.*yerr,2);
       % sigma matrix at (thin) quad entrance
@@ -467,10 +498,10 @@ classdef F2_MatchingApp < handle & F2_common
         return
       end
       k = obj.quadscan_k ;
-      x = obj.QuadScanData.x.(obj.ProfFitMethod) ;
-      xerr = obj.QuadScanData.xerr.(obj.ProfFitMethod) ;
-      y = obj.QuadScanData.y.(obj.ProfFitMethod) ;
-      yerr = obj.QuadScanData.yerr.(obj.ProfFitMethod) ;
+      x = obj.QuadScanData.x.(obj.ProfFitMethod) ; 
+      xerr = obj.QuadScanData.xerr.(obj.ProfFitMethod) ; 
+      y = obj.QuadScanData.y.(obj.ProfFitMethod) ; 
+      yerr = obj.QuadScanData.yerr.(obj.ProfFitMethod) ; 
       if isempty(obj.guihan)
         figure;
         ah1=subplot(2,1,1);
@@ -595,20 +626,20 @@ classdef F2_MatchingApp < handle & F2_common
       Z = arrayfun(@(x) BEAMLINE{x}.Coordi(3),obj.MatchQuadModelInd) ;
       E = arrayfun(@(x) BEAMLINE{x}.P,obj.MatchQuadModelInd) ;
       obj.LM.ModelClasses="QUAD";
-      bdes = obj.LiveModel.LEM.Mags.LM.ModelBDES(obj.MatchQuadID) ;
+      bdes = obj.LiveModel.LEM.Mags.LM.ModelBDES(ismember(obj.LiveModel.LEM.Mags.LM.ModelUniqueID,obj.MatchQuadModelInd)) ;
       if obj.ModelSource~="Design"
         bact = bdes ;
       else
-        bact = obj.LiveModel.LEM.Mags.BDES_cntrl(obj.MatchQuadID) ;
+        bact = obj.LiveModel.LEM.Mags.BDES_cntrl(ismember(obj.LiveModel.LEM.Mags.LM.ModelUniqueID,obj.MatchQuadModelInd)) ;
       end
+      bmatch = nan(size(bdes)) ;
       if isfield(obj.QuadScanData,'quadmatch')
-        bmatch = obj.QuadScanData.quadmatch ;
-      else
-        bmatch = nan(size(bdes)) ;
+        bmatch(obj.UseMatchQuad) = obj.QuadScanData.quadmatch ;
       end
       b_design = arrayfun(@(x) obj.LiveModel.LM.DesignBeamline{x}.B*20,obj.MatchQuadModelInd) ;
-      tab=table(obj.MatchQuadNames(:),string(num2str(Z(:),6)),E(:),bdes(:),bact(:),bmatch(:),b_design(:));
-      tab.Properties.VariableNames=["Name";"Z";"E (GeV)";"BDES";"BACT";"BMATCH";"B_DESIGN"];
+      usequad = obj.UseMatchQuad ;
+      tab=table(obj.MatchQuadNames(:),string(num2str(Z(:),6)),E(:),bdes(:),bact(:),bmatch(:),b_design(:),usequad(:));
+      tab.Properties.VariableNames=["Name";"Z";"E (GeV)";"BDES";"BACT";"BMATCH";"B_DESIGN";"USE"];
     end
     % Get/Set
     function twiss=get.TwissFit(obj)
@@ -699,6 +730,7 @@ classdef F2_MatchingApp < handle & F2_common
       obj.MatchQuadNames = obj.LM.ControlNames(idq) ;
       obj.MatchQuadModelInd = obj.LM.ModelUniqueID(idq) ;
       obj.MatchQuadID = idq ;
+      obj.UseMatchQuad = true(1,length(obj.MatchQuadNames)) ;
     end
   end
   methods(Static,Hidden)

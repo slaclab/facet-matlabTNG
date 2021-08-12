@@ -55,7 +55,7 @@ classdef F2_Matching_exported < matlab.apps.AppBase
     DoMatchingButton                matlab.ui.control.Button
     SetMatchingQuadsButton          matlab.ui.control.Button
     GetQuadScanDataandfitTwissPanel  matlab.ui.container.Panel
-    GetDatafromCorrPlotButton       matlab.ui.control.Button
+    GetDatafromCorrPlotorEmitGUIButton  matlab.ui.control.Button
     UseXDataButton                  matlab.ui.control.StateButton
     UseYDataButton                  matlab.ui.control.StateButton
     UndoButton                      matlab.ui.control.Button
@@ -88,7 +88,7 @@ classdef F2_Matching_exported < matlab.apps.AppBase
     function startupFcn(app)
       app.message("Loading and initializing model...");
       app.DropDown.Enable=false;
-      app.GetDatafromCorrPlotButton.Enable=false;
+      app.GetDatafromCorrPlotorEmitGUIButton.Enable=false;
       app.DoMatchingButton.Enable=false;
       drawnow
       try
@@ -98,7 +98,7 @@ classdef F2_Matching_exported < matlab.apps.AppBase
         return
       end
       app.DropDown.Enable=true;
-      app.GetDatafromCorrPlotButton.Enable=true;
+      app.GetDatafromCorrPlotorEmitGUIButton.Enable=true;
       app.DoMatchingButton.Enable=true;
       app.DropDownValueChanged ; % populates table
       app.message(["Loading and initializing model...","Done."]);
@@ -123,6 +123,8 @@ classdef F2_Matching_exported < matlab.apps.AppBase
       app.message(["Processing new profile monitor data...";"Done."]);
       tab = app.aobj.MagnetTable ;
       app.UITable.Data = tab ; app.UITable.ColumnName=tab.Properties.VariableNames;
+      doedit = false(1,length(tab.Properties.VariableNames)); doedit(end)=true;
+      app.UITable.ColumnEditable=doedit; 
       tab = app.aobj.TwissTable ;
       app.UITable2.Data = tab ; app.UITable2.ColumnName=tab.Properties.VariableNames;
       app.TabGroupSelectionChanged;
@@ -139,8 +141,8 @@ classdef F2_Matching_exported < matlab.apps.AppBase
       end
     end
 
-    % Button pushed function: GetDatafromCorrPlotButton
-    function GetDatafromCorrPlotButtonPushed(app, event)
+    % Button pushed function: GetDatafromCorrPlotorEmitGUIButton
+    function GetDatafromCorrPlotorEmitGUIButtonPushed(app, event)
       app.message("Requesting data transfer from Correlation Plot Software...");
       drawnow
       try
@@ -213,6 +215,7 @@ classdef F2_Matching_exported < matlab.apps.AppBase
     function DoMatchingButtonPushed(app, event)
       app.message("Running matching job, see matlab window for details...");
       drawnow
+      app.aobj.UseMatchQuad = app.UITable.Data{:,end} ;
       try
         app.aobj.DoMatch;
       catch ME
@@ -411,6 +414,7 @@ classdef F2_Matching_exported < matlab.apps.AppBase
       app.UITable = uitable(app.MagnetsTab);
       app.UITable.ColumnName = {'Column 1'; 'Column 2'; 'Column 3'; 'Column 4'};
       app.UITable.RowName = {};
+      app.UITable.Interruptible = 'off';
       app.UITable.Position = [4 8 744 439];
 
       % Create QuadScanFitTab
@@ -672,12 +676,12 @@ classdef F2_Matching_exported < matlab.apps.AppBase
       app.GetQuadScanDataandfitTwissPanel.Title = 'Get Quad Scan Data and fit Twiss';
       app.GetQuadScanDataandfitTwissPanel.Position = [11 377 238 98];
 
-      % Create GetDatafromCorrPlotButton
-      app.GetDatafromCorrPlotButton = uibutton(app.GetQuadScanDataandfitTwissPanel, 'push');
-      app.GetDatafromCorrPlotButton.ButtonPushedFcn = createCallbackFcn(app, @GetDatafromCorrPlotButtonPushed, true);
-      app.GetDatafromCorrPlotButton.Interruptible = 'off';
-      app.GetDatafromCorrPlotButton.Position = [14 39 210 31];
-      app.GetDatafromCorrPlotButton.Text = 'Get Data from Corr Plot';
+      % Create GetDatafromCorrPlotorEmitGUIButton
+      app.GetDatafromCorrPlotorEmitGUIButton = uibutton(app.GetQuadScanDataandfitTwissPanel, 'push');
+      app.GetDatafromCorrPlotorEmitGUIButton.ButtonPushedFcn = createCallbackFcn(app, @GetDatafromCorrPlotorEmitGUIButtonPushed, true);
+      app.GetDatafromCorrPlotorEmitGUIButton.Interruptible = 'off';
+      app.GetDatafromCorrPlotorEmitGUIButton.Position = [14 39 210 31];
+      app.GetDatafromCorrPlotorEmitGUIButton.Text = 'Get Data from Corr Plot or Emit GUI';
 
       % Create UseXDataButton
       app.UseXDataButton = uibutton(app.GetQuadScanDataandfitTwissPanel, 'state');
