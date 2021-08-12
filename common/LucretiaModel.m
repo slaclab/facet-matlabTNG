@@ -110,7 +110,7 @@ classdef LucretiaModel < handle & matlab.mixin.Copyable
       if isempty(BEAMLINE) || ismember("All",cstr)
         return
       end
-      if ~all(ismember(cstr,["QUAD","SBEN","SEXT","XCOR","YCOR","DRIF","MULT","LCAV","TCAV","MARK","PROF","INSTR","MONI"]))
+      if ~all(ismember(cstr,["QUAD","SBEN","SEXT","XCOR","YCOR","DRIF","MULT","LCAV","TCAV","MARK","PROF","INSTR","MONI","SOLENOID"]))
         error('Bad BEAMLINE Class provided');
       end
       for iclass=1:length(cstr)

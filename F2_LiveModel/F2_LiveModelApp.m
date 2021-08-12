@@ -22,8 +22,6 @@ classdef F2_LiveModelApp < handle & F2_common
     Initial_alphayPV = "SIOC:SYS1:ML01:AO404"
     Initial_emitxPV = "PROF:IN10:571:EMITN_X"
     Initial_emityPV = "PROF:IN10:571:EMITN_Y"
-    SolPV = 'SOLN:IN10:121:BDES'
-    BkSolPV = 'SOLN:IN10:111:BDES'
   end
   methods
     function obj = F2_LiveModelApp
@@ -44,19 +42,6 @@ classdef F2_LiveModelApp < handle & F2_common
       if obj.ModelSource~="Design"
         obj.LEM=F2_LEMApp; % Makes LEM object and reads in live model
         obj.LEM.Mags.ReadB(true); % sets extant magnet strengths into model
-      end
-      % Update source solenoid
-      obj.InjSolInd = findcells(BEAMLINE,'Name','SOL10121');
-      obj.InjSolBkInd = findcells(BEAMLINE,'Name','SOL10111');
-      lcaSetMonitor(obj.SolPV) ;
-      lcaSetMonitor(obj.BkSolPV) ;
-      bdes = lcaGet(obj.SolPV) / 10 ;
-      for iele=obj.InjSolInd
-        BEAMLINE{iele}.B = bdes / length(obj.InjSolInd) ;
-      end
-      bdes = lcaGet(obj.BkSolPV) / 10 ;
-      for iele=obj.InjSolBkInd
-        BEAMLINE{iele}.B = bdes / length(obj.InjSolBkInd) ;
       end
     end
     function set.ModelSource(obj,src)
@@ -91,19 +76,6 @@ classdef F2_LiveModelApp < handle & F2_common
       obj.LEM.ArchiveDate = obj.ArchiveDate ;
       obj.LEM.UpdateModel; % Updates Klystron and momentum profile data and scales magnets in model (with Arcived Klystron data if requested)
       obj.LEM.Mags.ReadB(true); % sets back extant or Archive magnet strengths into model
-      % Update solenoid field if changed
-      if lcaNewMonitorValue(obj.SolPV)
-        bdes = lcaGet(obj.SolPV) / 10 ;
-        for iele=obj.InjSolInd
-          BEAMLINE{iele}.B = bdes / length(obj.InjSolInd) ;
-        end
-      end
-      if lcaNewMonitorValue(obj.BkSolPV)
-        bdes = lcaGet(obj.BkSolPV) / 10 ;
-        for iele=obj.InjSolBkInd
-          BEAMLINE{iele}.B = bdes / length(obj.InjSolBkInd) ;
-        end
-      end
       fprintf('Done.');
     end
     function WriteModel(obj,fname)
