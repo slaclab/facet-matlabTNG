@@ -200,12 +200,15 @@ classdef F2_DAQ_exported < matlab.apps.AppBase
                 case '1D Scan'
                     set(app.FirstDimensionPanel.Children,'Enable','On');
                     set(app.SecondDimensionPanel.Children,'Enable','Off');
-                    app.aobj.scanFuncSelected(value);
+                    scanVal = app.ScanfunctionDropDown.Value;
+                    app.aobj.scanFuncSelected(scanVal);
                 case '2D Scan'
                     set(app.FirstDimensionPanel.Children,'Enable','On');
                     set(app.SecondDimensionPanel.Children,'Enable','On');
-                    app.aobj.scanFuncSelected(value);
-                    app.aobj.scanFuncSelected_2(value);
+                    scanVal = app.ScanfunctionDropDown.Value;
+                    app.aobj.scanFuncSelected(scanVal);
+                    scanVal_2 = app.ScanfunctionDropDown_2.Value;
+                    app.aobj.scanFuncSelected_2(scanVal_2);
             end
             
         end
@@ -536,7 +539,7 @@ classdef F2_DAQ_exported < matlab.apps.AppBase
             app.ScanfunctionDropDown.Items = {'Use PV', 'Function 1', 'Function 2', 'Function 3'};
             app.ScanfunctionDropDown.ValueChangedFcn = createCallbackFcn(app, @ScanfunctionDropDownValueChanged, true);
             app.ScanfunctionDropDown.Enable = 'off';
-            app.ScanfunctionDropDown.Tooltip = {'Slow scan param'};
+            app.ScanfunctionDropDown.Tooltip = {'Fast scan param'};
             app.ScanfunctionDropDown.Position = [9 246 169 22];
             app.ScanfunctionDropDown.Value = 'Use PV';
 
@@ -633,7 +636,7 @@ classdef F2_DAQ_exported < matlab.apps.AppBase
             app.ScanfunctionDropDown_2.Items = {'Use PV', 'Function 1', 'Function 2', 'Function 3'};
             app.ScanfunctionDropDown_2.ValueChangedFcn = createCallbackFcn(app, @ScanfunctionDropDown_2ValueChanged, true);
             app.ScanfunctionDropDown_2.Enable = 'off';
-            app.ScanfunctionDropDown_2.Tooltip = {'Fast scan param'};
+            app.ScanfunctionDropDown_2.Tooltip = {'Slow scan param'};
             app.ScanfunctionDropDown_2.Position = [9 246 169 22];
             app.ScanfunctionDropDown_2.Value = 'Use PV';
 
