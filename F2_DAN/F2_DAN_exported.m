@@ -1,4 +1,4 @@
-classdef GUI_v1_exported < matlab.apps.AppBase
+classdef F2_DAN_exported < matlab.apps.AppBase
 
     % Properties that correspond to app components
     properties (Access = public)
@@ -736,7 +736,7 @@ classdef GUI_v1_exported < matlab.apps.AppBase
     methods (Access = public)
 
         % Construct app
-        function app = GUI_v1_exported
+        function app = F2_DAN_exported
 
             % Create UIFigure and components
             createComponents(app)
