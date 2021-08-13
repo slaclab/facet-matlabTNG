@@ -284,7 +284,8 @@ classdef F2_DAN_exported < matlab.apps.AppBase
             
             uiAxGoodParams = rmfield(uiAxParams, badFields);
             set(newAx, uiAxGoodParams);
-            print(fh, '-dpsc2', ['-P','physics-facetlog']);
+            
+            %print(fh, '-dpsc2', ['-P','physics-facetlog']);
 %             opts.title = 'DAN picture';
 %             opts.author = 'Matlab';
 %             opts.text = '';
