@@ -541,15 +541,30 @@ classdef F2_runDAQ < handle
             end
             
             for i = 1:nBG
+                %bg_ims = lcaGetSmart(obj.daq_pvs.Image_ArrayData);
+                %max_size = max(size(bg_ims));
                 im_array = lcaGetSmart(obj.daq_pvs.Image_ArrayData);
                 im_check = sum(im_array,2);
                 bad_ims = isnan(im_check) | im_check==0;
                 if any(bad_ims)
-                    im_array(bad_ims,:) = lcaGetSmart(obj.daq_pvs.Image_ArrayData(bad_ims));
+                    also_bg_ims = lcaGetSmart(obj.daq_pvs.Image_ArrayData(bad_ims));
+                    max_size = max(size(also_bg_ims));
+                    %im_array(bad_ims,1:max_size) = lcaGetSmart(obj.daq_pvs.Image_ArrayData(bad_ims));
+                    im_array(bad_ims,1:max_size) = also_bg_ims;
                     im_check = sum(im_array,2);
                     bad_ims = isnan(im_check) | im_check==0;
+                    
+                    % doing this again. seems dumb
                     if any(bad_ims)
-                        obj.dispMessage('Warning: could not get background images.');
+                        also_bg_ims = lcaGetSmart(obj.daq_pvs.Image_ArrayData(bad_ims));
+                        max_size = max(size(also_bg_ims));
+                        im_array(bad_ims,1:max_size) = also_bg_ims;
+                        im_check = sum(im_array,2);
+                        bad_ims = isnan(im_check) | im_check==0;
+                    
+                        if any(bad_ims)
+                            obj.dispMessage('Warning: could not get background images.');
+                        end
                     end
                 end
                 BGs(:,1:max(size(im_array)),i) = im_array;
