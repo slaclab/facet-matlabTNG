@@ -53,6 +53,11 @@ classdef scanFunc_QUAD_IN10_525
             
         end
         
+        function restoreInitValue(obj)
+            obj.daqhandle.dispMessage('Restoring initial value');
+            obj.set_value(obj.initial_control);
+        end
+        
     end
     
 end

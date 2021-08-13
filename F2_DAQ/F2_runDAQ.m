@@ -263,6 +263,14 @@ classdef F2_runDAQ < handle
         
         function end_scan(obj)
             
+            if obj.params.scanDim > 0
+                
+                for j = 1:obj.params.scanDim
+                    obj.scanFunctions.(obj.params.scanFuncs{j}).restoreInitValue();
+                end
+                
+            end
+            
             obj.dispMessage('Comparing pulse IDs.');
             obj.compareUIDs();
             
