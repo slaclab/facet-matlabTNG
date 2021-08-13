@@ -27,18 +27,19 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
     lsqlinButton                 matlab.ui.control.RadioButton
     PlotModelFitButton_2         matlab.ui.control.StateButton
     UndoCorrectionButton         matlab.ui.control.Button
+    UIAxes_3                     matlab.ui.control.UIAxes
     CorrectorsTab                matlab.ui.container.Tab
     GridLayout2                  matlab.ui.container.GridLayout
     UIAxes2                      matlab.ui.control.UIAxes
     UIAxes3                      matlab.ui.control.UIAxes
     DispersionTab                matlab.ui.container.Tab
     UIAxes5                      matlab.ui.control.UIAxes
-    DoDispCalcButton             matlab.ui.control.Button
     UIAxes5_2                    matlab.ui.control.UIAxes
     SumDispersionPanel           matlab.ui.container.Panel
     EditField                    matlab.ui.control.NumericEditField
     EditField_2                  matlab.ui.control.NumericEditField
     PlotModelFitButton           matlab.ui.control.StateButton
+    UIAxes5_3                    matlab.ui.control.UIAxes
     MIATab                       matlab.ui.container.Tab
     UIAxes6                      matlab.ui.control.UIAxes
     PlotOptionPanel              matlab.ui.container.Panel
@@ -309,7 +310,7 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
       app.DoCorrectionButton.Enable=false;
     end
 
-    % Button pushed function: DoDispCalcButton
+    % Callback function
     function DoDispCalcButtonPushed(app, event)
       app.DoDispCalcButton.Enable=false;
       drawnow
@@ -457,7 +458,7 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
       title(app.UIAxes, {''; ''})
       xlabel(app.UIAxes, 'X')
       ylabel(app.UIAxes, 'Y')
-      app.UIAxes.Position = [6 278 684 281];
+      app.UIAxes.Position = [6 222 684 220];
 
       % Create CalcCorrectionButton
       app.CalcCorrectionButton = uibutton(app.OrbitTab, 'push');
@@ -493,7 +494,7 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
       title(app.UIAxes_2, {''; ''})
       xlabel(app.UIAxes_2, 'X')
       ylabel(app.UIAxes_2, 'Y')
-      app.UIAxes_2.Position = [6 1 684 277];
+      app.UIAxes_2.Position = [6 3 684 220];
 
       % Create CorrectionSolverButtonGroup
       app.CorrectionSolverButtonGroup = uibuttongroup(app.OrbitTab);
@@ -558,6 +559,13 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
       app.UndoCorrectionButton.Position = [711.5 346 105 29];
       app.UndoCorrectionButton.Text = 'Undo Correction';
 
+      % Create UIAxes_3
+      app.UIAxes_3 = uiaxes(app.OrbitTab);
+      title(app.UIAxes_3, {''; ''})
+      xlabel(app.UIAxes_3, 'X')
+      ylabel(app.UIAxes_3, 'Y')
+      app.UIAxes_3.Position = [52 439 638 119];
+
       % Create CorrectorsTab
       app.CorrectorsTab = uitab(app.TabGroup);
       app.CorrectorsTab.Title = 'Correctors';
@@ -591,25 +599,19 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
       title(app.UIAxes5, '')
       xlabel(app.UIAxes5, 'X')
       ylabel(app.UIAxes5, 'Y')
-      app.UIAxes5.Position = [3 279 687 279];
-
-      % Create DoDispCalcButton
-      app.DoDispCalcButton = uibutton(app.DispersionTab, 'push');
-      app.DoDispCalcButton.ButtonPushedFcn = createCallbackFcn(app, @DoDispCalcButtonPushed, true);
-      app.DoDispCalcButton.Position = [704 507 117 23];
-      app.DoDispCalcButton.Text = 'Do Disp Calc';
+      app.UIAxes5.Position = [3 227 687 220];
 
       % Create UIAxes5_2
       app.UIAxes5_2 = uiaxes(app.DispersionTab);
       title(app.UIAxes5_2, '')
       xlabel(app.UIAxes5_2, 'X')
       ylabel(app.UIAxes5_2, 'Y')
-      app.UIAxes5_2.Position = [3 5 687 267];
+      app.UIAxes5_2.Position = [3 4 687 220];
 
       % Create SumDispersionPanel
       app.SumDispersionPanel = uipanel(app.DispersionTab);
       app.SumDispersionPanel.Title = 'Sum Dispersion';
-      app.SumDispersionPanel.Position = [702 396 122 100];
+      app.SumDispersionPanel.Position = [701 432 122 100];
 
       % Create EditField
       app.EditField = uieditfield(app.SumDispersionPanel, 'numeric');
@@ -625,7 +627,14 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
       app.PlotModelFitButton = uibutton(app.DispersionTab, 'state');
       app.PlotModelFitButton.ValueChangedFcn = createCallbackFcn(app, @PlotModelFitButtonValueChanged, true);
       app.PlotModelFitButton.Text = 'Plot Model Fit';
-      app.PlotModelFitButton.Position = [704 341 118 43];
+      app.PlotModelFitButton.Position = [703 377 118 43];
+
+      % Create UIAxes5_3
+      app.UIAxes5_3 = uiaxes(app.DispersionTab);
+      title(app.UIAxes5_3, '')
+      xlabel(app.UIAxes5_3, 'X')
+      ylabel(app.UIAxes5_3, 'Y')
+      app.UIAxes5_3.Position = [47 454 644 104];
 
       % Create MIATab
       app.MIATab = uitab(app.TabGroup);

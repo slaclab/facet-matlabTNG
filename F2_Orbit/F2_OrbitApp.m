@@ -152,6 +152,7 @@ classdef F2_OrbitApp < handle & F2_common
       obj.cordat_y.theta=yv;
       obj.cordat_y.thetamax=yvmax;
       obj.calcperformed=false;
+      obj.DispData=[];
     end
     function corcalc(obj)
       %CORCALC Calculate orbit correction and store calculation values
@@ -356,42 +357,34 @@ classdef F2_OrbitApp < handle & F2_common
     function dispdat = svddisp(obj)
       global BEAMLINE
       % Get energy
-      id = find(ismember(obj.BPMS.names,obj.ebpms)) ;
-      ide = ismember(obj.ebpms,obj.BPMS.names);
-      if isempty(id) || ~any(ide)
-        error('No energy BPMs found in data');
+      id = find(ismember(obj.BPMS.names,obj.ebpms)&ismember(obj.BPMS.names,obj.bpmnames(obj.usebpm))) ;
+      if isempty(id)
+        error('BPM selection doesn''t include and energy BPM');
       end
-      dp = obj.BPMS.xdat(id,:) ./ obj.ebpms_disp(ide)' ; % dP/P @ energy BPMS
-      dispx=nan(1,length(obj.BPMS.names)); dispy=dispx; dispx_err=dispx; dispy_err=dispx;
-      for iebpm=1:length(id)
-        dat = obj.svdresponse(1,id(iebpm),10) ; % reconstituted BPM readings using mode most responsive to energy BPM
-        if iebpm==length(id)
-          id1=find(obj.BPMS.readid>=id(iebpm),1);
-          id2=length(obj.BPMS.readid);
-        else
-          id1=find(obj.BPMS.readid>=id(iebpm),1);
-          id2=find(obj.BPMS.readid<id(iebpm+1),1,'last');
-        end
-        id0=id1;
-        while id0<=id2
-          dp0=dp(iebpm,:) .* BEAMLINE{obj.BPMS.readid(id(iebpm))}.P / BEAMLINE{obj.BPMS.readid(id0)}.P; % assumed dP/P @ BPM location
-          gid = ~isnan(obj.BPMS.xdat(id0,:)) ;
-          [q,dq] = noplot_polyfit(dp0(gid),dat.xdat(id0,gid),1,1) ;
-          dispx(id0) = q(2) ;
-          dispx_err(id0) = dq(2) ;
-          gid = ~isnan(obj.BPMS.ydat(id0,:)) ;
-          [q,dq] = noplot_polyfit(dp0(gid),dat.ydat(id0,gid),1,1) ;
-          dispy(id0) = q(2) ;
-          dispy_err(id0) = dq(2) ;
-          id0=id0+1;
-        end
+      ide = id(end) ;
+      dispx=nan(1,sum(obj.usebpm)); dispy=dispx; dispx_err=dispx; dispy_err=dispx;
+      dat = obj.svdresponse(1,ide,10) ; % reconstituted BPM readings using mode most responsive to energy BPM
+      xe = dat.xdat(ide,:) ;
+      disp = obj.ebpms_disp(ismember(obj.ebpms,obj.BPMS.names(ide)))' ;
+      dp =  xe./disp  ; % dP/P @ energy BPMS
+      nbpm=find(ismember(obj.BPMS.names,obj.bpmnames(obj.usebpm)));
+      for ibpm=1:length(nbpm)
+        dp0=dp .* BEAMLINE{obj.BPMS.readid(ide)}.P / BEAMLINE{obj.BPMS.readid(nbpm(ibpm))}.P; % assumed dP/P @ BPM location
+        gid = ~isnan(obj.BPMS.xdat(nbpm(ibpm),:)) ;
+        [q,dq] = noplot_polyfit(dp0(gid),dat.xdat(nbpm(ibpm),gid),1,1) ;
+        dispx(ibpm) = q(2) ;
+        dispx_err(ibpm) = dq(2) ;
+        gid = ~isnan(obj.BPMS.ydat(nbpm(ibpm),:)) ;
+        [q,dq] = noplot_polyfit(dp0(gid),dat.ydat(nbpm(ibpm),gid),1,1) ;
+        dispy(ibpm) = q(2) ;
+        dispy_err(ibpm) = dq(2) ;
       end
-      dispdat.ebpm=id;
+      dispdat.ebpm=ide;
+      dispdat.usebpm=obj.usebpm;
       dispdat.x=dispx;
       dispdat.xerr=dispx_err;
       dispdat.y=dispy;
       dispdat.yerr=dispy_err;
-      dispdat.id=obj.BPMS.readid(~isnan(dispx));
       obj.DispData = dispdat ;
     end
     function res = svdcorr(obj,corvec,nmode)
@@ -489,7 +482,7 @@ classdef F2_OrbitApp < handle & F2_common
       S=zeros(size(Sy)); S(iymode,iymode)=Sy(iymode,iymode); 
       res.ydat = Uy * S * Vty' ; res.ydat=res.ydat';
       if dim==1
-        res.ydat=res.ydat(1:end-1);
+        res.ydat=res.ydat(1:end-1,:);
       end
       res.xmode=ixmode;
       res.ymode=iymode;
@@ -573,13 +566,15 @@ classdef F2_OrbitApp < handle & F2_common
         ahan(1)=subplot(2,1,1);
         ahan(2)=subplot(2,1,2);
       end
+      ahan(1).reset; ahan(2).reset;
       dd=obj.DispData;
-      id=obj.bpmid(obj.usebpm) ;
-      sel=ismember(dd.id,id);
+      id=obj.bpmid(dd.usebpm) ;
       z = arrayfun(@(x) BEAMLINE{x}.Coordi(3),id) ;
-      names = obj.BPMS.names(ismember(obj.bpmid,dd.id(sel))) ;
-      dispx = dd.x(sel) ; dispy = dd.y(sel);
-      dispx_err = dd.xerr(sel); dispy_err = dd.yerr(sel) ;
+      ddispx = obj.LiveModel.DesignTwiss.etax(id) ;
+      ddispy = obj.LiveModel.DesignTwiss.etay(id) ;
+      names = obj.bpmnames(dd.usebpm);
+      dispx = dd.x - ddispx.*1000 ; dispy = dd.y - ddispy.*1000 ; % subtract design dispersion to show dispersion error
+      dispx_err = dd.xerr; dispy_err = dd.yerr ;
       
       % Fit model dispersion response from first BPM in the selection
       if exist('domodelfit','var') && domodelfit
@@ -613,6 +608,15 @@ classdef F2_OrbitApp < handle & F2_common
         hold(ahan(2),'on');
         plot(ahan(2),z,obj.DispFit(length(dispx)+1:end));
         hold(ahan(2),'off');
+      end
+      ahan(1).XLim=[min(z) max(z)];
+      ahan(2).XLim=[min(z) max(z)];
+      % Plot magnet bar
+      if ~isempty(obj.aobj)
+        obj.aobj.UIAxes5_3.reset;
+        obj.aobj.UIAxes5_3.XLim=[min(z) max(z)];
+        ylabel(obj.aobj.UIAxes5_3,'\eta_x [mm]');
+        AddMagnetPlotZ(id(1),id(end),obj.aobj.UIAxes5_3,'replace');
       end
     end
     function plotmia(obj,nmode,cmd,ahan)
@@ -787,6 +791,7 @@ classdef F2_OrbitApp < handle & F2_common
         ahan(1)=subplot(2,1,1);
         ahan(2)=subplot(2,1,2);
       end
+      ahan(1).reset; ahan(2).reset;
       xm = mean(obj.BPMS.xdat,2,'omitnan') ; xm=xm(use);
       ym = mean(obj.BPMS.ydat,2,'omitnan') ; ym=ym(use);
       xstd = std(obj.BPMS.xdat,[],2,'omitnan') ; xstd=xstd(use);
@@ -855,6 +860,13 @@ classdef F2_OrbitApp < handle & F2_common
         hold(yax,'on');
         plot(yax,z,obj.XFit(1+length(xm):end));
         hold(yax,'off');
+      end
+      % Plot magnet bar
+      if ~isempty(obj.aobj)
+        obj.aobj.UIAxes_3.reset;
+        obj.aobj.UIAxes_3.XLim=[min(z) max(z)];
+        ylabel(obj.aobj.UIAxes_3,'X [mm]');
+        AddMagnetPlotZ(id(1),id(end),obj.aobj.UIAxes_3,'replace');
       end
     end
   end
