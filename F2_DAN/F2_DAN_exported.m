@@ -11,6 +11,7 @@ classdef F2_DAN_exported < matlab.apps.AppBase
         LoadDataSetButton             matlab.ui.control.Button
         DANlogTextAreaLabel           matlab.ui.control.Label
         DANlogTextArea                matlab.ui.control.TextArea
+        SubtractImageBackgroundCheckBox  matlab.ui.control.CheckBox
         dispImage                     matlab.ui.container.Panel
         ImageincrementEditFieldLabel  matlab.ui.control.Label
         ImageincrementEditField       matlab.ui.control.NumericEditField
@@ -25,7 +26,6 @@ classdef F2_DAN_exported < matlab.apps.AppBase
         WaittimesEditFieldLabel       matlab.ui.control.Label
         WaittimesEditField            matlab.ui.control.NumericEditField
         StopButton                    matlab.ui.control.Button
-        SubtractBackgroundCheckBox    matlab.ui.control.CheckBox
         correlationPlot               matlab.ui.container.Panel
         FACETScalarArray1Panel        matlab.ui.container.Panel
         ScalarDropDown_Corr1          matlab.ui.control.DropDown
@@ -72,6 +72,14 @@ classdef F2_DAN_exported < matlab.apps.AppBase
         MotivationIndicatorAirspeedIndicator  Aero.ui.control.AirspeedIndicator
         PrinttologbookButton          matlab.ui.control.Button
         BoostmotivationButton         matlab.ui.control.Button
+        CLimPanel                     matlab.ui.container.Panel
+        ColorbarMinEditFieldLabel     matlab.ui.control.Label
+        ColorbarMinEditField          matlab.ui.control.NumericEditField
+        ColorbarMaxEditFieldLabel     matlab.ui.control.Label
+        ColorbarMaxEditField          matlab.ui.control.NumericEditField
+        ColormapDropDownLabel         matlab.ui.control.Label
+        ColormapDropDown              matlab.ui.control.DropDown
+        LockCLimCheckBox              matlab.ui.control.CheckBox
     end
 
     
@@ -124,6 +132,14 @@ classdef F2_DAN_exported < matlab.apps.AppBase
                 error('Probably sent wrong switch to getFacetScalar')
             end
         end
+        
+        function UpdateCLim(app)
+            if ~app.LockCLimCheckBox.Value
+                app.ImageAxes.CLimMode = 'auto';
+            end
+            app.ColorbarMinEditField.Value = app.ImageAxes.CLim(1);
+            app.ColorbarMaxEditField.Value = app.ImageAxes.CLim(2);
+        end
     end
     
 
@@ -144,6 +160,9 @@ classdef F2_DAN_exported < matlab.apps.AppBase
             
             app.setDropDowns;
             
+            if ~app.DANobject.dataSet.backgrounds.getBG
+                set(app.SubtractImageBackgroundCheckBox,'Enable','Off')
+            end
 %           set(app.dispImage.Children,'Enable','On')
 %           set(app.correlationPlot.Children,'Enable','On')
         end
@@ -153,6 +172,8 @@ classdef F2_DAN_exported < matlab.apps.AppBase
             cameraName = app.CameraDropDown_DI.Value;
             imageNumber = app.ImagenumberEditField.Value;
             app.DANobject.visImage(cameraName, imageNumber);
+            
+            app.UpdateCLim();
         end
 
         % Value changed function: ImageincrementEditField
@@ -171,6 +192,7 @@ classdef F2_DAN_exported < matlab.apps.AppBase
             if app.DANobject.validShotNbr(imageNumber)
                 app.ImagenumberEditField.Value = imageNumber;
                 app.DANobject.visImage(cameraName, imageNumber);
+                app.UpdateCLim();
             else
                 disp('Next number out of range');
             end
@@ -186,6 +208,7 @@ classdef F2_DAN_exported < matlab.apps.AppBase
             if app.DANobject.validShotNbr(imageNumber)
                 app.ImagenumberEditField.Value = imageNumber;
                 app.DANobject.visImage(cameraName, imageNumber);
+                app.UpdateCLim();
             else
                 disp('Previous number out of range');
             end
@@ -313,7 +336,7 @@ classdef F2_DAN_exported < matlab.apps.AppBase
 
         % Button pushed function: BoostmotivationButton
         function BoostmotivationButtonPushed(app, event)
-            disp('If you think this will help you...');
+            disp("I'm sorry Dave, I'm afraid I can't do that.");
             
         end
 
@@ -333,11 +356,29 @@ classdef F2_DAN_exported < matlab.apps.AppBase
             end
         end
 
-        % Value changed function: SubtractBackgroundCheckBox
-        function SubtractBackgroundCheckBoxValueChanged(app, event)
-            value = app.SubtractBackgroundCheckBox.Value;
+        % Value changed function: SubtractImageBackgroundCheckBox
+        function SubtractImageBackgroundCheckBoxValueChanged(app, event)
+            value = app.SubtractImageBackgroundCheckBox.Value;
             
             app.DANobject.subtractBackground = value;
+        end
+
+        % Value changed function: ColorbarMaxEditField
+        function ColorbarMaxEditFieldValueChanged(app, event)
+            value = app.ColorbarMaxEditField.Value;
+            app.ImageAxes.CLim(2) = value;
+        end
+
+        % Value changed function: ColorbarMinEditField
+        function ColorbarMinEditFieldValueChanged(app, event)
+            value = app.ColorbarMinEditField.Value;
+            app.ImageAxes.CLim(1) = value;
+        end
+
+        % Value changed function: ColormapDropDown
+        function ColormapDropDownValueChanged(app, event)
+            value = app.ColormapDropDown.Value;
+            app.ImageAxes.Colormap = eval(value);
         end
     end
 
@@ -398,10 +439,16 @@ classdef F2_DAN_exported < matlab.apps.AppBase
             app.DANlogTextArea = uitextarea(app.dataSet);
             app.DANlogTextArea.Position = [11 12 298 219];
 
+            % Create SubtractImageBackgroundCheckBox
+            app.SubtractImageBackgroundCheckBox = uicheckbox(app.dataSet);
+            app.SubtractImageBackgroundCheckBox.ValueChangedFcn = createCallbackFcn(app, @SubtractImageBackgroundCheckBoxValueChanged, true);
+            app.SubtractImageBackgroundCheckBox.Text = {'Subtract Image '; 'Background'};
+            app.SubtractImageBackgroundCheckBox.Position = [187 251 107 30];
+
             % Create dispImage
             app.dispImage = uipanel(app.UIFigure);
             app.dispImage.Title = 'Image view';
-            app.dispImage.Position = [659 12 249 374];
+            app.dispImage.Position = [659 13 249 374];
 
             % Create ImageincrementEditFieldLabel
             app.ImageincrementEditFieldLabel = uilabel(app.dispImage);
@@ -481,12 +528,6 @@ classdef F2_DAN_exported < matlab.apps.AppBase
             app.StopButton.ButtonPushedFcn = createCallbackFcn(app, @StopButtonPushed, true);
             app.StopButton.Position = [85 35 100 23];
             app.StopButton.Text = 'Stop';
-
-            % Create SubtractBackgroundCheckBox
-            app.SubtractBackgroundCheckBox = uicheckbox(app.dispImage);
-            app.SubtractBackgroundCheckBox.ValueChangedFcn = createCallbackFcn(app, @SubtractBackgroundCheckBoxValueChanged, true);
-            app.SubtractBackgroundCheckBox.Text = 'Subtract Background';
-            app.SubtractBackgroundCheckBox.Position = [29 223 136 22];
 
             % Create correlationPlot
             app.correlationPlot = uipanel(app.UIFigure);
@@ -632,40 +673,40 @@ classdef F2_DAN_exported < matlab.apps.AppBase
             % Create WaterfallplotPanel
             app.WaterfallplotPanel = uipanel(app.UIFigure);
             app.WaterfallplotPanel.Title = 'Waterfall plot';
-            app.WaterfallplotPanel.Position = [363 8 281 379];
+            app.WaterfallplotPanel.Position = [363 15 281 372];
 
             % Create CameraDropDown_3Label
             app.CameraDropDown_3Label = uilabel(app.WaterfallplotPanel);
             app.CameraDropDown_3Label.HorizontalAlignment = 'right';
-            app.CameraDropDown_3Label.Position = [11 321 49 22];
+            app.CameraDropDown_3Label.Position = [11 314 49 22];
             app.CameraDropDown_3Label.Text = 'Camera';
 
             % Create CameraDropDown_WF
             app.CameraDropDown_WF = uidropdown(app.WaterfallplotPanel);
             app.CameraDropDown_WF.Items = {};
-            app.CameraDropDown_WF.Position = [75 321 100 22];
+            app.CameraDropDown_WF.Position = [75 314 100 22];
             app.CameraDropDown_WF.Value = {};
 
             % Create D21DFunctionEditField_WF
             app.D21DFunctionEditField_WF = uieditfield(app.WaterfallplotPanel, 'text');
-            app.D21DFunctionEditField_WF.Position = [11 261 255 24];
+            app.D21DFunctionEditField_WF.Position = [11 264 255 24];
             app.D21DFunctionEditField_WF.Value = '@(x)(sum(x)/max(sum(x)))';
 
             % Create PlotwaterfallButton
             app.PlotwaterfallButton = uibutton(app.WaterfallplotPanel, 'push');
             app.PlotwaterfallButton.ButtonPushedFcn = createCallbackFcn(app, @PlotwaterfallButtonPushed, true);
-            app.PlotwaterfallButton.Position = [70 206 143 42];
+            app.PlotwaterfallButton.Position = [70 212 143 42];
             app.PlotwaterfallButton.Text = 'Plot waterfall';
 
             % Create Dto1DFunctionLabel_WF
             app.Dto1DFunctionLabel_WF = uilabel(app.WaterfallplotPanel);
-            app.Dto1DFunctionLabel_WF.Position = [11 296 106 22];
+            app.Dto1DFunctionLabel_WF.Position = [11 289 106 22];
             app.Dto1DFunctionLabel_WF.Text = '2D to 1D Function:';
 
             % Create SortwaterfallplotPanel
             app.SortwaterfallplotPanel = uipanel(app.WaterfallplotPanel);
             app.SortwaterfallplotPanel.Title = 'Sort waterfall plot';
-            app.SortwaterfallplotPanel.Position = [11 8 260 186];
+            app.SortwaterfallplotPanel.Position = [12 15 260 186];
 
             % Create ScalarDropDown_WFS
             app.ScalarDropDown_WFS = uidropdown(app.SortwaterfallplotPanel);
@@ -725,26 +766,71 @@ classdef F2_DAN_exported < matlab.apps.AppBase
             % Create MotivationIndicatorAirspeedIndicatorLabel
             app.MotivationIndicatorAirspeedIndicatorLabel = uilabel(app.UIFigure);
             app.MotivationIndicatorAirspeedIndicatorLabel.HorizontalAlignment = 'center';
-            app.MotivationIndicatorAirspeedIndicatorLabel.Position = [934 11 111 22];
+            app.MotivationIndicatorAirspeedIndicatorLabel.Position = [921 9 111 22];
             app.MotivationIndicatorAirspeedIndicatorLabel.Text = 'Motivation Indicator';
 
             % Create MotivationIndicatorAirspeedIndicator
             app.MotivationIndicatorAirspeedIndicator = uiaeroairspeed(app.UIFigure);
-            app.MotivationIndicatorAirspeedIndicator.Position = [929 48 120 120];
+            app.MotivationIndicatorAirspeedIndicator.Position = [936 46 81 81];
             app.MotivationIndicatorAirspeedIndicator.Airspeed = 100;
 
             % Create PrinttologbookButton
             app.PrinttologbookButton = uibutton(app.UIFigure, 'push');
             app.PrinttologbookButton.ButtonPushedFcn = createCallbackFcn(app, @PrinttologbookButtonPushed, true);
             app.PrinttologbookButton.BackgroundColor = [0 1 0];
-            app.PrinttologbookButton.Position = [1100 235 66 80];
+            app.PrinttologbookButton.Position = [1052 16 129 128];
             app.PrinttologbookButton.Text = {'Print to '; 'logbook'};
 
             % Create BoostmotivationButton
             app.BoostmotivationButton = uibutton(app.UIFigure, 'push');
             app.BoostmotivationButton.ButtonPushedFcn = createCallbackFcn(app, @BoostmotivationButtonPushed, true);
-            app.BoostmotivationButton.Position = [1061 12 105 23];
+            app.BoostmotivationButton.Position = [924 142 105 23];
             app.BoostmotivationButton.Text = 'Boost motivation';
+
+            % Create CLimPanel
+            app.CLimPanel = uipanel(app.UIFigure);
+            app.CLimPanel.Title = 'CLim';
+            app.CLimPanel.Position = [921 231 260 156];
+
+            % Create ColorbarMinEditFieldLabel
+            app.ColorbarMinEditFieldLabel = uilabel(app.CLimPanel);
+            app.ColorbarMinEditFieldLabel.HorizontalAlignment = 'right';
+            app.ColorbarMinEditFieldLabel.Position = [26 37 76 22];
+            app.ColorbarMinEditFieldLabel.Text = 'Colorbar Min';
+
+            % Create ColorbarMinEditField
+            app.ColorbarMinEditField = uieditfield(app.CLimPanel, 'numeric');
+            app.ColorbarMinEditField.ValueChangedFcn = createCallbackFcn(app, @ColorbarMinEditFieldValueChanged, true);
+            app.ColorbarMinEditField.Position = [27 11 100 22];
+
+            % Create ColorbarMaxEditFieldLabel
+            app.ColorbarMaxEditFieldLabel = uilabel(app.CLimPanel);
+            app.ColorbarMaxEditFieldLabel.HorizontalAlignment = 'right';
+            app.ColorbarMaxEditFieldLabel.Position = [136 37 79 22];
+            app.ColorbarMaxEditFieldLabel.Text = 'Colorbar Max';
+
+            % Create ColorbarMaxEditField
+            app.ColorbarMaxEditField = uieditfield(app.CLimPanel, 'numeric');
+            app.ColorbarMaxEditField.ValueChangedFcn = createCallbackFcn(app, @ColorbarMaxEditFieldValueChanged, true);
+            app.ColorbarMaxEditField.Position = [137 11 100 22];
+
+            % Create ColormapDropDownLabel
+            app.ColormapDropDownLabel = uilabel(app.CLimPanel);
+            app.ColormapDropDownLabel.HorizontalAlignment = 'right';
+            app.ColormapDropDownLabel.Position = [136 104 59 22];
+            app.ColormapDropDownLabel.Text = 'Colormap';
+
+            % Create ColormapDropDown
+            app.ColormapDropDown = uidropdown(app.CLimPanel);
+            app.ColormapDropDown.Items = {'jet', 'gray', 'parula'};
+            app.ColormapDropDown.ValueChangedFcn = createCallbackFcn(app, @ColormapDropDownValueChanged, true);
+            app.ColormapDropDown.Position = [137 78 100 22];
+            app.ColormapDropDown.Value = 'jet';
+
+            % Create LockCLimCheckBox
+            app.LockCLimCheckBox = uicheckbox(app.CLimPanel);
+            app.LockCLimCheckBox.Text = 'Lock CLim';
+            app.LockCLimCheckBox.Position = [20 91 80 22];
 
             % Show the figure after all components are created
             app.UIFigure.Visible = 'on';
