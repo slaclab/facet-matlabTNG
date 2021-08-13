@@ -280,16 +280,34 @@ classdef F2_DAN_exported < matlab.apps.AppBase
             editableParams = fieldnames(set(newAx));
             
             badFields = uiAxParamsNames(~ismember(uiAxParamsNames, editableParams));
-            badFields = [badFields; 'Parent'; 'Children'; 'XAxis'; 'YAxis'; 'ZAxis'; 'Position'; 'OuterPosition']
+            badFields = [badFields; 'Parent'; 'Children'; 'XAxis'; ...
+                'YAxis'; 'ZAxis'; 'Position'; 'OuterPosition'; ...
+                'InnerPosition'];
             
             uiAxGoodParams = rmfield(uiAxParams, badFields);
+            listOfProps = fieldnames(uiAxGoodParams);
+%             for k = 1:numel(listOfProps)
+% %                 disp(listOfProps{k})
+%                 newAx.(listOfProps{k}) = uiAxGoodParams.(listOfProps{k});
+%             end
+            
+            titleS = app.ImageAxes.Title.String;
+            xlabS = app.ImageAxes.XLabel.String;
+            ylabS = app.ImageAxes.YLabel.String;
+
             set(newAx, uiAxGoodParams);
+            %coptiyobj(uiAxGoodParams,newAx);
+
+            
             print(fh, '-dpsc2', ['-P','physics-facetlog']);
 %             opts.title = 'DAN picture';
 %             opts.author = 'Matlab';
 %             opts.text = '';
 %             util_printLog(fh,opts);
-%             close(fh)
+            close(fh)
+            title(app.ImageAxes, titleS);
+            xlabel(app.ImageAxes, xlabS);
+            ylabel(app.ImageAxes, ylabS);
             
         end
 
@@ -608,6 +626,7 @@ classdef F2_DAN_exported < matlab.apps.AppBase
             title(app.ImageAxes, 'Title')
             xlabel(app.ImageAxes, 'X')
             ylabel(app.ImageAxes, 'Y')
+            app.ImageAxes.FontSize = 14;
             app.ImageAxes.Position = [363 409 803 509];
 
             % Create WaterfallplotPanel

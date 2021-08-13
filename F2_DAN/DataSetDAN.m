@@ -38,8 +38,9 @@ classdef DataSetDAN < handle
     %
     %   Fixes:
     %       1. Find data set faster using experiment
-    %       2. Plot to elog
+    %       2. FIXED Plot to elog
     %       3. Reset axis between correlation plot and image plot
+    %       4. Fix check for remove background option
     %
     
     properties (Access = public)
@@ -153,6 +154,12 @@ classdef DataSetDAN < handle
 
                 curHandle = s.hlpGetFigAxis();
                 imagesc(curHandle,diagData)
+                curHandle.XLim = [0, size(diagData,2)];
+                curHandle.YLim = [0, size(diagData,1)];
+                title(curHandle, sprintf('Image of %s shot number %d', diag, shotNbr) )
+                xlabel(curHandle, 'Pixels');
+                ylabel(curHandle, 'Pixels');
+                
             end
             
         end
@@ -224,6 +231,8 @@ classdef DataSetDAN < handle
             disp('Finished making waterfall plot')
             
             imagesc(curHandle,waterfall(:,sortedIdx))
+            curHandle.XLim = [0, size(waterfall,2)];
+            curHandle.YLim = [0, size(waterfall,1)];
             xlabel(curHandle,sortLab,'interpreter','none')
             ylabel(curHandle,func2str(fcn),'interpreter','none')
             title(curHandle,['Waterfall plot of ', diag])
