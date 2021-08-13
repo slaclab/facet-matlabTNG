@@ -26,7 +26,7 @@ classdef DataSetDAN < handle
     %   Wishlist:
     %       1. IMPLEMENTED subtracts background
     %       2. average over given number of images
-    %       3. colorbar adjuster
+    %       3. IMPLEMENTED colorbar adjuster
     %       4. IMPLEMENTED scalar histogram plot
     %       5. rotate and axis orientation
     %       6. select data points
@@ -35,13 +35,9 @@ classdef DataSetDAN < handle
     %       9. Make DAN log work
     %       10. Print relevant dataSet metadata somewhere
     %       11. Fitting functions
+    %       12. Save plot data function
     %
-    %   Fixes:
-    %       1. Find data set faster using experiment
-    %       2. FIXED Plot to elog
-    %       3. Reset axis between correlation plot and image plot
-    %       4. Fix check for remove background option
-    %
+    %   Author: Henrik Ekerfelt
     
     properties (Access = public)
         dataSet;

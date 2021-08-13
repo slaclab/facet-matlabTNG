@@ -255,6 +255,11 @@ classdef F2_DAN_exported < matlab.apps.AppBase
         % Button pushed function: PlotcorrelationButton
         function PlotcorrelationButtonPushed(app, event)
             
+            % Reset Axes after explicitly setting xlim and ylim
+            app.ImageAxes.XLimMode = "auto";
+            app.ImageAxes.YLimMode = "auto";
+            
+            
             FS1 = getFacetScalar(app, app.Switch_Corr1FS, ...
                 app.ScalarDropDown_Corr1, app.CameraDropDown_Corr1, ...
                 app.D21DFunctionEditField_Corr1 );
@@ -667,7 +672,6 @@ classdef F2_DAN_exported < matlab.apps.AppBase
             title(app.ImageAxes, 'Title')
             xlabel(app.ImageAxes, 'X')
             ylabel(app.ImageAxes, 'Y')
-            app.ImageAxes.FontSize = 14;
             app.ImageAxes.Position = [363 409 803 509];
 
             % Create WaterfallplotPanel
