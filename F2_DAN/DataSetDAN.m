@@ -40,6 +40,7 @@ classdef DataSetDAN < handle
     %       1. Find data set faster using experiment
     %       2. FIXED Plot to elog
     %       3. Reset axis between correlation plot and image plot
+    %       4. Fix check for remove background option
     %
     
     properties (Access = public)
