@@ -785,7 +785,7 @@ classdef F2_DAN_exported < matlab.apps.AppBase
             % Create MotivationIndicatorAirspeedIndicator
             app.MotivationIndicatorAirspeedIndicator = uiaeroairspeed(app.UIFigure);
             app.MotivationIndicatorAirspeedIndicator.Position = [937 28 81 81];
-            app.MotivationIndicatorAirspeedIndicator.Airspeed = 100;
+            app.MotivationIndicatorAirspeedIndicator.Airspeed = 350;
 
             % Create PrinttologbookButton
             app.PrinttologbookButton = uibutton(app.UIFigure, 'push');
