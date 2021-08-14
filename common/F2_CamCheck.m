@@ -46,6 +46,9 @@ classdef F2_CamCheck < handle
             % Ignore transport cameras in DAQ
             if obj.DAQ_bool; obj.remove_transport(); end
             
+            % Ignore cmos cameras in DAQ
+            if obj.DAQ_bool; obj.remove_cmos(); end
+            
             % Get camera IOC status, remove bad cameras if DAQ
             obj.add_SIOCs();
             
@@ -68,6 +71,13 @@ classdef F2_CamCheck < handle
         % Remove laser transport cameras because they dont have triggers
             trnspt_cams = strcmp(obj.camera_info(:,4),'S20 Transprt');
             obj.camera_info(trnspt_cams,:) = [];
+            
+        end
+        
+        function remove_cmos(obj)
+        % Remove laser transport cameras because they dont have triggers
+            scmos_cams = strcmp(obj.camera_info(:,4),'S20 sCMOS');
+            obj.camera_info(scmos_cams,:) = [];
             
         end
         
