@@ -96,9 +96,9 @@ classdef F2_CamCheck < handle
                              'facet-li20-pm02',     'SIOC:LI20:PM21';
                              'facet-li20-pm03',     'SIOC:LI20:PM22';
                              'facet-li20-pm04',     'SIOC:LI20:PM23';
-                             'facet-b244-cs01',     'SIOC:LI20:CS01';
-                             'facet-b244-cs02',     'SIOC:LI20:CS02';
-                             'facet-b244-cs03',     'SIOC:LI20:CS03';
+                             %'facet-b244-cs01',     'SIOC:LI20:CS01';
+                             %'facet-b244-cs02',     'SIOC:LI20:CS02';
+                             %'facet-b244-cs03',     'SIOC:LI20:CS03';
                              };
             
             obj.siocs = cell(size(obj.camera_info(:,5)));
