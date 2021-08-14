@@ -80,6 +80,9 @@ classdef F2_DAN_exported < matlab.apps.AppBase
         ColormapDropDownLabel         matlab.ui.control.Label
         ColormapDropDown              matlab.ui.control.DropDown
         LockCLimCheckBox              matlab.ui.control.CheckBox
+        SaveplotdataButton            matlab.ui.control.Button
+        SavedfilenameLabel            matlab.ui.control.Label
+        SavedfilenameEditField        matlab.ui.control.EditField
     end
 
     
@@ -384,6 +387,12 @@ classdef F2_DAN_exported < matlab.apps.AppBase
         function ColormapDropDownValueChanged(app, event)
             value = app.ColormapDropDown.Value;
             app.ImageAxes.Colormap = eval(value);
+        end
+
+        % Button pushed function: SaveplotdataButton
+        function SaveplotdataButtonPushed(app, event)
+            fileName = app.SavedfilenameEditField.Value;
+            app.DANobject.exportPlotData(fileName);
         end
     end
 
@@ -775,7 +784,7 @@ classdef F2_DAN_exported < matlab.apps.AppBase
 
             % Create MotivationIndicatorAirspeedIndicator
             app.MotivationIndicatorAirspeedIndicator = uiaeroairspeed(app.UIFigure);
-            app.MotivationIndicatorAirspeedIndicator.Position = [936 46 81 81];
+            app.MotivationIndicatorAirspeedIndicator.Position = [937 28 81 81];
             app.MotivationIndicatorAirspeedIndicator.Airspeed = 100;
 
             % Create PrinttologbookButton
@@ -788,7 +797,7 @@ classdef F2_DAN_exported < matlab.apps.AppBase
             % Create BoostmotivationButton
             app.BoostmotivationButton = uibutton(app.UIFigure, 'push');
             app.BoostmotivationButton.ButtonPushedFcn = createCallbackFcn(app, @BoostmotivationButtonPushed, true);
-            app.BoostmotivationButton.Position = [924 142 105 23];
+            app.BoostmotivationButton.Position = [925 117 105 23];
             app.BoostmotivationButton.Text = 'Boost motivation';
 
             % Create CLimPanel
@@ -835,6 +844,23 @@ classdef F2_DAN_exported < matlab.apps.AppBase
             app.LockCLimCheckBox = uicheckbox(app.CLimPanel);
             app.LockCLimCheckBox.Text = 'Lock CLim';
             app.LockCLimCheckBox.Position = [20 91 80 22];
+
+            % Create SaveplotdataButton
+            app.SaveplotdataButton = uibutton(app.UIFigure, 'push');
+            app.SaveplotdataButton.ButtonPushedFcn = createCallbackFcn(app, @SaveplotdataButtonPushed, true);
+            app.SaveplotdataButton.Position = [1066 188 100 23];
+            app.SaveplotdataButton.Text = 'Save plot data';
+
+            % Create SavedfilenameLabel
+            app.SavedfilenameLabel = uilabel(app.UIFigure);
+            app.SavedfilenameLabel.HorizontalAlignment = 'right';
+            app.SavedfilenameLabel.Position = [934 200 96 22];
+            app.SavedfilenameLabel.Text = 'Saved file name:';
+
+            % Create SavedfilenameEditField
+            app.SavedfilenameEditField = uieditfield(app.UIFigure, 'text');
+            app.SavedfilenameEditField.Position = [941 177 100 22];
+            app.SavedfilenameEditField.Value = 'myPlotName';
 
             % Show the figure after all components are created
             app.UIFigure.Visible = 'on';
