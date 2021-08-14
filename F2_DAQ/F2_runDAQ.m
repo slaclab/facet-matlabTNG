@@ -543,7 +543,7 @@ classdef F2_runDAQ < handle
                     shut_rbv = caget(obj.pvs.MPS_Shutter_RBV);
                     pause(0.1);
                     shut_count = shut_count + 1;
-                    if shut_count > 10
+                    if shut_count > 20
                         obj.dispMessage('Warning: could not insert shutter.');
                         break;
                     end
@@ -554,33 +554,53 @@ classdef F2_runDAQ < handle
             for i = 1:nBG
                 %bg_ims = lcaGetSmart(obj.daq_pvs.Image_ArrayData);
                 %max_size = max(size(bg_ims));
-                im_array = lcaGetSmart(obj.daq_pvs.Image_ArrayData);
-                im_check = sum(im_array,2);
-                bad_ims = isnan(im_check) | im_check==0;
-                if any(bad_ims)
-                    also_bg_ims = lcaGetSmart(obj.daq_pvs.Image_ArrayData(bad_ims));
-                    max_size = max(size(also_bg_ims));
-                    %im_array(bad_ims,1:max_size) = lcaGetSmart(obj.daq_pvs.Image_ArrayData(bad_ims));
-                    im_array(bad_ims,1:max_size) = also_bg_ims;
-                    im_check = sum(im_array,2);
-                    bad_ims = isnan(im_check) | im_check==0;
-                    
-                    % doing this again. seems dumb
-                    if any(bad_ims)
-                        also_bg_ims = lcaGetSmart(obj.daq_pvs.Image_ArrayData(bad_ims));
-                        max_size = max(size(also_bg_ims));
-                        im_array(bad_ims,1:max_size) = also_bg_ims;
-                        im_check = sum(im_array,2);
-                        bad_ims = isnan(im_check) | im_check==0;
-                    
-                        if any(bad_ims)
-                            obj.dispMessage('Warning: could not get background images.');
+                
+                for j = 1:obj.params.num_CAM
+                    im = lcaGetSmart(obj.daq_pvs.Image_ArrayData{j});
+                    if isnan(sum(im(:)))
+                        pause(0.1);
+                        im = lcaGetSmart(obj.daq_pvs.Image_ArrayData{j});
+                        if isnan(sum(im(:)))
+                            obj.dispMessage(['Warning: could not get background image for camera ' obj.params.camNames{j}]);
+                            continue;
                         end
                     end
+                    
+                    BGs(j,1:numel(im),i) = im;
+                    
                 end
-                BGs(:,1:max(size(im_array)),i) = im_array;
                 pause(0.1);
             end
+                    
+                
+                
+%                 im_array = lcaGetSmart(obj.daq_pvs.Image_ArrayData);
+%                 im_check = sum(im_array,2);
+%                 bad_ims = isnan(im_check) | im_check==0;
+%                 if any(bad_ims)
+%                     also_bg_ims = lcaGetSmart(obj.daq_pvs.Image_ArrayData(bad_ims));
+%                     max_size = max(size(also_bg_ims));
+%                     %im_array(bad_ims,1:max_size) = lcaGetSmart(obj.daq_pvs.Image_ArrayData(bad_ims));
+%                     im_array(bad_ims,1:max_size) = also_bg_ims;
+%                     im_check = sum(im_array,2);
+%                     bad_ims = isnan(im_check) | im_check==0;
+%                     
+%                     % doing this again. seems dumb
+%                     if any(bad_ims)
+%                         also_bg_ims = lcaGetSmart(obj.daq_pvs.Image_ArrayData(bad_ims));
+%                         max_size = max(size(also_bg_ims));
+%                         im_array(bad_ims,1:max_size) = also_bg_ims;
+%                         im_check = sum(im_array,2);
+%                         bad_ims = isnan(im_check) | im_check==0;
+%                     
+%                         if any(bad_ims)
+%                             obj.dispMessage('Warning: could not get background images.');
+%                         end
+%                     end
+%                 end
+%                 BGs(:,1:max(size(im_array)),i) = im_array;
+%                 pause(0.1);
+%             end
             
             if do_shutter
                 if strcmp(shutter_state,'Yes')
