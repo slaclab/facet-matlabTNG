@@ -344,7 +344,7 @@ classdef F2_runDAQ < handle
         
         function getCamData(obj)
             for i = 1:obj.params.num_CAM
-                imgs = dir([obj.save_info.cam_paths{i} '/*.tif']);
+                imgs = dir([obj.save_info.cam_paths{i} '/*_data_step' num2str(obj.step,'%02d') '*.tif']);
                 n_imgs = numel(imgs);
                 obj.daq_status(i,1) = n_imgs;
                 obj.daq_status(i,2) = obj.params.n_shot;
@@ -425,10 +425,12 @@ classdef F2_runDAQ < handle
         
         function write2eLog(obj)
             
+            
             comment_str =sprintf([obj.params.comment{1} '\n']);
             camera_str = '';
             for i = 1:obj.params.num_CAM
                 camera_str = [camera_str obj.params.camNames{i} ', '];
+                obj.daq_status(i,1) = numel(dir([obj.save_info.cam_paths{i} '/*.tif']));
             end
             
             camera_str = sprintf([camera_str '\n']);
@@ -547,6 +549,7 @@ classdef F2_runDAQ < handle
                     end
                 end
             end
+            
             
             for i = 1:nBG
                 %bg_ims = lcaGetSmart(obj.daq_pvs.Image_ArrayData);
