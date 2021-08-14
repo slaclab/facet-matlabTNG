@@ -345,6 +345,10 @@ classdef F2_DAN_exported < matlab.apps.AppBase
         % Button pushed function: BoostmotivationButton
         function BoostmotivationButtonPushed(app, event)
             disp("I'm sorry Dave, I'm afraid I can't do that.");
+            val = lcaGet('SIOC:SYS1:ML03:AO551');
+            val = val - 3;
+            lcaPut('SIOC:SYS1:ML03:AO551',val);
+            app.MotivationIndicatorAirspeedIndicator.Value = val;
             
         end
 
@@ -785,7 +789,7 @@ classdef F2_DAN_exported < matlab.apps.AppBase
             % Create MotivationIndicatorAirspeedIndicator
             app.MotivationIndicatorAirspeedIndicator = uiaeroairspeed(app.UIFigure);
             app.MotivationIndicatorAirspeedIndicator.Position = [937 28 81 81];
-            app.MotivationIndicatorAirspeedIndicator.Airspeed = 350;
+            app.MotivationIndicatorAirspeedIndicator.Airspeed = 50;
 
             % Create PrinttologbookButton
             app.PrinttologbookButton = uibutton(app.UIFigure, 'push');
@@ -835,10 +839,10 @@ classdef F2_DAN_exported < matlab.apps.AppBase
 
             % Create ColormapDropDown
             app.ColormapDropDown = uidropdown(app.CLimPanel);
-            app.ColormapDropDown.Items = {'jet', 'gray', 'parula'};
+            app.ColormapDropDown.Items = {'parula', 'jet', 'gray', ''};
             app.ColormapDropDown.ValueChangedFcn = createCallbackFcn(app, @ColormapDropDownValueChanged, true);
             app.ColormapDropDown.Position = [137 78 100 22];
-            app.ColormapDropDown.Value = 'jet';
+            app.ColormapDropDown.Value = 'parula';
 
             % Create LockCLimCheckBox
             app.LockCLimCheckBox = uicheckbox(app.CLimPanel);
