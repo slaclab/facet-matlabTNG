@@ -33,6 +33,7 @@ classdef F2_runDAQ < handle
         pulseIDPV = 'PATT:SYS1:1:PULSEID'
         secPV = 'PATT:SYS1:1:SEC'
         nSecPV = 'PATT:SYS1:1:NSEC'
+        offset = 198; % this for extracting pulse ID from file
         
         version = 1.0 % this is the datastruct version, update on change
     end
@@ -356,10 +357,12 @@ classdef F2_runDAQ < handle
                 obj.data_struct.images.(obj.params.camNames{i}).loc = ...
                     [obj.data_struct.images.(obj.params.camNames{i}).loc; locs];
                 
+                im_size = obj.data_struct.metadata.(obj.params.camNames{i}).ROI_SizeX_RBV*...
+                    obj.data_struct.metadata.(obj.params.camNames{i}).ROI_SizeY_RBV;
+                file_pos = 2*im_size+obj.offset;
                 pid_list = zeros(n_imgs,1);
                 for j = 1:n_imgs
-                    tiff_header = tiff_read_header(locs{j});
-                    pid_list(j) = tiff_header.private_65001;
+                    pid_list(j) = tiff_get_PID(locs{j},file_pos);
                 end
                 UIDs = obj.generateUIDs(pid_list);
                 steps = obj.step*ones(size(pid_list));
