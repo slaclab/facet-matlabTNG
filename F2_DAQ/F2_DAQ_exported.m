@@ -129,11 +129,6 @@ classdef F2_DAQ_exported < matlab.apps.AppBase
 
         end
 
-        % Value changed function: ListBox
-        function ListBoxValueChanged(app, event)
-            value = app.ListBox.Value;
-        end
-
         % Button pushed function: AddBSA
         function AddBSAButtonPushed(app, event)
             
@@ -269,8 +264,26 @@ classdef F2_DAQ_exported < matlab.apps.AppBase
 
         % Value changed function: ResetDAQButton
         function ResetDAQButtonValueChanged(app, event)
-            app.aobj.resetDAQ()
+            app.aobj.resetDAQ();
             
+        end
+
+        % Value changed function: AbortButton
+        function AbortButtonValueChanged(app, event)
+            app.aobj.abort();
+            
+        end
+
+        % Button pushed function: DisplayBSA
+        function DisplayBSAButtonPushed(app, event)
+            list = app.BSADataListBox.Value;
+            app.aobj.display_list(list);
+        end
+
+        % Button pushed function: DisplayNonBSA
+        function DisplayNonBSAButtonPushed(app, event)
+            list = app.nonBSADataListBox.Value;
+            app.aobj.display_list(list);
         end
     end
 
@@ -397,7 +410,6 @@ classdef F2_DAQ_exported < matlab.apps.AppBase
             % Create ListBox
             app.ListBox = uilistbox(app.CameraConfigPanel);
             app.ListBox.Items = {};
-            app.ListBox.ValueChangedFcn = createCallbackFcn(app, @ListBoxValueChanged, true);
             app.ListBox.Position = [266 10 139 197];
             app.ListBox.Value = {};
 
@@ -472,15 +484,15 @@ classdef F2_DAQ_exported < matlab.apps.AppBase
 
             % Create DisplayBSA
             app.DisplayBSA = uibutton(app.PVListsPanel, 'push');
+            app.DisplayBSA.ButtonPushedFcn = createCallbackFcn(app, @DisplayBSAButtonPushed, true);
             app.DisplayBSA.Tag = 'RemoveBSA';
-            app.DisplayBSA.Enable = 'off';
             app.DisplayBSA.Position = [117 115 61 23];
             app.DisplayBSA.Text = 'Display';
 
             % Create DisplayNonBSA
             app.DisplayNonBSA = uibutton(app.PVListsPanel, 'push');
+            app.DisplayNonBSA.ButtonPushedFcn = createCallbackFcn(app, @DisplayNonBSAButtonPushed, true);
             app.DisplayNonBSA.Tag = 'RemoveBSA';
-            app.DisplayNonBSA.Enable = 'off';
             app.DisplayNonBSA.Position = [321 115 61 23];
             app.DisplayNonBSA.Text = 'Display';
 
@@ -499,6 +511,7 @@ classdef F2_DAQ_exported < matlab.apps.AppBase
 
             % Create nonBSAArraysCheckBox
             app.nonBSAArraysCheckBox = uicheckbox(app.PVListsPanel);
+            app.nonBSAArraysCheckBox.Enable = 'off';
             app.nonBSAArraysCheckBox.Text = 'Include non-BSA Arrays';
             app.nonBSAArraysCheckBox.Position = [222 7 152 22];
 
@@ -731,7 +744,7 @@ classdef F2_DAQ_exported < matlab.apps.AppBase
 
             % Create AbortButton
             app.AbortButton = uibutton(app.RunPanel, 'state');
-            app.AbortButton.Enable = 'off';
+            app.AbortButton.ValueChangedFcn = createCallbackFcn(app, @AbortButtonValueChanged, true);
             app.AbortButton.Text = 'Abort';
             app.AbortButton.BackgroundColor = [0.949 0.0863 0.0863];
             app.AbortButton.FontWeight = 'bold';

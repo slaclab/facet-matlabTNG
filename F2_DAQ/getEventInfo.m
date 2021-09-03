@@ -10,7 +10,8 @@ switch EC
         event_info.incmSet = incmSet;
         event_info.incmReset = incmReset;
         event_info.excmSet = excmSet;
-        event_info.excmReset = excmReset;
+        % event_info.excmReset = excmReset;
+        event_info.excmReset = {'NO_GUN_PERM'}; % change this in future
         event_info.beamcode = beamcode;
         event_info.ratePV = 'EVNT:SYS1:1:TS5_TE_RATE';
         event_info.liveRate = lcaGet(event_info.ratePV);
