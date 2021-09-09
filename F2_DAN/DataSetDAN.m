@@ -35,7 +35,8 @@ classdef DataSetDAN < handle
     %       9. Make DAN log work
     %       10. Print relevant dataSet metadata somewhere
     %       11. Fitting functions
-    %       12. Save plot data function
+    %       12. IMPLEMENTED Save plot data function
+    %       13. Draw on top of current image function
     %
     %   Author: Henrik Ekerfelt
     
@@ -49,18 +50,29 @@ classdef DataSetDAN < handle
         visImageIncrement = 1;
         keepPlotting = 1;
         loopWaitTime = 0.5;
+        
+        
+        % tempScalars
+        tempScalars = struct();
+        
     end
     
     properties (Access = private)
         
         include_data;
         
+        % DAQ-file specific properties 
         maxShotNbr;
         scalarGroups;
         listOfCameras;
         
+        % GUI specific properties
         plotToGUI = 0;
         GUIHandle;
+        
+        % exportPlotData
+        lastPlotData; %Struct for storing lastPlotData
+        
     end
     
     % Constructor
@@ -142,19 +154,25 @@ classdef DataSetDAN < handle
         end
         
         function visImage(s, diag, shotNbr)
+            % Plots a single image from dataset diag 
             
             if s.validShotNbr(shotNbr)
+                
+                % Get image data
                 [data,~] = s.hlpCheckImage(diag);
-                %diagData = imread( sprintf('%s%s',s.hdr,data.loc{data.common_index(shotNbr)}) );
                 diagData = s.hlpGetImage(diag, data.common_index(shotNbr));
 
+                % Get plot info
                 curHandle = s.hlpGetFigAxis();
-                imagesc(curHandle,diagData)
-                curHandle.XLim = [0, size(diagData,2)];
-                curHandle.YLim = [0, size(diagData,1)];
-                title(curHandle, sprintf('Image of %s shot number %d', diag, shotNbr) )
-                xlabel(curHandle, 'Pixels');
-                ylabel(curHandle, 'Pixels');
+                
+                type = 'Single image';
+                xlabS = 'Pixels';
+                ylabS = 'Pixels';
+                titleS = sprintf('Image of %s shot number %d', ...
+                    diag, shotNbr);
+                
+                s.hlpPlotImage(curHandle, diagData, type, ...
+                titleS, xlabS, ylabS);
                 
             end
             
@@ -181,6 +199,10 @@ classdef DataSetDAN < handle
             end
             
         end
+        
+%         function visAvImage(s, diag, nbrsToAv)
+%             
+%         end
         
         function waterfallPlot(s, diag, fcn, sortFSArray)
 
@@ -216,23 +238,36 @@ classdef DataSetDAN < handle
                 [~, sortedIdx] = sort(sortFSArray);
                 disp('Done with sorting vector')
             end
-
-            disp('Starting to make waterfall plot...')
-            for k = 1:len
-                diagData = s.hlpGetImage(diag, data.common_index(k));
-                %diagData = imread( sprintf('%s%s',s.hdr,data.loc{data.common_index(k)}) );
-                wFData = fcn(diagData);
-                waterfall(:,k) = wFData;
-            end
-            disp('Finished making waterfall plot')
             
-            imagesc(curHandle,waterfall(:,sortedIdx))
-            curHandle.XLim = [0, size(waterfall,2)];
-            curHandle.YLim = [0, size(waterfall,1)];
-            xlabel(curHandle,sortLab,'interpreter','none')
-            ylabel(curHandle,func2str(fcn),'interpreter','none')
-            title(curHandle,['Waterfall plot of ', diag])
-            %set(gca,'interpreter','none','fontsize',18)
+            fcnS = func2str(fcn);
+
+            % Create an allowed field name for the struct that is kind of unique 
+            fcnSN = s.fcn2fieldName(fcnS);
+            
+            %Check if this has been calculated before to speed up the
+            %plotting
+            if isfield(s.tempScalars, diag) && ...
+               isfield(s.tempScalars.(diag),'waterfall') && ...
+               isfield(s.tempScalars.(diag).waterfall,fcnSN)       
+                    waterfall = s.tempScalars.(diag).waterfall.(fcnSN);
+            else
+                disp('Starting to make waterfall plot...')
+                for k = 1:len
+                    diagData = s.hlpGetImage(diag, data.common_index(k));
+                    wFData = fcn(diagData);
+                    waterfall(:,k) = wFData;
+                end
+                disp('Finished making waterfall plot')
+                s.tempScalars.(diag).waterfall.(fcnSN) = waterfall;
+            end
+
+            type = 'Waterfall plot';
+            xlabS = sortLab;
+            ylabS = fcnS;
+            titleS = sprintf('Waterfall plot of %s', diag);
+
+            s.hlpPlotImage(curHandle, waterfall(:,sortedIdx), type, ...
+            titleS, xlabS, ylabS);
 
         end
         
@@ -274,41 +309,29 @@ classdef DataSetDAN < handle
         %% Input parsing
         
             curHandle = s.hlpGetFigAxis();
+            titleS = sprintf('Correlation plot');
             
-            type = s.hlpIsFSArray(inputArg1);
             
-            if type
-                [x, xlab] = s.hlpGetScalarArray(inputArg1,type);
-            else 
-                error('input argument #1 not a FACET Scalar Array')
-            end
+            errm = 'input argument #1 not a FACET Scalar Array';
+            type = s.hlpIsFSArray(inputArg1,errm);
             
-            if nargin == 2
-                plot(curHandle, x,'x')
-                set(curHandle,'fontsize',18)
-                ylabel(curHandle, xlab,'Interpreter','none')
-                xlabel(curHandle, 'idx')
-                title(curHandle, 'Correlation plot')
-                return
-            end
+            [x, xlabS] = s.hlpGetScalarArray(inputArg1,type);
+
             
             if nargin == 3
-                if ischar(inputArg2)
-                    inputArg2 = {inputArg2};
-                end
-                type = s.hlpIsFSArray(inputArg2);
-                if type
-                    [y, ylab] = s.hlpGetScalarArray(inputArg2,type);
-                else 
-                    error('input argument #2 not a FACET Scalar Array')
-                end
-                plot(curHandle, x,y,'x')
-                set(curHandle, 'fontsize',18)
-                ylabel(curHandle, ylab,'Interpreter','none')
-                xlabel(curHandle, xlab,'Interpreter','none')
-                title(curHandle, 'Correlation plot')
+                errm = 'input argument #2 not a FACET Scalar Array';
+                type = s.hlpIsFSArray(inputArg2, errm);
+                [y, ylabS] = s.hlpGetScalarArray(inputArg2,type);
+                
+                s.hlpPlotTwoScalarArray(curHandle, x, y, ...
+                    titleS, xlabS, ylabS)
                 return
             end
+            
+            ylabS = 'idx';
+                
+            s.hlpPlotScalarArray(curHandle, x, ...
+            titleS, xlabS, ylabS);
             
         end
         
@@ -316,20 +339,40 @@ classdef DataSetDAN < handle
             % Plots a histogram of given scalar values
             curHandle = s.hlpGetFigAxis();
             
-            type = s.hlpIsFSArray(FS);
+            errm = 'input argument not a FACET Scalar Array';
+            type = s.hlpIsFSArray(FS, errm);
+            [x, xlabS] = s.hlpGetScalarArray(FS,type);
             
-            if type
-                [x, xlab] = s.hlpGetScalarArray(FS,type);
-            else 
-                error('input argument #1 not a FACET Scalar Array')
-            end
+            
+            ylabS = '#';
+            titleS = 'Histogram';
+            type = titleS;
             
             histogram(curHandle,x)
-            xlabel(curHandle,xlab,'interpreter','none')
-            ylabel(curHandle,'#','interpreter','none')
-            title(curHandle,['Histogram'], 'interpreter', 'none')
-            set(curHandle,'FontSize',18)
             
+            s.lastPlotData = struct(); % Make sure struct is fresh
+            s.lastPlotData.type = type;
+            s.lastPlotData.data = x;
+            s.hlpSetPlotLabels(curHandle, titleS, xlabS, ylabS);
+            
+        end
+        
+        function exportPlotData(s, fileName)
+            % Saves plot data
+            computer = char(java.net.InetAddress.getLocalHost.getHostName);
+            
+            if strcmp(computer,'facet-srv20')
+                %Current time
+                [~,tsi]=lcaGet('PATT:SYS1:1:PULSEID');
+                ts = lca2matlabTime(tsi);
+                
+                [fileName, pathName] = util_dataSave(... 
+                    s.lastPlotData, 'DANplot', fileName, ts);
+                fprintf('Plot data saved at: %s/%s.\n', pathName, fileName);
+            else
+                save(fileName, s.lastPlotData);
+                fprintf('Plot data saved at: %s.mat.\n', fileName);
+            end
         end
         
     end
@@ -440,7 +483,7 @@ classdef DataSetDAN < handle
         
         end
         
-        function type = hlpIsFSArray(s, inputArg)
+        function type = hlpIsFSArray(s, inputArg, errm)
         %% Determines if inputArg is a FACET Scalar Array and if so, what 
         % type.
         %
@@ -453,42 +496,48 @@ classdef DataSetDAN < handle
                 inputArg = {inputArg};
             end
             
-            if ~iscell(inputArg)
-                type = 0;
-                %disp('not a cell in hlpIsFSArray')
-                return
-            end
-            
-            % Type 1 check
-            if length(inputArg) == 1 && ischar(inputArg{1}) && ...
-                    isfield(s.dataSet.scalars, inputArg{1})
-                type = 1;
-                return
-            elseif length(inputArg) == 1 && ischar(inputArg{1}) 
-                for k = 1:numel(s.scalarGroups)
-                    if isfield(s.dataSet.scalars.(s.scalarGroups{k}), inputArg{1})
-                        type = 1;
-                        return
+            if iscell(inputArg)
+                % Type 1 check
+                if length(inputArg) == 1 && ischar(inputArg{1}) && ...
+                        isfield(s.dataSet.scalars, inputArg{1})
+                    type = 1;
+                    return
+                elseif length(inputArg) == 1 && ischar(inputArg{1}) 
+                    for k = 1:numel(s.scalarGroups)
+                        if isfield(s.dataSet.scalars.(s.scalarGroups{k}), inputArg{1})
+                            type = 1;
+                            return
+                        end
                     end
                 end
-            end
-            
-            
-            % Type 2 check
-            if length(inputArg) == 2 && ischar(inputArg{1}) && ...
-                    isfield(s.dataSet.images, inputArg{1}) && ...
-                    isa(inputArg{2},'function_handle') && ...
-                    isscalar(inputArg{2}([1,2;3,4]))
+
+
+                % Type 2 check
+                if length(inputArg) == 2 && ischar(inputArg{1}) && ...
+                        isfield(s.dataSet.images, inputArg{1}) && ...
+                        isa(inputArg{2},'function_handle') && ...
+                        isscalar(inputArg{2}([1,2;3,4]))
+
+                    type = 2;
+                    return
+                end
                 
-                type = 2;
-                return
+            else
+            
+                type = 0;
+
+                if exist(errm, 'var')
+                    %Throw error if requested
+                    error(errm)
+                end
+                
             end
             
-            type = 0;
             
         end
         
-        function [scalarArray, scalarLabel] = hlpGetScalarArray(s, FACETscalar, type)
+        function [scalarArray, scalarLabel] = hlpGetScalarArray(s, ...
+            FACETscalar, type)
         %% hlpGetScalarArray extracts a 1D array of values from FACET data
         %  currently supports scalar diagnostics (type 1) and image
         %  diagnostics combined with a function that maps 2D - > scalar
@@ -513,18 +562,35 @@ classdef DataSetDAN < handle
                     end
                 end
             elseif type == 2
-                dS = getfield(s.dataSet.images,FACETscalar{1});
-                nbrOfShots = length(dS.common_index);
-                scalarArray = zeros(1,nbrOfShots);
+                % Check if already calculated
                 fcn = FACETscalar{2};
+                fcnS = func2str(fcn);
+                
+                %Create an allowed field name for the struct that is kind of unique 
+                fcnSN = s.fcn2fieldName(fcnS);
+                
+                %Check if this has been calculated before to speed up the
+                %plotting
+                if isfield(s.tempScalars, FACETscalar{1}) && ...
+                        isfield(s.tempScalars.(FACETscalar{1}),fcnSN)
+                    scalarArray = s.tempScalars.(FACETscalar{1}).(fcnSN);
+                else
+                    dS = getfield(s.dataSet.images,FACETscalar{1});
+                    nbrOfShots = length(dS.common_index);
+                    scalarArray = zeros(1,nbrOfShots);
 
-                for k = 1:nbrOfShots
-                    diagData = s.hlpGetImage(FACETscalar{1},dS.common_index(k));
-                    scalarData = fcn(diagData);
-                    scalarArray(:,k) = scalarData;
+
+                    for k = 1:nbrOfShots
+                        diagData = s.hlpGetImage(FACETscalar{1},dS.common_index(k));
+                        scalarData = fcn(diagData);
+                        scalarArray(:,k) = scalarData;
+                    end
                 end
                 
-                scalarLabel = sprintf('%s|%s',FACETscalar{1},func2str(fcn));
+                %Save if used request to plot this again
+                s.tempScalars.(FACETscalar{1}).(fcnSN) = scalarArray;
+                
+                scalarLabel = sprintf('%s|%s',FACETscalar{1},fcnS);
             end
 
         end
@@ -537,37 +603,37 @@ classdef DataSetDAN < handle
         end
         
         function [data, diagData] = hlpCheckImage(s,diag)
-
-
+            
+            
             % Check that diagnostic exists
             if ~isfield(s.dataSet.images,diag)
                 error(sprintf('Could not find %s as an image diagnostic.',diag))
             end
-
-
+            
+            
             % Check that image links exist
             data = getfield(s.dataSet.images,diag);
             if isempty(data.loc)
                 error(sprintf('In %s, images.%s.dat is empty',diag,diag))
             end
-
+            
             %Find file format
             expr = '\.[0-9a-z]+$';
             idx = regexp(data.loc{1},expr) + 1;
-
+            
             %Check and select method to load from file format
             if strcmp(data.loc{1}(idx:end),'tif') || strcmp(data.loc{1}(idx:end),'tiff')
                 diagData = imread( sprintf('%s%s',s.hdr,data.loc{1}) );
             else
                 error('File format not recognized for data.')
             end
-
+            
         end
         
         function hlpGetListOfCameras(s)
             s.listOfCameras = fieldnames(s.dataSet.images);
         end
-            
+        
         function hlpFindScalarGroups(s)
             % Identifies if there are different groups in
             % data_struct.scalars, adds them to the scalarGroups variable
@@ -585,13 +651,101 @@ classdef DataSetDAN < handle
         end
         
         function curHandle = hlpGetFigAxis(s)
-            if ~s.plotToGUI 
+            if ~s.plotToGUI
                 figure
                 curHandle = gca;
             else
                 curHandle = s.GUIHandle.ImageAxes;
                 curHandle.YDir = 'normal';
             end
+        end
+        
+        function hlpPlotImage(s, plotHandle, img, type, ...
+                titleS, xlabS, ylabS)
+            
+            % save plotData so it can be saved
+            s.lastPlotData = struct(); % Make sure struct is fresh
+            s.lastPlotData.type = type;
+            s.lastPlotData.img = img;
+            
+            imagesc(plotHandle, img);
+            plotHandle.XLim = [0, size(img,2)];
+            plotHandle.YLim = [0, size(img,1)];
+            s.hlpSetPlotLabels(plotHandle, titleS, xlabS, ylabS);
+        end
+        
+        function hlpPlotScalarArray(s, plotHandle, data, ...
+                titleS, xlabS, ylabS)
+            
+            type = 'Scalar Array';
+            
+            % save plotData so it can be saved
+            s.lastPlotData = struct(); % Make sure struct is fresh
+            s.lastPlotData.type = type;
+            s.lastPlotData.data = data;
+            
+            plot(plotHandle, data, 'x');
+            s.hlpSetPlotLabels(plotHandle, titleS, xlabS, ylabS);
+        end
+        
+        function hlpPlotTwoScalarArray(s, plotHandle, xData, yData, ...
+                titleS, xlabS, ylabS)
+            
+            type = 'Correlation plot';
+            
+            % save plotData so it can be saved
+            s.lastPlotData = struct(); % Make sure struct is fresh
+            s.lastPlotData.type = type;
+            s.lastPlotData.xData = xData;
+            s.lastPlotData.yData = yData;
+            
+            plot(plotHandle, xData, yData, 'x');
+            s.hlpSetPlotLabels(plotHandle, titleS, xlabS, ylabS);
+        end
+        
+        function hlpSetPlotLabels(s, plotHandle, titleS, xlabS, ylabS)
+            % Set standardized plot labels, forces labels to be set
+            % Saves labels to lastPlotData
+            
+            s.lastPlotData.xlab = xlabS;
+            s.lastPlotData.ylab = ylabS;
+            s.lastPlotData.title = titleS;
+            
+            titleS = sprintf('%s, Dataset ID %d, %s',s.dataSet.save_info.experiment, ...
+                s.dataSetID ,titleS);
+            
+            set(plotHandle, 'fontsize',18);
+            title(plotHandle, titleS,'Interpreter','none');
+            xlabel(plotHandle, xlabS,'Interpreter','none');
+            ylabel(plotHandle, ylabS,'Interpreter','none');
+        end
+        
+        function fcnSN = fcn2fieldName(s, fcnS)
+            % Tries to make a unique filename from a function string
+            % ()+-*/':~.=@
+            % LRPMTKACTDES
+            
+            fcnSN = strrep(fcnS,'(','L');
+            fcnSN = strrep(fcnSN,')','R');
+            fcnSN = strrep(fcnSN,'+','P');
+            fcnSN = strrep(fcnSN,'-','M');
+            fcnSN = strrep(fcnSN,'*','T');
+            fcnSN = strrep(fcnSN,'/','T');
+            fcnSN = strrep(fcnSN,"'",'A');
+            fcnSN = strrep(fcnSN,":",'C');
+            fcnSN = strrep(fcnSN,"~",'T');
+            fcnSN = strrep(fcnSN,".",'D');
+            fcnSN = strrep(fcnSN,"=",'E');
+            fcnSN = strrep(fcnSN,"@",'S');
+            
+            fcnSN = fcnSN{1};
+            fcnSN = fcnSN(regexp(fcnSN,'[0-9a-zA-Z]'));
+            if s.subtractBackground
+                fcnSN = ['B',fcnSN];
+            else
+                fcnSN = ['F',fcnSN];
+            end
+            
         end
         
     end

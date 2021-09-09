@@ -46,6 +46,9 @@ classdef F2_CamCheck < handle
             % Ignore transport cameras in DAQ
             if obj.DAQ_bool; obj.remove_transport(); end
             
+            % Ignore cmos cameras in DAQ
+            if obj.DAQ_bool; obj.remove_cmos(); end
+            
             % Get camera IOC status, remove bad cameras if DAQ
             obj.add_SIOCs();
             
@@ -71,11 +74,18 @@ classdef F2_CamCheck < handle
             
         end
         
+        function remove_cmos(obj)
+        % Remove laser transport cameras because they dont have triggers
+            scmos_cams = strcmp(obj.camera_info(:,4),'S20 sCMOS');
+            obj.camera_info(scmos_cams,:) = [];
+            
+        end
+        
         function add_SIOCs(obj)
             
             obj.sioc_list = {'cpu-lr10-ls01',       'SIOC:LR10:LS01';
                              'cpu-in10-pm01',       'SIOC:IN10:PM01';
-                             'cpu-in10-ls01',       'SIOC:IN10:LS01';
+                             %'cpu-in10-ls01',       'SIOC:IN10:LS01';
                              'cpu-li10-pm01',       'SIOC:LI10:PM01';
                              'cpu-li14-pm01',       'SIOC:LI14:PM01';
                              'cpu-li15-pm01',       'SIOC:LI15:PM01';
@@ -86,9 +96,9 @@ classdef F2_CamCheck < handle
                              'facet-li20-pm02',     'SIOC:LI20:PM21';
                              'facet-li20-pm03',     'SIOC:LI20:PM22';
                              'facet-li20-pm04',     'SIOC:LI20:PM23';
-                             'facet-b244-cs01',     'SIOC:LI20:CS01';
-                             'facet-b244-cs02',     'SIOC:LI20:CS02';
-                             'facet-b244-cs03',     'SIOC:LI20:CS03';
+                             %'facet-b244-cs01',     'SIOC:LI20:CS01';
+                             %'facet-b244-cs02',     'SIOC:LI20:CS02';
+                             %'facet-b244-cs03',     'SIOC:LI20:CS03';
                              };
             
             obj.siocs = cell(size(obj.camera_info(:,5)));
@@ -101,22 +111,27 @@ classdef F2_CamCheck < handle
         
         function checkIOCs(obj)
             
+            bad_inds = false(numel(obj.siocs),1);
             for i = 1:numel(obj.siocs)
                 status = lcaGet([obj.siocs{i} ':HEARTBEATSUM'],0,'DBF_ENUM');
                 if status ~= 0
                     obj.dispMessage(['Warning: IOC ' obj.siocs{i} ' serving camera ' obj.camNames{i} ' is down.']);
                     if obj.DAQ_bool
                         obj.dispMessage(['Removing camera ' obj.camNames{i} ' from DAQ.']);
-                        obj.camera_info(i,:) = [];
-                        obj.camNames(i) = [];
-                        obj.camPVs(i) = [];
-                        obj.regions(i) = [];
-                        obj.camTrigs(i) = [];
-                        obj.camPower(i) = [];
-                        obj.siocs(i) = [];
+                        bad_inds(i) = true;
                     end
                 end
             end
+            
+            obj.camera_info(bad_inds,:) = [];
+            obj.camNames(bad_inds) = [];
+            obj.camPVs(bad_inds) = [];
+            obj.regions(bad_inds) = [];
+            obj.camTrigs(bad_inds) = [];
+            obj.camPower(bad_inds) = [];
+            obj.siocs(bad_inds) = [];
+            
+            
         end
         
         function getLiveNames(obj)

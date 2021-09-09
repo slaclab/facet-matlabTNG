@@ -35,6 +35,7 @@ classdef F2_DAQApp < handle
                 PV(context,'name',"GUI_Instance",'pvname',"SIOC:SYS1:ML02:AO351",'mode',"rw",'monitor',true); % Number of times GUI is run
                 PV(context,'name',"DAQ_Instance",'pvname',"SIOC:SYS1:ML02:AO400",'mode',"rw",'monitor',true); % Number of times DAQ is run
                 PV(context,'name',"Reset",'pvname',"SIOC:SYS1:ML02:AO352",'mode',"rw",'monitor',true); % DAQ Running
+                PV(context,'name',"Abort",'pvname',"SIOC:SYS1:ML02:AO353",'mode',"rw",'monitor',true); % DAQ Abort
                 ] ;
             pset(obj.pvlist,'debug',0) ;
             obj.pvs = struct(obj.pvlist);
@@ -62,6 +63,14 @@ classdef F2_DAQApp < handle
         function resetDAQ(obj)
             
             caput(obj.pvs.Reset,0);
+            obj.addMessage('DAQ reset.');
+            
+        end
+        
+        function abort(obj)
+            
+            caput(obj.pvs.Abort,1);
+            obj.addMessage('Abort command sent.');
             
         end
         
@@ -251,7 +260,24 @@ classdef F2_DAQApp < handle
             obj.guihan.ToleranceEditField_2.Value = scanFunc.tolerance;
         end
             
-        
+        function display_list(obj,list)
+            obj.addMessage(sprintf('Generating display table for %s',list));
+            pv_list = feval(list);
+            pv_check = pv_list;
+            for i = 1:numel(pv_check)
+                if contains(pv_check{i},'.')
+                    spl = strsplit(pv_check{i},'.');
+                    pv_check{i} = spl{1};
+                end
+            end
+            descs = lcaGetSmart(strcat(pv_check,'.DESC'));
+            t = table(pv_list,descs);
+            fig = uifigure;
+            uit = uitable(fig,'Data',t);
+            uit.Position = [20 20 520 380];
+        end
+            
+            
         
         function addMessage(obj,message)
             

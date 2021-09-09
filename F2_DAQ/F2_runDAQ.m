@@ -33,6 +33,7 @@ classdef F2_runDAQ < handle
         pulseIDPV = 'PATT:SYS1:1:PULSEID'
         secPV = 'PATT:SYS1:1:SEC'
         nSecPV = 'PATT:SYS1:1:NSEC'
+        offset = 198; % this for extracting pulse ID from file
         
         version = 1.0 % this is the datastruct version, update on change
     end
@@ -169,19 +170,23 @@ classdef F2_runDAQ < handle
             %%%%%%%%%%%%%%%%%%%%
             %   Run the DAQ!  %%
             %%%%%%%%%%%%%%%%%%%%
-            obj.daq_loop();
+            status = obj.daq_loop();
+            obj.end_scan(status);
             
         end
         
-        function daq_loop(obj)
+        function status = daq_loop(obj)
             
             if obj.params.scanDim == 0
                 obj.step = 1;
-                obj.daq_step();
-                
-                obj.end_scan();
-                
-                return
+                try
+                    status = obj.daq_step();
+                    return;
+                catch
+                    obj.dispMessage(sprintf('DAQ failed on step %d',obj.step));
+                    status = 1;
+                    return;
+                end 
             end
             
             old_steps = nan(1,obj.params.scanDim);
@@ -197,14 +202,23 @@ classdef F2_runDAQ < handle
                     obj.dispMessage(sprintf('Setting %s to %0.2f',obj.params.scanFuncs{j},obj.params.scanVals{j}(new_steps(j))));
                     obj.scanFunctions.(obj.params.scanFuncs{j}).set_value(obj.params.scanVals{j}(new_steps(j)));
                 end
-                obj.daq_step();
+                
+                try
+                    status = obj.daq_step();
+                catch
+                    obj.dispMessage(sprintf('DAQ failed on step %d',obj.step));
+                    status = 1;
+                end
+                
+                if status; return; end
+                
                 old_steps = new_steps;
             end
             
-            obj.end_scan();
         end
         
-        function daq_step(obj)
+        % status = 0 -> ok. status = 1 -> DAQ failed or aborted
+        function status = daq_step(obj)
             
             waitTime = obj.params.n_shot/obj.event_info.liveRate;
             
@@ -235,6 +249,8 @@ classdef F2_runDAQ < handle
             
             tic;
             while toc < waitTime
+                status = obj.check_abort();
+                if status; return; end
                 obj.async_data.addData();
                 pause(0.99);
             end
@@ -247,6 +263,8 @@ classdef F2_runDAQ < handle
             save_not_done = fnum_rbv < obj.params.n_shot;
             tic;
             while any(save_not_done)
+                status = obj.check_abort();
+                if status; return; end
                 fnum_rbv = lcaGet(obj.daq_pvs.TIFF_FileNumber_RBV);
                 save_not_done = fnum_rbv < obj.params.n_shot;
                 pause(0.1);
@@ -257,14 +275,21 @@ classdef F2_runDAQ < handle
             end  
             obj.dispMessage('Data saving complete. Starting quality control.');
             
-            obj.collectData();
+            status = obj.collectData();
             
         end
         
-        function end_scan(obj)
+        function end_scan(obj,status)
+            
+            if status
+                obj.dispMessage('Ending failed/aborted scan.');
+                eDefOff(obj.eDefNum);
+                eDefRelease(obj.eDefNum);
+            end
             
             if obj.params.scanDim > 0
                 
+                obj.dispMessage('Restoring scan functions to initial value.');
                 for j = 1:obj.params.scanDim
                     obj.scanFunctions.(obj.params.scanFuncs{j}).restoreInitValue();
                 end
@@ -278,13 +303,13 @@ classdef F2_runDAQ < handle
             obj.save_data();
             
             obj.dispMessage('Writing to eLog.');
-            obj.write2eLog();
+            obj.write2eLog(status);
             
             obj.dispMessage('Done!');
             caput(obj.pvs.DAQ_Running,0);
         end
         
-        function collectData(obj)
+        function status = collectData(obj)
             
             n_use = lcaGet(sprintf('%sHST%d.NUSE',obj.pulseIDPV,obj.eDefNum));
             pulse_IDs = lcaGet(sprintf('%sHST%d',obj.pulseIDPV,obj.eDefNum),n_use)';
@@ -308,7 +333,7 @@ classdef F2_runDAQ < handle
             
             obj.getNonBSAdata(slac_time);
             
-            obj.getCamData();
+            status = obj.getCamData();
                         
             obj.dispMessage('Quality control complete.');
         end
@@ -342,9 +367,9 @@ classdef F2_runDAQ < handle
         end
             
         
-        function getCamData(obj)
+        function status = getCamData(obj)
             for i = 1:obj.params.num_CAM
-                imgs = dir([obj.save_info.cam_paths{i} '/*.tif']);
+                imgs = dir([obj.save_info.cam_paths{i} '/*_data_step' num2str(obj.step,'%02d') '*.tif']);
                 n_imgs = numel(imgs);
                 obj.daq_status(i,1) = n_imgs;
                 obj.daq_status(i,2) = obj.params.n_shot;
@@ -356,10 +381,14 @@ classdef F2_runDAQ < handle
                 obj.data_struct.images.(obj.params.camNames{i}).loc = ...
                     [obj.data_struct.images.(obj.params.camNames{i}).loc; locs];
                 
+                im_size = obj.data_struct.metadata.(obj.params.camNames{i}).ROI_SizeX_RBV*...
+                    obj.data_struct.metadata.(obj.params.camNames{i}).ROI_SizeY_RBV;
+                file_pos = 2*im_size+obj.offset;
                 pid_list = zeros(n_imgs,1);
                 for j = 1:n_imgs
-                    tiff_header = tiff_read_header(locs{j});
-                    pid_list(j) = tiff_header.private_65001;
+                    status = obj.check_abort();
+                    if status; return; end
+                    pid_list(j) = tiff_get_PID(locs{j},file_pos);
                 end
                 UIDs = obj.generateUIDs(pid_list);
                 steps = obj.step*ones(size(pid_list));
@@ -423,12 +452,17 @@ classdef F2_runDAQ < handle
             
         end
         
-        function write2eLog(obj)
+        function write2eLog(obj,status)
             
-            comment_str =sprintf([obj.params.comment{1} '\n']);
+            if status
+                fail_str = sprintf(['DAQ FAILED/ABORTED' '\n']);
+            end
+            
+            comment_str = sprintf([obj.params.comment{1} '\n']);
             camera_str = '';
             for i = 1:obj.params.num_CAM
                 camera_str = [camera_str obj.params.camNames{i} ', '];
+                obj.daq_status(i,1) = numel(dir([obj.save_info.cam_paths{i} '/*.tif']));
             end
             
             camera_str = sprintf([camera_str '\n']);
@@ -464,7 +498,11 @@ classdef F2_runDAQ < handle
             end
             info_str = sprintf([info_str '\n' '\n']);
             
-            Comment  = [comment_str camera_str DAQ_str Data_str Scan_str Path_str info_str];
+            if status
+                Comment  = [fail_str comment_str camera_str DAQ_str Data_str Scan_str Path_str info_str];
+            else
+                Comment  = [comment_str camera_str DAQ_str Data_str Scan_str Path_str info_str];
+            end
             
             FACET_DAQ2LOG(Comment,obj);
         end
@@ -484,6 +522,9 @@ classdef F2_runDAQ < handle
                 obj.eDefNum = eDefReserve(eDefString);
             end
             
+            eDefParams (obj.eDefNum, 1, 2800, obj.event_info.incmSet, obj.event_info.incmReset, obj.event_info.excmSet, obj.event_info.excmReset, obj.event_info.beamcode);
+            % these two lines added because one call is not enough?
+            pause(0.5);
             eDefParams (obj.eDefNum, 1, 2800, obj.event_info.incmSet, obj.event_info.incmReset, obj.event_info.excmSet, obj.event_info.excmReset, obj.event_info.beamcode);
             
         end
@@ -541,43 +582,64 @@ classdef F2_runDAQ < handle
                     shut_rbv = caget(obj.pvs.MPS_Shutter_RBV);
                     pause(0.1);
                     shut_count = shut_count + 1;
-                    if shut_count > 10
+                    if shut_count > 20
                         obj.dispMessage('Warning: could not insert shutter.');
                         break;
                     end
                 end
             end
             
+            
             for i = 1:nBG
                 %bg_ims = lcaGetSmart(obj.daq_pvs.Image_ArrayData);
                 %max_size = max(size(bg_ims));
-                im_array = lcaGetSmart(obj.daq_pvs.Image_ArrayData);
-                im_check = sum(im_array,2);
-                bad_ims = isnan(im_check) | im_check==0;
-                if any(bad_ims)
-                    also_bg_ims = lcaGetSmart(obj.daq_pvs.Image_ArrayData(bad_ims));
-                    max_size = max(size(also_bg_ims));
-                    %im_array(bad_ims,1:max_size) = lcaGetSmart(obj.daq_pvs.Image_ArrayData(bad_ims));
-                    im_array(bad_ims,1:max_size) = also_bg_ims;
-                    im_check = sum(im_array,2);
-                    bad_ims = isnan(im_check) | im_check==0;
-                    
-                    % doing this again. seems dumb
-                    if any(bad_ims)
-                        also_bg_ims = lcaGetSmart(obj.daq_pvs.Image_ArrayData(bad_ims));
-                        max_size = max(size(also_bg_ims));
-                        im_array(bad_ims,1:max_size) = also_bg_ims;
-                        im_check = sum(im_array,2);
-                        bad_ims = isnan(im_check) | im_check==0;
-                    
-                        if any(bad_ims)
-                            obj.dispMessage('Warning: could not get background images.');
+                
+                for j = 1:obj.params.num_CAM
+                    im = lcaGetSmart(obj.daq_pvs.Image_ArrayData{j});
+                    if isnan(sum(im(:)))
+                        pause(0.1);
+                        im = lcaGetSmart(obj.daq_pvs.Image_ArrayData{j});
+                        if isnan(sum(im(:)))
+                            obj.dispMessage(['Warning: could not get background image for camera ' obj.params.camNames{j}]);
+                            continue;
                         end
                     end
+                    
+                    BGs(j,1:numel(im),i) = im;
+                    
                 end
-                BGs(:,1:max(size(im_array)),i) = im_array;
                 pause(0.1);
             end
+                    
+                
+                
+%                 im_array = lcaGetSmart(obj.daq_pvs.Image_ArrayData);
+%                 im_check = sum(im_array,2);
+%                 bad_ims = isnan(im_check) | im_check==0;
+%                 if any(bad_ims)
+%                     also_bg_ims = lcaGetSmart(obj.daq_pvs.Image_ArrayData(bad_ims));
+%                     max_size = max(size(also_bg_ims));
+%                     %im_array(bad_ims,1:max_size) = lcaGetSmart(obj.daq_pvs.Image_ArrayData(bad_ims));
+%                     im_array(bad_ims,1:max_size) = also_bg_ims;
+%                     im_check = sum(im_array,2);
+%                     bad_ims = isnan(im_check) | im_check==0;
+%                     
+%                     % doing this again. seems dumb
+%                     if any(bad_ims)
+%                         also_bg_ims = lcaGetSmart(obj.daq_pvs.Image_ArrayData(bad_ims));
+%                         max_size = max(size(also_bg_ims));
+%                         im_array(bad_ims,1:max_size) = also_bg_ims;
+%                         im_check = sum(im_array,2);
+%                         bad_ims = isnan(im_check) | im_check==0;
+%                     
+%                         if any(bad_ims)
+%                             obj.dispMessage('Warning: could not get background images.');
+%                         end
+%                     end
+%                 end
+%                 BGs(:,1:max(size(im_array)),i) = im_array;
+%                 pause(0.1);
+%             end
             
             if do_shutter
                 if strcmp(shutter_state,'Yes')
@@ -661,12 +723,25 @@ classdef F2_runDAQ < handle
             end
         end
         
-        function abort(obj)
+        function status = check_abort(obj)
             
-            obj.dispMessage('Abork!');
-            
+            status = caget(obj.pvs.DAQ_Abort);
+            if status
+                obj.dispMessage('Abork!');
+            end
+            %if val; obj.abort(); end
         end
            
+%         function abort(obj)
+%         
+%             obj.dispMessage('Abork!');
+%             
+%             eDefOff(obj.eDefNum);
+%             eDefRelease(obj.eDefNum);
+%                 
+%             obj.end_scan();
+%             
+%         end
         
         
         
