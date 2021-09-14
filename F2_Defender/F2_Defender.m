@@ -10,8 +10,9 @@ classdef F2_Defender < handle
         Disable
         
         PBDefender
-        FilterDefender
+        LaserDefender
         PicoDefender
+        CameraDefender
     end
     properties(Hidden)
         listeners
@@ -28,8 +29,6 @@ classdef F2_Defender < handle
                 PV(context,'name',"Heartbeat",'pvname',"SIOC:SYS1:ML01:AO901",'mode',"rw",'monitor',true); % Defender heartbeat
                 PV(context,'name',"Instance",'pvname',"SIOC:SYS1:ML01:AO902",'mode',"rw",'monitor',true); % Defender instance
                 PV(context,'name',"Disable",'pvname',"SIOC:SYS1:ML01:AO903",'mode',"rw",'monitor',true); % Defender disable
-                PV(context,'name',"MPS_IOC",'pvname',"IOC:SYS1:MP01:HEARTBEATSUM",'mode',"r",'monitor',true); % MPS IOC
-                PV(context,'name',"MPS_shutter",'pvname',"IOC:SYS1:MP01:MSHUTCTL",'mode',"rw",'monitor',true); % MPS Shutter
                 ];
             
             pset(obj.pvlist,'debug',0);
@@ -43,7 +42,9 @@ classdef F2_Defender < handle
             obj.Disable = caget(obj.pvs.Disable);
             
             obj.PBDefender = PBDefender(obj);
-            obj.PicoDefender = PicoDefender(obj);
+            %obj.LaserDefender = LaserDefender(obj);
+            %obj.PicoDefender = PicoDefender(obj);
+            %obj.CameraDefender = CameraDefender(obj);
             
             obj.listeners = addlistener(obj,'PVUpdated',@(~,~) obj.defender_loop);
             run(obj.pvlist,false,1,obj,'PVUpdated');
@@ -71,20 +72,11 @@ classdef F2_Defender < handle
             %%%%%%%%%%%%%%%%%%%%%%%%%%%
             
             obj.PBDefender.check_status();
-            obj.PicoDefender.check_status();
-            
+            %obj.LaserDefender.check_status();
+            %obj.PicoDefender.check_status();
+            %obj.CameraDefender.check_status();
             
         end
-        
-%         function EPS_shutter(obj,state)
-%             
-%             switch state
-%                 case 'in'
-%                     disp('boop')
-%                 case 'out'
-%                     disp('bop')
-%             end
-%         end
         
     end
     
