@@ -132,7 +132,7 @@ classdef PBDefender < handle
             new_queue = {% Allow stage to move in vertical direction
                          'obj.setSoftLimits([obj.pvs.targetStageV_LLM,obj.pvs.targetStageV_HLM],[0,100])';
                          % Set stage vertical to out=80
-                         'obj.move(obj.pvs.targetStageV,targetStageV_RBV,80)';
+                         'obj.move(obj.pvs.targetStageV,obj.pvs.targetStageV_RBV,80)';
                          % Allow stage to move in horizontal direction
                          'obj.setSoftLimits([obj.pvs.targetStageH_LLM,obj.pvs.targetStageH_HLM],[0,150])';
                          % Set stage horizontal to out=0
@@ -150,11 +150,11 @@ classdef PBDefender < handle
             new_queue = {% Allow stage to move in vertical direction
                          'obj.setSoftLimits([obj.pvs.targetStageV_LLM,obj.pvs.targetStageV_HLM],[0,100])';
                          % Set stage vertical to in=75
-                         'obj.move(obj.pvs.targetStageV,targetStageV_RBV,75)';
+                         'obj.move(obj.pvs.targetStageV,obj.pvs.targetStageV_RBV,75)';
                          % Allow stage to move in horizontal direction
                          'obj.setSoftLimits([obj.pvs.targetStageH_LLM,obj.pvs.targetStageH_HLM],[0,150])';
                          % Set stage horizontal to in=150
-                         'obj.move(obj.pvs.targetStageH,targetStageH_RBV,150)';
+                         'obj.move(obj.pvs.targetStageH,obj.pvs.targetStageH_RBV,150)';
                          % Restrict stage motion
                          'obj.setSoftLimits([obj.pvs.targetStageV_LLM,obj.pvs.targetStageV_HLM,obj.pvs.targetStageH_LLM,obj.pvs.targetStageH_HLM],[75,150,0,100])';
                          };

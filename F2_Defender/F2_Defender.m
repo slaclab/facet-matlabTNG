@@ -13,6 +13,7 @@ classdef F2_Defender < handle
         LaserDefender
         PicoDefender
         CameraDefender
+	DumpDefender
     end
     properties(Hidden)
         listeners
@@ -45,7 +46,7 @@ classdef F2_Defender < handle
             %obj.LaserDefender = LaserDefender(obj);
             %obj.PicoDefender = PicoDefender(obj);
             %obj.CameraDefender = CameraDefender(obj);
-            
+            obj.DumpDefender = DumpDender(obj); 
             obj.listeners = addlistener(obj,'PVUpdated',@(~,~) obj.defender_loop);
             run(obj.pvlist,false,1,obj,'PVUpdated');
             
@@ -75,7 +76,7 @@ classdef F2_Defender < handle
             %obj.LaserDefender.check_status();
             %obj.PicoDefender.check_status();
             %obj.CameraDefender.check_status();
-            
+            obj.DumpDefender.check_status(); 
         end
         
     end
