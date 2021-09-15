@@ -84,13 +84,15 @@ classdef F2_DAQApp < handle
             end
             
             obj.DAQ_params.experiment = obj.guihan.ExperimentDropDown.Value;
+            
             EC = split(obj.guihan.EventCodeButtonGroup.SelectedObject.Text);
             obj.DAQ_params.EC = str2num(EC{1});
-            obj.DAQ_params.comment = obj.guihan.CommentTextArea.Value;
-            obj.DAQ_params.n_shot = obj.guihan.ShotsperstepEditField.Value;
+            
+            obj.DAQ_params.comment    = obj.guihan.CommentTextArea.Value;
+            obj.DAQ_params.n_shot     = obj.guihan.ShotsperstepEditField.Value;
             obj.DAQ_params.print2elog = obj.guihan.PrinttoeLogCheckBox.Value;
-            obj.DAQ_params.saveBG = obj.guihan.SavebackgroundCheckBox.Value;
-            obj.DAQ_params.nBG = obj.guihan.BackgroundshotsEditField.Value;
+            obj.DAQ_params.saveBG     = obj.guihan.SavebackgroundCheckBox.Value;
+            obj.DAQ_params.nBG        = obj.guihan.BackgroundshotsEditField.Value;
             
             % Get camera info
             [~,ia,~] = intersect(obj.camCheck.camNames,obj.guihan.ListBox.Items);
@@ -98,11 +100,11 @@ classdef F2_DAQApp < handle
             list_bool(ia) = true;
             obj.camCheck.downSelect(list_bool);
             
-            obj.DAQ_params.camNames = obj.camCheck.camNames;
-            obj.DAQ_params.camPVs = obj.camCheck.camPVs;
-            obj.DAQ_params.camSIOCs = obj.camCheck.siocs;
-            obj.DAQ_params.camTrigs = obj.camCheck.camTrigs;
-            obj.DAQ_params.num_CAM = numel(obj.camCheck.camNames);
+            obj.DAQ_params.camNames = obj.camCheck.DAQ_Cams.camNames;
+            obj.DAQ_params.camPVs   = obj.camCheck.DAQ_Cams.camPVs;
+            obj.DAQ_params.camSIOCs = obj.camCheck.DAQ_Cams.siocs;
+            obj.DAQ_params.camTrigs = obj.camCheck.DAQ_Cams.camTrigs;
+            obj.DAQ_params.num_CAM  = numel(obj.camCheck.DAQ_Cams.camNames);
             
             % Scalar data lists
             obj.DAQ_params.BSA_list = obj.guihan.ListBoxBSA.Items;

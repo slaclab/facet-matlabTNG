@@ -16,8 +16,9 @@ classdef F2_DAQ_exported < matlab.apps.AppBase
         BackgroundshotsEditFieldLabel  matlab.ui.control.Label
         BackgroundshotsEditField       matlab.ui.control.NumericEditField
         PrinttoeLogCheckBox            matlab.ui.control.CheckBox
-        LoadPresetButton               matlab.ui.control.Button
-        ClearPresetButton              matlab.ui.control.Button
+        LoadConfigButton               matlab.ui.control.Button
+        ClearConfigButton              matlab.ui.control.Button
+        SaveConfigButton               matlab.ui.control.Button
         CameraConfigPanel              matlab.ui.container.Panel
         Tree                           matlab.ui.container.Tree
         AddButton                      matlab.ui.control.Button
@@ -82,6 +83,7 @@ classdef F2_DAQ_exported < matlab.apps.AppBase
     
     properties (Access = private)
         aobj % Application helper object
+        config_dir = '/u1/facet/matlab/config/F2_DAQ/'
     end
     
 
@@ -285,6 +287,72 @@ classdef F2_DAQ_exported < matlab.apps.AppBase
             list = app.nonBSADataListBox.Value;
             app.aobj.display_list(list);
         end
+
+        % Button pushed function: SaveConfigButton
+        function SaveConfigButtonPushed(app, event)
+            gui_state = struct();
+            gui_state.Experiment = app.ExperimentDropDown.Value;
+            EC = split(app.EventCodeButtonGroup.SelectedObject.Text);
+            gui_state.EventCode = str2num(EC{1});
+            gui_state.ShotsPerStep = app.ShotsperstepEditField.Value;
+            gui_state.SaveBackground = app.SavebackgroundCheckBox.Value;
+            gui_state.BackgroundShots = app.BackgroundshotsEditField.Value;
+            gui_state.CameraList = {app.ListBox.Items app.ListBox.ItemsData};
+            gui_state.BSAList = app.ListBoxBSA.Items;
+            gui_state.nonBSAList = app.ListBoxNonBSA.Items;
+            gui_state.IncludeSCP = app.IncludeSCPCheckBox.Value;
+            gui_state.nonBSAArrays = app.nonBSAArraysCheckBox.Value;
+            
+            exp = gui_state.Experiment;
+            
+            uisave('gui_state',[app.config_dir exp '_config_' date '.mat']);
+            
+            
+        end
+
+        % Button pushed function: ClearConfigButton
+        function ClearConfigButtonPushed(app, event)
+            app.ExperimentDropDown.Value = 'TEST';
+            app.CommentTextArea.Value = 'Comment . . .';
+            app.Beam10HzButton.Value = true;
+            app.ShotsperstepEditField.Value = 20;
+            app.SavebackgroundCheckBox.Value = true;
+            app.BackgroundshotsEditField.Value = 1;
+            app.ListBox.Items = {};
+            app.ListBox.ItemsData = {};
+            app.ListBoxBSA.Items = {};
+            app.ListBoxNonBSA.Items = {};
+            app.IncludeSCPCheckBox.Value = false;
+            app.nonBSAArraysCheckBox.Value = false;
+        end
+
+        % Button pushed function: LoadConfigButton
+        function LoadConfigButtonPushed(app, event)
+            uiopen(app.config_dir);
+            
+            app.ExperimentDropDown.Value = gui_state.Experiment;
+            
+            switch gui_state.EventCode
+                case 223
+                    app.Beam10HzButton.Value = true;
+                case 53
+                    app.TS510HzButton.Value = true;
+                otherwise
+                    app.aobj.addMessage('Warning: Could not load Event Code');
+            end
+            
+            app.EventCodeButtonGroup.SelectedObject.Value = true;
+            app.ShotsperstepEditField.Value = gui_state.ShotsPerStep;
+            app.SavebackgroundCheckBox.Value = gui_state.SaveBackground;
+            app.BackgroundshotsEditField.Value = gui_state.BackgroundShots;
+            app.ListBox.Items = gui_state.CameraList{:,1};
+            app.ListBox.ItemsData = gui_state.CameraList{:,2};
+            app.ListBoxBSA.Items = gui_state.BSAList;
+            app.ListBoxNonBSA.Items = gui_state.nonBSAList;
+            app.IncludeSCPCheckBox.Value = gui_state.IncludeSCP;
+            app.nonBSAArraysCheckBox.Value = gui_state.nonBSAArrays;
+
+        end
     end
 
     % Component initialization
@@ -313,7 +381,7 @@ classdef F2_DAQ_exported < matlab.apps.AppBase
             app.ExperimentDropDown = uidropdown(app.DAQSettingsPanel);
             app.ExperimentDropDown.Items = {'TEST', 'E300', 'E305', 'E320', 'E326', 'E327'};
             app.ExperimentDropDown.Position = [88 187 71 22];
-            app.ExperimentDropDown.Value = 'E300';
+            app.ExperimentDropDown.Value = 'TEST';
 
             % Create EventCodeButtonGroup
             app.EventCodeButtonGroup = uibuttongroup(app.DAQSettingsPanel);
@@ -373,17 +441,23 @@ classdef F2_DAQ_exported < matlab.apps.AppBase
             app.PrinttoeLogCheckBox.Position = [175 79 98 22];
             app.PrinttoeLogCheckBox.Value = true;
 
-            % Create LoadPresetButton
-            app.LoadPresetButton = uibutton(app.DAQSettingsPanel, 'push');
-            app.LoadPresetButton.Enable = 'off';
-            app.LoadPresetButton.Position = [293 50 100 23];
-            app.LoadPresetButton.Text = 'Load Preset';
+            % Create LoadConfigButton
+            app.LoadConfigButton = uibutton(app.DAQSettingsPanel, 'push');
+            app.LoadConfigButton.ButtonPushedFcn = createCallbackFcn(app, @LoadConfigButtonPushed, true);
+            app.LoadConfigButton.Position = [293 79 100 23];
+            app.LoadConfigButton.Text = 'Load Config';
 
-            % Create ClearPresetButton
-            app.ClearPresetButton = uibutton(app.DAQSettingsPanel, 'push');
-            app.ClearPresetButton.Enable = 'off';
-            app.ClearPresetButton.Position = [293 12 100 23];
-            app.ClearPresetButton.Text = 'Clear Preset';
+            % Create ClearConfigButton
+            app.ClearConfigButton = uibutton(app.DAQSettingsPanel, 'push');
+            app.ClearConfigButton.ButtonPushedFcn = createCallbackFcn(app, @ClearConfigButtonPushed, true);
+            app.ClearConfigButton.Position = [293 12 100 23];
+            app.ClearConfigButton.Text = 'Clear Config';
+
+            % Create SaveConfigButton
+            app.SaveConfigButton = uibutton(app.DAQSettingsPanel, 'push');
+            app.SaveConfigButton.ButtonPushedFcn = createCallbackFcn(app, @SaveConfigButtonPushed, true);
+            app.SaveConfigButton.Position = [293 45 100 23];
+            app.SaveConfigButton.Text = 'Save Config';
 
             % Create CameraConfigPanel
             app.CameraConfigPanel = uipanel(app.FACETIIDAQUIFigure);

@@ -22,6 +22,7 @@ classdef F2_runDAQ < handle
         scanFunctions
         eDefNum
         daq_status
+        camCheck
     end
     properties(Hidden)
         listeners
@@ -48,6 +49,9 @@ classdef F2_runDAQ < handle
             if exist('apph','var')
                 obj.objhan=apph;
                 obj.freerun = false;
+                obj.camCheck = apph.camCheck;
+            else
+                obj.camCheck = F2_CamCheck(true,obj);
             end
                         
             % initialize object and add PVs to be monitored
@@ -531,7 +535,7 @@ classdef F2_runDAQ < handle
             
         
         function checkCams(obj)
-            bad_cam = obj.objhan.camCheck.checkConnect();
+            bad_cam = obj.camCheck.checkConnect(true);
             
             for i = 1:obj.params.num_CAM
                 if bad_cam(i)
@@ -729,21 +733,7 @@ classdef F2_runDAQ < handle
             if status
                 obj.dispMessage('Abork!');
             end
-            %if val; obj.abort(); end
         end
-           
-%         function abort(obj)
-%         
-%             obj.dispMessage('Abork!');
-%             
-%             eDefOff(obj.eDefNum);
-%             eDefRelease(obj.eDefNum);
-%                 
-%             obj.end_scan();
-%             
-%         end
-        
-        
         
     end
 end

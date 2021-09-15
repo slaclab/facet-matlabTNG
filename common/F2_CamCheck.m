@@ -14,6 +14,7 @@ classdef F2_CamCheck < handle
         DAQ_bool
         objhan
         freerun
+        DAQ_Cams
     end
     properties(Hidden)
         listeners
@@ -150,22 +151,40 @@ classdef F2_CamCheck < handle
         
         function downSelect(obj,ind)
             % This function selects only the cams wanted by DAQ
-            obj.camera_info(~ind,:) = [];
-            obj.camNames(~ind) = [];
-            obj.camPVs(~ind) = [];
-            obj.regions(~ind) = [];
-            obj.camTrigs(~ind) = [];
-            obj.camPower(~ind) = [];
-            obj.siocs(~ind) = [];
+%             obj.camera_info(~ind,:) = [];
+%             obj.camNames(~ind) = [];
+%             obj.camPVs(~ind) = [];
+%             obj.regions(~ind) = [];
+%             obj.camTrigs(~ind) = [];
+%             obj.camPower(~ind) = [];
+%             obj.siocs(~ind) = [];
+
+            obj.DAQ_Cams.camera_info = obj.camera_info(ind,:);
+            obj.DAQ_Cams.camNames = obj.camNames(ind);
+            obj.DAQ_Cams.camPVs = obj.camPVs(ind);
+            obj.DAQ_Cams.regions = obj.regions(ind);
+            obj.DAQ_Cams.camTrigs = obj.camTrigs(ind);
+            obj.DAQ_Cams.camPower = obj.camPower(ind);
+            obj.DAQ_Cams.siocs = obj.siocs(ind);
+
+
         end
         
-        function bad_cam = checkConnect(obj)
+        function bad_cam = checkConnect(obj,daq_bool)
             % Check if camera is running
-            cmos_cams = strcmp(obj.regions,'S20 sCMOS');
-            connect_pvs = strcat(obj.camPVs,':AsynIO.CNCT');
-            connect_pvs(cmos_cams) = strcat(obj.camPVs(cmos_cams),':DetectorState_RBV');
-            cam_stat = lcaGet(connect_pvs,0,'DBF_ENUM');
-            bad_cam = cam_stat ~= 1;
+            if daq_bool
+                cmos_cams = strcmp(obj.DAQ_Cams.regions,'S20 sCMOS');
+                connect_pvs = strcat(obj.DAQ_Cams.camPVs,':AsynIO.CNCT');
+                connect_pvs(cmos_cams) = strcat(obj.DAQ_Cams.camPVs(cmos_cams),':DetectorState_RBV');
+                cam_stat = lcaGet(connect_pvs,0,'DBF_ENUM');
+                bad_cam = cam_stat ~= 1;
+            else
+                cmos_cams = strcmp(obj.regions,'S20 sCMOS');
+                connect_pvs = strcat(obj.camPVs,':AsynIO.CNCT');
+                connect_pvs(cmos_cams) = strcat(obj.camPVs(cmos_cams),':DetectorState_RBV');
+                cam_stat = lcaGet(connect_pvs,0,'DBF_ENUM');
+                bad_cam = cam_stat ~= 1;
+            end
         end
                         
         
