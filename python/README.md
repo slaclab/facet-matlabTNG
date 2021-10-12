@@ -17,5 +17,5 @@
 * internally generates xopt_eval.py & xopt_eval.yaml files in local directory at run time for running Xopt
 ```MATLAB
 help Xopt % instructions for using Xopt class
-RUNME % Runs example using fitnessfcn_xopt.m as example objective function (further documentation and results seen within live script)
+xopt_example % Runs example using fitnessfcn_xopt.m as example objective function (further documentation and results seen within live script)
 ```
