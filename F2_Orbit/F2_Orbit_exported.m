@@ -40,6 +40,7 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
     EditField_2                  matlab.ui.control.NumericEditField
     PlotModelFitButton           matlab.ui.control.StateButton
     UIAxes5_3                    matlab.ui.control.UIAxes
+    DL1_EFB_Jit                  matlab.ui.control.Button
     MIATab                       matlab.ui.container.Tab
     UIAxes6                      matlab.ui.control.UIAxes
     PlotOptionPanel              matlab.ui.container.Panel
@@ -101,9 +102,9 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
       app.INJButtonValueChanged(); % Populates BPM and corrector list boxes
     end
 
-    % Value changed function: BC11Button, BC14Button, 
-    % BC20Button, DL1Button, FFSButton, INJButton, L0Button, 
-    % L1Button, L2Button, L3Button, SPECTButton
+    % Value changed function: BC11Button, BC14Button, BC20Button, 
+    % DL1Button, FFSButton, INJButton, L0Button, L1Button, 
+    % L2Button, L3Button, SPECTButton
     function INJButtonValueChanged(app, event)
       value = [app.INJButton.Value app.L0Button.Value app.DL1Button.Value app.L1Button.Value ...
         app.BC11Button.Value app.L2Button.Value app.BC14Button.Value app.L3Button.Value ...
@@ -176,6 +177,9 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
       app.NReadEditField.Value=0;
       drawnow
       try
+        if app.DL1_EFB_Jit.Value % Switch on Energy feedback jitter for DL1 FB?
+          lcaPutNoWait('SIOC:SYS1:ML01:AO217',1);
+        end
         app.aobj.acquire(app.NPulseEditField.Value);
         app.ListBox.Value = app.aobj.bpmid(app.aobj.usebpm) ;
         app.NReadEditField.Value = double(app.aobj.BPMS.nread) ;
@@ -184,6 +188,10 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
       catch ME
         errordlg(sprintf('Failed to acquire new BPM values: %s',ME.message));
         app.AcquireOrbitButton.Enable=true; drawnow;
+        lcaPutNoWait('SIOC:SYS1:ML01:AO217',0);
+      end
+      if app.DL1_EFB_Jit.Value
+        lcaPutNoWait('SIOC:SYS1:ML01:AO217',0);
       end
     end
 
@@ -635,6 +643,11 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
       xlabel(app.UIAxes5_3, 'X')
       ylabel(app.UIAxes5_3, 'Y')
       app.UIAxes5_3.Position = [47 454 644 104];
+
+      % Create DL1_EFB_Jit
+      app.DL1_EFB_Jit = uibutton(app.DispersionTab, 'push');
+      app.DL1_EFB_Jit.Position = [700 8 127 37];
+      app.DL1_EFB_Jit.Text = 'DL1 Energy FB Jitter';
 
       % Create MIATab
       app.MIATab = uitab(app.TabGroup);

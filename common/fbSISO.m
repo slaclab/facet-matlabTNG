@@ -29,6 +29,8 @@ classdef fbSISO < handle
     Running logical = true % Externally controlled running state
     InvertControlVal logical = false % Flip sign on control value before writing (negates the FB gain)
     Debug uint8 = 0 % 1: write new control vals to console not controls
+    Jitter = 0 % Apply jitter to feedback if >0
+    JitterTimeout = 2  % Disable jitter after JitterTimeout (min)
   end
   properties(SetObservable)
     Enable logical = false
@@ -53,6 +55,7 @@ classdef fbSISO < handle
     lastvals
     valc
     lastwrite
+    JitterOnTime
   end
   
   methods
@@ -331,6 +334,17 @@ classdef fbSISO < handle
         end
         if obj.InvertControlVal
           dc=-dc;
+        end
+        if obj.Jitter>0 % Apply random jitter to feedback
+          if isempty(obj.JitterOnTime)
+            obj.JitterOnTime=clock;
+          elseif etime(obj.JitterOnTime,clock)/60 > obj.JitterTimeout
+            obj.Jitter = 0 ;
+            obj.JitterOnTime = [] ;
+          end
+          dc = dc + (-1+rand*2)*obj.Jitter ;
+        else
+          obj.JitterOnTime = [] ;
         end
       end
     end
