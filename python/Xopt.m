@@ -225,7 +225,6 @@ classdef Xopt < handle
       fprintf(yfile,"  name: xopt_eval\n");
       fprintf(yfile,"  description: null\n");
       fprintf(yfile,"  simulation: xopt_eval\n");
-      fprintf(yfile,"  templates: null\n");
       fprintf(yfile,"  variables:\n");
       for ix=1:obj.nvar
         fprintf(yfile,"    x%d: [%g, %g]\n",ix,xran(1,ix),xran(2,ix));
