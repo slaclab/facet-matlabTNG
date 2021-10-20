@@ -11,25 +11,31 @@ classdef Xopt < handle
   % Useage:
   %  X = Xopt(funcname,nvar,nobj) ;
   %    Associate objective function (funcname) to optimizer, this function must be in the function search path and have nvar input arguments and nobj output arguments
-  %    x0: initial point to evaluate objective function (dimensionality = number of decision variables)
   %    nobj: number of objectives
   %  X.runopt ;
   %  Results are in X.results
   %
   % e.g.
-  %  X = Xopt("myobjfun",2,2)
+  %  X = Xopt("TNK_xopt",2,2)
   %  With the following objective function:
-  %  function [y1,y2,c1] = myobjfun(x1,x2)
-  %  y1=  x1.^2 + x2.^2 - 1.0 - 0.1 * cos(16 .* atan2(x1, x2)) ;
-  %  y2 = (x1 - 0.5).^2 + (x2 - 0.5).^2 ;
-  %  c1=1; % use c1 to apply any constraint (constraint considered failed if c1<0)
+  %  function [y1,y2] = TNK_xopt(x1,x2)
+  %
+  %     g1=  -x1.^2-+ x2.^2 + 1.0 - 0.1 * cos(16 .* atan2(x1, x2)) ;
+  %     g2 = (x1 - 0.5).^2 + (x2 - 0.5).^2 ;
+  %
+  %     y1 = x1 ;
+  %     y2 = x2 ;
+  %
+  %     if g1>0 || g2>0.5
+  %       y1=nan; y2=nan;
+  %     end
   %  NB: If any outputs set to NaN or inf, then optimizer will skip this data point
   %
   % Currently supports the following algorithms within Xopt: mobo cnsga
   properties
     PythonExe string = "python" % command line python executable
     Optimizer string {mustBeMember(Optimizer,["mobo" "cnsga"])} = "cnsga" % Optimizer routine supported by Xopt package
-    Nworkers {mustBePositive} = 4
+    Nworkers {mustBePositive} = 1 % If parpool exists, autoset to nlabs in parpool, else =1 implies local running >1 will launch on parpool
     verbose logical = true % Verbosity setting for Xopt output (stored in xopt_out property)
     n_initial_samples {mustBePositive} = 5 % used by MOBO algorithm
     n_steps {mustBePositive} = 10 % used by MOBO algorithm
@@ -259,17 +265,25 @@ classdef Xopt < handle
       
       % Start workers or connect to already running pool
       if isempty(gcp('nocreate')) || (~isempty(obj.pool) && ~obj.pool.Connected)
-        fprintf('Starting Matlab Engine on %d parallel worker nodes...\n',obj.Nworkers);
-        obj.pool = parpool(obj.Nworkers) ;
+        if obj.Nworkers>1
+          fprintf('Starting Matlab Engine on %d parallel worker nodes...\n',obj.Nworkers);
+          obj.pool = parpool(obj.Nworkers) ;
+        end
       else
         obj.pool = gcp ;
         obj.Nworkers = obj.pool.NumWorkers ;
       end
       
       % Start Matlab Engine(s)
-      spmd
+      if isempty(gcp('nocreate')) % For single, local worker start python engine on current Matlab session
         if ~matlab.engine.isEngineShared
-          matlab.engine.shareEngine(sprintf('Engine_%d',labindex-1))
+          matlab.engine.shareEngine();
+        end
+      else % Start a pytgon engine on each parallel worker
+        spmd
+          if ~matlab.engine.isEngineShared
+            matlab.engine.shareEngine(sprintf('Engine_%d',labindex-1))
+          end
         end
       end
     end
