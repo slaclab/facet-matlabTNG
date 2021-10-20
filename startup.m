@@ -1,9 +1,15 @@
 if ~isdeployed 
-  addpath ../epics/extensions/labca_3_7_2/bin/linux-x86_64/labca/
-  addpath ../matlabTNG/common
-  addpath ../matlabTNG/web
-  addpath ../matlabTNG/F2_LiveModel
-  ldir="/usr/local/facet/tools/Lucretia/src/" ;
+  if getenv('IOCCONSOLE_ENV')~="Dev"
+    addpath ../epics/extensions/labca_3_7_2/bin/linux-x86_64/labca/
+  end
+  addpath common
+  addpath web
+  addpath F2_LiveModel
+  if getenv('IOCCONSOLE_ENV')=="Dev"
+    ldir="/afs/slac/g/ilc/codes/Lucretia/src/";
+  else
+    ldir="/usr/local/facet/tools/Lucretia/src/" ;
+  end
   addpath(ldir+"BeamGeneration");
   addpath(ldir+"LatticeGeneration");
   addpath(ldir+"LatticeVerification");
