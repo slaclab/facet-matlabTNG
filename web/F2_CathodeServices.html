@@ -11,10 +11,7 @@
     <p>Glen White, SLAC.<br>
       email: whitegr -AT- slac.stanford.edu <br>
     </p>
-    <b> v.1.0 (procedures, software and target values under development-
-      specific values reported here to be updated when operational
-      experience gained)<br>
-    </b>
+    <b> </b>
     <p><a href="#Theory">Theory</a> | <a href="#CleaningProc">Laser
         Cleaning Procedure</a> | <a href="#Manual">Software User Manual</a>
       | <a href="#Simulation">Simulation</a> <br>
@@ -37,12 +34,15 @@
         observed background level.</li>
       <li>Cleaning re-deposits contamination over previously cleaned
         areas. Multiple cleaning passes required.</li>
-      <li>Laser parameters for cleaning are: <b>200 um x 200 um @ 130
-          uJ</b></li>
-      <li>Clean area with radius <b>1.5 mm</b></li>
+      <li>Laser parameters for cleaning are approximately: <b>120 um x
+          120 um @ &gt;25 uJ (&gt; 1,000 uJ/mm^2)<br>
+        </b></li>
+      <li>Clean area with radius <b>2.8 mm </b>(Just larger than 5.5
+        mm laser spot diameter)<br>
+      </li>
       <li><a href="uv_tables.key">Tables of suggested laser cleaning
           parameters</a><br>
-        <b></b></li>
+      </li>
     </ul>
     <h2><a name="CleaningProc">Laser Cleaning Procedure</a></h2>
     <h3>General Notes:</h3>
@@ -62,9 +62,9 @@
         many conditions which cause the laser MPS shutter to be
         inserted, do not start or operate this software if occasional
         interruption of laser pulse is a problem.</li>
-      <li>The general flow of steps is to first determine the area to
-        clean, then test the ability to move the laser around, then set
-        the laser energy for cleaning and then perform the cleaning</li>
+      <li>In general, workflow is to first determine the area to clean,
+        then test the ability to move the laser around, then set the
+        laser energy for cleaning and then perform the cleaning</li>
       <ul>
         <li>This is performed by following the procedure below, which
           involves the sequential pushing of buttons from top to bottom
@@ -106,45 +106,71 @@
     </ul>
     <h3>Pre-Cleaning Steps:</h3>
     <ul>
+      <li>Ensure cathode services EPICS watcher process is running:<br>
+        <br>
+        <img src="watchers_cathodeServices.png" alt="" width="340"
+          height="752"><br>
+        <br>
+      </li>
+      <li>Start Cathode Services program:<br>
+        <img src="MatlabGUI_cathodeServices.png" alt="" width="833"
+          height="876"><br>
+        <br>
+      </li>
       <li>Gun RF should be OFF</li>
       <ul>
         <li>Check "10-2 Mod. OFF?" status light shows green.<br>
         </li>
       </ul>
-      <li>Laser set to low strength : <b>10 uJ</b></li>
+      <li>Laser set to low strength : <b>55-degrees waveplate setting<br>
+        </b></li>
       <li>Check connection to EPICS watchdog database: green indicator
         should show in the "EPICS Watchdog" tab.<br>
       </li>
-      <li>Define cleaning area and cleaning parameters:</li>
+      <li>Define cleaning area and cleaning parameters.</li>
       <ul>
-        <li>Enter center of cleaning area using X and Y entry fields on
-          GUI ("get" button sets entries based on current motor position
-          [X icon in figure window])</li>
+        <li>The center cleaning position should remain fixed with
+          respect to the previously cleaned area on cathode. If needed
+          (i.e. if VCC position has changed):</li>
+        <ul>
+          <li>Enter center of cleaning area using X and Y entry fields
+            on GUI ("get" button sets entries based on current motor
+            position [X icon in figure window])</li>
+        </ul>
         <li>Enter required cleaning radius (in mm), # of pulses to use
           at each cleaning step and cleaning step size (in microns:
           should be ~40% FWHM cleaning pulse width)</li>
         <ul>
-          <li>Suggested settings: <b>R=1.5 mm, 3 pulse per step, 80 um
+          <ul>
+          </ul>
+          <li>Suggested settings: <b>R=2.8 mm, 4 pulse per step, 22 um
               step size</b><br>
           </li>
+          <ul>
+          </ul>
         </ul>
         <li><b>Press "Define Cleaning Area" button</b> on GUI</li>
         <ul>
+          <ul>
+          </ul>
           <li>You should see a black circle which is the requested
             cleaning area, a black cross at the center of the circle,
             and 2 dashed squares indicating the "clean" and "dirty" test
             zones (see figure in software manual section below)</li>
+          <ul>
+          </ul>
         </ul>
       </ul>
       <li>Ensure optical telescope inserted for small laser spot size on
-        cathode and iris opened<br>
-      </li>
+        cathode and iris opened <b>(follow directions under
+          help-&gt;Procedures menu)</b> </li>
       <ul>
         <li>Check "Small Spot Enabled" status lamp indicates green on
-          GUI<br>
+          GUI <br>
         </li>
       </ul>
-      <li>Checkout of motion</li>
+      <li>Checkout of motion (if cleaning app not used in a while)<br>
+      </li>
       <ul>
         <li><b>Press "Test Cleaning Sequence" button</b>: Laser spot
           should track inner test square pattern.</li>
@@ -173,12 +199,10 @@
           in expected ranges: gun vacuum, image intensity, laser energy
           and spot size, laser fluence<br>
         </li>
-        <li>Check laser spot looks round and indicated spot size is ~<b>200
+        <li>Check laser spot looks round and indicated spot size is ~<b>120
+
 
             um</b></li>
-        <ul>
-          <li>Tune iris to optimize laser image quality</li>
-        </ul>
         <li>Check laser pointing stability: should be <b>&lt;10% FWHM
             spot size</b><br>
         </li>
@@ -193,7 +217,10 @@
           </li>
         </ul>
       </ul>
-      <li>Determine laser cleaning energy and monitor ranges</li>
+      <li>Determine laser cleaning energy and monitor rangesm (for first
+        cleaning pass- subsequent passes, use +10% laser energy from
+        previous pass)<br>
+      </li>
       <ul>
         <li><b>Press "Determine Initial Cleaning Energy" button</b>:
           Laser spot should track outer test square pattern.</li>
@@ -227,14 +254,15 @@
           cleaning program (by default the cleaning software increments
           the start position knob after each cleaning cycle).</li>
       </ul>
-      <li>Check expected cleaning time</li>
+      <li>Engage Ludicrous mode?</li>
       <ul>
-        <li>The "Approx. Time Remaining" gauge and readout shows the
-          time to clean the chosen area, taking account all cleaning
-          parameters set. It doesn't include the "end effects" such as
-          time spent moving to start of each new line to start the next
-          sweep and is thus a lower bound estimate.</li>
+        <li>Check this option to have the cleaning procedure run in an
+          endless loop (until stop button is pushed). The start position
+          will be automatically cycled for each loop.</li>
       </ul>
+      <li>Launch strip tool to monitor various PVs of interest during
+        cleaning: use <b>Tools menu -&gt; Strip Tool</b><br>
+      </li>
       <li><b>Push "Execute Automatic Cleaning Procedure" button</b>:
         this starts the cathode cleaning.<br>
       </li>
@@ -295,20 +323,21 @@
             stop and the MPS laser shutter inserted</li>
           <li>a warning window will appear with text indicating the
             conditions that caused the stop condition</li>
-          <li>the STOP button is replaced by a RESET button<br>
-          </li>
           <li>investigate the reason for the auto stop, when satisfied
             the condition is no longer present: restart the cleaning by
-            pushing the RESET button (NOT the "Reset to Standy: button)
-            and the cleaning will resume from the last position</li>
+            pushing the RESET button and the cleaning will resume from
+            the last position</li>
         </ul>
       </ul>
     </ul>
     <h3>Cleaning Cycle Complete:</h3>
     <ul>
-      <li>Note parameters used in elog</li>
+      <li>Note parameters used in log</li>
       <li>Check QE</li>
       <li>If required, repeat cleaning for new starting position with <b>laser
+
+
+
 
           energy increased by 10%</b></li>
       <ul>
@@ -332,10 +361,11 @@
       href="#gunRfPanel">Gun RF Panel</a> | <a
       href="#laserTelescopePanel">Laser Telescope Panel</a> | <a
       href="#toroidPanel">Toroid Panel </a>| <a
-      href="#faradayCupPanel">Faraday Cup Panel</a><br>
+      href="#faradayCupPanel">Faraday Cup Panel </a>| <a
+      href="#ValvePanel">Valve VV155 Panel</a><br>
     <br>
-    <img src="F2_CathodeServices_LaserCleaning.png" alt="" width="1481"
-      height="738"><br>
+    <img src="F2_CathodeServices_LaserCleaning.png" alt="" width="1331"
+      height="649"><br>
     <br>
     <h3><a name="menus"></a>Menus</h3>
     <ul>
@@ -369,7 +399,11 @@
         <li><b>Save buffered data</b></li>
         <ul>
           <li>Save buffered data taken whilst "Buffered Data
-            Acquisition" button depressed to user defined Matlab file<br>
+            Acquisition" button depressed to user defined Matlab file</li>
+        </ul>
+        <li><b>Save cleaning data</b></li>
+        <ul>
+          <li>Save data taken during cleaning cycle<br>
           </li>
         </ul>
       </ul>
@@ -412,12 +446,6 @@
             of buffer is reached</li>
           <li>Select menu item to adjust buffer length, current buffer
             length is displayed in menu text</li>
-          <ul>
-            <li>Reducing buffer length destroys some stored data (may be
-              newer or older data depending on buffer pointer location),
-              increasing buffer length preserves stored data<br>
-            </li>
-          </ul>
         </ul>
         <li><b>Clear Buffer</b></li>
         <ul>
@@ -441,6 +469,20 @@
           <li>Provide Matlab file name to store current image data
             (correspond to presently displayed image in axis window)</li>
         </ul>
+        <li><b>Normalization</b></li>
+        <ul>
+          <li>CCD or Laser Energy used to weight VCC image during
+            cleaning scan</li>
+        </ul>
+        <li><b>Select color map</b></li>
+        <ul>
+          <li>Change the colormap used on the VCC image</li>
+        </ul>
+        <li><b>Show fit</b></li>
+        <ul>
+          <li>Display fit data for laser spot size determination<br>
+          </li>
+        </ul>
       </ul>
       <li><b>Tools</b></li>
       <ul>
@@ -459,17 +501,29 @@
           <li>Change amount of data with Settings-&gt;Buffer length menu
             item</li>
         </ul>
+        <li><b>Strip Tool</b></li>
+        <ul>
+          <li>Launch EPICS strip tool with PVs of interest to cleaning
+            process<br>
+          </li>
+        </ul>
       </ul>
       <li><b>Help</b></li>
       <ul>
         <li><b>About</b></li>
         <ul>
           <li>Author contact info and software version displayed<br>
-            <b></b></li>
+          </li>
         </ul>
         <li><b>Documentation</b></li>
         <ul>
           <li>This documentation displayed in a pop-up browser window</li>
+        </ul>
+        <li><b>Procedures</b></li>
+        <ul>
+          <li>List of procedures for setting up laser in small-spot size
+            (laser cleaning) mode, or operations mode<br>
+          </li>
         </ul>
       </ul>
     </ul>
@@ -479,11 +533,11 @@
       cleaning procedure above. Current state is summarized in "Cleaning
       Status:" window. Default state is "Standby", and is the starting
       state for all laser cleaning operations. This state can be
-      restored at any time by pushing the "Reset to Standby" button (a
-      popup window asks for confirmation as some information may be
-      lost). Any automatic routine can be halted by pushing the STOP
-      button at any time, which can be resumed by re-pressing the button
-      used to start the process initially.<br>
+      restored by pushing the "Reset" button (a popup window asks for
+      confirmation as some information may be lost). Any automatic
+      routine can be halted by pushing the STOP button at any time,
+      which can be resumed by re-pressing the button used to start the
+      process initially.<br>
       The user is able to operate the MPS shutter position in the
       standby mode mode, but the automatic scanning procedures take
       control of the laser shutter when running and open the shutter
@@ -574,6 +628,13 @@
         <li>Program automatically increments "Cleaning Start Position"
           dial on completion of cleaning cycle</li>
       </ul>
+      <li><b>Ludicrous mode</b></li>
+      <ul>
+        <li>Cleaning cycle will automatically re-start after completing
+          in the next cleaning start position. This will endlessly
+          repeat until STOP button is pushed.<br>
+        </li>
+      </ul>
       <li><b>"Cleaning Center" button and data fields</b></li>
       <ul>
         <li>X and Y coordinates of desired center of cleaning area (in
@@ -604,25 +665,27 @@
         <li>Displays current operating state and any terse error
           messages</li>
       </ul>
-      <li><b>"STOP" or "RESET" button</b></li>
+      <li><b>"STOP" button</b></li>
       <ul>
         <li>Stops the current automatic program from running and returns
           laser position to center of cleaning area and returns to
           "Define Cleaning Area" state.</li>
-        <li>STOP changes to RESET if an automatic program detects an
-          unsafe state and aborts, leaving MPS shutter closed. Press to
-          reset operations if it is safe to do so. Shutter retraction is
-          inhibited until safe operations state re-established.</li>
+      </ul>
+      <li><b>"RESET" button</b></li>
+      <ul>
+        <li>Press to reset operations if automatically stopped and it is
+          safe to do so. Shutter retraction is inhibited until safe
+          operations state re-established. ie you cannot restart the
+          cleaning cycle if one of the readbacks is outside the give
+          min/max ranges for example.<br>
+        </li>
       </ul>
       <li><b>"Approx time remaining" gauge and readback<br>
         </b></li>
       <ul>
         <li>The estimated time to perform laser cleaning based on the
           input parameters in this panel in minutes, updated during
-          cleaning operation.</li>
-        <li>This is a lower bound estimate as it doesn't take into
-          account end-effects as the motors re-position at the end of
-          each line scan</li>
+          cleaning operation (not very accurate).</li>
       </ul>
       <li><b>"Cleaning Start Position" dial<br>
         </b></li>
@@ -709,10 +772,6 @@
     </ul>
     <h3><a name="ccdImagePanel"></a>CCD Image Panel</h3>
     <ul>
-      <li><b>VCC/Reflection camera toggle switch</b></li>
-      <ul>
-        <li><i>Currently unavailable</i></li>
-      </ul>
       <li><b>UIAxes window</b></li>
       <ul>
         <li>Shows current CCD camera image or image loaded with
@@ -759,6 +818,15 @@
           position and should be left that way during automatic program
           operations</li>
       </ul>
+      <li><b>Controls button</b></li>
+      <ul>
+        <li>Launches EPICS EDM panel for camera</li>
+      </ul>
+      <li><b>Detach button</b></li>
+      <ul>
+        <li>Displays CCD image in a separate Matlab figure window.<br>
+        </li>
+      </ul>
       <li><b>"Buffered Data Acquisition" toggle button</b></li>
       <ul>
         <li>When depressed, laser positions (x and y, determined by
@@ -772,7 +840,15 @@
         <li>Settings-&gt;Buffer Length and Settings-&gt;Clear Buffer
           menu items control data buffer entries</li>
         <li>Stored data can be saved in a Matlab file using the
-          File-&gt;Save Buffered data menu item<br>
+          File-&gt;Save Buffered data menu item</li>
+      </ul>
+      <li><b>Background</b></li>
+      <ul>
+        <li>Check box to subtract background from new images.</li>
+        <li>Take new background using embedded button (uses provided
+          number of images averaged to form background signal)</li>
+        <li>Indicator light shows current in-memory background image is
+          compatible with current settings.<br>
         </li>
       </ul>
     </ul>
@@ -884,6 +960,11 @@
       Controls button brings up the EDM panel associated with the
       Faraday cup device.<br>
     </p>
+    <h3><a name="ValvePanel"></a>Valve VV155 Panel</h3>
+    <p>This injector valve needs to be OUT for the laser to be able to
+      strike the cathode surface. This condition is indicated by a green
+      status light.<br>
+    </p>
     <h2><a name="Simulation"></a>Simulation</h2>
     <b>Requirements:</b><br>
     <ul>
@@ -893,7 +974,7 @@
       <ul>
         <li>available from git repository <b>https://whitegr@bitbucket.org/whitegr/lucretia.git</b></li>
         <li>src directories should be in Matlab search path<br>
-          <b></b></li>
+        </li>
       </ul>
       <li>Written and tested in Ubuntu 18.04 LTS.</li>
       <ul>
@@ -906,10 +987,10 @@
       <li>Program available from facet software github repository: <b>https://github.com/slaclab/facet-sw.git</b></li>
       <ul>
         <li>Clone repository, and run from facet-sw/matlab directory<br>
-          <b></b></li>
+        </li>
       </ul>
       <li>Start facet-dev simulation environment<br>
-        <b></b></li>
+      </li>
       <ul>
         <li><a href="facet-dev.html">See here for installation and run
             instructions</a></li>
