@@ -47,6 +47,26 @@ classdef F2_common < handle
       end
       da.reset;
     end
+    function aidamput(name,val)
+      %AIDAMPUT Set one or more SLC magnet BDES values through AIDA
+      %
+      aidainit;
+      import edu.stanford.slac.aida.lib.da.DaObject;
+      import edu.stanford.slac.err.*;
+      import edu.stanford.slac.aida.lib.da.*;
+      import edu.stanford.slac.aida.lib.util.common.*;
+      da=DaObject;
+      in=DaValue;
+      
+      in.type=0;
+      in.addElement(DaValue(name(:)));
+      %in.addElement(DaValue(java.lang.Float(val))); % Kludge to make Aida format conversion work.
+      in.addElement(DaValue(single(val(:)))); % Kludge to make Aida format conversion work.
+      da.reset;
+      da.setParam('MAGFUNC','TRIM');
+      da.setParam('LIMITCHECK','SOME');
+      da.setDaValue('MAGNETSET//BDES',in);
+    end
     function dnum = epics2mltime(tstamp)
       % Put epics time stamp as Matlab datenum format in gui requested
       % local time

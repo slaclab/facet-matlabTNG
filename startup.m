@@ -4,8 +4,9 @@ if ~isdeployed
   end
   addpath common
   addpath web
+  addpath python
   addpath F2_LiveModel
-  if getenv('IOCCONSOLE_ENV')=="Dev"
+  if string(getenv('IOCCONSOLE_ENV'))=="Dev"
     ldir="/afs/slac/g/ilc/codes/Lucretia/src/";
   else
     ldir="/usr/local/facet/tools/Lucretia/src/" ;

@@ -1,12 +1,16 @@
 classdef LucretiaModel < handle & matlab.mixin.Copyable
   %LUCRETIAMODEL Interface to Lucretia model
   properties
-    Initial % Lucretia Initial structure
+    Initial % Lucretia Initial structure (start of BEAMLINE)
     UseMissingEle logical = false % Remove elements listed in MissingEle string from consideration?
   end
   properties(Dependent)
+    istart uint16 % First BEAMLINE element in region
+    iend uint16 % Last BEAMLINE element in region
+    P0 % Momentum of first element in Selected region [GeV] (setting rescales momentum profile accordingly for d/s elements)
     ModelClassList string
     ModelP double % GeV
+    ModelZ
     ModelBrho
     ModelBDES double % kG.m^(N-1)
     ModelBDES_Z double % Z coord of all elements with magnetic field
@@ -19,6 +23,7 @@ classdef LucretiaModel < handle & matlab.mixin.Copyable
     ModelID uint16 % BEAMLINE indices of all elements wihin range of UseRegion selection
     ModelUniqueID uint16 % BEAMLINE indices of all elements wihin range of UseRegion selection, for only 1 of each split element
     MissingEleInd uint16
+    PSid uint16 % Power supply indicies (0 indicates no PS)
   end
   properties(Constant)
     LucretiaModelVersion single = 1.0
@@ -39,6 +44,7 @@ classdef LucretiaModel < handle & matlab.mixin.Copyable
     DesignTwiss % Twiss parameters for design model
     DesignBeamline % Original BEAMLINE from source lattice file
     RefTwiss % Some other reference Twiss parameter set
+    Initial1 % Lucretia Initial structure (start of region)
   end
   properties(SetObservable)
     ModelClasses string  = "All"
@@ -87,10 +93,29 @@ classdef LucretiaModel < handle & matlab.mixin.Copyable
       obj.ModelDesign.KLYSTRON=KLYSTRON;
       [~,obj.DesignTwiss]=GetTwiss(1,length(BEAMLINE),obj.Initial.x.Twiss,obj.Initial.y.Twiss);
     end
+    function i1 = get.istart(obj)
+      id = obj.ModelRegionID(obj.UseRegion,:) ;
+      i1 = min(id(:)) ;
+    end
+    function i2 = get.iend(obj)
+      id = obj.ModelRegionID(obj.UseRegion,:) ;
+      i2 = max(id(:)) ;
+    end
+    function P0 = get.P0(obj)
+      global BEAMLINE
+      P0 = BEAMLINE{obj.istart}.P ;
+    end
+    function set.P0(obj,P0)
+      global PS
+      obj.Initial1.Momentum=P0;
+      SetDesignMomentumProfile(double(obj.istart),double(obj.iend),obj.Initial.Q,P0) ;
+      MovePhysicsVarsToPS( 1:length(PS) ) ; % Above renormalizes PS's, move phys variables back for LM to work
+    end
     function set.UseRegion(obj,reg)
       obj.clearindx; % Clear indexing
       obj.UseRegion=reg;
       obj.ModelClasses=obj.ModelClasses;
+      obj.Initial1 = TwissToInitial(obj.DesignTwiss,double(obj.istart),obj.Initial) ;
     end
     function clearindx(obj)
       rid=[];
@@ -110,7 +135,7 @@ classdef LucretiaModel < handle & matlab.mixin.Copyable
       if isempty(BEAMLINE) || ismember("All",cstr)
         return
       end
-      if ~all(ismember(cstr,["QUAD","SBEN","SEXT","XCOR","YCOR","DRIF","MULT","LCAV","TCAV","MARK","PROF","INSTR","MONI","SOLENOID"]))
+      if ~all(ismember(cstr,["QUAD","SBEN","SEXT","XCOR","YCOR","DRIF","MULT","LCAV","TCAV","MARK","PROF","WIRE","INST","MONI","SOLENOID"]))
         error('Bad BEAMLINE Class provided');
       end
       for iclass=1:length(cstr)
@@ -144,6 +169,10 @@ classdef LucretiaModel < handle & matlab.mixin.Copyable
       names = obj.ModelDat.ModelNames(obj.ModelUniqueID) ;
       names(ismember(names,obj.MissingEle))=[];
     end
+    function z = get.ModelZ(obj)
+      global BEAMLINE
+      z = arrayfun(@(x) BEAMLINE{x}.Coordi(3),obj.ModelID) ;
+    end
     function names = get.ControlNames(obj)
       % MODELNAMES - control system reference names for BEAMLINE indices for which UseRegion selected
       global BEAMLINE
@@ -162,12 +191,15 @@ classdef LucretiaModel < handle & matlab.mixin.Copyable
       names(obj.ModelNames=="YC10412") = "YCOR:IN10:412" ;
       names(obj.ModelNames=="YC14780") = "YCOR:LI14:780" ;
       names(obj.ModelNames=="XC14702") = "LI14:XCOR:702" ;
-      names(obj.ModelNames=="Q2FF") = "LGPS:LI20:3091" ;
-      names(obj.ModelNames=="Q1FF") = "LGPS:LI20:3141" ;
-      names(obj.ModelNames=="Q0FF") = "LGPS:LI20:3151" ;
-      names(obj.ModelNames=="Q0D") = "LGPS:LI20:3204" ;
-      names(obj.ModelNames=="Q1D") = "LGPS:LI20:3261" ;
-      names(obj.ModelNames=="Q2D") = "LGPS:LI20:3311" ;
+%       names(obj.ModelNames=="Q5FF") = "LI20:LGPS:3011" ;
+%       names(obj.ModelNames=="Q4FF") = "LI20:LGPS:3311" ;
+%       names(obj.ModelNames=="Q3FF") = "LI20:LGPS:3151" ;
+%       names(obj.ModelNames=="Q2FF") = "LI20:LGPS:1910" ;
+%       names(obj.ModelNames=="Q1FF") = "LI20:LGPS:3204" ;
+%       names(obj.ModelNames=="Q0FF") = "LI20:LGPS:3031" ;
+%       names(obj.ModelNames=="Q0D") = "LI20:LGPS:3141" ;
+%       names(obj.ModelNames=="Q1D") = "LI20:LGPS:3261" ;
+%       names(obj.ModelNames=="Q2D") = "LI20:LGPS:3091" ;
     end
     function id = get.ModelID(obj)
       global BEAMLINE
@@ -215,6 +247,13 @@ classdef LucretiaModel < handle & matlab.mixin.Copyable
       end
       P = arrayfun(@(x) BEAMLINE{x}.P,1:length(BEAMLINE)) ;
       P = P(obj.ModelUniqueID) ;
+    end
+    function psid = get.PSid(obj)
+      global BEAMLINE
+      uid=obj.ModelUniqueID;
+      psid=zeros(1,length(uid));
+      isps = arrayfun(@(x) isfield(BEAMLINE{x},'PS'),uid) ;
+      psid(isps) = arrayfun(@(x) BEAMLINE{x}.PS,uid(isps)) ;
     end
     function Brho = get.ModelBrho(obj)
       Brho = obj.ModelBDES ./ obj.GEV2KGM ./ obj.ModelP ;
