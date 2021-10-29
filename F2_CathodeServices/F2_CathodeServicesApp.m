@@ -218,6 +218,7 @@ classdef F2_CathodeServicesApp < handle & F2_common
         PV(context,'name',"watchdog_laserlimitHI",'pvname',"IN10_CATHODESUPPORT:laserHi");
         PV(context,'name',"watchdog_gunvaclimitLO",'pvname',"IN10_CATHODESUPPORT:gunVacLo"); % PV used by EPICS watchdog for high gun vacuum limit
         PV(context,'name',"laser_flipper",'pvname',"MOTR:LT10:840:FLIPPER",'monitor',true); % State of attenuation flipper
+        PV(context,'name',"alert",'pvname',"SIOC:SYS1:ML01:AO050",'mode',"rw"); % ACR Attention-getter activation
         PV(context,'name',"watchdog_laserlimitLO",'pvname',"IN10_CATHODESUPPORT:laserLo")]; % PV used by EPICS watchdog for high laser energy limit
       pset(obj.pvlist,'debug',debuglevel) ;
       obj.pvs = struct(obj.pvlist) ;
@@ -2146,6 +2147,7 @@ classdef F2_CathodeServicesApp < handle & F2_common
       
       % If in error state, check shutter off and control disabled if in auto mode
       if any(inerr)
+        caput("alert",1);
 %         if isautopattern(obj.State) % any auto running state
         if iserrckpattern(obj.State) % if laser cleaning or energy set test pattern or QE map
           inerr_tries=zeros(size(inerr_tries)); % reset error counter
@@ -2154,6 +2156,7 @@ classdef F2_CathodeServicesApp < handle & F2_common
         end
       else
         txt = text(obj.State) ;
+        caput("alert",0);
         if strcmp(obj.gui.TabGroup.SelectedTab.Title,'Laser Cleaning')
           if obj.State == CathodeServicesState.Cleaning_linescan || obj.State == CathodeServicesState.Cleaning_movingtonewline
             switch obj.CleaningStartPosition
