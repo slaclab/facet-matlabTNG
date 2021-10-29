@@ -2219,6 +2219,7 @@ classdef F2_CathodeServicesApp < handle & F2_common
   methods
     function [nx,ny,img,imgstats] = getimg(obj)
       persistent bkgcount initshutstate
+      imgstats=[];
       nx=obj.pvs.CCD_nx.val{1}; ny=obj.pvs.CCD_ny.val{1};
       obj.pvs.CCD_img.nmax=round(nx*ny);
       img=reshape(caget(obj.pvs.CCD_img),nx,ny);
@@ -2475,7 +2476,7 @@ classdef F2_CathodeServicesApp < handle & F2_common
         end
         hold(axhan,'on');
         % Draw on Gaussian fits if requested
-        if obj.showimgstats
+        if obj.showimgstats && ~isempty(imgstats)
 %           y = A + B*exp( -(x-C)^2/2*D^2 )
           q=imgstats.x; imx = range(ydata)*0.9; gval = abs( q(1) + q(2)*exp( -(xdata-q(3)).^2./(2.*q(4).^2)) ) ;
           plot(axhan,xdata,ydata(1) + imx.*gval./max(gval),'r') ;
