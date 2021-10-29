@@ -13,5 +13,11 @@ if [ "`ssh facet-srv02 screen -list | grep -w "$APPNAME" | wc -l`" != "0" ]
     echo "$APPNAME already running, restarting..."
     `/usr/local/facet/tools/matlabTNG/killappw.sh $APPNAME` 
 fi
-ssh facet-srv02 "cd /usr/local/facet/tools/matlabTNG; screen -dmS "$1" ./runapp.sh $APPNAME"
+
+if [ "$#" -eq 2 ] && [ $1 == "-python" ]
+  then
+    ssh facet-srv02 "cd /usr/local/facet/tools/matlabTNG; screen -dmS "$APPNAME" source $PACKAGE_TOP/anaconda/envs/python3.7env/bin/activate; ./runapp.sh $APPNAME"
+else
+  ssh facet-srv02 "cd /usr/local/facet/tools/matlabTNG; screen -dmS "$APPNAME" ./runapp.sh $APPNAME"
+fi
 
