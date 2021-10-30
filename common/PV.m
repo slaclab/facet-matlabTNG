@@ -541,6 +541,7 @@ classdef PV < handle
               end
           end
         end
+        drawnow limitrate
       end
       obj.lastlims=obj.limits;
       obj.lastnm=obj.nmax;
