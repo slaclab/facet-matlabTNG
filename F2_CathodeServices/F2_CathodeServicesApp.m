@@ -2147,16 +2147,17 @@ classdef F2_CathodeServicesApp < handle & F2_common
       
       % If in error state, check shutter off and control disabled if in auto mode
       if any(inerr)
-        caput("alert",1);
+        caput(obj.pvs.alert,1);
 %         if isautopattern(obj.State) % any auto running state
         if iserrckpattern(obj.State) % if laser cleaning or energy set test pattern or QE map
           inerr_tries=zeros(size(inerr_tries)); % reset error counter
           obj.AutoStop(reasons(inerr),etxt);
+          drawnow limitrate
           return
         end
       else
         txt = text(obj.State) ;
-        caput("alert",0);
+        caput(obj.pvs.alert,0);
         if strcmp(obj.gui.TabGroup.SelectedTab.Title,'Laser Cleaning')
           if obj.State == CathodeServicesState.Cleaning_linescan || obj.State == CathodeServicesState.Cleaning_movingtonewline
             switch obj.CleaningStartPosition
