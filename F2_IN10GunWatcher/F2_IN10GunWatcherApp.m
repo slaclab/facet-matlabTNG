@@ -14,6 +14,7 @@ classdef F2_IN10GunWatcherApp < handle
     maxbeat=1e7 % max heartbeat count, wrap to zero
     triglevel=0.0005 % trigger level on scope / V
     scalevals = [1 2 5 10 20 50 100 200 500 1000 2000 5000 10000] % V/div on scope
+    doscope2 logical = false
   end
   methods
     function obj = F2_IN10GunWatcherApp(apph)
@@ -39,10 +40,6 @@ classdef F2_IN10GunWatcherApp < handle
         PV(context,'name',"FcupWF",'pvname',"SCOP:IN10:FC01:WF_CH1_TRACE",'monitor',true); % Gun cavity power signal on faraday cup / V
         PV(context,'name',"FcupScale",'pvname',"SCOP:IN10:FC01:MBBO_CH1_SCL.RVAL",'monitor',true); % scale on faraday
         PV(context,'name',"FcupPos",'pvname',"SCOP:IN10:FC01:AO_CH0_POS",'monitor',true); % pos on scope
-        PV(context,'name',"Fcup2WF",'pvname',"SCOP:IN10:FC02:WF_CH0_TRACE",'monitor',true); % Gun cavity power signal on faraday cup 2 / V
-        PV(context,'name',"Fcup2Scale",'pvname',"SCOP:IN10:FC02:MBBO_CH0_SCL.RVAL",'monitor',true); % scale on faraday
-        PV(context,'name',"Fcup2Pos",'pvname',"SCOP:IN10:FC02:AO_CH0_POS",'monitor',true); % pos on scope
-        PV(context,'name',"Scope2TimeScale",'pvname',"SCOP:IN10:FC02:AI_TIME_DIV",'monitor',true); % time scale s / div
         PV(context,'name',"LaserEnergy",'pvname',"LASR:LT10:930:PWR",'monitor',true); % IN10 laser power meter
         PV(context,'name',"FCQ",'pvname',"SIOC:SYS1:ML00:AO850",'monitor',true,'mode',"rw"); % output faraday cup charge meas
         PV(context,'name',"QE",'pvname',"SIOC:SYS1:ML00:AO840",'monitor',true,'mode',"rw"); % output faraday cup QE meas
@@ -51,6 +48,14 @@ classdef F2_IN10GunWatcherApp < handle
         PV(context,'name',"fcup_stat",'pvname',"FARC:IN10:241:PNEUMATIC",'monitor',true); % Faraday cup in/out status
         PV(context,'name',"nave",'pvname',"SIOC:SYS1:ML00:AO851",'monitor',true,'mode',"rw"); % Averaging to apply to output PVs
         ] ;
+      if obj.doscope2
+        obj.pvlist = [obj.pvlist;
+         PV(context,'name',"Fcup2WF",'pvname',"SCOP:IN10:FC02:WF_CH0_TRACE",'monitor',true); % Gun cavity power signal on faraday cup 2 / V
+         PV(context,'name',"Fcup2Scale",'pvname',"SCOP:IN10:FC02:MBBO_CH0_SCL.RVAL",'monitor',true); % scale on faraday
+         PV(context,'name',"Fcup2Pos",'pvname',"SCOP:IN10:FC02:AO_CH0_POS",'monitor',true); % pos on scope
+         PV(context,'name',"Scope2TimeScale",'pvname',"SCOP:IN10:FC02:AI_TIME_DIV",'monitor',true); % time scale s / div
+         ] ;
+      end
       pset(obj.pvlist,'debug',0) ;
       obj.pvs = struct(obj.pvlist) ;
       if exist('apph','var')
@@ -66,8 +71,10 @@ classdef F2_IN10GunWatcherApp < handle
         obj.pvs.GunPowerWFout.guihan = [apph.EditField_2, apph.GunPwrPVMWGauge_2] ;
         obj.pvs.FCQ.guihan = apph.EditField_3 ;
         obj.pvs.QE.guihan = apph.EditField_4 ;
-        obj.pvs.FCQ2.guihan = apph.EditField_5 ;
-        obj.pvs.QE2.guihan = apph.EditField_6 ;
+        if obj.doscope2
+          obj.pvs.FCQ2.guihan = apph.EditField_5 ;
+          obj.pvs.QE2.guihan = apph.EditField_6 ;
+        end
         obj.pvs.nave.guihan = apph.NAVEEditField ;
       end
       obj.listeners = addlistener(obj,'PVUpdated',@(~,~) obj.wdfun) ;
@@ -126,7 +133,9 @@ classdef F2_IN10GunWatcherApp < handle
       
       % Get time base
       dt = obj.pvs.ScopeTimeScale.val{1}*10 ;
-      dt2 = obj.pvs.Scope2TimeScale.val{1}*10 ;
+      if obj.doscope2
+        dt2 = obj.pvs.Scope2TimeScale.val{1}*10 ;
+      end
       
       % Check Gun cavity power from scope waveforms
       wf1 = obj.pvs.ScopeTriggerWF.val{1} - obj.pvs.ScopeTriggerPos.val{1} ; wf1(abs(wf1)>8)=[];
@@ -150,7 +159,7 @@ classdef F2_IN10GunWatcherApp < handle
         Vs = integral(@(x) interp1(linspace(0,dt,length(wf_fc)),wf_fc,x,'linear'),0,t1);
         Q = 1e9 * abs(Vs)/50 ; % Charge in nC
         QE = ( Q / obj.pvs.LaserEnergy.val{1} ) * 0.004661010785703 ;
-        if isempty(obj.guihan) && string(obj.pvs.fcup_stat.val{1})=="IN"
+        if obj.pvs.fcup_stat.val{1}=="IN"
           if dstore.ind<dstore.max
             dstore.ind=dstore.ind+1;
           else
@@ -180,26 +189,30 @@ classdef F2_IN10GunWatcherApp < handle
       end
       
       % Faraday cup 2
-      try
-        wf_fc2 = obj.pvs.Fcup2WF.val{1} - obj.pvs.Fcup2Pos.val{1} ; wf_fc2(abs(wf_fc2)>8)=[];
-        sscale = obj.scalevals(obj.pvs.Fcup2Scale.val{1}+1) ; wf_fc2=wf_fc2.*sscale.*1e-3;
-        % use first 10% of waveform to get integration pedastal, then
-        % integrate until first zero crossing after first peak
-        ped2=mean(wf_fc2(1:ceil(length(wf_fc2)/10)));
-        wf_fc2=wf_fc2-ped2;
-        Vs = integral(@(x) interp1(linspace(0,dt2,length(wf_fc2)),wf_fc2,x,'linear'),0,dt2);
-        Q = 1e9 * abs(Vs)/50 ; % Charge in nC
-        QE = ( Q / obj.pvs.LaserEnergy.val{1} ) * 0.004661010785703 ;
-        if isempty(obj.guihan)
-          caput(obj.pvs.FCQ2,Q);
-          caput(obj.pvs.QE2,QE);
+      if obj.doscope2
+        try
+          wf_fc2 = obj.pvs.Fcup2WF.val{1} - obj.pvs.Fcup2Pos.val{1} ; wf_fc2(abs(wf_fc2)>8)=[];
+          sscale = obj.scalevals(obj.pvs.Fcup2Scale.val{1}+1) ; wf_fc2=wf_fc2.*sscale.*1e-3;
+          % use first 10% of waveform to get integration pedastal, then
+          % integrate until first zero crossing after first peak
+          ped2=mean(wf_fc2(1:ceil(length(wf_fc2)/10)));
+          wf_fc2=wf_fc2-ped2;
+          Vs = integral(@(x) interp1(linspace(0,dt2,length(wf_fc2)),wf_fc2,x,'linear'),0,dt2);
+          Q = 1e9 * abs(Vs)/50 ; % Charge in nC
+          QE = ( Q / obj.pvs.LaserEnergy.val{1} ) * 0.004661010785703 ;
+          if isempty(obj.guihan)
+            caput(obj.pvs.FCQ2,Q);
+            caput(obj.pvs.QE2,QE);
+          end
+          dofc2=true;
+        catch ME
+          if isempty(dofc2) || dofc2
+            disp('Faraday Cup 2 waveform capture failure:');
+            fprintf(2,'%s\n',ME.message);
+          end
+          dofc2=false;
         end
-        dofc2=true;
-      catch ME
-        if isempty(dofc2) || dofc2
-          disp('Faraday Cup 2 waveform capture failure:');
-          fprintf(2,'%s\n',ME.message);
-        end
+      else
         dofc2=false;
       end
       
@@ -217,7 +230,9 @@ classdef F2_IN10GunWatcherApp < handle
       % Update waveform on GUI if showing
       if ~isempty(obj.guihan)
         t=linspace(0,dt,length(wf1)).*1e9;
-        t2=linspace(0,dt2,length(wf_fc2)).*1e9;
+        if obj.doscope2
+          t2=linspace(0,dt2,length(wf_fc2)).*1e9;
+        end
         if dofc2
           plot(obj.guihan.UIAxes,t,wf1,t,wf,t,wf_fc,t2,wf_fc2);
         else
@@ -228,7 +243,11 @@ classdef F2_IN10GunWatcherApp < handle
         grid(obj.guihan.UIAxes,'on');
         hold(obj.guihan.UIAxes,'off');
         axis(obj.guihan.UIAxes,'tight');
-        legend(obj.guihan.UIAxes,{'Laser Trigger', 'Gun Cavity Power' 'Faraday Cup 1' 'Faraday Cup 2'},'Location','NE');
+        if dofc2
+          legend(obj.guihan.UIAxes,{'Laser Trigger', 'Gun Cavity Power' 'Faraday Cup 1' 'Faraday Cup 2'},'Location','NE');
+        else
+          legend(obj.guihan.UIAxes,{'Laser Trigger', 'Gun Cavity Power' 'Faraday Cup 1'},'Location','NE');
+        end
         drawnow
       end
       
