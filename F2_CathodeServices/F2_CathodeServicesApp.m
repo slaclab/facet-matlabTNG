@@ -1966,6 +1966,7 @@ classdef F2_CathodeServicesApp < handle & F2_common
         else
           drawnow limitrate
         end
+        caput(obj.pvs.alert,0);
         return;
       end
       
