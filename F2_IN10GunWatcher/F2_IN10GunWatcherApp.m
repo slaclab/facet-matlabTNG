@@ -6,6 +6,7 @@ classdef F2_IN10GunWatcherApp < handle
     pvlist PV
     pvs
     guihan
+    qalg uint8 = 1 % Charge meas algorithm: 1= use first -ve part of wf; 2= integrate all absolute waveform
   end
   properties(Hidden)
     listeners
@@ -149,14 +150,22 @@ classdef F2_IN10GunWatcherApp < handle
       try
         wf_fc = obj.pvs.FcupWF.val{1} - obj.pvs.FcupPos.val{1} ; wf_fc(abs(wf_fc)>8)=[];
         sscale = obj.scalevals(obj.pvs.FcupScale.val{1}+1) ; wf_fc=wf_fc.*sscale.*1e-3;
-        % use first 10% of waveform to get integration pedastal, then
-        % integrate until first zero crossing after first peak
         ped=mean(wf_fc(1:ceil(length(wf_fc)/10)));
-        wf_fc=wf_fc-ped;
-        [~,ipk]=min(wf_fc);
-        i1=ipk+find(wf_fc(ipk:end)>0,1)-0.5;
-        t1=dt*(i1/length(wf_fc));
-        Vs = integral(@(x) interp1(linspace(0,dt,length(wf_fc)),wf_fc,x,'linear'),0,t1);
+        switch obj.qalg
+          case 1
+            % use first 10% of waveform to get integration pedastal, then
+            % integrate until first zero crossing after first peak
+            wf_fc=wf_fc-ped;
+            [~,ipk]=min(wf_fc);
+            i1=ipk+find(wf_fc(ipk:end)>0,1)-0.5;
+            t1=dt*(i1/length(wf_fc));
+            Vs = integral(@(x) interp1(linspace(0,dt,length(wf_fc)),wf_fc,x,'linear'),0,t1);
+          case 2
+            wf_fc=abs(wf_fc-ped);
+            i1=length(wf_fc);
+            t1=dt*(i1/length(wf_fc));
+            Vs = integral(@(x) interp1(linspace(0,dt,length(wf_fc)),wf_fc,x,'linear'),0,t1);
+        end
         Q = 1e9 * abs(Vs)/50 ; % Charge in nC
         QE = ( Q / obj.pvs.LaserEnergy.val{1} ) * 0.004661010785703 ;
         if obj.pvs.fcup_stat.val{1}=="IN"
