@@ -2608,7 +2608,7 @@ close(handles.emittance_gui);
 
 
 
-% --- Executes on button press in checkbox14.
+% --- Server mode selection
 function checkbox14_Callback(hObject, eventdata, handles)
 % hObject    handle to checkbox14 (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
@@ -2625,19 +2625,28 @@ guidata(hObject,handles);
 % --- Function runs in timer when server mode option checked
 function serverRun_Callback(~,~,handles)
 
-% --- look for new command in PV
+% --- look for new command in PV and execute
 if strcmp(handles.accelerator,'FACET')
-   cmd = char(lcaGet('SIOC:SYS1:ML00:CA027'));
+   cmd = deblank(char(lcaGet('SIOC:SYS1:ML00:CA027')));
    try
        switch cmd
            case 'Start Scan'
+               disp('Server Mode: Start Scan commanded...');
                handles.acquireStart_btn_Callback(handles.acquireStart_btn, [], handles) ;
                lcaPutNoWait('SIOC:SYS1:ML00:CA027',double('Scanning'));
            case 'Scanning'
                if ~gui_acquireStatusGet(handles.acquireStart_btn,handles)
+                   disp('Server Mode: Saving data after scan...');
                    dataSave(handles.dataSave_btn,handles,0);
                    lcaPutNoWait('SIOC:SYS1:ML00:CA027',0);
                end
+           case 'Set Quad Limits'
+               lim1=lcaGet('SIOC:SYS1:ML01:AO351'); lim2=lcaGet('SIOC:SYS1:ML01:AO352');
+               fprintf('Server Mode: Set Quad Limits: %g %g\n',lim1,lim2);
+               handles.measureQuadRangeLow_txt.Value=lim1; handles.measureQuadRangeHigh_txt.Value=lim1;
+               measureQuadRange_txt_Callback(handles.measureQuadRangeLow_txt_Callback,[],handles,1);
+               measureQuadRange_txt_Callback(handles.measureQuadRangeHigh_txt_Callback,[],handles,2);
+               lcaPutNoWait('SIOC:SYS1:ML00:CA027',0);
        end
    catch ME
        lcaPutNoWait('SIOC:SYS1:ML00:CA027',0);

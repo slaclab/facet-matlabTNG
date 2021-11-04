@@ -1296,6 +1296,7 @@ classdef F2_CathodeServicesApp < handle & F2_common
             case {CathodeServicesState.QEMap_movingtonewline,CathodeServicesState.QEMap_linescan}
               obj.Proc_QEMap("Stop");
           end
+          drawnow
         case 'RESET'
           if obj.State ~= CathodeServicesState(6) % if not reseting from auto stop then want to reset GUI
             resp=questdlg('Reset to standby mode (memory of any progress will be lost)?','Reset to Stanby Mode',...
@@ -1393,6 +1394,7 @@ classdef F2_CathodeServicesApp < handle & F2_common
         fprintf(obj.STDERR,'%s\n',split(txt,';'));
       end
       warndlg(sprintf('Auto shutdown Cathode Services Program:  \n%s\nCHECK LASER AND MPS SHUTTER STATUS  \nPush Reset Button to re-start',reasons(:)),'MPS Laser Shutter Inserted');
+      drawnow
     end
     function shutdown(obj)
       %SHUTDOWN Actions to perform when closing GUI
