@@ -614,7 +614,7 @@ classdef F2_Matching_exported < matlab.apps.AppBase
 
       % Create DropDown
       app.DropDown = uidropdown(app.ProfileMeasurementDevicePanel);
-      app.DropDown.Items = {'<Select From Below>', 'PROF:IN10:571'};
+      app.DropDown.Items = {'<Select From Below>', 'PROF:IN10:571', 'PROF:LI11:335', 'PROF:LI11:375'};
       app.DropDown.ValueChangedFcn = createCallbackFcn(app, @DropDownValueChanged, true);
       app.DropDown.Interruptible = 'off';
       app.DropDown.Position = [13 3 214 22];

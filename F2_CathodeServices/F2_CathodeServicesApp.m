@@ -1399,6 +1399,7 @@ classdef F2_CathodeServicesApp < handle & F2_common
     function shutdown(obj)
       %SHUTDOWN Actions to perform when closing GUI
       try
+        caput(obj.pvs.alert,0); % leave alert PV in non-alert state
         % Restore velocity PVs (use Home velocity)
         vel = obj.MotorVeloHome ;
         caput(obj.pvs.lsr_xvel,vel); caput(obj.pvs.motx_bvelo,vel/abs(obj.VCC_mirrcal(3)));
