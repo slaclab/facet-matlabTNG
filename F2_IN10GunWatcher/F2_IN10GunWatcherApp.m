@@ -6,7 +6,7 @@ classdef F2_IN10GunWatcherApp < handle
     pvlist PV
     pvs
     guihan
-    qalg uint8 = 1 % Charge meas algorithm: 1= use first -ve part of wf; 2= integrate all absolute waveform
+    qalg uint8 = 3 % Charge meas algorithm: 1= use first -ve part of wf; 2= integrate all absolute waveform; 3= use peak voltage and fixed width assumption
   end
   properties(Hidden)
     listeners
@@ -165,6 +165,9 @@ classdef F2_IN10GunWatcherApp < handle
             i1=length(wf_fc);
             t1=dt*(i1/length(wf_fc));
             Vs = integral(@(x) interp1(linspace(0,dt,length(wf_fc)),wf_fc,x,'linear'),0,t1);
+          case 3 % use peak voltage and fixed width assumption
+            wf_fc=wf_fc-ped;
+            Vs = min(wf_fc)*4.5e-9/2;
         end
         Q = 1e9 * abs(Vs)/50 ; % Charge in nC
         QE = ( Q / obj.pvs.LaserEnergy.val{1} ) * 0.004661010785703 ;
