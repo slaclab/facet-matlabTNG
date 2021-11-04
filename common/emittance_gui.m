@@ -2615,12 +2615,12 @@ function checkbox14_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 if get(hObject,'Value')
-    handles.servertimer = timer('Period',0.5,'TimerFcn',{@serverRun_Callback,handles},'StopFcn',{@serverStop_Callback,handles},'ExecutionMode','fixedrate');
+    handles.servertimer = timer('Period',0.5,'TimerFcn',{@serverRun_Callback,handles},'StopFcn',{@serverStop_Callback,handles},'ExecutionMode','fixedrate');   
+    guidata(hObject,handles);
     start(handles.servertimer);
 else
     stop(handles.servertimer);
 end
-guidata(hObject,handles);
 
 % --- Function runs in timer when server mode option checked
 function serverRun_Callback(~,~,handles)
@@ -2632,7 +2632,8 @@ if strcmp(handles.accelerator,'FACET')
        switch cmd
            case 'Start Scan'
                disp('Server Mode: Start Scan commanded...');
-               handles.acquireStart_btn_Callback(handles.acquireStart_btn, [], handles) ;
+               set(handles.acquireStart_btn,'Value',1);
+               acquireStart_btn_Callback(handles.acquireStart_btn, [], handles) ;
                lcaPutNoWait('SIOC:SYS1:ML00:CA027',double('Scanning'));
            case 'Scanning'
                if ~gui_acquireStatusGet(handles.acquireStart_btn,handles)
@@ -2643,7 +2644,7 @@ if strcmp(handles.accelerator,'FACET')
            case 'Set Quad Limits'
                lim1=lcaGet('SIOC:SYS1:ML01:AO351'); lim2=lcaGet('SIOC:SYS1:ML01:AO352');
                fprintf('Server Mode: Set Quad Limits: %g %g\n',lim1,lim2);
-               handles.measureQuadRangeLow_txt.Value=lim1; handles.measureQuadRangeHigh_txt.Value=lim1;
+               set(handles.measureQuadRangeLow_txt,'Value',lim1); set(handles.measureQuadRangeHigh_txt,'Value',lim2);
                measureQuadRange_txt_Callback(handles.measureQuadRangeLow_txt_Callback,[],handles,1);
                measureQuadRange_txt_Callback(handles.measureQuadRangeHigh_txt_Callback,[],handles,2);
                lcaPutNoWait('SIOC:SYS1:ML00:CA027',0);
