@@ -32,7 +32,7 @@ for n=1:length(camerasSelected)
     % Make the plots
     figure(n);set(gcf, 'Units', 'Normalized', 'OuterPosition', [0, 0.5, 0.7, 0.7]);
     hAx(1) = subplot(2,3,1);
-        plot(t,data(3,:)*1e-3);      hold on;     plot(t,data(4,:)*1e-3,'r'); grid on
+        plot(t,data(3,:));      hold on;     plot(t,data(4,:),'r'); grid on
         ylabel(['Rms Spotsize [pix]' char(10),'Lens Magnfication = ',num2str(1/handles.magnification(camerasSelected(n)),'%.2f'),...
             char(10),'Pixel Size [um] = ',num2str(handles.umPerPixel(camerasSelected(n)),'%.2f')],'interpreter','tex')        
 
