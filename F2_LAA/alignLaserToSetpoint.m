@@ -84,13 +84,13 @@ nshots = 3;% set number of shots for averaging
         end
         
         % Move the motor by setting the tweak value - this is off during GUI testing
-%         lcaPutSmart([dataStruct.motorpvs,':CH',num2str(channel),':MOTOR.TWV'], mirrorMovements(n));% Set tweak
-%         lcaPutSmart([dataStruct.motorpvs,':CH',num2str(channel),':MOTOR.TWF'],1.0);% Move mot
-%         motor_status= lcaGetSmart([dataStruct.motorpvs,':CH',num2str(channel),':MOTOR.MSTA']);
-%         while motor_status ~=2
-%         motor_status= lcaGetSmart([dataStruct.motorpvs,':CH',num2str(channel),':MOTOR.MSTA']);
-%         end
-%         motorPositions(n) = lcaGetSmart([dataStruct.motorpvs,':CH',num2str(channel),':MOTOR']);
+         lcaPutSmart([dataStruct.motorpvs,':CH',num2str(channel),':MOTOR.TWV'], mirrorMovements(n));% Set tweak
+         lcaPutSmart([dataStruct.motorpvs,':CH',num2str(channel),':MOTOR.TWF'],1.0);% Move mot
+         motor_status= lcaGetSmart([dataStruct.motorpvs,':CH',num2str(channel),':MOTOR.MSTA']);
+         while motor_status ~=2
+         motor_status= lcaGetSmart([dataStruct.motorpvs,':CH',num2str(channel),':MOTOR.MSTA']);
+         end
+         motorPositions(n) = lcaGetSmart([dataStruct.motorpvs,':CH',num2str(channel),':MOTOR']);
         pause(.5)
 
     end

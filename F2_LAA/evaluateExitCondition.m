@@ -23,9 +23,24 @@ if lcaGetSmart(feedbackOnPVs{sectNum})
         newCamSettings.ROIsizeY(jj) = lcaGetSmart([inputData.camerapvs{jj},':SizeY_RBV']); % ref ROI x
     end
 
+    % Check that the beam RMS size has not changed 'too much' from its reference value
+    for jj=1:length(inputData.camerapvs)
+        m=regexp(inputData.camerapvs{jj},app.camerapvs,'match');
+        idx = find(~cellfun(@isempty,m));
+        rmstols(1+2*(jj-1))=abs(app.refRMSVals(1+2*(idx-1))./bp(jj,3)-1)>0.25;
+        rmstols(2*jj)=abs(app.refRMSVals(2*idx)./bp(jj,4)-1)>0.25;
+    end
+    
     % Apply logic
+    
+    if any(rmstols)% If requested move is too large exit
+    str = ['Warning - Measured laser RMS spotsize has changed by more than 25% of reference RMS.',...
+        'Alignment skipped for ',lcaGetSmart([inputData.camerapvs{1},':NAME'])];
+    app.LogTextArea.Value =  [str,app.LogTextArea.Value(:)'];drawnow()  
+    
+    end
+    
     %cameraSettingsChanged = ~isequal(refCamSettings,newCamSettings);
-
     %if cameraSettingsChanged
     %    warning('Camera Settings changed on ',inputData.camerapvs{1})%,...
       %      ' or ',inputData.camerapvs{2},'.')
@@ -38,7 +53,7 @@ if lcaGetSmart(feedbackOnPVs{sectNum})
         app.LogTextArea.Value =  [str,app.LogTextArea.Value(:)'];drawnow()
     end
     %laserOffScreen = 0;
-    exitcondition = any([laserOffScreen, ~lcaGetSmart(feedbackOnPVs{sectNum})]);
+    exitcondition = any([laserOffScreen, ~lcaGetSmart(feedbackOnPVs{sectNum}) rmstols]);
     %if sectNum>5;exitcondition = 1;end
 else
     exitcondition = 1;

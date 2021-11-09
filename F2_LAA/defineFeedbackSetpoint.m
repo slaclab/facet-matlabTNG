@@ -1,4 +1,4 @@
-function [refCamSettings,refSumCts,requestedSetpoint] = defineFeedbackSetpoint(app)
+function [refCamSettings,refSumCts,requestedSetpoint,refRMSVals] = defineFeedbackSetpoint(app)
 %DEFINEREQUESTEDSETPOINT 
 % Grabs reference camera settings and the centroid setpoint for the
 % S20 laser orbit feedback
@@ -10,6 +10,8 @@ function [refCamSettings,refSumCts,requestedSetpoint] = defineFeedbackSetpoint(a
 for jj=1:length(app.camerapvs)
     [bp(jj,:),img,data]=grabLaserProperties(app,jj);
     refSumCts(jj) = bp(jj,5);% reference Sum Cts
+    refRMSVals(1+2*(jj-1)) = bp(jj,3);%xrms ref
+    refRMSVals(2*jj) = bp(jj,4);%yrms ref
     refCamSettings.ExposureTime(jj) = lcaGetSmart([app.camerapvs{jj},':AcquireTime']); % reference Exposure Time
     refCamSettings.ROIminX(jj) = data.roiX; % ref ROI x min
     refCamSettings.ROIminY(jj) = data.roiY; % ref ROI y min
@@ -21,10 +23,7 @@ end
 % Grab B1 ROI manually for now
 %refCamSettings.ROIminX(8)=290;refCamSettings.ROIminY(8) = 384;
             
-    if app.setPointOption % Set reference centroid using pre-defined  references
-%      str = 'Set point grabbed from pre-defined references';
-%          app.LogTextArea.Value = [str,app.LogTextArea.Value(:)'];
-%            drawnow()
+    if app.setPointOption % Set reference centroid using pre-defined references
       s20LaserTargetPositions = importdata('/home/fphysics/cemma/S20Laser/S20LaserAlignmentFeedback/s20LaserTargetPositions.mat');
       strs = {s20LaserTargetPositions.cameraPV};
         for jj = 1:length(app.camerapvs)
