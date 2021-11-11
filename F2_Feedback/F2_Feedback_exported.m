@@ -10,6 +10,7 @@ classdef F2_Feedback_exported < matlab.apps.AppBase
     SettingsMenu                  matlab.ui.container.Menu
     DL1EnergyFeedbackMenu         matlab.ui.container.Menu
     BC11EnergyFeedbackMenu        matlab.ui.container.Menu
+    BC11BLENFeedbackMenu          matlab.ui.container.Menu
     BC14EnergyFeedbackMenu        matlab.ui.container.Menu
     DisplayEnergyUnitsMenu        matlab.ui.container.Menu
     JitterTimeoutMenu             matlab.ui.container.Menu
@@ -63,7 +64,7 @@ classdef F2_Feedback_exported < matlab.apps.AppBase
     StatusLamp_5                  matlab.ui.control.Lamp
     Switch_5                      matlab.ui.control.Switch
     Gauge_9                       matlab.ui.control.LinearGauge
-    KLYSLI1111DRVRLabel           matlab.ui.control.Label
+    SIOCSYS1ML01AO231Label        matlab.ui.control.Label
     BPMSLI11333X1HLabel           matlab.ui.control.Label
     EditField_11                  matlab.ui.control.NumericEditField
     EditField_12                  matlab.ui.control.NumericEditField
@@ -71,13 +72,13 @@ classdef F2_Feedback_exported < matlab.apps.AppBase
     Gauge_8                       matlab.ui.control.LinearGauge
     BC11BunchLengthFeedbackPanel  matlab.ui.container.Panel
     SetpointEditField_6           matlab.ui.control.NumericEditField
-    mmLabel_2                     matlab.ui.control.Label
+    eguLabel                      matlab.ui.control.Label
     Gauge_10                      matlab.ui.control.LinearGauge
     StatusLamp_6                  matlab.ui.control.Lamp
     Switch_6                      matlab.ui.control.Switch
     Gauge_11                      matlab.ui.control.LinearGauge
-    KLYSLI1121DRVRLabel           matlab.ui.control.Label
-    BL11359Label_2                matlab.ui.control.Label
+    SIOCSYS1ML01AO232Label        matlab.ui.control.Label
+    BLENLI11359Label              matlab.ui.control.Label
     EditField_13                  matlab.ui.control.NumericEditField
     EditField_14                  matlab.ui.control.NumericEditField
     NotRunningButton_4            matlab.ui.control.Button
@@ -233,6 +234,19 @@ classdef F2_Feedback_exported < matlab.apps.AppBase
       value = app.SetpointJitterAmplitudeEditField.Value;
       caput(app.aobj.pvs.DL1E_JitterAMP,double(value));
     end
+
+    % Value changed function: Switch_6
+    function Switch_6ValueChanged(app, event)
+      value = string(app.Switch_6.Value) == "On" ;
+      caput(app.aobj.pvs.FeedbackEnable,double(bitset(app.aobj.Enabled,4,value)));
+    end
+
+    % Menu selected function: BC11BLENFeedbackMenu
+    function BC11BLENFeedbackMenuSelected(app, event)
+      app.BC11BLENFeedbackMenu.Enable = false ;
+      BC11BL_Settings(app.aobj);
+      drawnow
+    end
   end
 
   % Component initialization
@@ -243,7 +257,7 @@ classdef F2_Feedback_exported < matlab.apps.AppBase
 
       % Create FACETIIFeedbackUIFigure and hide until all components are created
       app.FACETIIFeedbackUIFigure = uifigure('Visible', 'off');
-      app.FACETIIFeedbackUIFigure.Position = [100 100 997 647];
+      app.FACETIIFeedbackUIFigure.Position = [100 100 994 648];
       app.FACETIIFeedbackUIFigure.Name = 'FACET-II Feedback';
       app.FACETIIFeedbackUIFigure.Resize = 'off';
       app.FACETIIFeedbackUIFigure.CloseRequestFcn = createCallbackFcn(app, @FACETIIFeedbackUIFigureCloseRequest, true);
@@ -281,6 +295,11 @@ classdef F2_Feedback_exported < matlab.apps.AppBase
       app.BC11EnergyFeedbackMenu.MenuSelectedFcn = createCallbackFcn(app, @BC11EnergyFeedbackMenuSelected, true);
       app.BC11EnergyFeedbackMenu.Text = 'BC11 Energy Feedback...';
 
+      % Create BC11BLENFeedbackMenu
+      app.BC11BLENFeedbackMenu = uimenu(app.SettingsMenu);
+      app.BC11BLENFeedbackMenu.MenuSelectedFcn = createCallbackFcn(app, @BC11BLENFeedbackMenuSelected, true);
+      app.BC11BLENFeedbackMenu.Text = 'BC11 BLEN Feedback...';
+
       % Create BC14EnergyFeedbackMenu
       app.BC14EnergyFeedbackMenu = uimenu(app.SettingsMenu);
       app.BC14EnergyFeedbackMenu.MenuSelectedFcn = createCallbackFcn(app, @BC14EnergyFeedbackMenuSelected, true);
@@ -301,7 +320,7 @@ classdef F2_Feedback_exported < matlab.apps.AppBase
       app.DL1EnergyFeedbackPanel.ForegroundColor = [0.9294 0.6941 0.1255];
       app.DL1EnergyFeedbackPanel.Title = 'DL1 Energy Feedback';
       app.DL1EnergyFeedbackPanel.FontWeight = 'bold';
-      app.DL1EnergyFeedbackPanel.Position = [22 382 472 182];
+      app.DL1EnergyFeedbackPanel.Position = [22 383 472 182];
 
       % Create SetpointEditField
       app.SetpointEditField = uieditfield(app.DL1EnergyFeedbackPanel, 'numeric');
@@ -406,7 +425,7 @@ classdef F2_Feedback_exported < matlab.apps.AppBase
       app.BC14EnergyFeedbackPanel.ForegroundColor = [0 0 1];
       app.BC14EnergyFeedbackPanel.Title = 'BC14 Energy Feedback';
       app.BC14EnergyFeedbackPanel.FontWeight = 'bold';
-      app.BC14EnergyFeedbackPanel.Position = [22 147 473 227];
+      app.BC14EnergyFeedbackPanel.Position = [22 148 473 227];
 
       % Create SetpointEditField_2
       app.SetpointEditField_2 = uieditfield(app.BC14EnergyFeedbackPanel, 'numeric');
@@ -499,7 +518,7 @@ classdef F2_Feedback_exported < matlab.apps.AppBase
       app.BC20EnergyFeedbackPanel.ForegroundColor = [0.4667 0.6745 0.1882];
       app.BC20EnergyFeedbackPanel.Title = 'BC20 Energy Feedback';
       app.BC20EnergyFeedbackPanel.FontWeight = 'bold';
-      app.BC20EnergyFeedbackPanel.Position = [502 12 472 259];
+      app.BC20EnergyFeedbackPanel.Position = [502 13 472 259];
 
       % Create SetpointEditField_4
       app.SetpointEditField_4 = uieditfield(app.BC20EnergyFeedbackPanel, 'numeric');
@@ -584,7 +603,7 @@ classdef F2_Feedback_exported < matlab.apps.AppBase
       app.BC11EnergyFeedbackPanel.ForegroundColor = [0.851 0.3255 0.098];
       app.BC11EnergyFeedbackPanel.Title = 'BC11 Energy Feedback';
       app.BC11EnergyFeedbackPanel.FontWeight = 'bold';
-      app.BC11EnergyFeedbackPanel.Position = [502 426 472 138];
+      app.BC11EnergyFeedbackPanel.Position = [502 427 472 138];
 
       % Create SetpointEditField_5
       app.SetpointEditField_5 = uieditfield(app.BC11EnergyFeedbackPanel, 'numeric');
@@ -611,14 +630,14 @@ classdef F2_Feedback_exported < matlab.apps.AppBase
       % Create Gauge_9
       app.Gauge_9 = uigauge(app.BC11EnergyFeedbackPanel, 'linear');
       app.Gauge_9.FontSize = 10;
-      app.Gauge_9.Position = [334 31 126 35];
+      app.Gauge_9.Position = [334 33 126 29];
       app.Gauge_9.Value = 40;
 
-      % Create KLYSLI1111DRVRLabel
-      app.KLYSLI1111DRVRLabel = uilabel(app.BC11EnergyFeedbackPanel);
-      app.KLYSLI1111DRVRLabel.HorizontalAlignment = 'center';
-      app.KLYSLI1111DRVRLabel.Position = [338 64 120 22];
-      app.KLYSLI1111DRVRLabel.Text = 'KLYS:LI11:11:DRVR';
+      % Create SIOCSYS1ML01AO231Label
+      app.SIOCSYS1ML01AO231Label = uilabel(app.BC11EnergyFeedbackPanel);
+      app.SIOCSYS1ML01AO231Label.HorizontalAlignment = 'center';
+      app.SIOCSYS1ML01AO231Label.Position = [326.5 64 143 22];
+      app.SIOCSYS1ML01AO231Label.Text = 'SIOC:SYS1:ML01:AO231';
 
       % Create BPMSLI11333X1HLabel
       app.BPMSLI11333X1HLabel = uilabel(app.BC11EnergyFeedbackPanel);
@@ -655,14 +674,14 @@ classdef F2_Feedback_exported < matlab.apps.AppBase
       app.Gauge_8.ScaleColors = [1 0 0;1 0 0;0.3922 0.8314 0.0745];
       app.Gauge_8.ScaleColorLimits = [-100 -75;75 100;-25 25];
       app.Gauge_8.FontSize = 10;
-      app.Gauge_8.Position = [185 34 125 29];
+      app.Gauge_8.Position = [185 33 125 29];
 
       % Create BC11BunchLengthFeedbackPanel
       app.BC11BunchLengthFeedbackPanel = uipanel(app.FACETIIFeedbackUIFigure);
       app.BC11BunchLengthFeedbackPanel.ForegroundColor = [0.851 0.3255 0.098];
       app.BC11BunchLengthFeedbackPanel.Title = 'BC11 Bunch Length Feedback';
       app.BC11BunchLengthFeedbackPanel.FontWeight = 'bold';
-      app.BC11BunchLengthFeedbackPanel.Position = [502 279 472 138];
+      app.BC11BunchLengthFeedbackPanel.Position = [502 280 472 138];
 
       % Create SetpointEditField_6
       app.SetpointEditField_6 = uieditfield(app.BC11BunchLengthFeedbackPanel, 'numeric');
@@ -670,17 +689,17 @@ classdef F2_Feedback_exported < matlab.apps.AppBase
       app.SetpointEditField_6.Position = [17 47 100 29];
       app.SetpointEditField_6.Value = 0.4;
 
-      % Create mmLabel_2
-      app.mmLabel_2 = uilabel(app.BC11BunchLengthFeedbackPanel);
-      app.mmLabel_2.FontSize = 16;
-      app.mmLabel_2.Position = [130 50 31 22];
-      app.mmLabel_2.Text = 'mm';
+      % Create eguLabel
+      app.eguLabel = uilabel(app.BC11BunchLengthFeedbackPanel);
+      app.eguLabel.FontSize = 16;
+      app.eguLabel.Position = [130 50 32 22];
+      app.eguLabel.Text = 'egu';
 
       % Create Gauge_10
       app.Gauge_10 = uigauge(app.BC11BunchLengthFeedbackPanel, 'linear');
       app.Gauge_10.Limits = [0.1 1];
       app.Gauge_10.FontSize = 10;
-      app.Gauge_10.Position = [184 30 126 35];
+      app.Gauge_10.Position = [184 30 126 33];
       app.Gauge_10.Value = 0.4;
 
       % Create StatusLamp_6
@@ -690,33 +709,33 @@ classdef F2_Feedback_exported < matlab.apps.AppBase
 
       % Create Switch_6
       app.Switch_6 = uiswitch(app.BC11BunchLengthFeedbackPanel, 'slider');
-      app.Switch_6.Enable = 'off';
+      app.Switch_6.ValueChangedFcn = createCallbackFcn(app, @Switch_6ValueChanged, true);
       app.Switch_6.Position = [66 10 62 28];
 
       % Create Gauge_11
       app.Gauge_11 = uigauge(app.BC11BunchLengthFeedbackPanel, 'linear');
-      app.Gauge_11.Limits = [-180 180];
+      app.Gauge_11.Limits = [0 10];
       app.Gauge_11.FontSize = 10;
-      app.Gauge_11.Position = [334 29 126 35];
+      app.Gauge_11.Position = [334 29 126 33];
 
-      % Create KLYSLI1121DRVRLabel
-      app.KLYSLI1121DRVRLabel = uilabel(app.BC11BunchLengthFeedbackPanel);
-      app.KLYSLI1121DRVRLabel.HorizontalAlignment = 'center';
-      app.KLYSLI1121DRVRLabel.Position = [339 62 117 22];
-      app.KLYSLI1121DRVRLabel.Text = 'KLYS:LI11:21:DRVR';
+      % Create SIOCSYS1ML01AO232Label
+      app.SIOCSYS1ML01AO232Label = uilabel(app.BC11BunchLengthFeedbackPanel);
+      app.SIOCSYS1ML01AO232Label.HorizontalAlignment = 'center';
+      app.SIOCSYS1ML01AO232Label.Position = [326 64 143 22];
+      app.SIOCSYS1ML01AO232Label.Text = 'SIOC:SYS1:ML01:AO232';
 
-      % Create BL11359Label_2
-      app.BL11359Label_2 = uilabel(app.BC11BunchLengthFeedbackPanel);
-      app.BL11359Label_2.HorizontalAlignment = 'center';
-      app.BL11359Label_2.Position = [224 62 55 22];
-      app.BL11359Label_2.Text = 'BL11359';
+      % Create BLENLI11359Label
+      app.BLENLI11359Label = uilabel(app.BC11BunchLengthFeedbackPanel);
+      app.BLENLI11359Label.HorizontalAlignment = 'center';
+      app.BLENLI11359Label.Position = [208 64 88 22];
+      app.BLENLI11359Label.Text = 'BLEN:LI11:359';
 
       % Create EditField_13
       app.EditField_13 = uieditfield(app.BC11BunchLengthFeedbackPanel, 'numeric');
       app.EditField_13.Editable = 'off';
       app.EditField_13.HorizontalAlignment = 'center';
       app.EditField_13.FontSize = 10;
-      app.EditField_13.Position = [185 6 125 22];
+      app.EditField_13.Position = [184 6 126 22];
 
       % Create EditField_14
       app.EditField_14 = uieditfield(app.BC11BunchLengthFeedbackPanel, 'numeric');
@@ -737,7 +756,7 @@ classdef F2_Feedback_exported < matlab.apps.AppBase
       app.BC14BunchLengthFeedbackPanel.ForegroundColor = [0 0 1];
       app.BC14BunchLengthFeedbackPanel.Title = 'BC14 Bunch Length Feedback';
       app.BC14BunchLengthFeedbackPanel.FontWeight = 'bold';
-      app.BC14BunchLengthFeedbackPanel.Position = [22 13 473 125];
+      app.BC14BunchLengthFeedbackPanel.Position = [22 14 473 125];
 
       % Create SetpointEditField_7
       app.SetpointEditField_7 = uieditfield(app.BC14BunchLengthFeedbackPanel, 'numeric');
@@ -809,7 +828,7 @@ classdef F2_Feedback_exported < matlab.apps.AppBase
       % Create FeedbackWatcherProcessStatusPanel
       app.FeedbackWatcherProcessStatusPanel = uipanel(app.FACETIIFeedbackUIFigure);
       app.FeedbackWatcherProcessStatusPanel.Title = 'Feedback Watcher Process Status';
-      app.FeedbackWatcherProcessStatusPanel.Position = [22 571 951 67];
+      app.FeedbackWatcherProcessStatusPanel.Position = [22 572 951 67];
 
       % Create fbstat
       app.fbstat = uilabel(app.FeedbackWatcherProcessStatusPanel);
