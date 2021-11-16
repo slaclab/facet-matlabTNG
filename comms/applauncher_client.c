@@ -27,8 +27,8 @@ void error(char *msg) {
     exit(0);
 }
 
-// Get port ID
-int getPort()
+// Get port ID and Increment file name port number by 1 within range PORTRANGE1:PORTRANGE2
+int getPort(int newport)
 {
   DIR *folder;
   struct dirent *entry;
@@ -47,8 +47,19 @@ int getPort()
     files++;
     if (!strncmp("applauncherPort_",entry->d_name,16)) {
       portnum = atoi(entry->d_name+16) ;
+      if (newport)
+        portnum = portnum+1 ;
+      remove(entry->d_name);
     }
   }
+  if (portnum >= PORTRANGE2)
+    portnum = PORTRANGE1 ;
+  closedir(folder);
+  strcpy(newfile,"applauncherPort_");
+  sprintf(portchar,"%d",portnum);
+  strcat(newfile,portchar);
+  fp = fopen(newfile,"w") ;
+  fclose(fp);
   return(portnum);
 }
 
@@ -61,12 +72,23 @@ int main(int argc, char **argv) {
     char buf[BUFSIZE];
 
     /* check command line arguments */
-    if (argc != 2) {
-       fprintf(stderr,"usage: %s <message>\n", argv[0]);
-       exit(0);
+    printf("Check args...\n");
+    if (argc != 3 && strcmp(argv[2],"PORTINIT")) {
+      fprintf(stderr,"usage: %s <message> <portnum> , OR %s PORTINIT\n", argv[0],argv[0]);
+      exit(0);
     }
+    printf("Done.\n");
+
+    // Assign port # for communictions
     hostname = "127.0.0.1";
-    portno = getPort() ;
+    if (!strcmp(argv[1],"PORTINIT")) {
+      printf("GET PORT...\n");
+      portno = getPort(1) ; // Get port # from file ID and increment
+      printf("Done.\n");
+      return(portno) ;
+    }
+    else // Use input from environment variable to get port ID
+      portno = atoi(argv[2]) ;  
 
     /* socket: create the socket */
     sockfd = socket(AF_INET, SOCK_DGRAM, 0);
