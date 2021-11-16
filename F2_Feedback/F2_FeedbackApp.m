@@ -730,7 +730,7 @@ classdef F2_FeedbackApp < handle & F2_common
       disp('Changing Setpoint Offsets:');
       disp(val);
       if ~isempty(obj.guihan)
-        gh = ["SetpointEditField" "SetpointEditField_2" "SetpointEditField_5" "SetpointEditField_3" "SetpointEditField_6" "SetpointEditField_7" "SetpointEditField_4"];
+        gh = ["SetpointEditField" "SetpointEditField_2" "SetpointEditField_5" "SetpointEditField_5" "SetpointEditField_3" "SetpointEditField_7" "SetpointEditField_4"];
       end
       for ifb=1:length(obj.FeedbacksAvailable)
         obj.Feedbacks(ifb).SetpointDES =  obj.SetpointOffsets(ifb) ;
