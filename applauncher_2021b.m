@@ -11,24 +11,21 @@ for ifile=1:length(d)
   end
 end
 delete('applauncherPort_*');
+portno=portno+1;
 if portno>65535
   portno=49152;
 end
 fid=fopen(sprintf('applauncherPort_%d',portno),'w'); fclose(fid);
 
 % Open UDP port
-u=udp ;
-set(u,'LocalPort',portno); set(u,'RemotePort',portno);
-fopen(u);
-fprintf('Matlab Application Launcher Listening on Port %d ...\n',portno);
+u=udpport('LocalPort',portno) ;
 
 % Wait for valid app launch command and launch
 addpath common
 addpath web
 while 1
-  if u.BytesAvailable>0
-    app = char(fread(u,u.BytesAvailable)); %#ok<FREAD>
-    app = app' ;
+  if u.NumBytesAvailable>0
+    app = char(read(u,u.NumBytesAvailable));
     if string(app)=="exit"
       exit
     end
@@ -42,10 +39,8 @@ while 1
         appobj=eval([app '_exported']);
         waitfor(appobj)
       catch
-        fclose(u); delete(u);
         exit
       end
-      fclose(u); delete(u);
       exit
     end
   end
