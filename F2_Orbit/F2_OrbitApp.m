@@ -724,14 +724,14 @@ classdef F2_OrbitApp < handle & F2_common
       pl.DataTipTemplate.DataTipRows(end+1) = dataTipTextRow('Name',obj.xcornames(obj.usexcor));
       xlabel(ahan(1),'Z [m]'); ylabel(ahan(1),'XCOR \theta_x [rad]');
       grid(ahan(1),'on');
-      ahan(1).XLim(2)=[min(obj.cordat_x.z(obj.usexcor)) max(obj.cordat_x.z(obj.usexcor))];
+      ahan(1).XLim=[min(obj.cordat_x.z(obj.usexcor)) max(obj.cordat_x.z(obj.usexcor))];
       pl=stem(ahan(2),obj.cordat_y.z(obj.useycor),obj.cordat_y.theta(obj.useycor));
       pl.DataTipTemplate.DataTipRows(1).Label = 'Linac Z' ;
       pl.DataTipTemplate.DataTipRows(2).Label = 'Y Kick (rad)' ;
       pl.DataTipTemplate.DataTipRows(end+1) = dataTipTextRow('Name',obj.ycornames(obj.useycor));
       xlabel(ahan(2),'Z [m]'); ylabel(ahan(2),'YCOR \theta_y [rad]');
       grid(ahan(2),'on');
-      ahan(2).XLim(2)=[min(obj.cordat_y.z(obj.useycor)) max(obj.cordat_y.z(obj.useycor))];
+      ahan(2).XLim=[min(obj.cordat_y.z(obj.useycor)) max(obj.cordat_y.z(obj.useycor))];
       
       % If calculated, superimpose new kick values proposed
       if obj.calcperformed
