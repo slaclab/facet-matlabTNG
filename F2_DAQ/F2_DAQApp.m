@@ -132,7 +132,7 @@ classdef F2_DAQApp < handle
             obj.DAQ_params.scanPVs = {};
             obj.DAQ_params.startVals = [];
             obj.DAQ_params.stopVals = [];
-            obj.DAQ_params.stepVals = [];
+            %obj.DAQ_params.stepVals = [];
             obj.DAQ_params.scanVals = {};
             
             % This array is used for flattening the scan
@@ -143,7 +143,7 @@ classdef F2_DAQApp < handle
             
             if obj.DAQ_params.scanDim > 0
                 obj.DAQ_params.scanFuncs{1} = obj.guihan.ScanfunctionDropDown.Value;
-                obj.DAQ_params.scanPvs{1} = obj.guihan.PVEditField.Value;
+                obj.DAQ_params.scanPVs{1} = obj.guihan.PVEditField.Value;
                 obj.DAQ_params.startVals(1) = obj.guihan.StartEditField.Value;
                 obj.DAQ_params.stopVals(1) = obj.guihan.StopEditField.Value;
                 obj.DAQ_params.nSteps(1) = obj.guihan.StepsEditField.Value;
@@ -155,7 +155,7 @@ classdef F2_DAQApp < handle
             
             if obj.DAQ_params.scanDim > 1
                 obj.DAQ_params.scanFuncs{2} = obj.guihan.ScanfunctionDropDown_2.Value;
-                obj.DAQ_params.scanPvs{2} = obj.guihan.PVEditField_2.Value;
+                obj.DAQ_params.scanPVs{2} = obj.guihan.PVEditField_2.Value;
                 obj.DAQ_params.startVals(2) = obj.guihan.StartEditField_2.Value;
                 obj.DAQ_params.stopVals(2) = obj.guihan.StopEditField_2.Value;
                 obj.DAQ_params.nSteps(2) = obj.guihan.StepsEditField_2.Value;
