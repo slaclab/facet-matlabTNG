@@ -46,7 +46,7 @@ classdef F2_MatchingApp < handle & F2_common
     TwissFit(1,8)
   end
   properties(Constant)
-    EmitDataProfs = "PROF:IN10:571" % profile devices for which there are emittance PVs
+    EmitDataProfs = ["PROF:IN10:571" "PROF:LI11:375"] % profile devices for which there are emittance PVs
     InitMatchProf = ["WIRE:IN10:561","PROF:IN10:571"] % Profile devices to associate with initial match conditions
   end
  
