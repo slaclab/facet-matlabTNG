@@ -1,7 +1,7 @@
 function LaserS10_nonBSA_List = nonBSA_List_LaserS10()
 
 LaserS10_nonBSA_List = {...
-'IOC:SYS1:MP01:MSHUTCTL';
+%'IOC:SYS1:MP01:MSHUTCTL';
 'LASR:LT10:930:PWR';
 'WPLT:LT10:150:WP_ANGLE.RBV';
 'WPLT:LT10:150:WP_ANGLE';

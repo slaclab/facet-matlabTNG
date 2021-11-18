@@ -52,6 +52,12 @@ classdef F2_runDAQ < handle
                 obj.camCheck = apph.camCheck;
             else
                 obj.camCheck = F2_CamCheck(true,obj);
+                
+                [~,ia,~] = intersect(obj.camCheck.camNames,obj.params.camNames);
+                list_bool = false(size(obj.camCheck.camNames));
+                list_bool(ia) = true;
+                obj.camCheck.downSelect(list_bool);
+                
             end
                         
             % initialize object and add PVs to be monitored
