@@ -25,6 +25,7 @@ classdef F2_IN10GunWatcherApp < handle
         PV(context,'name',"MaxPwr",'pvname',"SIOC:SYS1:ML00:AO844",'mode',"rw",'monitor',true); % Max forward gun power
         PV(context,'name',"Enable",'pvname',"SIOC:SYS1:ML00:AO845",'mode',"rw",'monitor',true); % Watcher enable state 0 = OFF 1 = ON
         PV(context,'name',"Heartbeat",'pvname',"SIOC:SYS1:ML00:AO846",'mode',"rw",'monitor',true); % Watcher heartbeat
+        PV(context,'name',"Watchdog",'pvname',"F2:WATCHER:GUNWATCHER_STAT",'mode',"rw"); % Update watcher alive status
         PV(context,'name',"pconv",'pvname',"SIOC:SYS1:ML00:AO847",'mode',"rw",'monitor',true); % V:MW conversion factor
         PV(context,'name',"GunPowerWFout",'pvname',"SIOC:SYS1:ML00:AO848",'mode',"rw",'monitor',true); % PV to write forward power calc from waveform
         PV(context,'name',"pconv_off",'pvname',"SIOC:SYS1:ML00:AO849",'mode',"rw",'monitor',true); % V:MW conversion offset factor
@@ -107,6 +108,7 @@ classdef F2_IN10GunWatcherApp < handle
       end
       
       % Update heartbeat
+      caput(obj.pvs.Watchdog,1);
       if isempty(obj.guihan)
         if isempty(lasthb)
           caput(obj.pvs.Heartbeat,1);

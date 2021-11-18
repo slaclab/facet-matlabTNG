@@ -138,7 +138,7 @@ classdef F2_FeedbackApp < handle & F2_common
         PV(cntx,'Name',"DL1E_JitterON",'pvname',"SIOC:SYS1:ML01:AO217",'monitor',true,'mode',"rw");
         PV(cntx,'Name',"DL1E_JitterAMP",'pvname',"SIOC:SYS1:ML01:AO218",'monitor',true,'mode',"rw");
         PV(cntx,'Name',"FB_JitterOnTime",'pvname',"SIOC:SYS1:ML01:AO219",'monitor',true,'mode',"rw");
-        PV(cntx,'Name',"Watchdog",'pvname',"SIOC:SYS1:ML00:AO051 ")] ;
+        PV(cntx,'Name',"Watchdog",'pvname',"F2:WATCHER:FEEDBACKS_STAT")] ;
       
       % Attach feedback running status PV
       obj.pvlist(end+1) = PV(cntx,'Name',"FB_RUNNING",'pvname',obj.FbRunningPV,'monitor',true) ;
@@ -276,8 +276,7 @@ classdef F2_FeedbackApp < handle & F2_common
     end
     function RunningTimer(obj)
       %RUNNINGTIMER Keep watchdog PV updated
-      id=caget(obj.pvs.Watchdog);
-      caput(obj.pvs.Watchdog,id+1);
+      caput(obj.pvs.Watchdog,1);
     end
     function DL1Updated(obj)
       if obj.is_shutdown
