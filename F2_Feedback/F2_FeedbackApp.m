@@ -179,11 +179,11 @@ classdef F2_FeedbackApp < handle & F2_common
       obj.Feedbacks(2).SetpointDES = obj.SetpointOffsets(2) ;
       obj.Feedbacks(2).QualVar = PV(cntx,'name',"FB2_TMIT",'pvname',"BPMS:LI14:801:TMIT1H",'conv',1e-9) ;
       obj.Feedbacks(2).ControlStatusVar{1} = PV(cntx,'name',"FB2_ControlStatus",'pvname',...
-        "FCUDKLYS:LI14:"+obj.BC14E_KlysNo(1)+":STATUS " ) ;
+        "FCUDKLYS:LI14:"+obj.BC14E_KlysNo(1)+":ONBEAM10", 'pvdatatype', "float" ) ;
       obj.Feedbacks(2).ControlStatusVar{2} = PV(cntx,'name',"FB2_ControlStatus",'pvname',...
-        "FCUDKLYS:LI14:"+obj.BC14E_KlysNo(2)+":STATUS " ) ;
-      obj.Feedbacks(2).ControlStatusGood{1} = {50 80} ;
-      obj.Feedbacks(2).ControlStatusGood{2} = {50 80} ;
+        "FCUDKLYS:LI14:"+obj.BC14E_KlysNo(2)+":ONBEAM10", 'pvdatatype', "float" ) ;
+      obj.Feedbacks(2).ControlStatusGood{1} = {1} ;
+      obj.Feedbacks(2).ControlStatusGood{2} = {1} ;
       if ~isempty(obj.guihan)
         obj.guihan.BC14KLYS1Label.Text = "KLYS:LI14:"+obj.BC14E_KlysNo(1)+"1:PDES" ;
         obj.guihan.BC14KLYS2Label.Text = "KLYS:LI14:"+obj.BC14E_KlysNo(2)+"1:PDES" ;
@@ -203,11 +203,11 @@ classdef F2_FeedbackApp < handle & F2_common
       obj.Feedbacks(3).SetpointDES = obj.SetpointOffsets(3) ;
       obj.Feedbacks(3).QualVar = PV(cntx,'name',"FB3_TMIT",'pvname',"BPMS:LI11:333:TMIT1H",'conv',1e-9) ;
       obj.Feedbacks(3).ControlStatusVar{1} = PV(cntx,'name',"FB3_ControlStatus",'pvname',...
-        "FCUDKLYS:LI11:1:STATUS " ) ;
-      obj.Feedbacks(3).ControlStatusGood{1} = {50 80} ;
+        "FCUDKLYS:LI11:1:ONBEAM10", 'pvdatatype', "float" ) ;
+      obj.Feedbacks(3).ControlStatusGood{1} = {1} ;
       obj.Feedbacks(3).ControlStatusVar{2} = PV(cntx,'name',"FB3_ControlStatus",'pvname',...
-        "FCUDKLYS:LI11:2:STATUS " ) ;
-      obj.Feedbacks(3).ControlStatusGood{2} = {50 80} ;
+        "FCUDKLYS:LI11:2:ONBEAM10 ", 'pvdatatype', "float" ) ;
+      obj.Feedbacks(3).ControlStatusGood{2} = {1} ;
 %       obj.Feedbacks(3).Debug=1;
 
       % BC11 Bunch Length Feedback
@@ -225,10 +225,10 @@ classdef F2_FeedbackApp < handle & F2_common
       obj.Feedbacks(4).QualVar = PV(cntx,'name',"FB4_TMIT",'pvname',"BPMS:LI11:333:TMIT1H",'conv',1e-9) ;
       obj.Feedbacks(4).ControlStatusVar{1} = PV(cntx,'name',"FB4_ControlStatus",'pvname',...
         "FCUDKLYS:LI11:1:STATUS " ) ;
-      obj.Feedbacks(4).ControlStatusGood{1} = {50 80} ;
+      obj.Feedbacks(4).ControlStatusGood{1} = {1} ;
       obj.Feedbacks(4).ControlStatusVar{2} = PV(cntx,'name',"FB4_ControlStatus",'pvname',...
         "FCUDKLYS:LI11:2:STATUS " ) ;
-      obj.Feedbacks(4).ControlStatusGood{2} = {50 80} ;
+      obj.Feedbacks(4).ControlStatusGood{2} = {1} ;
 %       obj.Feedbacks(4).Debug=1;
       
       % If GUI being used, suppres local writing to control value operations, that is handled by watcher version
