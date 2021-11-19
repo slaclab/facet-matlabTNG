@@ -21,7 +21,7 @@ classdef F2_Feedback_exported < matlab.apps.AppBase
     StatusLamp                    matlab.ui.control.Lamp
     Switch                        matlab.ui.control.Switch
     Gauge_3                       matlab.ui.control.LinearGauge
-    KLYSIN1041ADESLabel           matlab.ui.control.Label
+    KLYSIN1041SFB_ADESLabel       matlab.ui.control.Label
     BPMSIN10731X1HLabel           matlab.ui.control.Label
     EditField                     matlab.ui.control.NumericEditField
     EditField_2                   matlab.ui.control.NumericEditField
@@ -362,14 +362,14 @@ classdef F2_Feedback_exported < matlab.apps.AppBase
       app.Gauge_3.Position = [333 78 125 29];
       app.Gauge_3.Value = 40;
 
-      % Create KLYSIN1041ADESLabel
-      app.KLYSIN1041ADESLabel = uilabel(app.DL1EnergyFeedbackPanel);
-      app.KLYSIN1041ADESLabel.Position = [338 108 118 22];
-      app.KLYSIN1041ADESLabel.Text = 'KLYS:IN10:41:ADES';
+      % Create KLYSIN1041SFB_ADESLabel
+      app.KLYSIN1041SFB_ADESLabel = uilabel(app.DL1EnergyFeedbackPanel);
+      app.KLYSIN1041SFB_ADESLabel.Position = [323 106 148 22];
+      app.KLYSIN1041SFB_ADESLabel.Text = 'KLYS:IN10:41:SFB_ADES';
 
       % Create BPMSIN10731X1HLabel
       app.BPMSIN10731X1HLabel = uilabel(app.DL1EnergyFeedbackPanel);
-      app.BPMSIN10731X1HLabel.Position = [192 108 119 22];
+      app.BPMSIN10731X1HLabel.Position = [189 105 119 22];
       app.BPMSIN10731X1HLabel.Text = 'BPMS:IN10:731:X1H';
 
       % Create EditField

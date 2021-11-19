@@ -22,8 +22,8 @@ classdef F2_FeedbackApp < handle & F2_common
   properties(SetObservable)
     Enabled uint16 = 0 % Feedback enabled bit
     FeedbackCoefficients cell = {0.06*0.1 0.01 0.01 0.01} % Feedback coefficients for each feedback
-    FeedbackControlLimits cell = {[5 28] [-180 180] [5 60] [-100 100]}
-    FeedbackSetpointLimits cell ={[-5 5] [-15 15] [-10 10] [0 100]} % mm
+    FeedbackControlLimits cell = {[5 28] [-180 180] [5 60] [10 63]}
+    FeedbackSetpointLimits cell ={[-5 5] [-15 15] [-10 10] [0 100]}
     SetpointFilterCoefficients cell ={[0.001 0.1] [0.001 0.1] [0.001 0.1] [0.001 0.1]} % low/high frequency settings for filtering
     SetpointFilterTypes string {mustBeMember(SetpointFilterTypes,["notch" "pass"])} = ["pass" "pass" "pass" "pass"]
     SetpointDoFilter logical = [false false false false] % apply filtering to feedback setpoints?
@@ -61,7 +61,7 @@ classdef F2_FeedbackApp < handle & F2_common
     BC11E_OffsetPV string = "SIOC:SYS1:ML01:AO207"
     BC11BL_GainPV string = "SIOC:SYS1:ML01:AO220"
     BC11BL_OffsetPV string = "SIOC:SYS1:ML01:AO207"
-    FbRunningPV string = "ALRM:SYS1:FACETEGR:ALHBERR"
+    FbRunningPV string = "F2:WATCHER:FEEDBACKS_STAT"
   end
   methods
     function obj = F2_FeedbackApp(guihan)
@@ -139,7 +139,7 @@ classdef F2_FeedbackApp < handle & F2_common
         PV(cntx,'Name',"DL1E_JitterON",'pvname',"SIOC:SYS1:ML01:AO217",'monitor',true,'mode',"rw");
         PV(cntx,'Name',"DL1E_JitterAMP",'pvname',"SIOC:SYS1:ML01:AO218",'monitor',true,'mode',"rw");
         PV(cntx,'Name',"FB_JitterOnTime",'pvname',"SIOC:SYS1:ML01:AO219",'monitor',true,'mode',"rw");
-        PV(cntx,'Name',"Watchdog",'pvname',"F2:WATCHER:FEEDBACKS_STAT")] ;
+        PV(cntx,'Name',"Watchdog",'pvname',obj.FbRunningPV)] ;
       
       % Attach feedback running status PV
       obj.pvlist(end+1) = PV(cntx,'Name',"FB_RUNNING",'pvname',obj.FbRunningPV,'monitor',true) ;
@@ -148,6 +148,7 @@ classdef F2_FeedbackApp < handle & F2_common
       obj.pvs=struct(obj.pvlist);
       
       % Generate feedback links
+      
       % DL1 energy feedback
       DL1_Control=PV(cntx,'name',"Control",'pvname',"KLYS:LI10:41:SFB_ADES",'mode',"rw"); % max = 37 MW
       DL1_Setpoint=PV(cntx,'name',"Setpoint",'pvname',"BPMS:IN10:731:X1H",'monitor',true);
@@ -165,6 +166,7 @@ classdef F2_FeedbackApp < handle & F2_common
       obj.Feedbacks(1).ControlStatusGood{1} = {'OK'} ;
       obj.Feedbacks(1).ControlStatusVar{2} = PV(cntx,'name',"FB1_ControlStatus",'pvname',"KLYS:LI10:41:SFB_ADIS") ;
       obj.Feedbacks(1).ControlStatusGood{2} = {'ENABLE'} ;
+      
       % BC14 energy feedback
       BC14_Control=["KLYS:LI14:"+obj.BC14E_KlysNo(1)+"1//PDES" "KLYS:LI14:"+obj.BC14E_KlysNo(2)+"1//PDES"];
       BC14_Setpoint=PV(cntx,'name',"Setpoint",'pvname',"BPMS:LI14:801:X1H",'monitor',true);
@@ -447,7 +449,7 @@ classdef F2_FeedbackApp < handle & F2_common
         obj.guihan.EditField_12.Value = obj.Feedbacks(ifb).ControlVal ;
         obj.guihan.Gauge_9.Value = obj.Feedbacks(ifb).ControlVal ;
         obj.guihan.Gauge_9.ScaleColors = [1,0,0;1,0,0;0.39,0.83,0.07] ;
-        obj.guihan.Gauge_9.ScaleColorLimits = [0,obj.FeedbackControlLimits{ifb}(1);obj.FeedbackControlLimits{ifb}(2),obj.FeedbackControlLimits{ifb}(2)+10;obj.FeedbackControlLimits{ifb}(1),obj.FeedbackControlLimits{ifb}(2)] ;
+        obj.guihan.Gauge_9.ScaleColorLimits = [-10,obj.FeedbackControlLimits{ifb}(1);obj.FeedbackControlLimits{ifb}(2),obj.FeedbackControlLimits{ifb}(2)+10;obj.FeedbackControlLimits{ifb}(1),obj.FeedbackControlLimits{ifb}(2)] ;
         obj.guihan.Gauge_9.Limits = [0,obj.FeedbackControlLimits{ifb}(2)+10] ;
         if obj.Feedbacks(ifb).ControlVal > obj.FeedbackControlLimits{ifb}(2) || obj.Feedbacks(ifb).ControlVal < obj.FeedbackControlLimits{ifb}(1)
           obj.guihan.EditField_12.BackgroundColor='red';
@@ -497,7 +499,7 @@ classdef F2_FeedbackApp < handle & F2_common
         obj.guihan.EditField_14.Value = obj.Feedbacks(ifb).ControlVal ;
         obj.guihan.Gauge_11.Value = obj.Feedbacks(ifb).ControlVal ;
         obj.guihan.Gauge_11.ScaleColors = [1,0,0;1,0,0;0.39,0.83,0.07] ;
-        obj.guihan.Gauge_11.ScaleColorLimits = [0,obj.FeedbackControlLimits{ifb}(1);obj.FeedbackControlLimits{ifb}(2),obj.FeedbackControlLimits{ifb}(2)+10;obj.FeedbackControlLimits{ifb}(1),obj.FeedbackControlLimits{ifb}(2)] ;
+        obj.guihan.Gauge_11.ScaleColorLimits = [-10,obj.FeedbackControlLimits{ifb}(1);obj.FeedbackControlLimits{ifb}(2),obj.FeedbackControlLimits{ifb}(2)+10;obj.FeedbackControlLimits{ifb}(1),obj.FeedbackControlLimits{ifb}(2)] ;
         obj.guihan.Gauge_11.Limits = [0,obj.FeedbackControlLimits{ifb}(2)+10] ;
         if obj.Feedbacks(ifb).ControlVal > obj.FeedbackControlLimits{ifb}(2) || obj.Feedbacks(ifb).ControlVal < obj.FeedbackControlLimits{ifb}(1)
           obj.guihan.EditField_14.BackgroundColor='red';
