@@ -34,9 +34,9 @@ classdef PV < handle
   properties(SetObservable)
     guihan = 0 % gui handle to assoicate with this PV (e.g. to write out a variable or control a switch etc) (can be vector of handles)
     UseArchive logical = false % Extract data from archive if true, else get live data
+    pvdatatype % Set as "string", "float", "int" or "double" to override default PV data type - cell array when more than 1 PV per object
   end
   properties(SetAccess=protected)
-    pvdatatype % Data type used by java channel access client (set on constuction to force, else use default determined from control system) can be cell array of length pvname or scalar java class
     mode string = "r" % Access mode: "r", or "rw"
     polltime single = 1 % Rate at which to update monitored PVs
     utimer % Holder for update timer object
@@ -88,6 +88,23 @@ classdef PV < handle
       end
       % Execute SetMode method to register callback handles/perform 1 time GUI tasks
       SetMode(obj,obj.mode);
+    end
+    function set.pvdatatype(obj,type)
+      if ~iscell(type)
+        type={type};
+      end
+      for itype=1:length(type)
+        if isequal(type{itype},"string")
+          type{itype}=java.lang.String(0).getClass();
+        elseif isequal(type{itype},"float")
+          type{itype}=java.lang.Float(0).getClass();
+        elseif isequal(type{itype},"double")
+          type{itype}=java.lang.Double(0).getClass();
+        elseif isequal(type{itype},"int")
+          type{itype}=java.lang.Integer(0).getClass();
+        end
+      end
+      obj.pvdatatype=type;
     end
     function set.guihan(obj,han)
       if han==0; return; end
