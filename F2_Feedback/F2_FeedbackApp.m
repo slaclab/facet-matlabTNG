@@ -49,6 +49,7 @@ classdef F2_FeedbackApp < handle & F2_common
     to % Running timer object
   end
   properties(Constant)
+    UseFeedbacks logical = [true false false false]
     FeedbacksAvailable string = ["DL1E" "BC14E" "BC11E" "BC11BL"]
     FeedbackEnabledPV string = "SIOC:SYS1:ML00:AO856"
     FeedbackSetpointsPV string = "SIOC:SYS1:ML00:FWF22"
@@ -89,6 +90,9 @@ classdef F2_FeedbackApp < handle & F2_common
         PV(cntx,'Name',"FeedbackSetpoints",'pvname',obj.FeedbackSetpointsPV,'monitor',true,'mode',"rw",'nmax',length(obj.FeedbacksAvailable)) ;
         PV(cntx,'Name',"L0BStat1",'pvname',"KLYS:LI10:41:FAULTSEQ_STATUS",'monitor',true) ;
         PV(cntx,'Name',"L0BStat2",'pvname',"KLYS:LI10:41:BEAMCODE10_TSTAT",'monitor',true) ;
+        PV(cntx,'Name',"Watchdog",'pvname',obj.FbRunningPV)] ;
+      if obj.UseFeedbacks(1)
+        obj.pvlist = [obj.pvlist;
         PV(cntx,'Name',"E_DL1",'pvname',"SIOC:SYS1:ML00:AO892",'monitor',true) ;
         PV(cntx,'Name',"DL1E_Gain",'pvname',obj.DL1E_GainPV,'monitor',true,'mode','rw') ;
         PV(cntx,'Name',"DL1E_Offset",'pvname',obj.DL1E_OffsetPV,'monitor',true,'mode','rw');
@@ -101,6 +105,12 @@ classdef F2_FeedbackApp < handle & F2_common
         PV(cntx,'Name',"DL1E_SetpointDeadbandHi",'pvname',"SIOC:SYS1:ML00:AO943",'monitor',true,'mode',"rw");
         PV(cntx,'Name',"DL1E_TMITLo",'pvname',"SIOC:SYS1:ML00:AO944",'monitor',true,'mode',"rw");
         PV(cntx,'Name',"DL1E_TMITHi",'pvname',"SIOC:SYS1:ML00:AO945",'monitor',true,'mode',"rw");
+        PV(cntx,'Name',"DL1E_JitterON",'pvname',"SIOC:SYS1:ML01:AO217",'monitor',true,'mode',"rw");
+        PV(cntx,'Name',"DL1E_JitterAMP",'pvname',"SIOC:SYS1:ML01:AO218",'monitor',true,'mode',"rw");
+        PV(cntx,'Name',"FB_JitterOnTime",'pvname',"SIOC:SYS1:ML01:AO219",'monitor',true,'mode',"rw")];
+      end
+      if obj.UseFeedbacks(2)
+        obj.pvlist= [obj.pvlist;
         PV(cntx,'Name',"E_BC14",'pvname',"SIOC:SYS1:ML00:AO894",'monitor',true) ;
         PV(cntx,'Name',"BC14E_Gain",'pvname',obj.BC14E_GainPV,'monitor',true,'mode','rw') ;
         PV(cntx,'Name',"BC14E_Offset",'pvname',obj.BC14E_OffsetPV,'monitor',true,'mode','rw');
@@ -112,7 +122,10 @@ classdef F2_FeedbackApp < handle & F2_common
         PV(cntx,'Name',"BC14E_SetpointDeadbandLo",'pvname',"SIOC:SYS1:ML01:AO202",'monitor',true,'mode',"rw");
         PV(cntx,'Name',"BC14E_SetpointDeadbandHi",'pvname',"SIOC:SYS1:ML01:AO203",'monitor',true,'mode',"rw");
         PV(cntx,'Name',"BC14E_TMITLo",'pvname',"SIOC:SYS1:ML01:AO204",'monitor',true,'mode',"rw");
-        PV(cntx,'Name',"BC14E_TMITHi",'pvname',"SIOC:SYS1:ML01:AO205",'monitor',true,'mode',"rw");
+        PV(cntx,'Name',"BC14E_TMITHi",'pvname',"SIOC:SYS1:ML01:AO205",'monitor',true,'mode',"rw")];
+      end
+      if obj.UseFeedbacks(3)
+        obj.pvlist = [obj.pvlist;
         PV(cntx,'Name',"E_BC11",'pvname',"SIOC:SYS1:ML00:AO893",'monitor',true) ;
         PV(cntx,'Name',"BC11E_Gain",'pvname',obj.BC11E_GainPV,'monitor',true,'mode','rw') ;
         PV(cntx,'Name',"BC11E_Offset",'pvname',obj.BC11E_OffsetPV,'monitor',true,'mode','rw');
@@ -124,7 +137,10 @@ classdef F2_FeedbackApp < handle & F2_common
         PV(cntx,'Name',"BC11E_SetpointDeadbandLo",'pvname',"SIOC:SYS1:ML01:AO213",'monitor',true,'mode',"rw");
         PV(cntx,'Name',"BC11E_SetpointDeadbandHi",'pvname',"SIOC:SYS1:ML01:AO214",'monitor',true,'mode',"rw");
         PV(cntx,'Name',"BC11E_TMITLo",'pvname',"SIOC:SYS1:ML01:AO215",'monitor',true,'mode',"rw");
-        PV(cntx,'Name',"BC11E_TMITHi",'pvname',"SIOC:SYS1:ML01:AO216",'monitor',true,'mode',"rw");
+        PV(cntx,'Name',"BC11E_TMITHi",'pvname',"SIOC:SYS1:ML01:AO216",'monitor',true,'mode',"rw")];
+      end
+      if obj.UseFeedbacks(4)
+        obj.pvlist = [obj.pvlist;
         PV(cntx,'Name',"BC11BL_Gain",'pvname',obj.BC11BL_GainPV,'monitor',true,'mode','rw') ;
         PV(cntx,'Name',"BC11BL_Offset",'pvname',obj.BC11BL_OffsetPV,'monitor',true,'mode','rw');
         PV(cntx,'Name',"BC11BL_ControlLimitLo",'pvname',"SIOC:SYS1:ML01:AO222",'monitor',true,'mode',"rw");
@@ -135,11 +151,8 @@ classdef F2_FeedbackApp < handle & F2_common
         PV(cntx,'Name',"BC11BL_SetpointDeadbandLo",'pvname',"SIOC:SYS1:ML01:AO227",'monitor',true,'mode',"rw");
         PV(cntx,'Name',"BC11BL_SetpointDeadbandHi",'pvname',"SIOC:SYS1:ML01:AO228",'monitor',true,'mode',"rw");
         PV(cntx,'Name',"BC11BL_TMITLo",'pvname',"SIOC:SYS1:ML01:AO229",'monitor',true,'mode',"rw");
-        PV(cntx,'Name',"BC11BL_TMITHi",'pvname',"SIOC:SYS1:ML01:AO230",'monitor',true,'mode',"rw");
-        PV(cntx,'Name',"DL1E_JitterON",'pvname',"SIOC:SYS1:ML01:AO217",'monitor',true,'mode',"rw");
-        PV(cntx,'Name',"DL1E_JitterAMP",'pvname',"SIOC:SYS1:ML01:AO218",'monitor',true,'mode',"rw");
-        PV(cntx,'Name',"FB_JitterOnTime",'pvname',"SIOC:SYS1:ML01:AO219",'monitor',true,'mode',"rw");
-        PV(cntx,'Name',"Watchdog",'pvname',obj.FbRunningPV)] ;
+        PV(cntx,'Name',"BC11BL_TMITHi",'pvname',"SIOC:SYS1:ML01:AO230",'monitor',true,'mode',"rw")];
+      end
       
       % Attach feedback running status PV
       obj.pvlist(end+1) = PV(cntx,'Name',"FB_RUNNING",'pvname',obj.FbRunningPV,'monitor',true) ;
@@ -150,92 +163,100 @@ classdef F2_FeedbackApp < handle & F2_common
       % Generate feedback links
       
       % DL1 energy feedback
-      DL1_Control=PV(cntx,'name',"Control",'pvname',"KLYS:LI10:41:SFB_ADES",'mode',"rw"); % max = 37 MW
-      DL1_Setpoint=PV(cntx,'name',"Setpoint",'pvname',"BPMS:IN10:731:X1H",'monitor',true);
-      B=BufferData('Name',"DL1EnergyBPM",'DoFilter',obj.SetpointDoFilter(1),...
-        'FilterType',obj.SetpointFilterTypes(1));
-      B.FilterInterval = obj.SetpointFilterCoefficients{1} ;
-      B.DataPV = DL1_Setpoint ;
-      obj.Feedbacks(1) = fbSISO(DL1_Control,B) ;
-      obj.Feedbacks(1).Kp = obj.FeedbackCoefficients{1}(1);
-      obj.Feedbacks(1).ControlLimits = obj.FeedbackControlLimits{1} ;
-      obj.Feedbacks(1).SetpointLimits = obj.FeedbackSetpointLimits{1} ;
-      obj.Feedbacks(1).SetpointDES = obj.SetpointOffsets(1) ;
-      obj.Feedbacks(1).QualVar = PV(cntx,'name',"FB1_TMIT",'pvname',"BPMS:IN10:731:TMIT1H",'conv',1e-9) ;
-      obj.Feedbacks(1).ControlStatusVar{1} = PV(cntx,'name',"FB1_ControlStatus",'pvname',"KLYS:LI10:41:FAULTSEQ_STATUS") ;
-      obj.Feedbacks(1).ControlStatusGood{1} = {'OK'} ;
-      obj.Feedbacks(1).ControlStatusVar{2} = PV(cntx,'name',"FB1_ControlStatus",'pvname',"KLYS:LI10:41:SFB_ADIS") ;
-      obj.Feedbacks(1).ControlStatusGood{2} = {'ENABLE'} ;
+      if obj.UseFeedbacks(1)
+        DL1_Control=PV(cntx,'name',"Control",'pvname',"KLYS:LI10:41:SFB_ADES",'mode',"rw"); % max = 37 MW
+        DL1_Setpoint=PV(cntx,'name',"Setpoint",'pvname',"BPMS:IN10:731:X1H",'monitor',true);
+        B=BufferData('Name',"DL1EnergyBPM",'DoFilter',obj.SetpointDoFilter(1),...
+          'FilterType',obj.SetpointFilterTypes(1));
+        B.FilterInterval = obj.SetpointFilterCoefficients{1} ;
+        B.DataPV = DL1_Setpoint ;
+        obj.Feedbacks(1) = fbSISO(DL1_Control,B) ;
+        obj.Feedbacks(1).Kp = obj.FeedbackCoefficients{1}(1);
+        obj.Feedbacks(1).ControlLimits = obj.FeedbackControlLimits{1} ;
+        obj.Feedbacks(1).SetpointLimits = obj.FeedbackSetpointLimits{1} ;
+        obj.Feedbacks(1).SetpointDES = obj.SetpointOffsets(1) ;
+        obj.Feedbacks(1).QualVar = PV(cntx,'name',"FB1_TMIT",'pvname',"BPMS:IN10:731:TMIT1H",'conv',1e-9) ;
+        obj.Feedbacks(1).ControlStatusVar{1} = PV(cntx,'name',"FB1_ControlStatus",'pvname',"KLYS:LI10:41:FAULTSEQ_STATUS") ;
+        obj.Feedbacks(1).ControlStatusGood{1} = {'OK'} ;
+        obj.Feedbacks(1).ControlStatusVar{2} = PV(cntx,'name',"FB1_ControlStatus",'pvname',"KLYS:LI10:41:SFB_ADIS") ;
+        obj.Feedbacks(1).ControlStatusGood{2} = {'ENABLE'} ;
+      end
       
       % BC14 energy feedback
-      BC14_Control=["KLYS:LI14:"+obj.BC14E_KlysNo(1)+"1//PDES" "KLYS:LI14:"+obj.BC14E_KlysNo(2)+"1//PDES"];
-      BC14_Setpoint=PV(cntx,'name',"Setpoint",'pvname',"BPMS:LI14:801:X1H",'monitor',true);
-      B=BufferData('Name',"BC14EnergyBPM",'DoFilter',obj.SetpointDoFilter(2),...
-        'FilterType',obj.SetpointFilterTypes(2));
-      B.DataPV = BC14_Setpoint ;
-      obj.Feedbacks(2) = fbSISO(BC14_Control,B) ;
-      obj.Feedbacks(2).WriteRateMax = 10 ; % limit updates to every 10s
-      obj.Feedbacks(2).Kp = obj.FeedbackCoefficients{2}(1);
-      obj.Feedbacks(2).ControlLimits = obj.FeedbackControlLimits{2} ;
-      obj.Feedbacks(2).SetpointLimits = obj.FeedbackSetpointLimits{2} ;
-      obj.Feedbacks(2).SetpointDES = obj.SetpointOffsets(2) ;
-      obj.Feedbacks(2).QualVar = PV(cntx,'name',"FB2_TMIT",'pvname',"BPMS:LI14:801:TMIT1H",'conv',1e-9) ;
-      obj.Feedbacks(2).ControlStatusVar{1} = PV(cntx,'name',"FB2_ControlStatus",'pvname',...
-        "FCUDKLYS:LI14:"+obj.BC14E_KlysNo(1)+":ONBEAM10", 'pvdatatype', "float" ) ;
-      obj.Feedbacks(2).ControlStatusVar{2} = PV(cntx,'name',"FB2_ControlStatus",'pvname',...
-        "FCUDKLYS:LI14:"+obj.BC14E_KlysNo(2)+":ONBEAM10", 'pvdatatype', "float" ) ;
-      obj.Feedbacks(2).ControlStatusGood{1} = {1} ;
-      obj.Feedbacks(2).ControlStatusGood{2} = {1} ;
-      if ~isempty(obj.guihan)
-        obj.guihan.BC14KLYS1Label.Text = "KLYS:LI14:"+obj.BC14E_KlysNo(1)+"1:PDES" ;
-        obj.guihan.BC14KLYS2Label.Text = "KLYS:LI14:"+obj.BC14E_KlysNo(2)+"1:PDES" ;
+      if obj.UseFeedbacks(2)
+        BC14_Control=["KLYS:LI14:"+obj.BC14E_KlysNo(1)+"1//PDES" "KLYS:LI14:"+obj.BC14E_KlysNo(2)+"1//PDES"];
+        BC14_Setpoint=PV(cntx,'name',"Setpoint",'pvname',"BPMS:LI14:801:X1H",'monitor',true);
+        B=BufferData('Name',"BC14EnergyBPM",'DoFilter',obj.SetpointDoFilter(2),...
+          'FilterType',obj.SetpointFilterTypes(2));
+        B.DataPV = BC14_Setpoint ;
+        obj.Feedbacks(2) = fbSISO(BC14_Control,B) ;
+        obj.Feedbacks(2).WriteRateMax = 10 ; % limit updates to every 10s
+        obj.Feedbacks(2).Kp = obj.FeedbackCoefficients{2}(1);
+        obj.Feedbacks(2).ControlLimits = obj.FeedbackControlLimits{2} ;
+        obj.Feedbacks(2).SetpointLimits = obj.FeedbackSetpointLimits{2} ;
+        obj.Feedbacks(2).SetpointDES = obj.SetpointOffsets(2) ;
+        obj.Feedbacks(2).QualVar = PV(cntx,'name',"FB2_TMIT",'pvname',"BPMS:LI14:801:TMIT1H",'conv',1e-9) ;
+        obj.Feedbacks(2).ControlStatusVar{1} = PV(cntx,'name',"FB2_ControlStatus",'pvname',...
+          "FCUDKLYS:LI14:"+obj.BC14E_KlysNo(1)+":ONBEAM10", 'pvdatatype', "float" ) ;
+        obj.Feedbacks(2).ControlStatusVar{2} = PV(cntx,'name',"FB2_ControlStatus",'pvname',...
+          "FCUDKLYS:LI14:"+obj.BC14E_KlysNo(2)+":ONBEAM10", 'pvdatatype', "float" ) ;
+        obj.Feedbacks(2).ControlStatusGood{1} = {1} ;
+        obj.Feedbacks(2).ControlStatusGood{2} = {1} ;
+        if ~isempty(obj.guihan)
+          obj.guihan.BC14KLYS1Label.Text = "KLYS:LI14:"+obj.BC14E_KlysNo(1)+"1:PDES" ;
+          obj.guihan.BC14KLYS2Label.Text = "KLYS:LI14:"+obj.BC14E_KlysNo(2)+"1:PDES" ;
+        end
       end
       
       % BC11 Energy Feedback
-      BC11_Control = PV(cntx,'name',"Control",'pvname',"SIOC:SYS1:ML01:AO231",'mode',"rw") ;
-      BC11_Setpoint=PV(cntx,'name',"Setpoint",'pvname',"BPMS:LI11:333:X1H",'monitor',true);
-      B=BufferData('Name',"BC11EnergyBPM",'DoFilter',obj.SetpointDoFilter(2),...
-        'FilterType',obj.SetpointFilterTypes(2));
-      B.DataPV = BC11_Setpoint ;
-      obj.Feedbacks(3) = fbSISO(BC11_Control,B) ;
-%       obj.Feedbacks(3).WriteRateMax = 10 ; % limit update rate
-      obj.Feedbacks(3).Kp = obj.FeedbackCoefficients{3}(1);
-      obj.Feedbacks(3).ControlLimits = obj.FeedbackControlLimits{3} ;
-      obj.Feedbacks(3).SetpointLimits = obj.FeedbackSetpointLimits{3} ;
-      obj.Feedbacks(3).SetpointDES = obj.SetpointOffsets(3) ;
-      obj.Feedbacks(3).QualVar = PV(cntx,'name',"FB3_TMIT",'pvname',"BPMS:LI11:333:TMIT1H",'conv',1e-9) ;
-      obj.Feedbacks(3).ControlStatusVar{1} = PV(cntx,'name',"FB3_ControlStatus",'pvname',...
-        "FCUDKLYS:LI11:1:ONBEAM10", 'pvdatatype', "float" ) ;
-      obj.Feedbacks(3).ControlStatusGood{1} = {1} ;
-      obj.Feedbacks(3).ControlStatusVar{2} = PV(cntx,'name',"FB3_ControlStatus",'pvname',...
-        "FCUDKLYS:LI11:2:ONBEAM10 ", 'pvdatatype', "float" ) ;
-      obj.Feedbacks(3).ControlStatusGood{2} = {1} ;
-%       obj.Feedbacks(3).Debug=1;
+      if obj.UseFeedbacks(3)
+        BC11_Control = PV(cntx,'name',"Control",'pvname',"SIOC:SYS1:ML01:AO231",'mode',"rw") ;
+        BC11_Setpoint=PV(cntx,'name',"Setpoint",'pvname',"BPMS:LI11:333:X1H",'monitor',true);
+        B=BufferData('Name',"BC11EnergyBPM",'DoFilter',obj.SetpointDoFilter(2),...
+          'FilterType',obj.SetpointFilterTypes(2));
+        B.DataPV = BC11_Setpoint ;
+        obj.Feedbacks(3) = fbSISO(BC11_Control,B) ;
+  %       obj.Feedbacks(3).WriteRateMax = 10 ; % limit update rate
+        obj.Feedbacks(3).Kp = obj.FeedbackCoefficients{3}(1);
+        obj.Feedbacks(3).ControlLimits = obj.FeedbackControlLimits{3} ;
+        obj.Feedbacks(3).SetpointLimits = obj.FeedbackSetpointLimits{3} ;
+        obj.Feedbacks(3).SetpointDES = obj.SetpointOffsets(3) ;
+        obj.Feedbacks(3).QualVar = PV(cntx,'name',"FB3_TMIT",'pvname',"BPMS:LI11:333:TMIT1H",'conv',1e-9) ;
+        obj.Feedbacks(3).ControlStatusVar{1} = PV(cntx,'name',"FB3_ControlStatus",'pvname',...
+          "FCUDKLYS:LI11:1:ONBEAM10", 'pvdatatype', "float" ) ;
+        obj.Feedbacks(3).ControlStatusGood{1} = {1} ;
+        obj.Feedbacks(3).ControlStatusVar{2} = PV(cntx,'name',"FB3_ControlStatus",'pvname',...
+          "FCUDKLYS:LI11:2:ONBEAM10 ", 'pvdatatype', "float" ) ;
+        obj.Feedbacks(3).ControlStatusGood{2} = {1} ;
+  %       obj.Feedbacks(3).Debug=1;
+      end
 
       % BC11 Bunch Length Feedback
-      BC11_Control = PV(cntx,'name',"Control",'pvname',"SIOC:SYS1:ML01:AO232",'mode',"rw") ;
-      BC11_Setpoint = PV(cntx,'name',"Setpoint",'pvname',"BLEN:LI11:359:BZ11359B_S_SUM",'monitor',true);
-      B=BufferData('Name',"BC11_BunchLength",'DoFilter',obj.SetpointDoFilter(4),...
-        'FilterType',obj.SetpointFilterTypes(4));
-      B.DataPV = BC11_Setpoint ;
-      obj.Feedbacks(4) = fbSISO(BC11_Control,B) ;
-%       obj.Feedbacks(4).WriteRateMax = 10 ; % limit updates 
-      obj.Feedbacks(4).Kp = obj.FeedbackCoefficients{4}(1);
-      obj.Feedbacks(4).ControlLimits = obj.FeedbackControlLimits{4} ;
-      obj.Feedbacks(4).SetpointLimits = obj.FeedbackSetpointLimits{4} ;
-      obj.Feedbacks(4).SetpointDES = obj.SetpointOffsets(4) ;
-      obj.Feedbacks(4).QualVar = PV(cntx,'name',"FB4_TMIT",'pvname',"BPMS:LI11:333:TMIT1H",'conv',1e-9) ;
-      obj.Feedbacks(4).ControlStatusVar{1} = PV(cntx,'name',"FB4_ControlStatus",'pvname',...
-        "FCUDKLYS:LI11:1:STATUS " ) ;
-      obj.Feedbacks(4).ControlStatusGood{1} = {1} ;
-      obj.Feedbacks(4).ControlStatusVar{2} = PV(cntx,'name',"FB4_ControlStatus",'pvname',...
-        "FCUDKLYS:LI11:2:STATUS " ) ;
-      obj.Feedbacks(4).ControlStatusGood{2} = {1} ;
-%       obj.Feedbacks(4).Debug=1;
+      if obj.UseFeedbacks(4)
+        BC11_Control = PV(cntx,'name',"Control",'pvname',"SIOC:SYS1:ML01:AO232",'mode',"rw") ;
+        BC11_Setpoint = PV(cntx,'name',"Setpoint",'pvname',"BLEN:LI11:359:BZ11359B_S_SUM",'monitor',true);
+        B=BufferData('Name',"BC11_BunchLength",'DoFilter',obj.SetpointDoFilter(4),...
+          'FilterType',obj.SetpointFilterTypes(4));
+        B.DataPV = BC11_Setpoint ;
+        obj.Feedbacks(4) = fbSISO(BC11_Control,B) ;
+  %       obj.Feedbacks(4).WriteRateMax = 10 ; % limit updates 
+        obj.Feedbacks(4).Kp = obj.FeedbackCoefficients{4}(1);
+        obj.Feedbacks(4).ControlLimits = obj.FeedbackControlLimits{4} ;
+        obj.Feedbacks(4).SetpointLimits = obj.FeedbackSetpointLimits{4} ;
+        obj.Feedbacks(4).SetpointDES = obj.SetpointOffsets(4) ;
+        obj.Feedbacks(4).QualVar = PV(cntx,'name',"FB4_TMIT",'pvname',"BPMS:LI11:333:TMIT1H",'conv',1e-9) ;
+        obj.Feedbacks(4).ControlStatusVar{1} = PV(cntx,'name',"FB4_ControlStatus",'pvname',...
+          "FCUDKLYS:LI11:1:STATUS " ) ;
+        obj.Feedbacks(4).ControlStatusGood{1} = {1} ;
+        obj.Feedbacks(4).ControlStatusVar{2} = PV(cntx,'name',"FB4_ControlStatus",'pvname',...
+          "FCUDKLYS:LI11:2:STATUS " ) ;
+        obj.Feedbacks(4).ControlStatusGood{2} = {1} ;
+  %       obj.Feedbacks(4).Debug=1;
+      end
       
       % If GUI being used, suppres local writing to control value operations, that is handled by watcher version
       if ~isempty(obj.guihan)
-        for ifb=1:length(obj.Feedbacks)
+        for ifb=find(obj.UseFeedbacks)
           obj.Feedbacks(ifb).WriteEnable = false ;
         end
       end
@@ -243,7 +264,7 @@ classdef F2_FeedbackApp < handle & F2_common
       obj.Enabled = caget(obj.pvs.FeedbackEnable) ;
       
       caget(obj.pvlist); notify(obj,"PVUpdated"); % Initialize states
-      run(obj.pvlist,false,0.1,obj,'PVUpdated');
+      run(obj.pvlist,true,0.1,obj,'PVUpdated');
       
       % Timer to keep watchdog PV updated
       if isempty(obj.guihan)
@@ -256,15 +277,31 @@ classdef F2_FeedbackApp < handle & F2_common
         diary('/u1/facet/physics/log/matlab/F2_Feedback.log');
       end
       
+      % Disable de-selected feedback controls
+      if ~isempty(obj.guihan)
+        swname=["Switch" "Switch_2" "Switch_5" "Switch_6"];
+        for ifb=find(~obj.UseFeedbacks)
+          obj.guihan.(swname(ifb)).Enable = false ;
+        end
+      end
+      
       % Set event watchers and start PV updaters
       addlistener(obj,'PVUpdated',@(~,~) obj.pvwatcher) ;
       if ~isempty(obj.guihan)
-        addlistener(obj.Feedbacks(1),'DataUpdated',@(~,~) obj.DL1Updated) ;
-        addlistener(obj.Feedbacks(2),'DataUpdated',@(~,~) obj.BC14Updated) ;
-        addlistener(obj.Feedbacks(3),'DataUpdated',@(~,~) obj.BC11Updated) ;
-        addlistener(obj.Feedbacks(4),'DataUpdated',@(~,~) obj.BC11BLUpdated) ;
+        if obj.UseFeedbacks(1)
+          addlistener(obj.Feedbacks(1),'DataUpdated',@(~,~) obj.DL1Updated) ;
+        end
+        if obj.UseFeedbacks(2)
+          addlistener(obj.Feedbacks(2),'DataUpdated',@(~,~) obj.BC14Updated) ;
+        end
+        if obj.UseFeedbacks(3)
+          addlistener(obj.Feedbacks(3),'DataUpdated',@(~,~) obj.BC11Updated) ;
+        end
+        if obj.UseFeedbacks(4)
+          addlistener(obj.Feedbacks(4),'DataUpdated',@(~,~) obj.BC11BLUpdated) ;
+        end
       end
-      for ifb=1:length(obj.Feedbacks)
+      for ifb=find(obj.UseFeedbacks)
         addlistener(obj.Feedbacks(ifb),'StateChange', @(~,~) obj.statewatcher) ;
       end
       
