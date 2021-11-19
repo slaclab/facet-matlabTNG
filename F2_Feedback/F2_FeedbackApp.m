@@ -69,7 +69,8 @@ classdef F2_FeedbackApp < handle & F2_common
       %F2_FeedbackApp([guihan])
       global BEAMLINE
       if exist('guihan','var')
-        obj.guihan = guihan ;        
+        obj.guihan = guihan ;
+        drawnow
       end
       
       % Load model, get dispersions to set conversion values
@@ -187,8 +188,9 @@ classdef F2_FeedbackApp < handle & F2_common
         obj.guihan.BC14KLYS1Label.Text = "KLYS:LI14:"+obj.BC14E_KlysNo(1)+"1:PDES" ;
         obj.guihan.BC14KLYS2Label.Text = "KLYS:LI14:"+obj.BC14E_KlysNo(2)+"1:PDES" ;
       end
+      
       % BC11 Energy Feedback
-      BC11_Control = PV(cntx,'name',"Control",'pvname',"SIOC:SYS1:ML91:AO231",'mode',"rw") ;
+      BC11_Control = PV(cntx,'name',"Control",'pvname',"SIOC:SYS1:ML01:AO231",'mode',"rw") ;
       BC11_Setpoint=PV(cntx,'name',"Setpoint",'pvname',"BPMS:LI11:333:X1H",'monitor',true);
       B=BufferData('Name',"BC11EnergyBPM",'DoFilter',obj.SetpointDoFilter(2),...
         'FilterType',obj.SetpointFilterTypes(2));
@@ -207,8 +209,9 @@ classdef F2_FeedbackApp < handle & F2_common
         "FCUDKLYS:LI11:2:STATUS " ) ;
       obj.Feedbacks(3).ControlStatusGood{2} = {50 80} ;
 %       obj.Feedbacks(3).Debug=1;
+
       % BC11 Bunch Length Feedback
-      BC11_Control = PV(cntx,'name',"Control",'pvname',"SIOC:SYS1:ML91:AO232",'mode',"rw") ;
+      BC11_Control = PV(cntx,'name',"Control",'pvname',"SIOC:SYS1:ML01:AO232",'mode',"rw") ;
       BC11_Setpoint = PV(cntx,'name',"Setpoint",'pvname',"BLEN:LI11:359:BZ11359B_S_SUM",'monitor',true);
       B=BufferData('Name',"BC11_BunchLength",'DoFilter',obj.SetpointDoFilter(4),...
         'FilterType',obj.SetpointFilterTypes(4));
@@ -237,17 +240,6 @@ classdef F2_FeedbackApp < handle & F2_common
       % set enable bits
       obj.Enabled = caget(obj.pvs.FeedbackEnable) ;
       
-      % Set event watchers and start PV updaters
-      addlistener(obj,'PVUpdated',@(~,~) obj.pvwatcher) ;
-      for ifb=1:length(obj.Feedbacks)
-        addlistener(obj.Feedbacks(ifb),'StateChange', @(~,~) obj.statewatcher) ;
-      end
-      if ~isempty(obj.guihan)
-        addlistener(obj.Feedbacks(1),'DataUpdated',@(~,~) obj.DL1Updated) ;
-        addlistener(obj.Feedbacks(2),'DataUpdated',@(~,~) obj.BC14Updated) ;
-        addlistener(obj.Feedbacks(3),'DataUpdated',@(~,~) obj.BC11Updated) ;
-        addlistener(obj.Feedbacks(4),'DataUpdated',@(~,~) obj.BC11BLUpdated) ;
-      end
       caget(obj.pvlist); notify(obj,"PVUpdated"); % Initialize states
       run(obj.pvlist,false,0.1,obj,'PVUpdated');
       
@@ -260,6 +252,18 @@ classdef F2_FeedbackApp < handle & F2_common
       % Logger
       if isempty(obj.guihan)
         diary('/u1/facet/physics/log/matlab/F2_Feedback.log');
+      end
+      
+      % Set event watchers and start PV updaters
+      addlistener(obj,'PVUpdated',@(~,~) obj.pvwatcher) ;
+      if ~isempty(obj.guihan)
+        addlistener(obj.Feedbacks(1),'DataUpdated',@(~,~) obj.DL1Updated) ;
+        addlistener(obj.Feedbacks(2),'DataUpdated',@(~,~) obj.BC14Updated) ;
+        addlistener(obj.Feedbacks(3),'DataUpdated',@(~,~) obj.BC11Updated) ;
+        addlistener(obj.Feedbacks(4),'DataUpdated',@(~,~) obj.BC11BLUpdated) ;
+      end
+      for ifb=1:length(obj.Feedbacks)
+        addlistener(obj.Feedbacks(ifb),'StateChange', @(~,~) obj.statewatcher) ;
       end
       
     end
@@ -276,7 +280,7 @@ classdef F2_FeedbackApp < handle & F2_common
     end
     function RunningTimer(obj)
       %RUNNINGTIMER Keep watchdog PV updated
-      caput(obj.pvs.Watchdog,1);
+      caput(obj.pvs.Watchdog,'RUNNING');
     end
     function DL1Updated(obj)
       if obj.is_shutdown
