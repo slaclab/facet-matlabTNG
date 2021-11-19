@@ -2644,9 +2644,11 @@ if strcmp(handles.accelerator,'FACET')
            case 'Set Quad Limits'
                lim1=lcaGet('SIOC:SYS1:ML01:AO351'); lim2=lcaGet('SIOC:SYS1:ML01:AO352');
                fprintf('Server Mode: Set Quad Limits: %g %g\n',lim1,lim2);
-               set(handles.measureQuadRangeLow_txt,'Value',lim1); set(handles.measureQuadRangeHigh_txt,'Value',lim2);
-               measureQuadRange_txt_Callback(handles.measureQuadRangeLow_txt_Callback,[],handles,1);
-               measureQuadRange_txt_Callback(handles.measureQuadRangeHigh_txt_Callback,[],handles,2);
+               set(handles.measureQuadAutoVal_box,'Value',0);
+               measureQuadAutoVal_box_Callback(handles.measureQuadAutoVal_box,[],handles);
+               set(handles.measureQuadRangeLow_txt,'String',num2str(min([lim1 lim2]))); set(handles.measureQuadRangeHigh_txt,'String',num2str(max([lim1 lim2])));
+%                measureQuadRange_txt_Callback(handles.measureQuadRangeLow_txt,[],handles,1);
+%                measureQuadRange_txt_Callback(handles.measureQuadRangeHigh_txt,[],handles,2);
                lcaPutNoWait('SIOC:SYS1:ML00:CA027',0);
        end
    catch ME
