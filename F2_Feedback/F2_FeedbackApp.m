@@ -266,11 +266,9 @@ classdef F2_FeedbackApp < handle & F2_common
       caget(obj.pvlist); notify(obj,"PVUpdated"); % Initialize states
       run(obj.pvlist,false,1,obj,'PVUpdated');
       
-      % Timer to keep watchdog PV updated
-      if isempty(obj.guihan)
-        obj.to=timer('Period',1,'ExecutionMode','fixedRate','TimerFcn',@(~,~) obj.RunningTimer);
-        start(obj.to);
-      end
+      % Timer to keep watchdog PV updated & GUI fields
+      obj.to=timer('Period',1,'ExecutionMode','fixedRate','TimerFcn',@(~,~) obj.RunningTimer);
+      start(obj.to);
       
       % Logger
       if isempty(obj.guihan)
@@ -293,20 +291,20 @@ classdef F2_FeedbackApp < handle & F2_common
       for ifb=find(obj.UseFeedbacks)
         addlistener(obj.Feedbacks(ifb),'StateChange', @(~,~) obj.statewatcher) ;
       end
-      if ~isempty(obj.guihan)
-        if obj.UseFeedbacks(1)
-          addlistener(obj.Feedbacks(1),'DataUpdated',@(~,~) obj.DL1Updated) ;
-        end
-        if obj.UseFeedbacks(2)
-          addlistener(obj.Feedbacks(2),'DataUpdated',@(~,~) obj.BC14Updated) ;
-        end
-        if obj.UseFeedbacks(3)
-          addlistener(obj.Feedbacks(3),'DataUpdated',@(~,~) obj.BC11Updated) ;
-        end
-        if obj.UseFeedbacks(4)
-          addlistener(obj.Feedbacks(4),'DataUpdated',@(~,~) obj.BC11BLUpdated) ;
-        end
-      end
+%       if ~isempty(obj.guihan)
+%         if obj.UseFeedbacks(1)
+%           addlistener(obj.Feedbacks(1),'DataUpdated',@(~,~) obj.DL1Updated) ;
+%         end
+%         if obj.UseFeedbacks(2)
+%           addlistener(obj.Feedbacks(2),'DataUpdated',@(~,~) obj.BC14Updated) ;
+%         end
+%         if obj.UseFeedbacks(3)
+%           addlistener(obj.Feedbacks(3),'DataUpdated',@(~,~) obj.BC11Updated) ;
+%         end
+%         if obj.UseFeedbacks(4)
+%           addlistener(obj.Feedbacks(4),'DataUpdated',@(~,~) obj.BC11BLUpdated) ;
+%         end
+%       end
       
     end
     function SettingsGuiLink(obj,gh,cmd)
@@ -322,7 +320,26 @@ classdef F2_FeedbackApp < handle & F2_common
     end
     function RunningTimer(obj)
       %RUNNINGTIMER Keep watchdog PV updated
-      caput(obj.pvs.Watchdog,'RUNNING');
+      if isempty(obj.guihan)
+        caput(obj.pvs.Watchdog,'RUNNING');
+      else
+        try
+          if obj.UseFeedbacks(1)
+            obj.DL1Updated ;
+          end
+          if obj.UseFeedbacks(2)
+            obj.BC14Updated ;
+          end
+          if obj.UseFeedbacks(3)
+            obj.BC11Updated ;
+          end
+          if obj.UseFeedbacks(4)
+            obj.BC11BLUpdated ;
+          end
+        catch ME
+          fprintf(2,'Error updating GUI: %s',ME.message);
+        end
+      end
     end
     function DL1Updated(obj)
       if obj.is_shutdown
