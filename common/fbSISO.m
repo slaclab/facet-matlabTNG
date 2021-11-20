@@ -82,7 +82,7 @@ classdef fbSISO < handle
       addlistener(obj,'DataUpdated',@(~,~) obj.ProcDataUpdated) ;
       if isa(obj.SetpointVar,'PV')
         obj.SetpointVar.monitor = true ;
-        run(obj.SetpointVar,false,1/0.01,obj,'DataUpdated');
+        run(obj.SetpointVar,false,1,obj,'DataUpdated');
       else % BufferData object
         obj.SetpointVar.Enable=true;
         addlistener(obj.SetpointVar,'PVUpdated',@(~,~) obj.ProcDataUpdated) ;

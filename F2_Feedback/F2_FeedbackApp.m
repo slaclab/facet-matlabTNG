@@ -19,7 +19,7 @@ classdef F2_FeedbackApp < handle & F2_common
     SettingsGui % Settings applciation GUI pointer
     SettingsGui_whichFeedback uint8 = 0 ;
   end
-  properties(SetObservable)
+  properties(SetObservable, AbortSet)
     Enabled uint16 = 0 % Feedback enabled bit
     FeedbackCoefficients cell = {0.06*0.1 0.01 0.01 0.01} % Feedback coefficients for each feedback
     FeedbackControlLimits cell = {[5 28] [-180 180] [5 60] [10 63]}
@@ -165,7 +165,7 @@ classdef F2_FeedbackApp < handle & F2_common
       % DL1 energy feedback
       if obj.UseFeedbacks(1)
         DL1_Control=PV(cntx,'name',"Control",'pvname',"KLYS:LI10:41:SFB_ADES",'mode',"rw"); % max = 37 MW
-        DL1_Setpoint=PV(cntx,'name',"Setpoint",'pvname',"BPMS:IN10:731:X1H",'monitor',true);
+        DL1_Setpoint=PV(cntx,'name',"Setpoint",'pvname',"BPMS:IN10:731:X",'monitor',true);
         B=BufferData('Name',"DL1EnergyBPM",'DoFilter',obj.SetpointDoFilter(1),...
           'FilterType',obj.SetpointFilterTypes(1));
         B.FilterInterval = obj.SetpointFilterCoefficients{1} ;
@@ -264,7 +264,7 @@ classdef F2_FeedbackApp < handle & F2_common
       obj.Enabled = caget(obj.pvs.FeedbackEnable) ;
       
       caget(obj.pvlist); notify(obj,"PVUpdated"); % Initialize states
-      run(obj.pvlist,true,0.1,obj,'PVUpdated');
+      run(obj.pvlist,false,1,obj,'PVUpdated');
       
       % Timer to keep watchdog PV updated
       if isempty(obj.guihan)
@@ -285,8 +285,14 @@ classdef F2_FeedbackApp < handle & F2_common
         end
       end
       
+      obj.pvwatcher;
+      obj.statewatcher;
+      
       % Set event watchers and start PV updaters
       addlistener(obj,'PVUpdated',@(~,~) obj.pvwatcher) ;
+      for ifb=find(obj.UseFeedbacks)
+        addlistener(obj.Feedbacks(ifb),'StateChange', @(~,~) obj.statewatcher) ;
+      end
       if ~isempty(obj.guihan)
         if obj.UseFeedbacks(1)
           addlistener(obj.Feedbacks(1),'DataUpdated',@(~,~) obj.DL1Updated) ;
@@ -300,9 +306,6 @@ classdef F2_FeedbackApp < handle & F2_common
         if obj.UseFeedbacks(4)
           addlistener(obj.Feedbacks(4),'DataUpdated',@(~,~) obj.BC11BLUpdated) ;
         end
-      end
-      for ifb=find(obj.UseFeedbacks)
-        addlistener(obj.Feedbacks(ifb),'StateChange', @(~,~) obj.statewatcher) ;
       end
       
     end
@@ -327,13 +330,27 @@ classdef F2_FeedbackApp < handle & F2_common
       end
       if ~isempty(obj.guihan)
         ifb=1;
+        
+        % Controls values
+        obj.guihan.EditField_2.Value = obj.Feedbacks(ifb).ControlVal ;
+        obj.guihan.Gauge_3.Value = obj.Feedbacks(ifb).ControlVal ;
+        obj.guihan.Gauge_3.ScaleColors = [1,0,0;1,0,0;0.39,0.83,0.07] ;
+        obj.guihan.Gauge_3.ScaleColorLimits = [0,obj.FeedbackControlLimits{ifb}(1);obj.FeedbackControlLimits{ifb}(2),obj.FeedbackControlLimits{ifb}(2)+10;obj.FeedbackControlLimits{ifb}(1),obj.FeedbackControlLimits{ifb}(2)] ;
+        obj.guihan.Gauge_3.Limits = [0,obj.FeedbackControlLimits{ifb}(2)+10] ;
+        if obj.Feedbacks(ifb).ControlVal > obj.FeedbackControlLimits{ifb}(2) || obj.Feedbacks(ifb).ControlVal < obj.FeedbackControlLimits{ifb}(1)
+          obj.guihan.EditField_2.BackgroundColor='red';
+        else
+          obj.guihan.EditField_2.BackgroundColor='white';
+        end
+        
+        % Setpoint update
         val = obj.Feedbacks(1).SetpointVal ;
         if isempty(val) || isnan(val) || isinf(val)
           obj.guihan.Gauge.Value = 0 ;
           obj.guihan.EditField.BackgroundColor = 'black' ;
           obj.guihan.EditField.Value = 0 ;
           obj.guihan.Gauge.BackgroundColor = 'black' ;
-          drawnow
+          drawnow limitrate
           return
         end
         offs = obj.SetpointOffsets(1) ;
@@ -367,17 +384,8 @@ classdef F2_FeedbackApp < handle & F2_common
           obj.guihan.EditField.Value = valrel;
           obj.guihan.mmLabel_5.Text = 'mm' ;
         end
-        obj.guihan.EditField_2.Value = obj.Feedbacks(ifb).ControlVal ;
-        obj.guihan.Gauge_3.Value = obj.Feedbacks(ifb).ControlVal ;
-        obj.guihan.Gauge_3.ScaleColors = [1,0,0;1,0,0;0.39,0.83,0.07] ;
-        obj.guihan.Gauge_3.ScaleColorLimits = [0,obj.FeedbackControlLimits{ifb}(1);obj.FeedbackControlLimits{ifb}(2),obj.FeedbackControlLimits{ifb}(2)+10;obj.FeedbackControlLimits{ifb}(1),obj.FeedbackControlLimits{ifb}(2)] ;
-        obj.guihan.Gauge_3.Limits = [0,obj.FeedbackControlLimits{ifb}(2)+10] ;
-        if obj.Feedbacks(ifb).ControlVal > obj.FeedbackControlLimits{ifb}(2) || obj.Feedbacks(ifb).ControlVal < obj.FeedbackControlLimits{ifb}(1)
-          obj.guihan.EditField_2.BackgroundColor='red';
-        else
-          obj.guihan.EditField_2.BackgroundColor='white';
-        end
-        drawnow
+        
+        drawnow limitrate
       end
     end
     function BC14Updated(obj)
@@ -553,7 +561,7 @@ classdef F2_FeedbackApp < handle & F2_common
       if ~isempty(obj.guihan)
         gh=["StatusLamp" "StatusLamp_2" "StatusLamp_5" "StatusLamp_6" "StatusLamp_3" "StatusLamp_7" "StatusLamp_4"];
         ght=["NotRunningButton"  "NotRunningButton_5" "NotRunningButton_3" "NotRunningButton_4" "NotRunningButton_2" "NotRunningButton_7" "NotRunningButton_6"];
-        for ifb=1:length(obj.FeedbacksAvailable)
+        for ifb=find(obj.UseFeedbacks)
           switch obj.Feedbacks(ifb).state
             case 0
               obj.guihan.(gh(ifb)).Color = 'green' ;
@@ -566,16 +574,22 @@ classdef F2_FeedbackApp < handle & F2_common
         end
       end
       fprintf('Feedback status changed:\n');
-      for ifb=1:length(obj.FeedbacksAvailable)
+      for ifb=find(obj.UseFeedbacks)
         fprintf('%s= %d\n',obj.FeedbacksAvailable(ifb),obj.Feedbacks(ifb).state);
       end
       % Setpoint conversion to energy units
-      E_DL1 = obj.pvs.E_DL1.val{1} ; % GeV
-      obj.SetpointConversion{1}(2) = E_DL1 / obj.Disp_DL1 ; % mm -> MeV
-      E_BC14 = obj.pvs.E_BC14.val{1} ; % GeV
-      obj.SetpointConversion{2}(2) = E_BC14 / obj.Disp_BC14 ; % mm -> MeV
-      E_BC11 = obj.pvs.E_BC11.val{1} ; % GeV
-      obj.SetpointConversion{3}(2) = E_BC11 / obj.Disp_BC11 ; % mm -> MeV
+      if obj.UseFeedbacks(1)
+        E_DL1 = obj.pvs.E_DL1.val{1} ; % GeV
+        obj.SetpointConversion{1}(2) = E_DL1 / obj.Disp_DL1 ; % mm -> MeV
+      end
+      if obj.UseFeedbacks(2)
+        E_BC14 = obj.pvs.E_BC14.val{1} ; % GeV
+        obj.SetpointConversion{2}(2) = E_BC14 / obj.Disp_BC14 ; % mm -> MeV
+      end
+      if obj.UseFeedbacks(3)
+        E_BC11 = obj.pvs.E_BC11.val{1} ; % GeV
+        obj.SetpointConversion{3}(2) = E_BC11 / obj.Disp_BC11 ; % mm -> MeV
+      end
     end
     function pvwatcher(obj)
       if obj.is_shutdown
@@ -591,7 +605,7 @@ classdef F2_FeedbackApp < handle & F2_common
       end
       % Update feedback settings
       fbn=["DL1E" "BC14E" "BC11E" "BC11BL"];
-      for ifb=1:length(obj.FeedbacksAvailable)
+      for ifb=find(obj.UseFeedbacks)
         obj.FeedbackCoefficients{ifb}(1) = obj.pvs.(fbn(ifb)+"_Gain").val{1} ;
         obj.SetpointOffsets(ifb) = obj.pvs.(fbn(ifb)+"_Offset").val{1} ;
         obj.FeedbackControlLimits{ifb} = [obj.pvs.(fbn(ifb)+"_ControlLimitLo").val{1} obj.pvs.(fbn(ifb)+"_ControlLimitHi").val{1}] ;
@@ -605,23 +619,25 @@ classdef F2_FeedbackApp < handle & F2_common
         obj.TMITLimits{ifb} = [obj.pvs.(fbn(ifb)+"_TMITLo").val{1} obj.pvs.(fbn(ifb)+"_TMITHi").val{1}] ;
       end
       % Feedback Jitter Settings
-      if ~isempty(obj.guihan) 
-        obj.guihan.FeedbackJitterButton.Value = logical(obj.pvs.DL1E_JitterON.val{1}) ;
-        obj.guihan.SetpointJitterAmplitudeEditField.Value = obj.pvs.DL1E_JitterAMP.val{1} ;
-        obj.guihan.JitterTimeoutMenu.Text = sprintf('Jitter Timeout = %d min',obj.pvs.FB_JitterOnTime.val{1}) ;
-      end
-      if logical(obj.pvs.DL1E_JitterON.val{1})
-        obj.Feedbacks(1).Jitter = obj.pvs.DL1E_JitterAMP.val{1} ;
-        obj.Feedbacks(1).JitterTimeout = obj.pvs.FB_JitterOnTime.val{1} ;
-      else
-        obj.Feedbacks(1).Jitter = 0 ;
+      if obj.UseFeedbacks(1)
+        if ~isempty(obj.guihan)
+          obj.guihan.FeedbackJitterButton.Value = logical(obj.pvs.DL1E_JitterON.val{1}) ;
+          obj.guihan.SetpointJitterAmplitudeEditField.Value = obj.pvs.DL1E_JitterAMP.val{1} ;
+          obj.guihan.JitterTimeoutMenu.Text = sprintf('Jitter Timeout = %d min',obj.pvs.FB_JitterOnTime.val{1}) ;
+        end
+        if logical(obj.pvs.DL1E_JitterON.val{1})
+          obj.Feedbacks(1).Jitter = obj.pvs.DL1E_JitterAMP.val{1} ;
+          obj.Feedbacks(1).JitterTimeout = obj.pvs.FB_JitterOnTime.val{1} ;
+        else
+          obj.Feedbacks(1).Jitter = 0 ;
+        end
       end
       % Feedback running status (is headless FB script running?)
       if ~isempty(obj.guihan) 
-        for ifb=1:length(obj.FeedbacksAvailable)
+        for ifb=find(obj.UseFeedbacks)
           obj.Feedbacks(ifb).Running = obj.pvs.FB_RUNNING.val{1} == "RUNNING" ;
         end
-        if obj.guihan.FeedbackJitterButton.Value
+        if obj.UseFeedbacks(1) && obj.guihan.FeedbackJitterButton.Value
           obj.guihan.fbstat.Text = "Warning: DL1 Energy Feedback in JITTER Mode" ;
           obj.guihan.fbstat.FontColor = [0.85,0.33,0.10] ;
         elseif obj.pvs.FB_RUNNING.val{1} == "RUNNING"
@@ -642,7 +658,7 @@ classdef F2_FeedbackApp < handle & F2_common
         stop(obj.to);
       end
       stop(obj.pvlist);
-      for ifb=1:length(obj.FeedbacksAvailable)
+      for ifb=find(obj.UseFeedbacks)
         obj.Feedbacks(ifb).shutdown;
       end
     end
@@ -650,57 +666,42 @@ classdef F2_FeedbackApp < handle & F2_common
   % Set/get and private methods
   methods
     function set.TMITLimits(obj,val)
-      if isequal(obj.TMITLimits,val) || length(obj.Feedbacks) ~= length(obj.FeedbacksAvailable)
-        return
-      end
       disp('Changing TMIT Limits:');
       celldisp(val);
       obj.TMITLimits = val ;
-      for ifb=1:length(obj.FeedbacksAvailable)
+      for ifb=find(obj.UseFeedbacks)
         obj.Feedbacks(ifb).QualLimits = obj.TMITLimits{ifb} ;
       end
     end
     function set.SetpointDeadbands(obj,val)
-      if isequal(obj.SetpointDeadbands,val) || length(obj.Feedbacks) ~= length(obj.FeedbacksAvailable)
-        return
-      end
       disp('Changing Deadband Limits:');
       celldisp(val);
       obj.SetpointDeadbands = val ;
-      for ifb=1:length(obj.FeedbacksAvailable)
+      for ifb=find(obj.UseFeedbacks)
         obj.Feedbacks(ifb).SetpointDeadband = obj.SetpointDeadbands{ifb} ;
       end
     end
     function set.SetpointDoFilter(obj,val)
-      if isequal(obj.SetpointDoFilter,val) || length(obj.Feedbacks) ~= length(obj.FeedbacksAvailable)
-        return
-      end
       disp('Changing Filter Use Selection:');
       disp(val);
       obj.SetpointDoFilter = val ;
-      for ifb=1:length(obj.FeedbacksAvailable)
+      for ifb=find(obj.UseFeedbacks)
         obj.Feedbacks(ifb).SetpointVar.DoFilter = obj.SetpointDoFilter(ifb) ;
       end
     end
     function set.SetpointFilterTypes(obj,val)
-      if isequal(obj.SetpointFilterTypes,val) || length(obj.Feedbacks) ~= length(obj.FeedbacksAvailable)
-        return
-      end
       disp('Changing Setpoint Filter Types:');
       disp(val);
       obj.SetpointFilterTypes = val ;
-      for ifb=1:length(obj.FeedbacksAvailable)
+      for ifb=find(obj.UseFeedbacks)
         obj.Feedbacks(ifb).SetpointVar.FilterType = obj.SetpointFilterTypes(ifb) ;
       end
     end
     function set.SetpointFilterCoefficients(obj,val)
-      if isequal(obj.SetpointFilterCoefficients,val) || length(obj.Feedbacks) ~= length(obj.FeedbacksAvailable)
-        return
-      end
       disp('Changing Setpoint Filter Coefficients:');
       celldisp(val)
       obj.SetpointFilterCoefficients = val ;
-      for ifb=1:length(obj.FeedbacksAvailable)
+      for ifb=find(obj.UseFeedbacks)
         newtime = ceil(2/obj.SetpointFilterCoefficients{ifb}(2)/60) ;
         if newtime > 2 % min 2 minutes buffer
           obj.Feedbacks(ifb).SetpointVar.BufferTime = newtime ;
@@ -709,24 +710,18 @@ classdef F2_FeedbackApp < handle & F2_common
       end
     end
     function set.FeedbackSetpointLimits(obj,val)
-      if isequal(obj.FeedbackSetpointLimits,val) || length(obj.Feedbacks) ~= length(obj.FeedbacksAvailable)
-        return
-      end
       disp('Changing Feedback Setpoint Limits:');
       celldisp(val);
       obj.FeedbackSetpointLimits = val ;
-      for ifb=1:length(obj.FeedbacksAvailable)
+      for ifb=find(obj.UseFeedbacks)
         obj.Feedbacks(ifb).SetpointLimits = obj.FeedbackSetpointLimits{ifb} ;
       end
     end
     function set.FeedbackControlLimits(obj,val)
-      if isequal(obj.FeedbackControlLimits,val) || length(obj.Feedbacks) ~= length(obj.FeedbacksAvailable)
-        return
-      end
       disp('Changing Feedback Control Limits:');
       celldisp(val);
       obj.FeedbackControlLimits = val ;
-      for ifb=1:length(obj.FeedbacksAvailable)
+      for ifb=find(obj.UseFeedbacks)
         obj.Feedbacks(ifb).ControlLimits = obj.FeedbackControlLimits{ifb} ;
         if ~isempty(obj.guihan)
           if isa(obj.Feedbacks(ifb).ControlVar,'PV')
@@ -736,13 +731,10 @@ classdef F2_FeedbackApp < handle & F2_common
       end
     end
     function set.FeedbackCoefficients(obj,val)
-      if isequal(obj.FeedbackCoefficients,val) || length(obj.Feedbacks) ~= length(obj.FeedbacksAvailable)
-        return
-      end
       disp('Changing Feedback Coefficients:')
       celldisp(val);
       obj.FeedbackCoefficients = val ;
-      for ifb=1:length(obj.FeedbacksAvailable)
+      for ifb=find(obj.UseFeedbacks)
         if obj.Feedbacks(ifb).Method == "PID"
           obj.Feedbacks(ifb).Kp = obj.FeedbackCoefficients{ifb}(1);
           if length(obj.FeedbackCoefficients{ifb})>1
@@ -758,15 +750,8 @@ classdef F2_FeedbackApp < handle & F2_common
     end
     function set.SetpointOffsets(obj,val)
       persistent lastunits
-      if ~isempty(lastunits) && lastunits==obj.GuiEnergyUnits
-        if isequal(obj.SetpointOffsets,val) || length(obj.Feedbacks) ~= length(obj.FeedbacksAvailable)
-          return
-        end
-      else
+      if isempty(lastunits) || lastunits==obj.GuiEnergyUnits
         lastunits = obj.GuiEnergyUnits ;
-      end
-      if length(val) ~= length(obj.Feedbacks)
-        return
       end
       obj.SetpointOffsets=val;
       disp('Changing Setpoint Offsets:');
@@ -774,7 +759,7 @@ classdef F2_FeedbackApp < handle & F2_common
       if ~isempty(obj.guihan)
         gh = ["SetpointEditField" "SetpointEditField_2" "SetpointEditField_5" "SetpointEditField_5" "SetpointEditField_3" "SetpointEditField_7" "SetpointEditField_4"];
       end
-      for ifb=1:length(obj.FeedbacksAvailable)
+      for ifb=find(obj.UseFeedbacks)
         obj.Feedbacks(ifb).SetpointDES =  obj.SetpointOffsets(ifb) ;
         if ~isempty(obj.guihan)
           if obj.GuiEnergyUnits
@@ -786,16 +771,13 @@ classdef F2_FeedbackApp < handle & F2_common
       end
     end
     function set.Enabled(obj,val)
-      if isequal(uint16(val), obj.Enabled) || length(obj.Feedbacks) ~= length(obj.FeedbacksAvailable)
-        return
-      end
       disp('Changing Feedback Enabled Status:');
       disp(val);
       if ~isempty(obj.guihan)
         switchid=["Switch" "Switch_2" "Switch_5" "Switch_3" "Switch_6" "Switch_7" "Switch_4"];
       end
       obj.Enabled=uint16(val);
-      for ifb=1:length(obj.FeedbacksAvailable)
+      for ifb=find(obj.UseFeedbacks)
         if bitget(obj.Enabled,ifb)
           obj.Feedbacks(ifb).Enable = true ;
         else
@@ -810,13 +792,13 @@ classdef F2_FeedbackApp < handle & F2_common
         end
       end
       fprintf('Feedback enable status changed:\n');
-      for ifb=1:length(obj.FeedbacksAvailable)
+      for ifb=find(obj.UseFeedbacks)
         fprintf('%s= %d\n',obj.FeedbacksAvailable(ifb),bitget(obj.Enabled,ifb));
       end
     end
     function feedbacks = get.FeedbacksEnabled(obj)
       feedbacks=string([]);
-      for ifb=1:length(obj.FeedbacksAvailable)
+      for ifb=find(obj.UseFeedbacks)
         if bitget(obj.Enabled,ifb)
           feedbacks(end+1)=obj.FeedbacksAvailable(ifb);
         end
