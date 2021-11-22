@@ -7,6 +7,8 @@ function calibrationMatrices = loadCalibrationMatrices()
     calibrationMatrices{4} = 1.0*importdata('/home/fphysics/cemma/S20Laser/S20LaserAlignmentFeedback/S20TransportFeedbackTest_082021/cal_matrix_S20TransportB0B109_22_2021_10_42.mat');
     calibrationMatrices{5} = importdata('/home/fphysics/cemma/S20Laser/S20LaserAlignmentFeedback/S20TransportFeedbackTest_082021/cal_matrix_S20TransportB2B309_17_2021_12_58.mat');
     calibrationMatrices{6} = importdata('/home/fphysics/cemma/S20Laser/S20LaserAlignmentFeedback/S20TransportFeedbackTest_082021/cal_matrix_S20TransportB409_24_2021_14_16.mat');
+    calibrationMatrices{6}(2,1) = -1.0*calibrationMatrices{6}(2,1);% B4 vertical is the wrong sign
+
     calibrationMatrices{7} = importdata('/home/fphysics/cemma/S20Laser/S20LaserAlignmentFeedback/S20TransportFeedbackTest_082021/cal_matrix_S20TransportB509_24_2021_14_07.mat');
     %calibrationMatrices{8} =
     %importdata('/home/fphysics/cemma/S20Laser/S20LaserAlignmentFeedback/S20TransportFeedbackTest_082021/cal_matrix_S20TransportB609_24_2021_14_38.mat');%No

@@ -5,6 +5,7 @@ classdef F2_LAA_exported < matlab.apps.AppBase
         UIFigure                        matlab.ui.Figure
         SelectLaserAlignmentTargetPositionsButtonGroup  matlab.ui.container.ButtonGroup
         OptionsDropDown                 matlab.ui.control.DropDown
+        ShowTargetsButton               matlab.ui.control.Button
         FACETIILaserAutoAlignmentLabel  matlab.ui.control.Label
         LogTextAreaLabel                matlab.ui.control.Label
         LogTextArea                     matlab.ui.control.TextArea
@@ -20,6 +21,7 @@ classdef F2_LAA_exported < matlab.apps.AppBase
         StatusLampLabel                 matlab.ui.control.Label
         StatusLamp                      matlab.ui.control.Lamp
         IRmodeButton                    matlab.ui.control.Button
+        ExpertButton                    matlab.ui.control.Button
         ClearLogButton                  matlab.ui.control.Button
     end
 
@@ -43,6 +45,12 @@ classdef F2_LAA_exported < matlab.apps.AppBase
         
         sectionNames = {'Pulse Picker and Regen Out','Preamp Near and Far',...
             'HeNe Near and Far','B0 and B1','B2 and B3','B4','B5','B6'}
+        
+        gainPVs = {'SIOC:SYS1:ML01:AO190','SIOC:SYS1:ML01:AO191',...
+            'SIOC:SYS1:ML01:AO192','SIOC:SYS1:ML01:AO193',...
+            'SIOC:SYS1:ML01:AO194','SIOC:SYS1:ML01:AO195',...
+            'SIOC:SYS1:ML01:AO196','SIOC:SYS1:ML01:AO197'}
+        
         fitMethod = 2;% Centroid fit method for profmon_process
         umPerPixel ;
         setPointOption = 1;% 2 = Set desired centroid setpoint from current position, 1 uses pre-defined target position
@@ -51,6 +59,7 @@ classdef F2_LAA_exported < matlab.apps.AppBase
         k_i = 0.0;% Integral gain term is set to zero for now - can be included later
         refCamSettings = [];
         refSumCts = []; 
+        refRMSVals = [];
         requestedSetpoints = [];
         calibrationMatrices;
         initialMotorValues;
@@ -62,7 +71,6 @@ classdef F2_LAA_exported < matlab.apps.AppBase
             checkBool = 1;
             data = app.UITable.Data;
             sectionBools = double(table2array(data(:,2)));
-            NLaserSections = length(app.feedbackOnPVs);
              if sum(sectionBools)==0
               app.LogTextArea.Value =['Error - No laser cameras selected for alignment ',...
                  app.LogTextArea.Value(:)']  ;
@@ -98,6 +106,7 @@ classdef F2_LAA_exported < matlab.apps.AppBase
             app.umPerPixel = ones(length(app.camerapvs),1);
             app.calibrationMatrices = loadCalibrationMatrices();
             app.initialMotorValues = getMotorValues(app);
+            app.k_p = lcaGetSmart(app.gainPVs);
                        
         end
 
@@ -113,7 +122,7 @@ classdef F2_LAA_exported < matlab.apps.AppBase
                 app.LogTextArea.Value(:)'];
             drawnow()
             app.setPointOption = app.OptionsDropDown.Value;
-            [app.refCamSettings,app.refSumCts,app.requestedSetpoints] = ...
+            [app.refCamSettings,app.refSumCts,app.requestedSetpoints,app.refRMSVals] = ...
                 defineFeedbackSetpoint(app);
             app.LogTextArea.Value = ...
                 ['Grabbed Reference Laser Reference Parameters',...
@@ -132,10 +141,14 @@ classdef F2_LAA_exported < matlab.apps.AppBase
         function PauseAlignmentButtonPushed(app, event)
             if lcaGetSmart(app.feedbackExitPV)==1
                 app.LogTextArea.Value = [' Cannot pause Auto-Alignment because it is already stopped',app.LogTextArea.Value(:)'];
-            else
+            elseif lcaGetSmart(app.feedbackPausePV)==0
                 lcaPutSmart(app.feedbackPausePV,1);
                 app.LogTextArea.Value = ['Auto-Alignment Paused',app.LogTextArea.Value(:)'];
                 app.StatusLamp.Color = [1.0 0.41 0.16];
+            else
+                lcaPutSmart(app.feedbackPausePV,0);
+                app.LogTextArea.Value = ['Auto-Alignment Un-Paused',app.LogTextArea.Value(:)'];
+                app.StatusLamp.Color = 'Green';
             end
         end
 
@@ -152,9 +165,15 @@ classdef F2_LAA_exported < matlab.apps.AppBase
             app.LogTextArea.Value = ['Starting Auto Alignment',app.LogTextArea.Value(:)'];
             app.StatusLamp.Color = 'Green';
             drawnow()
-            while lcaGetSmart(app.feedbackExitPV) ==0% Run the feedback
-                if lcaGetSmart(app.feedbackPausePV)==0
+            while lcaGetSmart(app.feedbackExitPV) ==0% Run the feedback             
+                    app.k_p = lcaGetSmart(app.gainPVs);% Update gain vals
+                    if any(isnan(app.k_p))                     
+                         app.LogTextArea.Value =  ['One or more invalid Gain values. Skipping alignment',...
+                         app.LogTextArea.Value(:)'];
+                     continue
+                    end             
                 for ij = 1:NLaserSections
+                   if lcaGetSmart(app.feedbackPausePV)==0
                     % Get setpoint and motor pv for the relevant cameras      
                     inputDataStruct.motorpvs = app.motorpvs{ij};
                     
@@ -169,8 +188,7 @@ classdef F2_LAA_exported < matlab.apps.AppBase
                         else
                             inputDataStruct.channel_index = [1,2];
                         end
-                    end
-                         
+                    end                       
                     % Evaluate the exit condition
                     if evaluateExitCondition(inputDataStruct,app.refSumCts,app.refCamSettings,app.feedbackOnPVs,ij,app)
                         continue;
@@ -183,12 +201,12 @@ classdef F2_LAA_exported < matlab.apps.AppBase
                             app.LogTextArea.Value = ['Last move made ',...
                                 datestr(now), app.LogTextArea.Value(:)'];               
                     end
-                    
-                end
-                else
+                    else
                     lcaGetSmart(app.feedbackPausePV);                  
                     if lcaGetSmart(app.feedbackExitPV);continue;end %Makes sure you don't get stuck on pause and exit PVs = 1
+                   end 
                 end
+
                 drawnow()
             end            
         end
@@ -202,7 +220,13 @@ classdef F2_LAA_exported < matlab.apps.AppBase
 
         % Value changed function: OptionsDropDown
         function OptionsDropDownValueChanged(app, event)
-            value = app.OptionsDropDown.Value;
+            value = str2num(app.OptionsDropDown.Value)
+            if value ==1
+                set(app.ShowTargetsButton, 'Enable','on');          
+            else
+                set(app.ShowTargetsButton, 'Enable','off');
+            end
+            drawnow
         end
 
         % Close request function: UIFigure
@@ -214,6 +238,17 @@ classdef F2_LAA_exported < matlab.apps.AppBase
         % Button pushed function: ClearLogButton
         function ClearLogButtonPushed(app, event)
              app.LogTextArea.Value =  ' ';
+        end
+
+        % Button pushed function: ShowTargetsButton
+        function ShowTargetsButtonPushed(app, event)
+            addpath('/usr/local/facet/tools/matlabTNG/F2_LaserMultiProfmon/')
+            s20LaserTargetPositionsTable
+        end
+
+        % Button pushed function: ExpertButton
+        function ExpertButtonPushed(app, event)
+            expertSettings_F2_LAA
         end
     end
 
@@ -239,8 +274,14 @@ classdef F2_LAA_exported < matlab.apps.AppBase
             app.OptionsDropDown.Items = {'Use Pre-Defined References as Target', 'Use Current Position as Target'};
             app.OptionsDropDown.ItemsData = {'1', '2'};
             app.OptionsDropDown.ValueChangedFcn = createCallbackFcn(app, @OptionsDropDownValueChanged, true);
-            app.OptionsDropDown.Position = [7 21 250 22];
+            app.OptionsDropDown.Position = [8 35 250 22];
             app.OptionsDropDown.Value = '1';
+
+            % Create ShowTargetsButton
+            app.ShowTargetsButton = uibutton(app.SelectLaserAlignmentTargetPositionsButtonGroup, 'push');
+            app.ShowTargetsButton.ButtonPushedFcn = createCallbackFcn(app, @ShowTargetsButtonPushed, true);
+            app.ShowTargetsButton.Position = [83 5 100 23];
+            app.ShowTargetsButton.Text = 'Show Targets';
 
             % Create FACETIILaserAutoAlignmentLabel
             app.FACETIILaserAutoAlignmentLabel = uilabel(app.UIFigure);
@@ -335,6 +376,12 @@ classdef F2_LAA_exported < matlab.apps.AppBase
             app.IRmodeButton.BackgroundColor = [0.302 0.7451 0.9333];
             app.IRmodeButton.Position = [188 99 72 23];
             app.IRmodeButton.Text = 'IR mode';
+
+            % Create ExpertButton
+            app.ExpertButton = uibutton(app.InitiateAutoAlignmentPanel, 'push');
+            app.ExpertButton.ButtonPushedFcn = createCallbackFcn(app, @ExpertButtonPushed, true);
+            app.ExpertButton.Position = [188 64 70 23];
+            app.ExpertButton.Text = 'Expert...';
 
             % Create ClearLogButton
             app.ClearLogButton = uibutton(app.UIFigure, 'push');
