@@ -72,7 +72,6 @@ classdef DataSetDAN < handle
         
         % exportPlotData
         lastPlotData; %Struct for storing lastPlotData
-        
     end
     
     % Constructor
@@ -82,7 +81,7 @@ classdef DataSetDAN < handle
             %   Detailed explanation goes here
             
             s.dataSetID = dSID;
-            disp('Looking for directory...')
+            s.hlpDispMsg('Looking for directory...')
             if nargin == 3
                 tic
                 [s.dataSet,s.hdr] = getDataSet(dSID,exp);
@@ -92,7 +91,7 @@ classdef DataSetDAN < handle
                 [s.dataSet,s.hdr] = getDataSet(dSID);
                 toc
             end
-            disp('Done looking for directory')
+            s.hlpDispMsg('Done looking for directory')
             s.maxShotNbr = length(s.dataSet.pulseID.common_scalar_index);
             
             s.hlpFindScalarGroups();
@@ -103,7 +102,7 @@ classdef DataSetDAN < handle
                 s.plotToGUI = 1;
             end
             
-            disp('dataSet succefully loaded');
+            s.hlpDispMsg('dataSet succefully loaded');
             
             
         end
@@ -111,6 +110,7 @@ classdef DataSetDAN < handle
     
     %% Plotter 
     methods (Access = public) 
+        
         
         function selectImages(s, FSArray, boolFcn)
         %% selectImages(s, FSArray, validFcn)
@@ -153,8 +153,11 @@ classdef DataSetDAN < handle
             
         end
         
-        function visImage(s, diag, shotNbr)
+        function visImage(s, diag, shotNbr, fcn)
             % Plots a single image from dataset diag 
+            if nargin < 4
+                fcn =@(x)x;
+            end
             
             if s.validShotNbr(shotNbr)
                 
@@ -171,7 +174,7 @@ classdef DataSetDAN < handle
                 titleS = sprintf('Image of %s shot number %d', ...
                     diag, shotNbr);
                 
-                s.hlpPlotImage(curHandle, diagData, type, ...
+                s.hlpPlotImage(curHandle, fcn(diagData), type, ...
                 titleS, xlabS, ylabS);
                 
             end
@@ -207,7 +210,7 @@ classdef DataSetDAN < handle
         function waterfallPlot(s, diag, fcn, sortFSArray)
 
             if nargin < 3
-                disp('Need at least 3 inputs')
+                s.hlpDispMsg('Need at least 3 inputs')
                 return
             end
             
@@ -229,14 +232,14 @@ classdef DataSetDAN < handle
             waterfall(:,1) = wFData;
             
             sortedIdx = 1:len;
-            sortLab = '';
+            sortLab = 'idx';
             
             if nargin == 4
                 type = s.hlpIsFSArray(sortFSArray);
-                disp('Starting to sort vector')
+                s.hlpDispMsg('Starting to sort vector')
                 [sortFSArray,sortLab] = s.hlpGetScalarArray(sortFSArray, type);
                 [~, sortedIdx] = sort(sortFSArray);
-                disp('Done with sorting vector')
+                s.hlpDispMsg('Done with sorting vector')
             end
             
             fcnS = func2str(fcn);
@@ -251,13 +254,13 @@ classdef DataSetDAN < handle
                isfield(s.tempScalars.(diag).waterfall,fcnSN)       
                     waterfall = s.tempScalars.(diag).waterfall.(fcnSN);
             else
-                disp('Starting to make waterfall plot...')
+                s.hlpDispMsg('Starting to make waterfall plot...')
                 for k = 1:len
                     diagData = s.hlpGetImage(diag, data.common_index(k));
                     wFData = fcn(diagData);
                     waterfall(:,k) = wFData;
                 end
-                disp('Finished making waterfall plot')
+                s.hlpDispMsg('Finished making waterfall plot')
                 s.tempScalars.(diag).waterfall.(fcnSN) = waterfall;
             end
 
@@ -328,7 +331,8 @@ classdef DataSetDAN < handle
                 return
             end
             
-            ylabS = 'idx';
+            ylabS = xlabS;
+            xlabS = 'idx';
                 
             s.hlpPlotScalarArray(curHandle, x, ...
             titleS, xlabS, ylabS);
@@ -375,6 +379,19 @@ classdef DataSetDAN < handle
             end
         end
         
+        function RV = processImgsRV(s, diag, fcn)
+            % Returns a vector where fcn is a 1D vector of length N such 
+            % that the return RV is an n x N matrix.
+            
+            [data,diagData] = s.hlpCheckImage(diag);
+            l = length(fcn(diagData));
+            RV = zeros(length(data.common_index),l);
+            
+            for k = 1:length(data.common_index)
+                img = s.hlpGetImage(diag, k);
+                RV(k,:) = fcn(img);
+            end
+        end
     end
     
     %% Getters and checks
@@ -400,7 +417,7 @@ classdef DataSetDAN < handle
             if shotNbr > 0 & shotNbr < s.maxShotNbr
                 bool = 1;
             else
-                disp('shotNbr not within valid range')
+                s.hlpDispMsg('shotNbr not within valid range')
                 bool = 0;
             end
         end
@@ -746,6 +763,14 @@ classdef DataSetDAN < handle
                 fcnSN = ['F',fcnSN];
             end
             
+        end
+        
+        function hlpDispMsg(s,str)
+            if s.plotToGUI
+                s.GUIHandle.addMsg(str)
+            else
+                fprintf(str);
+            end
         end
         
     end

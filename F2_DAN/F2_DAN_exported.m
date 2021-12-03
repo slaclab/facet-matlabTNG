@@ -12,6 +12,8 @@ classdef F2_DAN_exported < matlab.apps.AppBase
         DANlogTextAreaLabel           matlab.ui.control.Label
         DANlogTextArea                matlab.ui.control.TextArea
         SubtractImageBackgroundCheckBox  matlab.ui.control.CheckBox
+        DataSetInfoTextAreaLabel      matlab.ui.control.Label
+        DataSetInfoTextArea           matlab.ui.control.TextArea
         dispImage                     matlab.ui.container.Panel
         ImageincrementEditFieldLabel  matlab.ui.control.Label
         ImageincrementEditField       matlab.ui.control.NumericEditField
@@ -90,9 +92,25 @@ classdef F2_DAN_exported < matlab.apps.AppBase
         DANobject % Description
         commonPIDmax = 1;
         commonPIDmin = 1;
+        messageLog;
     end
     
     methods (Access = private)
+        function updateDataSetInfo(app)
+            %
+            %
+            iStr = sprintf('Experiment %s, DataSetID = %d \n', ...
+                app.DANobject.dataSet.save_info.experiment,app.DANobject.dataSetID);
+            tStr = sprintf('Obtained %s \n', ...
+                datestr(app.DANobject.dataSet.save_info.local_time));
+            cStr = sprintf('Comment: %s \n', ...
+                (app.DANobject.dataSet.params.comment{1}));
+            dStr = sprintf('Nbr of Cams: %d \n', ...
+                (app.DANobject.dataSet.params.num_CAM));
+            
+            info = sprintf('%s %s %s %s', iStr, tStr, cStr, dStr);
+            app.DataSetInfoTextArea.Value = info;
+        end
         
         function changeSGroupDD(app, sDD, sGDDv)
             % sDD = scalar Drop Down object
@@ -100,7 +118,6 @@ classdef F2_DAN_exported < matlab.apps.AppBase
             
             newScalarList = app.DANobject.getScalarsInGroup(sGDDv);
             sDD.Items = newScalarList; 
-            
         end
         
         function setDropDowns(app)
@@ -124,6 +141,13 @@ classdef F2_DAN_exported < matlab.apps.AppBase
             app.ScalarDropDown_WFS.Items = firstScalars;
         end
         
+        function clearAxis(app)
+            cla(app.ImageAxes);
+            xlabel(app.ImageAxes,'');
+            ylabel(app.ImageAxes,'');
+            title(app.ImageAxes,'');
+        end
+        
         function FS = getFacetScalar(app, sw, scalarDD, cameraDD, funcEF )
             if strcmp(sw.Value, 'Scalar')
                 FS = {scalarDD.Value};
@@ -145,6 +169,18 @@ classdef F2_DAN_exported < matlab.apps.AppBase
         end
     end
     
+    methods (Access = public)
+        
+        function addMsg(app, msg)
+            if length(app.messageLog) > 0
+                app.messageLog = [app.messageLog, '\n', msg];
+            else 
+                app.messageLog = msg;
+            end
+            app.DANlogTextArea.Value = sprintf(app.messageLog);
+            
+        end
+    end
 
     % Callbacks that handle component events
     methods (Access = private)
@@ -157,10 +193,23 @@ classdef F2_DAN_exported < matlab.apps.AppBase
 
         % Button pushed function: LoadDataSetButton
         function LoadDataSetButtonPushed(app, event)
+            % Clear old dataset settings
+            app.clearAxis();
+            app.DataSetInfoTextArea.Value = '';
+            
+            % Get input
             exp = app.expDropDown.Value;
             dataSetID = app.dataSetID.Value;
-            app.DANobject = DataSetDAN(dataSetID,app,exp);
             
+            try  
+                app.DANobject = DataSetDAN(dataSetID,app,exp);
+            catch errm
+                app.addMsg('Could not find data set')
+                return
+            end
+            
+            app.updateDataSetInfo();
+
             app.setDropDowns;
             
             if ~app.DANobject.dataSet.backgrounds.getBG
@@ -424,7 +473,7 @@ classdef F2_DAN_exported < matlab.apps.AppBase
 
             % Create expDropDown
             app.expDropDown = uidropdown(app.dataSet);
-            app.expDropDown.Items = {'TEST', 'E300', 'E305', 'E320', 'E326', 'E327'};
+            app.expDropDown.Items = {'TEST', 'E300', 'E305', 'E320', 'E325', 'E326', 'E327'};
             app.expDropDown.Position = [98 335 124 22];
             app.expDropDown.Value = 'TEST';
 
@@ -450,18 +499,28 @@ classdef F2_DAN_exported < matlab.apps.AppBase
             % Create DANlogTextAreaLabel
             app.DANlogTextAreaLabel = uilabel(app.dataSet);
             app.DANlogTextAreaLabel.HorizontalAlignment = 'right';
-            app.DANlogTextAreaLabel.Position = [13 230 52 22];
+            app.DANlogTextAreaLabel.Position = [13 91 52 22];
             app.DANlogTextAreaLabel.Text = 'DAN log';
 
             % Create DANlogTextArea
             app.DANlogTextArea = uitextarea(app.dataSet);
-            app.DANlogTextArea.Position = [11 12 298 219];
+            app.DANlogTextArea.Position = [11 12 298 80];
 
             % Create SubtractImageBackgroundCheckBox
             app.SubtractImageBackgroundCheckBox = uicheckbox(app.dataSet);
             app.SubtractImageBackgroundCheckBox.ValueChangedFcn = createCallbackFcn(app, @SubtractImageBackgroundCheckBoxValueChanged, true);
             app.SubtractImageBackgroundCheckBox.Text = {'Subtract Image '; 'Background'};
-            app.SubtractImageBackgroundCheckBox.Position = [187 251 107 30];
+            app.SubtractImageBackgroundCheckBox.Position = [195 262 107 30];
+
+            % Create DataSetInfoTextAreaLabel
+            app.DataSetInfoTextAreaLabel = uilabel(app.dataSet);
+            app.DataSetInfoTextAreaLabel.HorizontalAlignment = 'right';
+            app.DataSetInfoTextAreaLabel.Position = [17 230 72 22];
+            app.DataSetInfoTextAreaLabel.Text = 'DataSet Info';
+
+            % Create DataSetInfoTextArea
+            app.DataSetInfoTextArea = uitextarea(app.dataSet);
+            app.DataSetInfoTextArea.Position = [13 121 294 108];
 
             % Create dispImage
             app.dispImage = uipanel(app.UIFigure);
