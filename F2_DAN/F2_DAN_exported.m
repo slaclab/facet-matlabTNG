@@ -14,6 +14,7 @@ classdef F2_DAN_exported < matlab.apps.AppBase
         SubtractImageBackgroundCheckBox  matlab.ui.control.CheckBox
         DataSetInfoTextAreaLabel      matlab.ui.control.Label
         DataSetInfoTextArea           matlab.ui.control.TextArea
+        LastDAQButton                 matlab.ui.control.Button
         dispImage                     matlab.ui.container.Panel
         ImageincrementEditFieldLabel  matlab.ui.control.Label
         ImageincrementEditField       matlab.ui.control.NumericEditField
@@ -96,6 +97,23 @@ classdef F2_DAN_exported < matlab.apps.AppBase
     end
     
     methods (Access = private)
+        function getLatestExp(app)
+            % Loads the latest DAQ run to the input
+            
+            % Get latest DAQ number
+            app.dataSetID.Value = lcaGetSmart('SIOC:SYS1:ML02:AO400');
+            
+            %Get latest DAQ experiment
+            exp = lcaGetSmart('SIOC:SYS1:ML02:AO398');
+            if exp == 0
+                exp = 'TEST'
+            else
+                exp = sprintf('E%d',exp)
+            end
+            
+            app.expDropDown.Value = exp;
+        end
+        
         function updateDataSetInfo(app)
             %
             %
@@ -143,9 +161,9 @@ classdef F2_DAN_exported < matlab.apps.AppBase
         
         function clearAxis(app)
             cla(app.ImageAxes);
-            xlabel(app.ImageAxes,'');
-            ylabel(app.ImageAxes,'');
-            title(app.ImageAxes,'');
+            xlabel(app.ImageAxes,'', 'Interpreter', 'none');
+            ylabel(app.ImageAxes,'', 'Interpreter', 'none');
+            title(app.ImageAxes,'', 'Interpreter', 'none');
         end
         
         function FS = getFacetScalar(app, sw, scalarDD, cameraDD, funcEF )
@@ -189,6 +207,9 @@ classdef F2_DAN_exported < matlab.apps.AppBase
         function startupFcn(app)
 %             set(app.dispImage.Children,'Enable','Off')
 %             set(app.correlationPlot.Children,'Enable','Off')
+            
+            app.getLatestExp();
+            
         end
 
         % Button pushed function: LoadDataSetButton
@@ -385,9 +406,9 @@ classdef F2_DAN_exported < matlab.apps.AppBase
 %             opts.text = '';
 %             util_printLog(fh,opts);
             close(fh)
-            title(app.ImageAxes, titleS);
-            xlabel(app.ImageAxes, xlabS);
-            ylabel(app.ImageAxes, ylabS);
+            title(app.ImageAxes, titleS, 'Interpreter', 'none');
+            xlabel(app.ImageAxes, xlabS, 'Interpreter', 'none');
+            ylabel(app.ImageAxes, ylabS, 'Interpreter', 'none');
             
         end
 
@@ -446,6 +467,11 @@ classdef F2_DAN_exported < matlab.apps.AppBase
         function SaveplotdataButtonPushed(app, event)
             fileName = app.SavedfilenameEditField.Value;
             app.DANobject.exportPlotData(fileName);
+        end
+
+        % Button pushed function: LastDAQButton
+        function LastDAQButtonPushed(app, event)
+            app.getLatestExp();
         end
     end
 
@@ -521,6 +547,12 @@ classdef F2_DAN_exported < matlab.apps.AppBase
             % Create DataSetInfoTextArea
             app.DataSetInfoTextArea = uitextarea(app.dataSet);
             app.DataSetInfoTextArea.Position = [13 121 294 108];
+
+            % Create LastDAQButton
+            app.LastDAQButton = uibutton(app.dataSet, 'push');
+            app.LastDAQButton.ButtonPushedFcn = createCallbackFcn(app, @LastDAQButtonPushed, true);
+            app.LastDAQButton.Position = [233 313 69 25];
+            app.LastDAQButton.Text = 'Last DAQ';
 
             % Create dispImage
             app.dispImage = uipanel(app.UIFigure);
@@ -744,6 +776,7 @@ classdef F2_DAN_exported < matlab.apps.AppBase
             title(app.ImageAxes, 'Title')
             xlabel(app.ImageAxes, 'X')
             ylabel(app.ImageAxes, 'Y')
+            app.ImageAxes.FontSize = 14;
             app.ImageAxes.Position = [363 409 803 509];
 
             % Create WaterfallplotPanel

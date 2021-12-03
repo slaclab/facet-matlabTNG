@@ -731,10 +731,10 @@ classdef DataSetDAN < handle
             titleS = sprintf('%s, Dataset ID %d, %s',s.dataSet.save_info.experiment, ...
                 s.dataSetID ,titleS);
             
-            set(plotHandle, 'fontsize',18);
-            title(plotHandle, titleS,'Interpreter','none');
-            xlabel(plotHandle, xlabS,'Interpreter','none');
-            ylabel(plotHandle, ylabS,'Interpreter','none');
+            set(plotHandle, 'fontsize', 18);
+            title(plotHandle, titleS, 'Interpreter', 'none');
+            xlabel(plotHandle, xlabS, 'Interpreter', 'none');
+            ylabel(plotHandle, ylabS, 'Interpreter', 'none');
         end
         
         function fcnSN = fcn2fieldName(s, fcnS)
