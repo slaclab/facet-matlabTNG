@@ -12,7 +12,7 @@ classdef F2_MatchingApp < handle & F2_common
     UseMatchQuad logical % Which matching quads to use
   end
   properties(SetAccess=private)
-    MatchQuadNames string = ["QUAD:IN10:425" "QUAD:IN10:441" "QUAD:IN10:511" "QUAD:IN10:525"] 
+    MatchQuadNames string = ["QUAD:IN10:425" "QUAD:IN10:441" "QUAD:IN10:511" "QUAD:IN10:525"] % Read in when select Prof device and/or when change # matching quads
     TwissFitModel(1,8) = [1 1 0 0 1 1 5 5] % beta_x,beta_y,alpha_x,alpha_y,bmag_x,bmag_y,nemit_x,nemit_y fitted twiss parameters at profile device (nemit in um-rad)
     TwissFitAnalytic(1,8) = [1 1 0 0 1 1 5 5] % beta_x,beta_y,alpha_x,alpha_y,bmag_x,bmag_y,nemit_x,nemit_y fitted twiss parameters at profile device (nemit in um-rad)
   end
@@ -46,7 +46,7 @@ classdef F2_MatchingApp < handle & F2_common
     TwissFit(1,8)
   end
   properties(Constant)
-    EmitDataProfs = ["PROF:IN10:571" "PROF:LI11:375"] % profile devices for which there are emittance PVs
+    EmitDataProfs = ["PROF:IN10:571" "PROF:LI11:375" "WIRE:IN10:561" "WIRE:LI11:444"] % profile devices for which there are emittance PVs
     InitMatchProf = ["WIRE:IN10:561","PROF:IN10:571"] % Profile devices to associate with initial match conditions
   end
  
@@ -57,7 +57,7 @@ classdef F2_MatchingApp < handle & F2_common
       end
       obj.LiveModel = F2_LiveModelApp ; % Initially update live model (default)
       obj.LM=copy(obj.LiveModel.LM);
-      obj.LM.ModelClasses="PROF";
+      obj.LM.ModelClasses=["PROF" "WIRE"];
       obj.ProfModelInd = obj.LM.ModelUniqueID(obj.LM.ControlNames==obj.ProfName) ;
       obj.ProfModelInd = obj.ProfModelInd(1) ;
       obj.UseArchive = true ; % default to getting data from archive from now on
@@ -65,8 +65,10 @@ classdef F2_MatchingApp < handle & F2_common
       obj.LEMQuadID = obj.LiveModel.LEM.Mags.LM.ModelClassList == "QUAD" ; % Tag quadrupoles in LEM magnet list
 %       obj.LiveModel.LEM.Mags.WriteEnable=false; % disable writing to magnets to test
     end
-    function DoMatch(obj)
+    function DoMatch(obj,cmd)
       %DOMATCH Perform matching to profile monitor device based on fitted Twiss parameters and live model
+      %DoMatch() Match initial Twiss parameters and quad settings to restore Model
+      %DoMatch("init") Match only initial Twiss parameters
       global BEAMLINE PS
       obj.goodmatch = false ;
       obj.MatchQuadInitVals = []; obj.TwissPreMatch=[]; obj.TwissMatch=[];
@@ -103,7 +105,7 @@ classdef F2_MatchingApp < handle & F2_common
         i1=PS(quadps(1)).Element(1);
       end
       
-      % Get Twiss parameters at initial match point
+      % Get Twiss parameters through to initial match point
       I = TwissToInitial(obj.LiveModel.DesignTwiss,i1,obj.LiveModel.Initial);
       I.Momentum = BEAMLINE{i1}.P ;
       M=Match;
@@ -111,27 +113,31 @@ classdef F2_MatchingApp < handle & F2_common
       M.iInitial=i1;
       M.initStruc=I;
       M.verbose=false; % see optimizer output or not
-      M.optim=char(obj.Optimizer);
-      M.optimDisplay='iter';
+      M.optim='fminsearch';
+      M.optimDisplay='off';
       M.useParallel=false;
-      M.addVariable('INITIAL',1,'betax',0.1,1000);
-      M.addVariable('INITIAL',1,'betay',0.1,1000);
+      M.addVariable('INITIAL',1,'betax',0.01,1000);
       M.addVariable('INITIAL',1,'alphax',-100,100);
+      M.addVariable('INITIAL',1,'betay',0.01,1000);
       M.addVariable('INITIAL',1,'alphay',-100,100);
       M.addMatch(pele,'beta_x',betax_fit,betax_fit/1000);
-      M.addMatch(pele,'beta_y',betay_fit,betay_fit/1000);
       M.addMatch(pele,'alpha_x',alphax_fit,1e-3);
+      M.addMatch(pele,'beta_y',betay_fit,betay_fit/1000);
       M.addMatch(pele,'alpha_y',alphay_fit,1e-3);
       M.doMatch;
       display(M);
-      if any(abs(M.optimVals-[betax_fit betay_fit alphax_fit alphay_fit])>[betax_fit/100 betay_fit/100 0.01 0.01])
-        error('Match failed');
+      if any(abs(M.optimVals-[betax_fit alphax_fit betay_fit alphay_fit])>[betax_fit/100 0.01 betay_fit/100 0.01])
+        error('Match of Initial Twiss Parameters Failed');
       end
       obj.InitMatch=M.initStruc;
       obj.InitMatch.x.NEmit = obj.TwissFit(7)*1e-6 ;
       obj.InitMatch.y.NEmit = obj.TwissFit(8)*1e-6 ;
       [~,T]=GetTwiss(i1,pele,obj.InitMatch.x.Twiss,obj.InitMatch.y.Twiss);
       obj.TwissPreMatch=T;
+      % If this is all is required, exit now
+      if exist('cmd','var') && cmd=="init"
+        return
+      end
       
       % Calculate re-match to fitted Twiss parameters at profile monitor device
       M=Match;
@@ -285,33 +291,73 @@ classdef F2_MatchingApp < handle & F2_common
       else
         sz=size(dat.data.beamList) ;
       end
+      % Check for existence of X/Y data
+      if ~isfield(dat.data.beam(1),'xStat')
+        obj.DimSelect="Y";
+        if ~isempty(obj.guihan)
+          obj.guihan.UseYDataButton.Value=true;
+          obj.guihan.UseXDataButton.Value=false;
+          drawnow
+        end
+      end
+      if ~isfield(dat.data.beam(1),'yStat')
+        if obj.DimSelect=="Y"
+          error('No data to load');
+        end
+        obj.DimSelect="X";
+        if ~isempty(obj.guihan)
+          obj.guihan.UseXDataButton.Value=true;
+          obj.guihan.UseYDataButton.Value=false;
+          drawnow
+        end
+      end
       for ii=1:2
         if iscorplot
-          xdat = reshape([dat.data.beam(stat,:,ii).xStat],5,sum(stat),sz(2)) ;
-          ydat = reshape([dat.data.beam(stat,:,ii).yStat],5,sum(stat),sz(2)) ;
-          xerr = reshape([dat.data.beam(stat,:,ii).xStatStd],5,sum(stat),sz(2)) ;
-          yerr = reshape([dat.data.beam(stat,:,ii).yStatStd],5,sum(stat),sz(2)) ;
+          if contains(obj.DimSelect,"X")
+            xdat = reshape([dat.data.beam(stat,:,ii).xStat],5,sum(stat),sz(2)) ;
+            xerr = reshape([dat.data.beam(stat,:,ii).xStatStd],5,sum(stat),sz(2)) ;
+          end
+          if contains(obj.DimSelect,"Y")
+            ydat = reshape([dat.data.beam(stat,:,ii).yStat],5,sum(stat),sz(2)) ;
+            yerr = reshape([dat.data.beam(stat,:,ii).yStatStd],5,sum(stat),sz(2)) ;
+          end
         else
-          xdat = reshape([dat.data.beamList(stat,:,ii).xStat],5,sum(stat),sz(2)) ;
-          ydat = reshape([dat.data.beamList(stat,:,ii).yStat],5,sum(stat),sz(2)) ;
-          xerr = reshape([dat.data.beamList(stat,:,ii).xStatStd],5,sum(stat),sz(2)) ;
-          yerr = reshape([dat.data.beamList(stat,:,ii).yStatStd],5,sum(stat),sz(2)) ;
+          if contains(obj.DimSelect,"X")
+            xdat = reshape([dat.data.beamList(stat,:,ii).xStat],5,sum(stat),sz(2)) ;
+            xerr = reshape([dat.data.beamList(stat,:,ii).xStatStd],5,sum(stat),sz(2)) ;
+          end
+          if contains(obj.DimSelect,"Y")
+            ydat = reshape([dat.data.beamList(stat,:,ii).yStat],5,sum(stat),sz(2)) ;
+            yerr = reshape([dat.data.beamList(stat,:,ii).yStatStd],5,sum(stat),sz(2)) ;
+          end
         end
         if sz(2)>1
-          xdat_err=std(squeeze(xdat(3,:,:)),[],2);
-          xdat=mean(squeeze(xdat(3,:,:)),2);
-          ydat_err=std(squeeze(ydat(3,:,:)),[],2);
-          ydat=mean(squeeze(ydat(3,:,:)),2);
+          if contains(obj.DimSelect,"X")
+            xdat_err=std(squeeze(xdat(3,:,:)),[],2);
+            xdat=mean(squeeze(xdat(3,:,:)),2);
+          end
+          if contains(obj.DimSelect,"Y")
+            ydat_err=std(squeeze(ydat(3,:,:)),[],2);
+            ydat=mean(squeeze(ydat(3,:,:)),2);
+          end
         else
-          xdat=squeeze(xdat(3,:,:));
-          xdat_err=squeeze(xerr(3,:,:));
-          ydat=squeeze(ydat(3,:,:));
-          ydat_err=squeeze(yerr(3,:,:));
+          if contains(obj.DimSelect,"X")
+            xdat=squeeze(xdat(3,:,:));
+            xdat_err=squeeze(xerr(3,:,:));
+          end
+          if contains(obj.DimSelect,"Y")
+            ydat=squeeze(ydat(3,:,:));
+            ydat_err=squeeze(yerr(3,:,:));
+          end
         end
-        obj.QuadScanData.x.(fitm(ii)) = xdat ;
-        obj.QuadScanData.xerr.(fitm(ii)) = xdat_err ;
-        obj.QuadScanData.y.(fitm(ii)) = ydat ;
-        obj.QuadScanData.yerr.(fitm(ii)) = ydat_err ;
+        if contains(obj.DimSelect,"X")
+          obj.QuadScanData.x.(fitm(ii)) = xdat ;
+          obj.QuadScanData.xerr.(fitm(ii)) = xdat_err ;
+        end
+        if contains(obj.DimSelect,"Y")
+          obj.QuadScanData.y.(fitm(ii)) = ydat ;
+          obj.QuadScanData.yerr.(fitm(ii)) = ydat_err ;
+        end
       end
       obj.QuadScanData.QuadInd = find(LM_mags.ControlNames==obj.QuadScanData.QuadName,1) ;
       if isempty(obj.QuadScanData.QuadInd)
@@ -335,10 +381,10 @@ classdef F2_MatchingApp < handle & F2_common
         % Write initial match conditions to PVs
         if ~isempty(obj.InitMatch) && ismember(obj.ProfName,obj.InitMatchProf) && obj.goodmatch
           lcaPutNoWait(char(obj.LiveModel.Initial_betaxPV),obj.InitMatch.x.Twiss.beta) ;
-          lcaPutNoWait(char(obj.LiveModel.Initial_betaxPV),obj.InitMatch.y.Twiss.beta) ;
           lcaPutNoWait(char(obj.LiveModel.Initial_betaxPV),obj.InitMatch.x.Twiss.alpha) ;
-          lcaPutNoWait(char(obj.LiveModel.Initial_betaxPV),obj.InitMatch.y.Twiss.alpha) ;
           lcaPutNoWait(char(obj.LiveModel.Initial_emitxPV),obj.InitMatch.x.NEmit*1e6) ;
+          lcaPutNoWait(char(obj.LiveModel.Initial_betaxPV),obj.InitMatch.y.Twiss.beta) ;
+          lcaPutNoWait(char(obj.LiveModel.Initial_betaxPV),obj.InitMatch.y.Twiss.alpha) ;
           lcaPutNoWait(char(obj.LiveModel.Initial_emityPV),obj.InitMatch.y.NEmit*1e6) ;
         end
         obj.InitRestore = obj.LiveModel.Initial ;
@@ -379,10 +425,14 @@ classdef F2_MatchingApp < handle & F2_common
       ips = BEAMLINE{qele}.PS;
       ps0 = PS(ips).Ampl;
       k = obj.quadscan_k ;
-      x = obj.QuadScanData.x.(obj.ProfFitMethod).*1e-6 ; 
-      xerr = obj.QuadScanData.xerr.(obj.ProfFitMethod).*1e-6 ; 
-      y = obj.QuadScanData.y.(obj.ProfFitMethod).*1e-6 ; 
-      yerr = obj.QuadScanData.yerr.(obj.ProfFitMethod).*1e-6 ; 
+      if contains(obj.DimSelect,"X")
+        x = obj.QuadScanData.x.(obj.ProfFitMethod).*1e-6 ; 
+        xerr = obj.QuadScanData.xerr.(obj.ProfFitMethod).*1e-6 ; 
+      end
+      if contains(obj.DimSelect,"Y")
+        y = obj.QuadScanData.y.(obj.ProfFitMethod).*1e-6 ; 
+        yerr = obj.QuadScanData.yerr.(obj.ProfFitMethod).*1e-6 ; 
+      end
       rgamma = LM_mags.ModelP(qid)/0.511e-3;
       
       % Get Twiss at profile device using Model (RmatAtoB)
@@ -430,30 +480,34 @@ classdef F2_MatchingApp < handle & F2_common
       % Twiss parameters using analytic approach
       %https://indico.cern.ch/event/703517/contributions/2886144/attachments/1602810/2541739/2018-02-19_Emittance_measurement_with_quadrupole_scan.pdf
       PS(ips).Ampl=0;
-      qx=noplot_polyfit(-k,x.^2,2.*x.*xerr,2);
-      qy=noplot_polyfit(k,y.^2,2.*y.*yerr,2);
+      if contains(obj.DimSelect,"X")
+        qx=noplot_polyfit(-k,x.^2,2.*x.*xerr,2);
+      end
+      if contains(obj.DimSelect,"Y")
+        qy=noplot_polyfit(k,y.^2,2.*y.*yerr,2);
+      end
       % sigma matrix at (thin) quad entrance
       [~,R]=RmatAtoB(qele+1,pele); % from center of quad to profile monitor
       % -- x
-      d=R(1,2);
-      Lq=sum(arrayfun(@(x) BEAMLINE{x}.L,PS(ips).Element));
-      A=qx(3); B=qx(2); C=qx(1);
-      sig11 = A / (d^2*Lq^2) ;
-      sig12 = (B-2*d*Lq*sig11)/(2*d^2*Lq) ;
-      sig22 = (C-sig11-2*d*sig12) / d^2 ;
-      emit = sqrt(sig11*sig22 - sig12^2) ;
-      alpha = - sig12/emit ;
-      beta = sig11/emit ;
-      % Propogate Twiss back to start of Model quadrupole and then forward to profile monitor location
-      S = emit .* [beta -alpha;-alpha (1+alpha^2)/beta] ;
-      Rd = [1 Lq/2;0 1] ; S(1,2)=-S(1,2); S(2,1)=-S(2,1);
-      S0 = Rd*S*Rd';
-      PS(ips).Ampl=ps0;
-      [~,R2]=RmatAtoB(qele,pele);
-      S0(1,2)=-S0(1,2); S0(2,1)=-S0(2,1);
-      S_prof = R2(1:2,1:2)*S0*R2(1:2,1:2)';
-      T=S_prof./emit ;
       if contains(obj.DimSelect,"X")
+        d=R(1,2);
+        Lq=sum(arrayfun(@(x) BEAMLINE{x}.L,PS(ips).Element));
+        A=qx(3); B=qx(2); C=qx(1);
+        sig11 = A / (d^2*Lq^2) ;
+        sig12 = (B-2*d*Lq*sig11)/(2*d^2*Lq) ;
+        sig22 = (C-sig11-2*d*sig12) / d^2 ;
+        emit = sqrt(sig11*sig22 - sig12^2) ;
+        alpha = - sig12/emit ;
+        beta = sig11/emit ;
+        % Propogate Twiss back to start of Model quadrupole and then forward to profile monitor location
+        S = emit .* [beta -alpha;-alpha (1+alpha^2)/beta] ;
+        Rd = [1 Lq/2;0 1] ; S(1,2)=-S(1,2); S(2,1)=-S(2,1);
+        S0 = Rd*S*Rd';
+        PS(ips).Ampl=ps0;
+        [~,R2]=RmatAtoB(qele,pele);
+        S0(1,2)=-S0(1,2); S0(2,1)=-S0(2,1);
+        S_prof = R2(1:2,1:2)*S0*R2(1:2,1:2)';
+        T=S_prof./emit ;
         if ~isreal(T)
           obj.TwissFitAnalytic(2:2:end)=nan;
         else
@@ -465,21 +519,21 @@ classdef F2_MatchingApp < handle & F2_common
         end
       end
       % -- y
-      d=R(3,4);
-      A=qy(3); B=qy(2); C=qy(1);
-      sig11 = A / (d^2*Lq^2) ;
-      sig12 = (B-2*d*Lq*sig11)/(2*d^2*Lq) ;
-      sig22 = (C-sig11-2*d*sig12) / d^2 ;
-      emit = sqrt(sig11*sig22 - sig12^2) ;
-      
-      alpha = - sig12/emit ;
-      beta = sig11/emit ;
-      % Propogate Twiss back to start of Model quadrupole and then forward to profile monitor location
-      S = emit .* [beta -alpha;-alpha (1+alpha^2)/beta] ; S(1,2)=-S(1,2); S(2,1)=-S(2,1);
-      S0 = Rd*S*Rd'; S0(1,2)=-S0(1,2); S0(2,1)=-S0(2,1);
-      S_prof = R2(3:4,3:4)*S0*R2(3:4,3:4)';
-      T=S_prof./emit ;
       if contains(obj.DimSelect,"Y")
+        d=R(3,4);
+        A=qy(3); B=qy(2); C=qy(1);
+        sig11 = A / (d^2*Lq^2) ;
+        sig12 = (B-2*d*Lq*sig11)/(2*d^2*Lq) ;
+        sig22 = (C-sig11-2*d*sig12) / d^2 ;
+        emit = sqrt(sig11*sig22 - sig12^2) ;
+
+        alpha = - sig12/emit ;
+        beta = sig11/emit ;
+        % Propogate Twiss back to start of Model quadrupole and then forward to profile monitor location
+        S = emit .* [beta -alpha;-alpha (1+alpha^2)/beta] ; S(1,2)=-S(1,2); S(2,1)=-S(2,1);
+        S0 = Rd*S*Rd'; S0(1,2)=-S0(1,2); S0(2,1)=-S0(2,1);
+        S_prof = R2(3:4,3:4)*S0*R2(3:4,3:4)';
+        T=S_prof./emit ;
         if ~isreal(T)
           obj.TwissFitAnalytic(2:2:end)=nan;
         else
@@ -490,20 +544,33 @@ classdef F2_MatchingApp < handle & F2_common
             obj.TwissFitAnalytic(2),obj.TwissFitAnalytic(4));
         end
       end
+      
+      % Update initial Twiss match
+      try
+        obj.DoMatch("init");
+      catch
+        fprintf(2,"Failed to match initial Twiss Parameters!\n");
+      end
     end
     function PlotQuadScanData(obj)
-      if ~isfield(obj.QuadScanData,'x')
-        if ~isempty(obj.guihan)
-          obj.guihan.UIAxes.reset;
-          obj.guihan.UIAxes_2.reset;
-        end
+      if ~isempty(obj.guihan)
+        obj.guihan.UIAxes.reset;
+        obj.guihan.UIAxes_2.reset;
+        cla(obj.guihan.UIAxes);
+        cla(obj.guihan.UIAxes_2);
+      end
+      if ~isfield(obj.QuadScanData,'x') && ~isfield(obj.QuadScanData,'y')
         return
       end
       k = obj.quadscan_k ;
-      x = obj.QuadScanData.x.(obj.ProfFitMethod) ; 
-      xerr = obj.QuadScanData.xerr.(obj.ProfFitMethod) ; 
-      y = obj.QuadScanData.y.(obj.ProfFitMethod) ; 
-      yerr = obj.QuadScanData.yerr.(obj.ProfFitMethod) ; 
+      if contains(obj.DimSelect,"X")
+        x = obj.QuadScanData.x.(obj.ProfFitMethod) ; 
+        xerr = obj.QuadScanData.xerr.(obj.ProfFitMethod) ; 
+      end
+      if contains(obj.DimSelect,"Y")
+        y = obj.QuadScanData.y.(obj.ProfFitMethod) ; 
+        yerr = obj.QuadScanData.yerr.(obj.ProfFitMethod) ; 
+      end
       if isempty(obj.guihan)
         figure;
         ah1=subplot(2,1,1);
@@ -513,40 +580,47 @@ classdef F2_MatchingApp < handle & F2_common
         ah2=obj.guihan.UIAxes_2;
       end
       ah1.reset; ah2.reset;
-      [q,dq]=noplot_polyfit(k,x.^2,2.*x.*xerr,2);
-      errorbar(ah1,abs(k),x.^2,2.*x.*xerr,'ko'); ax=axis(ah1);
-      hold(ah1,'on');
-      ypl1=(q(1)-dq(1))+(q(2)-dq(2)).*k+(q(3)-dq(3)).*k.^2; 
-      ypl2=(q(1)+dq(1))+(q(2)+dq(2)).*k+(q(3)+dq(3)).*k.^2;
-      ypl=[ypl1(:) ypl2(:)-ypl1(:)];
-      apl=area(ah1,abs(k),ypl); apl(1).FaceColor='none'; apl(1).LineStyle='none'; apl(2).FaceColor=[0.3010 0.7450 0.9330]; apl(2).LineStyle='none'; apl(2).FaceAlpha=0.5;
-      if length(obj.ModelQuadScan)==length(k)
-        plot(ah1,abs(k),obj.ModelQuadScan(1,:).^2,'r','LineWidth',2);
-        if obj.ShowPlotLegend; legend(ah1,["Data" "" "Polynomial Fit" "Model Fit"]); else; legend(ah1,'off'); end
-      else
-        if obj.ShowPlotLegend; legend(ah1,["Data" "" "Polynomial Fit"]); else; legend(ah1,'off'); end
+      kabs=abs(k);
+      if contains(obj.DimSelect,"X")
+        [q,dq]=noplot_polyfit(k,x.^2,2.*x.*xerr,2);
+        errorbar(ah1,kabs,x.^2,2.*x.*xerr,'ko'); ax=axis(ah1);
+        hold(ah1,'on');
+        k_fit=linspace(k(1),k(end),1000);
+        ypl1=(q(1)-dq(1))+(q(2)-dq(2)).*k_fit+(q(3)-dq(3)).*k_fit.^2; 
+        ypl2=(q(1)+dq(1))+(q(2)+dq(2)).*k_fit+(q(3)+dq(3)).*k_fit.^2;
+        ypl=[ypl1(:) ypl2(:)-ypl1(:)];
+        apl=area(ah1,abs(k_fit),ypl); apl(1).FaceColor='none'; apl(1).LineStyle='none'; apl(2).FaceColor=[0.3010 0.7450 0.9330]; apl(2).LineStyle='none'; apl(2).FaceAlpha=0.5;
+        if length(obj.ModelQuadScan)==length(k)
+          plot(ah1,abs(k_fit),interp1(k,obj.ModelQuadScan(1,:).^2,k_fit,'spline'),'r','LineWidth',2);
+          if obj.ShowPlotLegend; legend(ah1,["Data" "" "Polynomial Fit" "Model Fit"]); else; legend(ah1,'off'); end
+        else
+          if obj.ShowPlotLegend; legend(ah1,["Data" "" "Polynomial Fit"]); else; legend(ah1,'off'); end
+        end
+        xlabel(ah1,sprintf('|k| (%s)',obj.QuadScanData.QuadName)); ylabel(ah1,'\sigma_x^2 [\mum^2]');
+        axis(ah1,ax);
+        grid(ah1,'on');
+        hold(ah1,'off');
       end
-      xlabel(ah1,sprintf('|k| (%s)',obj.QuadScanData.QuadName)); ylabel(ah1,'\sigma_x^2 [\mum^2]');
-      axis(ah1,ax);
-      grid(ah1,'on');
-      hold(ah1,'off');
-      [q,dq]=noplot_polyfit(k,y.^2,2.*y.*yerr,2);
-      errorbar(ah2,abs(k),y.^2,2.*y.*yerr,'ko'); ax=axis(ah2);
-      hold(ah2,'on');
-      ypl1=(q(1)-dq(1))+(q(2)-dq(2)).*k+(q(3)-dq(3)).*k.^2; 
-      ypl2=(q(1)+dq(1))+(q(2)+dq(2)).*k+(q(3)+dq(3)).*k.^2;
-      ypl=[ypl1(:) ypl2(:)-ypl1(:)];
-      apl=area(ah2,abs(k),ypl); apl(1).FaceColor='none'; apl(1).LineStyle='none'; apl(2).FaceColor=[0.3010 0.7450 0.9330]; apl(2).LineStyle='none'; apl(2).FaceAlpha=0.5;
-      if length(obj.ModelQuadScan)==length(k)
-        plot(ah2,abs(k),obj.ModelQuadScan(2,:).^2,'r','LineWidth',2);
-        if obj.ShowPlotLegend; legend(ah2,["Data" "" "Polynomial Fit" "Model Fit"]); else; legend(ah2,'off'); end
-      else
-        if obj.ShowPlotLegend; legend(ah2,["Data" "" "Polynomial Fit"]); else; legend(ah2,'off'); end
+      if contains(obj.DimSelect,"Y")
+        [q,dq]=noplot_polyfit(k,y.^2,2.*y.*yerr,2);
+        errorbar(ah2,kabs,y.^2,2.*y.*yerr,'ko'); ax=axis(ah2);
+        hold(ah2,'on');
+        k_fit=linspace(k(1),k(end),1000);
+        ypl1=(q(1)-dq(1))+(q(2)-dq(2)).*k_fit+(q(3)-dq(3)).*k_fit.^2; 
+        ypl2=(q(1)+dq(1))+(q(2)+dq(2)).*k_fit+(q(3)+dq(3)).*k_fit.^2;
+        ypl=[ypl1(:) ypl2(:)-ypl1(:)];
+        apl=area(ah2,abs(k_fit),ypl); apl(1).FaceColor='none'; apl(1).LineStyle='none'; apl(2).FaceColor=[0.3010 0.7450 0.9330]; apl(2).LineStyle='none'; apl(2).FaceAlpha=0.5;
+        if length(obj.ModelQuadScan)==length(k)
+          plot(ah2,abs(k_fit),interp1(k,obj.ModelQuadScan(2,:).^2,k_fit,'spline'),'r','LineWidth',2);
+          if obj.ShowPlotLegend; legend(ah2,["Data" "" "Polynomial Fit" "Model Fit"]); else; legend(ah2,'off'); end
+        else
+          if obj.ShowPlotLegend; legend(ah2,["Data" "" "Polynomial Fit"]); else; legend(ah2,'off'); end
+        end
+        xlabel(ah2,sprintf('|k| (%s)',obj.QuadScanData.QuadName)); ylabel(ah2,'\sigma_y^2 [\mum^2]');
+        axis(ah2,ax);
+        grid(ah2,'on');
+        hold(ah2,'off');
       end
-      xlabel(ah2,sprintf('|k| (%s)',obj.QuadScanData.QuadName)); ylabel(ah2,'\sigma_y^2 [\mum^2]');
-      axis(ah2,ax);
-      grid(ah2,'on');
-      hold(ah2,'off');
       if ~isempty(obj.guihan) % Fill emit / bmag values for Model and Analytic fit results
         TA=obj.TwissFitAnalytic; TA(isnan(TA))=0;
         obj.guihan.EditField_2.Value = TA(7) ;
@@ -576,11 +650,11 @@ classdef F2_MatchingApp < handle & F2_common
       i2=obj.ProfModelInd;
       z=arrayfun(@(x) BEAMLINE{x}.Coordi(3),i1:i2);
       txt=string.empty;
-      if ~isempty(obj.TwissPreMatch) && contains(obj.DimSelect,"X")
+      if ~isempty(obj.TwissPreMatch)
         plot(ah,z,obj.TwissPreMatch.betax(1:end-1),'Color',[0 0.4470 0.7410],'LineStyle','-.'); hold(ah,'on');
         txt(end+1)="\beta_x (current)";
       end
-      if ~isempty(obj.TwissMatch) && contains(obj.DimSelect,"X")
+      if ~isempty(obj.TwissMatch)
         plot(ah,z,obj.TwissMatch.betax(1:end-1),'Color',[0 0.4470 0.7410],'LineStyle','--'); hold(ah,'on');
         txt(end+1)="\beta_x (matched)";
       end
@@ -588,11 +662,11 @@ classdef F2_MatchingApp < handle & F2_common
       grid(ah,'on');
       txt(end+1)="\beta_x (design)";
       xlabel(ah,'Z [m]'); ylabel(ah,'\beta [m]');
-      if ~isempty(obj.TwissPreMatch) && contains(obj.DimSelect,"Y")
+      if ~isempty(obj.TwissPreMatch)
         plot(ah,z,obj.TwissPreMatch.betay(1:end-1),'Color',[0.8500 0.3250 0.0980],'LineStyle','-.'); hold(ah,'on');
         txt(end+1)="\beta_y (current)";
       end
-      if ~isempty(obj.TwissMatch) && contains(obj.DimSelect,"Y")
+      if ~isempty(obj.TwissMatch)
         plot(ah,z,obj.TwissMatch.betay(1:end-1),'Color',[0.8500 0.3250 0.0980],'LineStyle','--'); hold(ah,'on');
         txt(end+1)="\beta_y (matched)";
       end
@@ -708,7 +782,7 @@ classdef F2_MatchingApp < handle & F2_common
       if string(name) == "<Select From Below>" % default startup condition for GUI
         return
       end
-      obj.LM.ModelClasses="PROF";
+      obj.LM.ModelClasses=["PROF" "WIRE"];
       pind = obj.LM.ModelUniqueID(obj.LM.ControlNames==string(name)) ;
       if isempty(pind)
         error('Profile monitor not found in model')
@@ -721,7 +795,7 @@ classdef F2_MatchingApp < handle & F2_common
       if obj.ModelSource ~= "Design"
         obj.LiveModel.UpdateModel ;
       end
-      obj.NumMatchQuads=obj.NumMatchQuads; % triggers filling matching quad data
+      obj.NumMatchQuads=obj.NumMatchQuads; % triggers filling matching quad data and propogation of measured Twiss parameters
     end
     function set.NumMatchQuads(obj,num)
       obj.NumMatchQuads=num;
@@ -733,6 +807,12 @@ classdef F2_MatchingApp < handle & F2_common
       obj.MatchQuadModelInd = obj.LM.ModelUniqueID(idq) ;
       obj.MatchQuadID = idq ;
       obj.UseMatchQuad = true(1,length(obj.MatchQuadNames)) ;
+      % Update initial Twiss match
+      try
+        obj.DoMatch("init");
+      catch
+        fprintf(2,"Failed to match initial Twiss Parameters!\n");
+      end
     end
   end
   methods(Static,Hidden)

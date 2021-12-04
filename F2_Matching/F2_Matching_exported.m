@@ -61,6 +61,7 @@ classdef F2_Matching_exported < matlab.apps.AppBase
     UndoButton                      matlab.ui.control.Button
     ModelDatePanel                  matlab.ui.container.Panel
     ModelDateEditField              matlab.ui.control.EditField
+    ReLoadEMITPVsButton             matlab.ui.control.Button
   end
 
   
@@ -353,6 +354,19 @@ classdef F2_Matching_exported < matlab.apps.AppBase
       app.DropDownValueChanged ; % populates tables
       app.message(["Re-fitting data...";"Done."]);
     end
+
+    % Button pushed function: ReLoadEMITPVsButton
+    function ReLoadEMITPVsButtonPushed(app, event)
+      try
+        app.message("Processing new profile monitor data...");
+        drawnow
+        app.aobj.ProfName = app.DropDown.Value ;
+      catch ME
+        app.message(["Error processing profile monitor data", string(ME.message)],true) ;
+        return
+      end
+      app.DropDownValueChanged ; % Populates tables
+    end
   end
 
   % Component initialization
@@ -614,7 +628,7 @@ classdef F2_Matching_exported < matlab.apps.AppBase
 
       % Create DropDown
       app.DropDown = uidropdown(app.ProfileMeasurementDevicePanel);
-      app.DropDown.Items = {'<Select From Below>', 'PROF:IN10:571', 'PROF:LI11:335', 'PROF:LI11:375'};
+      app.DropDown.Items = {'<Select From Below>', 'WIRE:IN10:561', 'PROF:IN10:571', 'PROF:LI11:335', 'PROF:LI11:375', 'WIRE:LI11:444'};
       app.DropDown.ValueChangedFcn = createCallbackFcn(app, @DropDownValueChanged, true);
       app.DropDown.Interruptible = 'off';
       app.DropDown.Position = [13 3 214 22];
@@ -660,7 +674,7 @@ classdef F2_Matching_exported < matlab.apps.AppBase
       app.DoMatchingButton = uibutton(app.FACETIIOpticsMatchingUIFigure, 'push');
       app.DoMatchingButton.ButtonPushedFcn = createCallbackFcn(app, @DoMatchingButtonPushed, true);
       app.DoMatchingButton.Interruptible = 'off';
-      app.DoMatchingButton.Position = [259 88 175 27];
+      app.DoMatchingButton.Position = [443 88 175 27];
       app.DoMatchingButton.Text = 'Do Matching';
 
       % Create SetMatchingQuadsButton
@@ -668,7 +682,7 @@ classdef F2_Matching_exported < matlab.apps.AppBase
       app.SetMatchingQuadsButton.ButtonPushedFcn = createCallbackFcn(app, @SetMatchingQuadsButtonPushed, true);
       app.SetMatchingQuadsButton.Interruptible = 'off';
       app.SetMatchingQuadsButton.Enable = 'off';
-      app.SetMatchingQuadsButton.Position = [447 88 130 27];
+      app.SetMatchingQuadsButton.Position = [631 88 130 27];
       app.SetMatchingQuadsButton.Text = 'Set Matching Quads';
 
       % Create GetQuadScanDataandfitTwissPanel
@@ -702,7 +716,7 @@ classdef F2_Matching_exported < matlab.apps.AppBase
       app.UndoButton.ButtonPushedFcn = createCallbackFcn(app, @UndoButtonPushed, true);
       app.UndoButton.Interruptible = 'off';
       app.UndoButton.Enable = 'off';
-      app.UndoButton.Position = [589 88 87 27];
+      app.UndoButton.Position = [773 88 87 27];
       app.UndoButton.Text = 'Undo';
 
       % Create ModelDatePanel
@@ -715,6 +729,13 @@ classdef F2_Matching_exported < matlab.apps.AppBase
       app.ModelDateEditField.Editable = 'off';
       app.ModelDateEditField.Position = [7 3 222 22];
       app.ModelDateEditField.Value = 'LIVE';
+
+      % Create ReLoadEMITPVsButton
+      app.ReLoadEMITPVsButton = uibutton(app.FACETIIOpticsMatchingUIFigure, 'push');
+      app.ReLoadEMITPVsButton.ButtonPushedFcn = createCallbackFcn(app, @ReLoadEMITPVsButtonPushed, true);
+      app.ReLoadEMITPVsButton.Interruptible = 'off';
+      app.ReLoadEMITPVsButton.Position = [257 88 175 27];
+      app.ReLoadEMITPVsButton.Text = 'Re-Load EMIT PVs';
 
       % Show the figure after all components are created
       app.FACETIIOpticsMatchingUIFigure.Visible = 'on';
