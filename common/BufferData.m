@@ -7,7 +7,7 @@ classdef BufferData < handle
   properties
     Name string = "BufferedData"
     StripPlot logical = false % set true to continuously update plot
-    MaxDataRate {mustBeGreaterThan(MaxDataRate,0.001)} = 1 % Max expected data rate [Hz]
+    MaxDataRate {mustBeGreaterThan(MaxDataRate,0.001)} = 100 % Max expected data rate [Hz]
     DoFilter logical = false
     FilterType string {mustBeMember(FilterType,["notch" "pass"])} = "pass" % filter can be pass or notch type
     axhan % axis handle for plotting (use separate figure window if not set)
@@ -104,7 +104,7 @@ classdef BufferData < handle
       end
       obj.Enable = logical(val) ;
       if obj.Enable
-        run(obj.DataPV,false,1/obj.MaxDataRate,obj,'PVUpdated');
+        run(obj.DataPV,true,1/obj.MaxDataRate,obj,'PVUpdated');
       else
         stop(obj.DataPV);
       end

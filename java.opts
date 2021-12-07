@@ -3,3 +3,14 @@
 -DOOC_COSEVENTCONFIG_PATHNAME=/u1/lcls/tools/orbacus/ooc_CosEvent_server.conf
 -DAIDA_CLIENT_TIMEOUT=90
 -Dsun.java2d.pmoffscreen=false
+-DAIDA_CLIENT_TIMEOUT=90
+-DEPICS_PVA_SERVER_PORT=5075
+-DEPICS_PVA_BROADCAST_PORT=5076
+-DEPICS_PVA_AUTO_ADDR_LIST=FALSE
+-DEPICS_PVA_ADDR_LIST=mcc.slac.stanford.edu 172.27.3.255 172.27.131.255 172.27.43.255 172.21.40.63 mcc-dmz mccas0.slac.stanford.edu
+-Dcom.cosylab.epics.caj.CAJContext.addr_list=172.27.3.255:5068 mcc-dmz 172.21.40.63:5064 172.27.72.24:5070 172.27.131.255:5068 172.27.43.255:5068
+-Dcom.cosylab.epics.caj.CAJContext.auto_addr_list=false
+-Dcom.cosylab.epics.caj.CAJContext.max_array_bytes=80000000
+-Dcom.cosylab.epics.caj.CAJContext.repeater_port=5069
+-Dcom.cosylab.epics.caj.CAJContext.server_port=5068
+

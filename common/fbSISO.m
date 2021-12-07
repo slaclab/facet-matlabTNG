@@ -13,13 +13,14 @@ classdef fbSISO < handle
     Kp {mustBeNonnegative} = 1
     Ki {mustBeNonnegative} = 0
     Kd {mustBeNonnegative} = 0
-    LimitRate uint16 = 0 % Limit data acquisition rate if >0 [seconds]
+    LimitEventRate {mustBeNonnegative} = 0 % Limit data reporting rate for DataUpdated and StateChange events if > 0 [seconds]
     ControlLimits(1,2) = [-inf,inf] % Limits for ControlVal
     SetpointLimits(1,2) = [-inf,inf] % Limits to setpoint (saturates on limits)
     QualLimits(1,2) = [-inf,inf] % Limits to place on Setpoint quality control PV
     SetpointDeadband(1,2) = [-eps,eps] % Deadband- only update feeddback when move out of this range of setpoint
     SetpointDES = 0 % desired setpoint value
     ControlVar % control variable (PV object)
+    ControlReadVar % if set, use this PV to read control variavble, whilst setting with ControlVar
     ControlVarType string {mustBeMember(ControlVarType,["single","doublepm"])} = "single" % doublepm = 2 PVs +/- ControlVal
     ControlProto string {mustBeMember(ControlProto,["EPICS","AIDA"])} = "EPICS"
     SetpointVar % setpoint variable to use (PV or BufferData object)
@@ -27,13 +28,14 @@ classdef fbSISO < handle
     ControlStatusVar cell % Control variable status PV (can be list)
     ControlStatusGood cell % OK if ControlStatusVar PV evaluates to this (if set) (can be list)
     Running logical = true % Externally controlled running state
-    InvertControlVal logical = false % Flip sign on control value before writing (negates the FB gain)
+    InvertControlVal logical = false % Flip sign on control value delta before writing (negates the FB gain)
     Debug uint8 = 0 % 1: write new control vals to console not controls
     Jitter = 0 % Apply jitter to feedback if >0
     JitterTimeout = 2  % Disable jitter after JitterTimeout (min)
   end
   properties(SetObservable)
     Enable logical = false
+    LimitRate {mustBeNonnegative} = 0 % Limit data acquisition rate if >0 [seconds]
   end
   properties(Dependent)
     state uint8 % overall feedback state; 0=running 1=stopped 2= error
@@ -56,6 +58,7 @@ classdef fbSISO < handle
     valc
     lastwrite
     JitterOnTime
+    LastEventTime
   end
   
   methods
@@ -82,7 +85,7 @@ classdef fbSISO < handle
       addlistener(obj,'DataUpdated',@(~,~) obj.ProcDataUpdated) ;
       if isa(obj.SetpointVar,'PV')
         obj.SetpointVar.monitor = true ;
-        run(obj.SetpointVar,false,1,obj,'DataUpdated');
+        run(obj.SetpointVar,true,0.01,obj,'DataUpdated');
       else % BufferData object
         obj.SetpointVar.Enable=true;
         addlistener(obj.SetpointVar,'PVUpdated',@(~,~) obj.ProcDataUpdated) ;
@@ -103,6 +106,12 @@ classdef fbSISO < handle
   end
   % set/get and private methods
   methods
+    function set.LimitRate(obj,val)
+      obj.LimitRate=val;
+      if isa(obj.SetpointVar,'BufferData') && val>0
+        obj.SetpointVar.MaxDataRate=1/val;
+      end
+    end
     function set.Enable(obj,val)
       if logical(val)==obj.Enable
         return
@@ -190,9 +199,17 @@ classdef fbSISO < handle
       % Read control variable and check status
       obj.ControlState = 0 ;
       if obj.ControlProto=="EPICS"
-        obj.ControlVal = caget(obj.ControlVar(1)) ;
+        if isempty(obj.ControlReadVar)
+          obj.ControlVal = caget(obj.ControlVar(1)) ;
+        else
+          obj.ControlVal = caget(obj.ControlReadVar(1)) ;
+        end
       else
-        obj.ControlVal = aidaget(obj.ControlVar(1));
+        if isempty(obj.ControlReadVar)
+          obj.ControlVal = aidaget(obj.ControlVar(1));
+        else
+          obj.ControlVal = aidaget(obj.ControlReadVar(1));
+        end
       end
       if isnan(obj.ControlVal)
         obj.ControlState = 3 ;
@@ -308,12 +325,23 @@ classdef fbSISO < handle
 %           end
         end
       end
-      if isempty(obj.laststate) || obj.state ~= obj.laststate
-        notify(obj,"StateChange") ;
-        obj.laststate=obj.state;
+      % Notify listeners (only if LimitEventRate is satisfied)
+      procevent=true;
+      if obj.LimitEventRate>0
+        if ~isempty(obj.LastEventTime) && etime(clock,obj.LastEventTime)<obj.LimitEventRate
+          procevent=false;
+        else
+          obj.LastEventTime=clock;
+        end
       end
-      if ~isa(obj.SetpointVar,'PV')
-        notify(obj,"DataUpdated");
+      if procevent
+        if isempty(obj.laststate) || obj.state ~= obj.laststate
+          notify(obj,"StateChange") ;
+          obj.laststate=obj.state;
+        end
+        if ~isa(obj.SetpointVar,'PV')
+          notify(obj,"DataUpdated");
+        end
       end
     end
     function dc = GetFeedback(obj)

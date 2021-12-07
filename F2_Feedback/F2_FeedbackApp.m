@@ -49,7 +49,7 @@ classdef F2_FeedbackApp < handle & F2_common
     to % Running timer object
   end
   properties(Constant)
-    UseFeedbacks logical = [true false false false]
+    UseFeedbacks logical = [true true true false]
     FeedbacksAvailable string = ["DL1E" "BC14E" "BC11E" "BC11BL"]
     FeedbackEnabledPV string = "SIOC:SYS1:ML00:AO856"
     FeedbackSetpointsPV string = "SIOC:SYS1:ML00:FWF22"
@@ -57,12 +57,13 @@ classdef F2_FeedbackApp < handle & F2_common
     DL1E_OffsetPV string = "SIOC:SYS1:ML00:AO858"
     BC14E_GainPV string = "SIOC:SYS1:ML00:AO897"
     BC14E_OffsetPV string = "SIOC:SYS1:ML00:AO898"
-    BC14E_KlysNo uint8 = [5 6] ;
+    BC14E_KlysNo uint8 = [4 5] ;
     BC11E_GainPV string = "SIOC:SYS1:ML01:AO206"
     BC11E_OffsetPV string = "SIOC:SYS1:ML01:AO207"
     BC11BL_GainPV string = "SIOC:SYS1:ML01:AO220"
     BC11BL_OffsetPV string = "SIOC:SYS1:ML01:AO207"
     FbRunningPV string = "F2:WATCHER:FEEDBACKS_STAT"
+    GuiUpdateRate = 1 % rate to limit GUI updates
   end
   methods
     function obj = F2_FeedbackApp(guihan)
@@ -165,7 +166,7 @@ classdef F2_FeedbackApp < handle & F2_common
       % DL1 energy feedback
       if obj.UseFeedbacks(1)
         DL1_Control=PV(cntx,'name',"Control",'pvname',"KLYS:LI10:41:SFB_ADES",'mode',"rw"); % max = 37 MW
-        DL1_Setpoint=PV(cntx,'name',"Setpoint",'pvname',"BPMS:IN10:731:X",'monitor',true);
+        DL1_Setpoint=PV(cntx,'name',"Setpoint",'pvname',"BPMS:IN10:731:X1H",'monitor',true);
         B=BufferData('Name',"DL1EnergyBPM",'DoFilter',obj.SetpointDoFilter(1),...
           'FilterType',obj.SetpointFilterTypes(1));
         B.FilterInterval = obj.SetpointFilterCoefficients{1} ;
@@ -180,6 +181,7 @@ classdef F2_FeedbackApp < handle & F2_common
         obj.Feedbacks(1).ControlStatusGood{1} = {'OK'} ;
         obj.Feedbacks(1).ControlStatusVar{2} = PV(cntx,'name',"FB1_ControlStatus",'pvname',"KLYS:LI10:41:SFB_ADIS") ;
         obj.Feedbacks(1).ControlStatusGood{2} = {'ENABLE'} ;
+%         obj.Feedbacks(1).Debug=1;
       end
       
       % BC14 energy feedback
@@ -206,6 +208,7 @@ classdef F2_FeedbackApp < handle & F2_common
           obj.guihan.BC14KLYS1Label.Text = "KLYS:LI14:"+obj.BC14E_KlysNo(1)+"1:PDES" ;
           obj.guihan.BC14KLYS2Label.Text = "KLYS:LI14:"+obj.BC14E_KlysNo(2)+"1:PDES" ;
         end
+%         obj.Feedbacks(2).Debug=1;
       end
       
       % BC11 Energy Feedback
@@ -216,6 +219,7 @@ classdef F2_FeedbackApp < handle & F2_common
           'FilterType',obj.SetpointFilterTypes(2));
         B.DataPV = BC11_Setpoint ;
         obj.Feedbacks(3) = fbSISO(BC11_Control,B) ;
+        obj.Feedbacks(3).ControlReadVar = PV(cntx,'Name',"ControlRead",'pvname',"SIOC:SYS1:ML00:CALC801",'monitor',true) ;
   %       obj.Feedbacks(3).WriteRateMax = 10 ; % limit update rate
         obj.Feedbacks(3).Kp = obj.FeedbackCoefficients{3}(1);
         obj.Feedbacks(3).ControlLimits = obj.FeedbackControlLimits{3} ;
@@ -228,7 +232,8 @@ classdef F2_FeedbackApp < handle & F2_common
         obj.Feedbacks(3).ControlStatusVar{2} = PV(cntx,'name',"FB3_ControlStatus",'pvname',...
           "FCUDKLYS:LI11:2:ONBEAM10 ", 'pvdatatype', "float" ) ;
         obj.Feedbacks(3).ControlStatusGood{2} = {1} ;
-  %       obj.Feedbacks(3).Debug=1;
+%         obj.Feedbacks(3).InvertControlVal = true ; % SSSB DAC AMPL control +ve change in V lowers energy
+%         obj.Feedbacks(3).Debug=1;
       end
 
       % BC11 Bunch Length Feedback
@@ -239,6 +244,7 @@ classdef F2_FeedbackApp < handle & F2_common
           'FilterType',obj.SetpointFilterTypes(4));
         B.DataPV = BC11_Setpoint ;
         obj.Feedbacks(4) = fbSISO(BC11_Control,B) ;
+        obj.Feedbacks(4).ControlReadVar = PV(cntx,'Name',"ControlRead",'pvname',"SIOC:SYS1:ML00:CALC802",'monitor',true) ;
   %       obj.Feedbacks(4).WriteRateMax = 10 ; % limit updates 
         obj.Feedbacks(4).Kp = obj.FeedbackCoefficients{4}(1);
         obj.Feedbacks(4).ControlLimits = obj.FeedbackControlLimits{4} ;
@@ -254,6 +260,11 @@ classdef F2_FeedbackApp < handle & F2_common
   %       obj.Feedbacks(4).Debug=1;
       end
       
+      % Set rate at which Feedback objects notify GUI updaters
+      for ifb=find(obj.UseFeedbacks)
+        obj.Feedbacks(ifb).LimitEventRate = obj.GuiUpdateRate ;
+      end
+      
       % If GUI being used, suppres local writing to control value operations, that is handled by watcher version
       if ~isempty(obj.guihan)
         for ifb=find(obj.UseFeedbacks)
@@ -264,7 +275,7 @@ classdef F2_FeedbackApp < handle & F2_common
       obj.Enabled = caget(obj.pvs.FeedbackEnable) ;
       
       caget(obj.pvlist); notify(obj,"PVUpdated"); % Initialize states
-      run(obj.pvlist,false,1,obj,'PVUpdated');
+      run(obj.pvlist,true,1,obj,'PVUpdated');
       
       % Timer to keep watchdog PV updated & GUI fields
       obj.to=timer('Period',1,'ExecutionMode','fixedRate','TimerFcn',@(~,~) obj.RunningTimer);

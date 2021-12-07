@@ -28,7 +28,6 @@ classdef PV < handle
     putwait logical = false % wait for confirmation of pvput command
     timeout double {mustBePositive} = 3 % timout in s for waiting for a new value asynchrounously
     RunStartDelay = 3 % Wait this long after issuing Run method command to start polling of PVs (e.g. to allow startup scripts to complete)
-    alarm uint8 = 0 % monitor alarm severity if >0 [=1 returns NaN for val if MAJOR alarm, =2 returns NaN for val if MINOR or MAJOR alarm)
     ArchiveDate(1,6) = [2021,7,1,12,1,1] % [yr,mnth,day,hr,min,sec]
   end
   properties(SetObservable)
@@ -37,6 +36,7 @@ classdef PV < handle
     pvdatatype % Set as "string", "float", "int" or "double" to override default PV data type - cell array when more than 1 PV per object
   end
   properties(SetAccess=protected)
+    alarm uint8 = 0 % monitor alarm severity if >0 [=1 returns NaN for val if MAJOR alarm, =2 returns NaN for val if MINOR or MAJOR alarm) [must set in constructor]
     mode string = "r" % Access mode: "r", or "rw"
     polltime single = 1 % Rate at which to update monitored PVs
     utimer % Holder for update timer object
@@ -61,7 +61,7 @@ classdef PV < handle
     nativeclass % Matlab class type determined when opened channel and first read data
     future % asynchronous get handle
     futurealarm % asynchronous alarm get handle
-    future_tic % timestamp when asynchronous get initiated
+    future_tic uint64 % timestamp when asynchronous get initiated
     firstcall logical = true
   end
   properties(Constant)
@@ -79,6 +79,8 @@ classdef PV < handle
       obj.context=cntxt;
       if isa(cntxt,'PVtype') && cntxt==PVtype.EPICS_labca
         obj.type = PVtype.EPICS_labca ;
+      elseif isa(cntxt,'PVtype') && cntxt==PVtype.AIDA
+        obj.type = PVtype.AIDA ;
       end
       obj.guiprefs = GUI_PREFS ; % Use default preferences unless overriden by user
       if nargin>1
@@ -93,15 +95,17 @@ classdef PV < handle
       if ~iscell(type)
         type={type};
       end
-      for itype=1:length(type)
-        if isequal(type{itype},"string")
-          type{itype}=java.lang.String(0).getClass();
-        elseif isequal(type{itype},"float")
-          type{itype}=java.lang.Float(0).getClass();
-        elseif isequal(type{itype},"double")
-          type{itype}=java.lang.Double(0).getClass();
-        elseif isequal(type{itype},"int")
-          type{itype}=java.lang.Integer(0).getClass();
+      if obj.type == PVtype.EPICS
+        for itype=1:length(type)
+          if isequal(type{itype},"string")
+            type{itype}=java.lang.String(0).getClass();
+          elseif isequal(type{itype},"float")
+            type{itype}=java.lang.Float(0).getClass();
+          elseif isequal(type{itype},"double")
+            type{itype}=java.lang.Double(0).getClass();
+          elseif isequal(type{itype},"int")
+            type{itype}=java.lang.Integer(0).getClass();
+          end
         end
       end
       obj.pvdatatype=type;
@@ -241,16 +245,8 @@ classdef PV < handle
         asyn=false;
       end
       
-      % If EPICS type, then must have provided context link
-      if isempty(obj.context)
-        error('No context object provided, caget/caput will not work')
-      end
-      
-      % currently only supporting EPICS, also skip if debug flag set >1
-      if obj.type~=PVtype.EPICS && obj.type~=PVtype.EPICS_labca
-        warning('Unsupported controls type, skipping caget %s',obj.name);
-        return
-      elseif obj.debug>1
+      % skip if debug flag set >1
+      if obj.debug>1
         warning('Debug set>1, skipping caget %s',obj.name);
         return
       end
@@ -263,7 +259,7 @@ classdef PV < handle
       % Initialize future cell array if not performed any asynchronous tasks yet
       if asyn && isempty(obj.future)
         obj.future=cell(1,length(obj.pvname)) ;
-        obj.future_tic=zeros(1,length(obj.pvname));
+        obj.future_tic=zeros(1,length(obj.pvname),'uint64');
         if obj.alarm>0
           obj.futurealarm=cell(1,length(obj.pvname)) ;
         end
@@ -291,9 +287,9 @@ classdef PV < handle
         elseif asyn && ~isempty(obj.future{ipv}) % Get data from previously lanched asyn thread if available
           if obj.future{ipv}.isDone() && ( obj.alarm==0 || obj.futurealarm{ipv}.isDone() ) % fetch data if asyn thread returned
             cavals = obj.future{ipv}.get() ;
-            if obj.gettime % This doesn't work with asyn gets
-%               pvstat = obj.future{ipv}.get(org.epics.ca.data.Timestamped().getClass());
-%               catime = pvstat.Seconds + pvstat.Nanos/1e9 ;
+            if obj.gettime
+              pvstat = obj.channel{ipv}.get(org.epics.ca.data.Timestamped().getClass());
+              catime = pvstat.getSeconds + pvstat.getNanos/1e9 ;
             end
             obj.future{ipv} = [] ;
             if obj.alarm>0
@@ -312,6 +308,10 @@ classdef PV < handle
         else
           if obj.type==PVtype.EPICS
             cavals = obj.channel{ipv}.get();
+            % Pad with zeros if less than nmax
+            if length(cavals)<obj.nmax
+              cavals(length(cavals):obj.nmax)=0;
+            end
             if obj.gettime
               pvstat = obj.channel{ipv}.get(org.epics.ca.data.Timestamped().getClass());
               catime = pvstat.getSeconds + pvstat.getNanos/1e9 ;
@@ -843,6 +843,10 @@ classdef PV < handle
         end
         return
       end
+      % Register AIDA channel
+      if obj.type==PVtype.AIDA
+        return
+      end
       % The rest is specific to the java channel access client
       if ~isempty(obj.pvdatatype) && ~iscell(obj.pvdatatype)
         obj.pvdatatype={obj.pvdatatype};
@@ -907,7 +911,7 @@ classdef PV < handle
   methods(Static)
     function context = Initialize(type,alarmlevel)
       %INITIALIZE One-time initialization steps for channel access client
-      % context = PV.Initialize(PVtype.EPICS [,alarmlevel])
+      % context = PV.Initialize(PVtype [,alarmlevel])
       %  Perform one-time (per Matlab instance) EPICS initialization steps using java ca client
       %  context: object required for future channel creation, pass to PV objects in constructor
       %  for labCA, alarm level determines behaviour on alarm status, set 0-4 (see labCA documentation)
@@ -933,6 +937,8 @@ classdef PV < handle
             lcaSetSeverityWarnLevel(alarmlevel) ;
           end
           lcaSetTimeout(3) ;
+          context = type ;
+        case PVtype.AIDA
           context = type ;
       end
     end

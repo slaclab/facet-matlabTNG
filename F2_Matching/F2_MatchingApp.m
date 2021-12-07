@@ -108,6 +108,17 @@ classdef F2_MatchingApp < handle & F2_common
       % Get Twiss parameters through to initial match point
       I = TwissToInitial(obj.LiveModel.DesignTwiss,i1,obj.LiveModel.Initial);
       I.Momentum = BEAMLINE{i1}.P ;
+      % - First get approx solution by back-propogating using flipped Lattice
+      [~,T2]=GetTwiss(i1,pele,I.x.Twiss,I.y.Twiss);
+      I0=TwissToInitial(T2,pele,I);
+      I0.x.Twiss.beta=betax_fit; I0.x.Twiss.alpha=-alphax_fit;
+      I0.y.Twiss.beta=betay_fit; I0.y.Twiss.alpha=-alphay_fit;
+      BL0=BEAMLINE; DeckTool.FlipLattice;
+      [~,T0]=GetTwiss(1+length(BEAMLINE)-pele,1+length(BEAMLINE)-i1,I0.x.Twiss,I0.y.Twiss);
+      bx0 = T0.betax(end); ax0 = -T0.alphax(end); by0=T0.betay(end); ay0=-T0.alphay(end);
+      BEAMLINE=BL0;
+      % - Fine tune initial Twiss parameters using Matching
+      I.x.Twiss.beta=bx0; I.x.Twiss.alpha=ax0; I.y.Twiss.beta=by0; I.y.Twiss.alpha=ay0;
       M=Match;
       M.beam=MakeBeam6DGauss(I,1e3,3,1);
       M.iInitial=i1;
