@@ -8,8 +8,9 @@ classdef F2_MatchingApp < handle & F2_common
     Optimizer string {mustBeMember(Optimizer,["fminsearch","lsqnonlin"])} = "lsqnonlin"
     DimSelect string {mustBeMember(DimSelect,["X" "Y" "XY"])} = "XY"
     LM
-    ShowPlotLegend logical = true
+    ShowPlotLegend logical = false
     UseMatchQuad logical % Which matching quads to use
+    LoadingScanData logical = false % Sets to true when loading raw emittance scan data (overrides loading in externally calculated Twiss parameters)
   end
   properties(SetAccess=private)
     MatchQuadNames string = ["QUAD:IN10:425" "QUAD:IN10:441" "QUAD:IN10:511" "QUAD:IN10:525"] % Read in when select Prof device and/or when change # matching quads
@@ -107,14 +108,14 @@ classdef F2_MatchingApp < handle & F2_common
       
       % Get Twiss parameters through to initial match point
       I = TwissToInitial(obj.LiveModel.DesignTwiss,i1,obj.LiveModel.Initial);
+      I2 = TwissToInitial(obj.LiveModel.DesignTwiss,pele,obj.LiveModel.Initial);
       I.Momentum = BEAMLINE{i1}.P ;
       % - First get approx solution by back-propogating using flipped Lattice
-      [~,T2]=GetTwiss(i1,pele,I.x.Twiss,I.y.Twiss);
-      I0=TwissToInitial(T2,pele,I);
-      I0.x.Twiss.beta=betax_fit; I0.x.Twiss.alpha=-alphax_fit;
-      I0.y.Twiss.beta=betay_fit; I0.y.Twiss.alpha=-alphay_fit;
+      I2.x.Twiss.beta=betax_fit; I2.x.Twiss.alpha=-alphax_fit;
+      I2.y.Twiss.beta=betay_fit; I2.y.Twiss.alpha=-alphay_fit;
+      I2.Momentum = BEAMLINE{pele}.P ;
       BL0=BEAMLINE; DeckTool.FlipLattice;
-      [~,T0]=GetTwiss(1+length(BEAMLINE)-pele,1+length(BEAMLINE)-i1,I0.x.Twiss,I0.y.Twiss);
+      [~,T0]=GetTwiss(1+length(BEAMLINE)-pele,1+length(BEAMLINE)-i1,I2.x.Twiss,I2.y.Twiss);
       bx0 = T0.betax(end); ax0 = -T0.alphax(end); by0=T0.betay(end); ay0=-T0.alphay(end);
       BEAMLINE=BL0;
       % - Fine tune initial Twiss parameters using Matching
@@ -145,6 +146,7 @@ classdef F2_MatchingApp < handle & F2_common
       obj.InitMatch.y.NEmit = obj.TwissFit(8)*1e-6 ;
       [~,T]=GetTwiss(i1,pele,obj.InitMatch.x.Twiss,obj.InitMatch.y.Twiss);
       obj.TwissPreMatch=T;
+      obj.TwissPreMatch.z = [arrayfun(@(x) BEAMLINE{x}.Coordi(3),i1:pele) BEAMLINE{pele}.Coordf(3)] ;
       % If this is all is required, exit now
       if exist('cmd','var') && cmd=="init"
         return
@@ -170,6 +172,7 @@ classdef F2_MatchingApp < handle & F2_common
       display(M);
       [~,T]=GetTwiss(i1,pele,obj.InitMatch.x.Twiss,obj.InitMatch.y.Twiss);
       obj.TwissMatch=T;
+      obj.TwissMatch.z = [arrayfun(@(x) BEAMLINE{x}.Coordi(3),i1:pele) BEAMLINE{pele}.Coordf(3)] ;
       
       % Check match in range and store in Mags BDES field
       if any(M.varVals>bmax | M.varVals<bmin)
@@ -243,12 +246,12 @@ classdef F2_MatchingApp < handle & F2_common
       %LOADSCANDATA Load corr plot data for quad scan
       
       didload=false;
-      
-      obj.TwissMatch=[];
-      obj.TwissPreMatch=[];
-      obj.InitMatch=[];
+%       
+%       obj.TwissMatch=[];
+%       obj.TwissPreMatch=[];
+%       obj.InitMatch=[];
       obj.goodmatch = false ;
-      obj.QuadScanData = [] ;
+%       obj.QuadScanData = [] ;
       LM_mags=obj.LiveModel.LEM.Mags.LM;
       LM_all=obj.LiveModel.LM;
       
@@ -405,7 +408,7 @@ classdef F2_MatchingApp < handle & F2_common
       end
     end
     function ReadEmitData(obj)
-      if ismember(obj.ProfName,obj.EmitDataProfs)
+      if ismember(obj.ProfName,obj.EmitDataProfs) && ~obj.LoadingScanData
         [betax,pvtime] = lcaGet(sprintf('%s:BETA_X',obj.ProfName));
         betay = lcaGet(sprintf('%s:BETA_Y',obj.ProfName));
         alphax = lcaGet(sprintf('%s:ALPHA_X',obj.ProfName));
@@ -532,6 +535,7 @@ classdef F2_MatchingApp < handle & F2_common
       % -- y
       if contains(obj.DimSelect,"Y")
         d=R(3,4);
+        Lq=sum(arrayfun(@(x) BEAMLINE{x}.L,PS(ips).Element));
         A=qy(3); B=qy(2); C=qy(1);
         sig11 = A / (d^2*Lq^2) ;
         sig12 = (B-2*d*Lq*sig11)/(2*d^2*Lq) ;
@@ -542,7 +546,10 @@ classdef F2_MatchingApp < handle & F2_common
         beta = sig11/emit ;
         % Propogate Twiss back to start of Model quadrupole and then forward to profile monitor location
         S = emit .* [beta -alpha;-alpha (1+alpha^2)/beta] ; S(1,2)=-S(1,2); S(2,1)=-S(2,1);
+        Rd = [1 Lq/2;0 1] ;
         S0 = Rd*S*Rd'; S0(1,2)=-S0(1,2); S0(2,1)=-S0(2,1);
+        PS(ips).Ampl=ps0;
+        [~,R2]=RmatAtoB(qele,pele);
         S_prof = R2(3:4,3:4)*S0*R2(3:4,3:4)';
         T=S_prof./emit ;
         if ~isreal(T)
@@ -563,8 +570,11 @@ classdef F2_MatchingApp < handle & F2_common
         fprintf(2,"Failed to match initial Twiss Parameters!\n");
       end
     end
-    function PlotQuadScanData(obj)
-      if ~isempty(obj.guihan)
+    function PlotQuadScanData(obj,newfig)
+      if ~exist('newfig','var')
+        newfig=false;
+      end
+      if ~isempty(obj.guihan) || newfig
         obj.guihan.UIAxes.reset;
         obj.guihan.UIAxes_2.reset;
         cla(obj.guihan.UIAxes);
@@ -582,7 +592,7 @@ classdef F2_MatchingApp < handle & F2_common
         y = obj.QuadScanData.y.(obj.ProfFitMethod) ; 
         yerr = obj.QuadScanData.yerr.(obj.ProfFitMethod) ; 
       end
-      if isempty(obj.guihan)
+      if isempty(obj.guihan) || newfig
         figure;
         ah1=subplot(2,1,1);
         ah2=subplot(2,1,2);
@@ -644,9 +654,12 @@ classdef F2_MatchingApp < handle & F2_common
         obj.guihan.EditField_7.Value = obj.TwissFitModel(6) ;
       end
     end
-    function PlotTwiss(obj)
+    function PlotTwiss(obj,newfig)
       global BEAMLINE
-      if isempty(obj.guihan)
+      if ~exist('newfig','var')
+        newfig=false;
+      end
+      if isempty(obj.guihan) || newfig
         figure;
         ah=axes;
       else
@@ -662,11 +675,11 @@ classdef F2_MatchingApp < handle & F2_common
       z=arrayfun(@(x) BEAMLINE{x}.Coordi(3),i1:i2);
       txt=string.empty;
       if ~isempty(obj.TwissPreMatch)
-        plot(ah,z,obj.TwissPreMatch.betax(1:end-1),'Color',[0 0.4470 0.7410],'LineStyle','-.'); hold(ah,'on');
+        plot(ah,obj.TwissPreMatch.z(1:end-1),obj.TwissPreMatch.betax(1:end-1),'Color',[0 0.4470 0.7410],'LineStyle','-.'); hold(ah,'on');
         txt(end+1)="\beta_x (current)";
       end
       if ~isempty(obj.TwissMatch)
-        plot(ah,z,obj.TwissMatch.betax(1:end-1),'Color',[0 0.4470 0.7410],'LineStyle','--'); hold(ah,'on');
+        plot(ah,obj.TwissMatch.z(1:end-1),obj.TwissMatch.betax(1:end-1),'Color',[0 0.4470 0.7410],'LineStyle','--'); hold(ah,'on');
         txt(end+1)="\beta_x (matched)";
       end
       plot(ah,z,obj.LiveModel.DesignTwiss.betax(i1:i2),'Color',[0 0.4470 0.7410]); hold(ah,'on');
@@ -674,18 +687,18 @@ classdef F2_MatchingApp < handle & F2_common
       txt(end+1)="\beta_x (design)";
       xlabel(ah,'Z [m]'); ylabel(ah,'\beta [m]');
       if ~isempty(obj.TwissPreMatch)
-        plot(ah,z,obj.TwissPreMatch.betay(1:end-1),'Color',[0.8500 0.3250 0.0980],'LineStyle','-.'); hold(ah,'on');
+        plot(ah,obj.TwissPreMatch.z(1:end-1),obj.TwissPreMatch.betay(1:end-1),'Color',[0.8500 0.3250 0.0980],'LineStyle','-.'); hold(ah,'on');
         txt(end+1)="\beta_y (current)";
       end
       if ~isempty(obj.TwissMatch)
-        plot(ah,z,obj.TwissMatch.betay(1:end-1),'Color',[0.8500 0.3250 0.0980],'LineStyle','--'); hold(ah,'on');
+        plot(ah,obj.TwissMatch.z(1:end-1),obj.TwissMatch.betay(1:end-1),'Color',[0.8500 0.3250 0.0980],'LineStyle','--'); hold(ah,'on');
         txt(end+1)="\beta_y (matched)";
       end
       plot(ah,z,obj.LiveModel.DesignTwiss.betay(i1:i2),'Color',[0.8500 0.3250 0.0980]); hold(ah,'off');
       axis(ah,'tight'); 
       txt(end+1)="\beta_y (design)";
       if obj.ShowPlotLegend; legend(ah,txt) ; else; legend(ah,'off'); end
-      if ~isempty(obj.guihan)
+      if ~isempty(obj.guihan) && ~newfig
         ax=axis(ah);
         axis(obj.guihan.UIAxes2_2,ax);
         AddMagnetPlotZ(i1,i2,obj.guihan.UIAxes2_2,'replace');

@@ -3,13 +3,14 @@ classdef F2_Matching_exported < matlab.apps.AppBase
   % Properties that correspond to app components
   properties (Access = public)
     FACETIIOpticsMatchingUIFigure   matlab.ui.Figure
+    PlotMenu                        matlab.ui.container.Menu
+    ShowlegendMenu                  matlab.ui.container.Menu
+    DetachPlotMenu                  matlab.ui.container.Menu
     SettingsMenu                    matlab.ui.container.Menu
     ModelMenu                       matlab.ui.container.Menu
     UsearchivematchingdatadateMenu  matlab.ui.container.Menu
     UsecurrentlivemodelMenu         matlab.ui.container.Menu
     UsedesignmodelMenu              matlab.ui.container.Menu
-    PlotMenu                        matlab.ui.container.Menu
-    ShowlegendMenu                  matlab.ui.container.Menu
     TabGroup                        matlab.ui.container.TabGroup
     MagnetsTab                      matlab.ui.container.Tab
     UITable                         matlab.ui.control.Table
@@ -146,6 +147,7 @@ classdef F2_Matching_exported < matlab.apps.AppBase
     function GetDatafromCorrPlotorEmitGUIButtonPushed(app, event)
       app.message("Requesting data transfer from Correlation Plot Software...");
       drawnow
+      app.aobj.LoadingScanData=true;
       try
         didload=app.aobj.LoadQuadScanData;
         if ~didload
@@ -155,6 +157,7 @@ classdef F2_Matching_exported < matlab.apps.AppBase
         app.aobj.FitQuadScanData;
       catch ME
         app.message(["No quad scan data transfer performed...";string(ME.message)],true);
+        app.aobj.LoadingScanData=false;
         return
       end
       if ~ismember(app.aobj.ProfName,string(app.DropDown.Items)) % Add profile monitor to list if it isn't there
@@ -162,6 +165,7 @@ classdef F2_Matching_exported < matlab.apps.AppBase
       end
       app.DropDown.Value=app.aobj.ProfName;
       app.DropDownValueChanged ; % populates tables
+      app.aobj.LoadingScanData=false;
       app.message(["Requesting data transfer from Correlation Plot Software...";"Done."]);
     end
 
@@ -367,6 +371,17 @@ classdef F2_Matching_exported < matlab.apps.AppBase
       end
       app.DropDownValueChanged ; % Populates tables
     end
+
+    % Menu selected function: DetachPlotMenu
+    function DetachPlotMenuSelected(app, event)
+      selectedTab = app.TabGroup.SelectedTab;
+      switch selectedTab
+        case app.QuadScanFitTab
+          app.aobj.PlotQuadScanData(true);
+        case app.OpticsPlotTab
+          app.aobj.PlotTwiss(true);
+      end
+    end
   end
 
   % Component initialization
@@ -380,6 +395,20 @@ classdef F2_Matching_exported < matlab.apps.AppBase
       app.FACETIIOpticsMatchingUIFigure.Position = [100 100 1009 597];
       app.FACETIIOpticsMatchingUIFigure.Name = 'FACET-II Optics Matching';
       app.FACETIIOpticsMatchingUIFigure.Resize = 'off';
+
+      % Create PlotMenu
+      app.PlotMenu = uimenu(app.FACETIIOpticsMatchingUIFigure);
+      app.PlotMenu.Text = 'Plot';
+
+      % Create ShowlegendMenu
+      app.ShowlegendMenu = uimenu(app.PlotMenu);
+      app.ShowlegendMenu.MenuSelectedFcn = createCallbackFcn(app, @ShowlegendMenuSelected, true);
+      app.ShowlegendMenu.Text = 'Show legend';
+
+      % Create DetachPlotMenu
+      app.DetachPlotMenu = uimenu(app.PlotMenu);
+      app.DetachPlotMenu.MenuSelectedFcn = createCallbackFcn(app, @DetachPlotMenuSelected, true);
+      app.DetachPlotMenu.Text = 'Detach Plot';
 
       % Create SettingsMenu
       app.SettingsMenu = uimenu(app.FACETIIOpticsMatchingUIFigure);
@@ -404,16 +433,6 @@ classdef F2_Matching_exported < matlab.apps.AppBase
       app.UsedesignmodelMenu = uimenu(app.ModelMenu);
       app.UsedesignmodelMenu.MenuSelectedFcn = createCallbackFcn(app, @UsedesignmodelMenuSelected, true);
       app.UsedesignmodelMenu.Text = 'Use design model';
-
-      % Create PlotMenu
-      app.PlotMenu = uimenu(app.FACETIIOpticsMatchingUIFigure);
-      app.PlotMenu.Text = 'Plot';
-
-      % Create ShowlegendMenu
-      app.ShowlegendMenu = uimenu(app.PlotMenu);
-      app.ShowlegendMenu.MenuSelectedFcn = createCallbackFcn(app, @ShowlegendMenuSelected, true);
-      app.ShowlegendMenu.Checked = 'on';
-      app.ShowlegendMenu.Text = 'Show legend';
 
       % Create TabGroup
       app.TabGroup = uitabgroup(app.FACETIIOpticsMatchingUIFigure);
