@@ -39,6 +39,34 @@ classdef F2_Matching_exported < matlab.apps.AppBase
     OpticsPlotTab                   matlab.ui.container.Tab
     UIAxes2                         matlab.ui.control.UIAxes
     UIAxes2_2                       matlab.ui.control.UIAxes
+    MultiWireEmittanceTab           matlab.ui.container.Tab
+    LinacDropDownLabel              matlab.ui.control.Label
+    LinacDropDown                   matlab.ui.control.DropDown
+    WireSizeDataumPanel             matlab.ui.container.Panel
+    GridLayout2                     matlab.ui.container.GridLayout
+    WireNameLabel                   matlab.ui.control.Label
+    SIGMALabel                      matlab.ui.control.Label
+    SIGMA_ERRLabel                  matlab.ui.control.Label
+    Wire1Label                      matlab.ui.control.Label
+    Wire2Label                      matlab.ui.control.Label
+    Wire3Label                      matlab.ui.control.Label
+    Wire4Label                      matlab.ui.control.Label
+    Wire1_Sigma                     matlab.ui.control.NumericEditField
+    Wire2_Sigma                     matlab.ui.control.NumericEditField
+    Wire3_Sigma                     matlab.ui.control.NumericEditField
+    Wire4_Sigma                     matlab.ui.control.NumericEditField
+    Wire1_SigmaErr                  matlab.ui.control.NumericEditField
+    Wire2_SigmaErr                  matlab.ui.control.NumericEditField
+    Wire3_SigmaErr                  matlab.ui.control.NumericEditField
+    Wire4_SigmaErr                  matlab.ui.control.NumericEditField
+    MeasurementPlaneDropDownLabel   matlab.ui.control.Label
+    MeasurementPlaneDropDown        matlab.ui.control.DropDown
+    FetchDataButton                 matlab.ui.control.Button
+    EmittanceCalculationOutputPanel  matlab.ui.container.Panel
+    TextArea_2                      matlab.ui.control.TextArea
+    FitEmittanceButton              matlab.ui.control.Button
+    ShowPlotsButton                 matlab.ui.control.Button
+    Button                          matlab.ui.control.Button
     MessagesPanel                   matlab.ui.container.Panel
     TextArea                        matlab.ui.control.TextArea
     OptimizerDropDownLabel          matlab.ui.control.Label
@@ -68,6 +96,11 @@ classdef F2_Matching_exported < matlab.apps.AppBase
   
   properties (Access = public)
     aobj % Accompanying application object F2_MatchingApp
+  end
+  
+  properties (Access = private)
+    MultiWireData % Storage for caclulated emittance data from multi-wire measurements
+    EmitText % Description
   end
   
   methods (Access = public)
@@ -118,18 +151,21 @@ classdef F2_Matching_exported < matlab.apps.AppBase
           drawnow
           app.aobj.ProfName = value ;
         catch ME
-           app.message(["Error selecting profile monitor", string(ME.message)],true) ;
-           return
+          app.message(["Error selecting profile monitor", string(ME.message)],true) ;
+          return
         end
       end
       app.message(["Processing new profile monitor data...";"Done."]);
       tab = app.aobj.MagnetTable ;
       app.UITable.Data = tab ; app.UITable.ColumnName=tab.Properties.VariableNames;
       doedit = false(1,length(tab.Properties.VariableNames)); doedit(end)=true;
-      app.UITable.ColumnEditable=doedit; 
+      app.UITable.ColumnEditable=doedit;
       tab = app.aobj.TwissTable ;
       app.UITable2.Data = tab ; app.UITable2.ColumnName=tab.Properties.VariableNames;
-      app.TabGroupSelectionChanged;
+      selectedTab = app.TabGroup.SelectedTab;
+      if selectedTab == app.QuadScanFitTab || selectedTab == app.OpticsPlotTab
+        app.TabGroupSelectionChanged;
+      end
     end
 
     % Selection change function: TabGroup
@@ -140,6 +176,8 @@ classdef F2_Matching_exported < matlab.apps.AppBase
           app.aobj.PlotQuadScanData;
         case app.OpticsPlotTab
           app.aobj.PlotTwiss;
+        case app.MultiWireEmittanceTab
+          app.LinacDropDownValueChanged;
       end
     end
 
@@ -382,6 +420,95 @@ classdef F2_Matching_exported < matlab.apps.AppBase
           app.aobj.PlotTwiss(true);
       end
     end
+
+    % Value changed function: LinacDropDown
+    function LinacDropDownValueChanged(app, event)
+      app.TextArea_2.Value="";
+      value = app.LinacDropDown.Value;
+      switch string(value)
+        case "L2"
+          app.DropDown.Value="WIRE:LI11:444";
+          app.Wire1Label.Text = "WS11444" ;
+          app.Wire2Label.Text = "WS11614" ;
+          app.Wire3Label.Text = "WS11744" ;
+          app.Wire4Label.Text = "WS12214" ;
+        case "L3"
+          app.DropDown.Value="WIRE:LI18:944";
+          app.Wire1Label.Text = "WS18944" ;
+          app.Wire2Label.Text = "WS19144" ;
+          app.Wire3Label.Text = "WS19244" ;
+          app.Wire4Label.Text = "WS19344" ;
+      end
+      drawnow
+      app.DropDownValueChanged;
+      app.FetchDataButtonPushed;
+    end
+
+    % Button pushed function: FetchDataButton
+    function FetchDataButtonPushed(app, event)
+      
+      switch string(app.LinacDropDown.Value)
+        case "L2"
+          switch string(app.MeasurementPlaneDropDown.Value)
+            case "Horizontal"
+              data = [lcaGet('WIRE:LI11:444:XRMS') lcaGet('WIRE:LI11:614:XRMS') lcaGet('WIRE:LI11:744:XRMS') lcaGet('WIRE:LI12:214:XRMS')];
+            otherwise
+              data = [lcaGet('WIRE:LI11:444:YRMS') lcaGet('WIRE:LI11:614:YRMS') lcaGet('WIRE:LI11:744:YRMS') lcaGet('WIRE:LI12:214:YRMS')];
+          end
+        case "L3"
+          switch string(app.MeasurementPlaneDropDown.Value)
+            case "Horizontal"
+              data = [lcaGet('WIRE:LI18:944:XRMS') lcaGet('WIRE:LI19:144:XRMS') lcaGet('WIRE:LI19:244:XRMS') lcaGet('WIRE:LI19:344:XRMS')];
+            otherwise
+              data = [lcaGet('WIRE:LI18:944:YRMS') lcaGet('WIRE:LI19:144:YRMS') lcaGet('WIRE:LI19:244:YRMS') lcaGet('WIRE:LI19:344:YRMS')];
+          end
+      end
+      app.Wire1_Sigma.Value=data(1); app.Wire2_Sigma.Value=data(2); app.Wire3_Sigma.Value=data(3); app.Wire4_Sigma.Value=data(4);
+      app.Wire1_SigmaErr.Value=0; app.Wire2_SigmaErr.Value=0; app.Wire3_SigmaErr.Value=0; app.Wire4_SigmaErr.Value=0;
+    end
+
+    % Button pushed function: FitEmittanceButton
+    function FitEmittanceButtonPushed(app, event)
+      app.MultiWireData=[];
+      if string(app.MeasurementPlaneDropDown.Value)=="Horizontal"
+        dim="X";
+      else
+        dim="Y";
+      end
+      data=[app.Wire1_Sigma.Value app.Wire2_Sigma.Value app.Wire3_Sigma.Value app.Wire4_Sigma.Value];
+      data_err=[app.Wire1_SigmaErr.Value app.Wire2_SigmaErr.Value app.Wire3_SigmaErr.Value app.Wire4_SigmaErr.Value];
+      section=string(app.LinacDropDown.Value);
+      try
+        [emitdat,txt] = app.aobj.emitMW(dim,data.*1e-6,data_err.*1e-6,section);
+        app.MultiWireData = emitdat ;
+      catch ME
+        app.TextArea_2.Value = {'Emittance Calculation Error:' ME.message} ;
+        app.TextArea_2.FontColor = 'r' ;
+        return
+      end
+      app.TextArea_2.Value = txt ;
+      app.TextArea_2.FontColor = 'k' ;
+      app.EmitText = txt ;
+      app.DropDownValueChanged; % Populates emittance table
+    end
+
+    % Button pushed function: ShowPlotsButton
+    function ShowPlotsButtonPushed(app, event)
+      if ~isempty(app.MultiWireData)
+        app.aobj.emitMW_plot(app.MultiWireData) ;
+      end
+    end
+
+    % Value changed function: MeasurementPlaneDropDown
+    function MeasurementPlaneDropDownValueChanged(app, event)
+      app.FetchDataButtonPushed;
+      app.TextArea_2.Value="";
+    end
+
+    % Button pushed function: Button
+    function ButtonPushed(app, event)
+      app.aobj.emitMW_plot(app.MultiWireData,char(join(string(app.EmitText),""))) ;
+    end
   end
 
   % Component initialization
@@ -603,6 +730,177 @@ classdef F2_Matching_exported < matlab.apps.AppBase
       ylabel(app.UIAxes2_2, 'Y')
       app.UIAxes2_2.Position = [25 334 696 107];
 
+      % Create MultiWireEmittanceTab
+      app.MultiWireEmittanceTab = uitab(app.TabGroup);
+      app.MultiWireEmittanceTab.Title = 'Multi-Wire Emittance';
+
+      % Create LinacDropDownLabel
+      app.LinacDropDownLabel = uilabel(app.MultiWireEmittanceTab);
+      app.LinacDropDownLabel.HorizontalAlignment = 'right';
+      app.LinacDropDownLabel.Position = [293 412 38 22];
+      app.LinacDropDownLabel.Text = 'Linac:';
+
+      % Create LinacDropDown
+      app.LinacDropDown = uidropdown(app.MultiWireEmittanceTab);
+      app.LinacDropDown.Items = {'L2', 'L3'};
+      app.LinacDropDown.ValueChangedFcn = createCallbackFcn(app, @LinacDropDownValueChanged, true);
+      app.LinacDropDown.Position = [346 412 51 22];
+      app.LinacDropDown.Value = 'L2';
+
+      % Create WireSizeDataumPanel
+      app.WireSizeDataumPanel = uipanel(app.MultiWireEmittanceTab);
+      app.WireSizeDataumPanel.Title = 'Wire Size Data [um] ';
+      app.WireSizeDataumPanel.Position = [28 268 701 133];
+
+      % Create GridLayout2
+      app.GridLayout2 = uigridlayout(app.WireSizeDataumPanel);
+      app.GridLayout2.ColumnWidth = {'1x', '1x', '1x', '1x', '1x'};
+      app.GridLayout2.RowHeight = {'1x', '1x', '1x'};
+
+      % Create WireNameLabel
+      app.WireNameLabel = uilabel(app.GridLayout2);
+      app.WireNameLabel.HorizontalAlignment = 'right';
+      app.WireNameLabel.Layout.Row = 1;
+      app.WireNameLabel.Layout.Column = 1;
+      app.WireNameLabel.Text = 'Wire Name:';
+
+      % Create SIGMALabel
+      app.SIGMALabel = uilabel(app.GridLayout2);
+      app.SIGMALabel.HorizontalAlignment = 'right';
+      app.SIGMALabel.Layout.Row = 2;
+      app.SIGMALabel.Layout.Column = 1;
+      app.SIGMALabel.Text = 'SIGMA:';
+
+      % Create SIGMA_ERRLabel
+      app.SIGMA_ERRLabel = uilabel(app.GridLayout2);
+      app.SIGMA_ERRLabel.HorizontalAlignment = 'right';
+      app.SIGMA_ERRLabel.Layout.Row = 3;
+      app.SIGMA_ERRLabel.Layout.Column = 1;
+      app.SIGMA_ERRLabel.Text = 'SIGMA_ERR:';
+
+      % Create Wire1Label
+      app.Wire1Label = uilabel(app.GridLayout2);
+      app.Wire1Label.HorizontalAlignment = 'center';
+      app.Wire1Label.Layout.Row = 1;
+      app.Wire1Label.Layout.Column = 2;
+      app.Wire1Label.Text = 'Wire 1';
+
+      % Create Wire2Label
+      app.Wire2Label = uilabel(app.GridLayout2);
+      app.Wire2Label.HorizontalAlignment = 'center';
+      app.Wire2Label.Layout.Row = 1;
+      app.Wire2Label.Layout.Column = 3;
+      app.Wire2Label.Text = 'Wire 2';
+
+      % Create Wire3Label
+      app.Wire3Label = uilabel(app.GridLayout2);
+      app.Wire3Label.HorizontalAlignment = 'center';
+      app.Wire3Label.Layout.Row = 1;
+      app.Wire3Label.Layout.Column = 4;
+      app.Wire3Label.Text = 'Wire 3';
+
+      % Create Wire4Label
+      app.Wire4Label = uilabel(app.GridLayout2);
+      app.Wire4Label.HorizontalAlignment = 'center';
+      app.Wire4Label.Layout.Row = 1;
+      app.Wire4Label.Layout.Column = 5;
+      app.Wire4Label.Text = 'Wire 4';
+
+      % Create Wire1_Sigma
+      app.Wire1_Sigma = uieditfield(app.GridLayout2, 'numeric');
+      app.Wire1_Sigma.HorizontalAlignment = 'center';
+      app.Wire1_Sigma.Layout.Row = 2;
+      app.Wire1_Sigma.Layout.Column = 2;
+
+      % Create Wire2_Sigma
+      app.Wire2_Sigma = uieditfield(app.GridLayout2, 'numeric');
+      app.Wire2_Sigma.HorizontalAlignment = 'center';
+      app.Wire2_Sigma.Layout.Row = 2;
+      app.Wire2_Sigma.Layout.Column = 3;
+
+      % Create Wire3_Sigma
+      app.Wire3_Sigma = uieditfield(app.GridLayout2, 'numeric');
+      app.Wire3_Sigma.HorizontalAlignment = 'center';
+      app.Wire3_Sigma.Layout.Row = 2;
+      app.Wire3_Sigma.Layout.Column = 4;
+
+      % Create Wire4_Sigma
+      app.Wire4_Sigma = uieditfield(app.GridLayout2, 'numeric');
+      app.Wire4_Sigma.HorizontalAlignment = 'center';
+      app.Wire4_Sigma.Layout.Row = 2;
+      app.Wire4_Sigma.Layout.Column = 5;
+
+      % Create Wire1_SigmaErr
+      app.Wire1_SigmaErr = uieditfield(app.GridLayout2, 'numeric');
+      app.Wire1_SigmaErr.HorizontalAlignment = 'center';
+      app.Wire1_SigmaErr.Layout.Row = 3;
+      app.Wire1_SigmaErr.Layout.Column = 2;
+
+      % Create Wire2_SigmaErr
+      app.Wire2_SigmaErr = uieditfield(app.GridLayout2, 'numeric');
+      app.Wire2_SigmaErr.HorizontalAlignment = 'center';
+      app.Wire2_SigmaErr.Layout.Row = 3;
+      app.Wire2_SigmaErr.Layout.Column = 3;
+
+      % Create Wire3_SigmaErr
+      app.Wire3_SigmaErr = uieditfield(app.GridLayout2, 'numeric');
+      app.Wire3_SigmaErr.HorizontalAlignment = 'center';
+      app.Wire3_SigmaErr.Layout.Row = 3;
+      app.Wire3_SigmaErr.Layout.Column = 4;
+
+      % Create Wire4_SigmaErr
+      app.Wire4_SigmaErr = uieditfield(app.GridLayout2, 'numeric');
+      app.Wire4_SigmaErr.HorizontalAlignment = 'center';
+      app.Wire4_SigmaErr.Layout.Row = 3;
+      app.Wire4_SigmaErr.Layout.Column = 5;
+
+      % Create MeasurementPlaneDropDownLabel
+      app.MeasurementPlaneDropDownLabel = uilabel(app.MultiWireEmittanceTab);
+      app.MeasurementPlaneDropDownLabel.HorizontalAlignment = 'right';
+      app.MeasurementPlaneDropDownLabel.Position = [30 412 118 22];
+      app.MeasurementPlaneDropDownLabel.Text = 'Measurement Plane:';
+
+      % Create MeasurementPlaneDropDown
+      app.MeasurementPlaneDropDown = uidropdown(app.MultiWireEmittanceTab);
+      app.MeasurementPlaneDropDown.Items = {'Horizontal', 'Vertical'};
+      app.MeasurementPlaneDropDown.ValueChangedFcn = createCallbackFcn(app, @MeasurementPlaneDropDownValueChanged, true);
+      app.MeasurementPlaneDropDown.Position = [163 412 100 22];
+      app.MeasurementPlaneDropDown.Value = 'Horizontal';
+
+      % Create FetchDataButton
+      app.FetchDataButton = uibutton(app.MultiWireEmittanceTab, 'push');
+      app.FetchDataButton.ButtonPushedFcn = createCallbackFcn(app, @FetchDataButtonPushed, true);
+      app.FetchDataButton.Position = [435 410 108 25];
+      app.FetchDataButton.Text = 'Fetch Data';
+
+      % Create EmittanceCalculationOutputPanel
+      app.EmittanceCalculationOutputPanel = uipanel(app.MultiWireEmittanceTab);
+      app.EmittanceCalculationOutputPanel.Title = 'Emittance Calculation Output';
+      app.EmittanceCalculationOutputPanel.Position = [29 10 545 249];
+
+      % Create TextArea_2
+      app.TextArea_2 = uitextarea(app.EmittanceCalculationOutputPanel);
+      app.TextArea_2.Position = [6 8 533 215];
+
+      % Create FitEmittanceButton
+      app.FitEmittanceButton = uibutton(app.MultiWireEmittanceTab, 'push');
+      app.FitEmittanceButton.ButtonPushedFcn = createCallbackFcn(app, @FitEmittanceButtonPushed, true);
+      app.FitEmittanceButton.Position = [610 145 108 31];
+      app.FitEmittanceButton.Text = 'Fit Emittance';
+
+      % Create ShowPlotsButton
+      app.ShowPlotsButton = uibutton(app.MultiWireEmittanceTab, 'push');
+      app.ShowPlotsButton.ButtonPushedFcn = createCallbackFcn(app, @ShowPlotsButtonPushed, true);
+      app.ShowPlotsButton.Position = [610 103 108 31];
+      app.ShowPlotsButton.Text = 'Show Plots';
+
+      % Create Button
+      app.Button = uibutton(app.MultiWireEmittanceTab, 'push');
+      app.Button.ButtonPushedFcn = createCallbackFcn(app, @ButtonPushed, true);
+      app.Button.Icon = 'logbook.gif';
+      app.Button.Position = [630 26 68 69];
+      app.Button.Text = '';
+
       % Create MessagesPanel
       app.MessagesPanel = uipanel(app.FACETIIOpticsMatchingUIFigure);
       app.MessagesPanel.Title = 'Messages';
@@ -647,7 +945,7 @@ classdef F2_Matching_exported < matlab.apps.AppBase
 
       % Create DropDown
       app.DropDown = uidropdown(app.ProfileMeasurementDevicePanel);
-      app.DropDown.Items = {'<Select From Below>', 'WIRE:IN10:561', 'PROF:IN10:571', 'PROF:LI11:335', 'PROF:LI11:375', 'WIRE:LI11:444'};
+      app.DropDown.Items = {'<Select From Below>', 'WIRE:IN10:561', 'PROF:IN10:571', 'PROF:LI11:335', 'PROF:LI11:375', 'WIRE:LI11:444', 'WIRE:LI18:944'};
       app.DropDown.ValueChangedFcn = createCallbackFcn(app, @DropDownValueChanged, true);
       app.DropDown.Interruptible = 'off';
       app.DropDown.Position = [13 3 214 22];

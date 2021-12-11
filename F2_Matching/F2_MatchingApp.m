@@ -47,7 +47,7 @@ classdef F2_MatchingApp < handle & F2_common
     TwissFit(1,8)
   end
   properties(Constant)
-    EmitDataProfs = ["PROF:IN10:571" "PROF:LI11:375" "WIRE:IN10:561" "WIRE:LI11:444"] % profile devices for which there are emittance PVs
+    EmitDataProfs = ["PROF:IN10:571" "PROF:LI11:375" "WIRE:IN10:561" "WIRE:LI11:444" "WIRE:LI19:144"] % profile devices for which there are emittance PVs
     InitMatchProf = ["WIRE:IN10:561","PROF:IN10:571"] % Profile devices to associate with initial match conditions
   end
  
@@ -741,6 +741,181 @@ classdef F2_MatchingApp < handle & F2_common
       tab=table(obj.MatchQuadNames(:),string(num2str(Z(:),6)),E(:),bdes(:),bact(:),bmatch(:),b_design(:),usequad(:));
       tab.Properties.VariableNames=["Name";"Z";"E (GeV)";"BDES";"BACT";"BMATCH";"B_DESIGN";"USE"];
     end
+    function [emitData,txt_results] = emitMW(obj,dim,data,data_err,section)
+      %EMITMW Multi-Wire emittance calculation
+      %emitData = emitMW(dim,data,section)
+      %
+      % Compute beam sigma matrix, covariance matrix, and chisquare from measured
+      % beam sizes and their errors at 3 or more wires
+      %
+      % INPUTs:
+      %
+      %   dim      = "X" or "Y"
+      %   data     = 1x4 vector of measured wire scan rms sizes [m]
+      %   data_err = 1x4 vector of measured wire scan rms size errors [m]
+      %   section  = "L2" or "L3"
+      %
+      % OUTPUTs:
+      %
+      %   emitData    = return data structure
+      %   txt_results = text of results
+      
+      global BEAMLINE
+      
+      if isempty(data_err)
+        data_err=zeros(1,4);
+      end
+      data_err(data_err==0)=1e-12;
+      
+      % Get wire names
+      switch section
+        case "L2"
+          wname={'WS11444' 'WS11614' 'WS11744' 'WS12214'};
+        case "L3"
+          wname={'WS18944' 'WS19144' 'WS19244' 'WS19344'};
+        otherwise
+          error('Incorrect section selection');
+      end
+      
+      % get pointers
+      idw=zeros(1,4);
+      for n=1:4
+        idw(n)=findcells(BEAMLINE,'Name',wname{n});
+      end
+      
+      % get the model
+      R=cell(1,4);
+      Rx=zeros(4,2);Ry=zeros(4,2);
+      for n=1:4
+        [stat,Rab]=RmatAtoB(idw(1),idw(n));
+        if (stat{1}~=1),error(stat{2}),end
+        R{n}=Rab(1:4,1:4);
+        Rx(n,:)=[Rab(1,1),Rab(1,2)];
+        Ry(n,:)=[Rab(3,3),Rab(3,4)];
+      end
+      
+      % get design Twiss at first wire
+      energy=BEAMLINE{idw(1)}.P;
+      egamma = energy/0.51099906e-3;
+      if dim=="X"
+        bx0 = obj.LiveModel.DesignTwiss.betax(idw(1)) ;
+        ax0 = obj.LiveModel.DesignTwiss.alphax(idw(1)) ;
+      else
+        bx0 = obj.LiveModel.DesignTwiss.betay(idw(1));
+        ax0 = obj.LiveModel.DesignTwiss.alphay(idw(1));
+      end
+      
+      % load analysis variables
+      x=data(:).^2 ; % m^2
+      dx=2.*x.*data_err(:) ;
+      
+      % compute least squares solution
+      M=zeros(4,3);
+      for n=1:4
+        if dim=="X"
+          M(n,1)=Rx(n,1)^2;
+          M(n,2)=2*Rx(n,1)*Rx(n,2);
+          M(n,3)=Rx(n,2)^2;
+        else
+          M(n,1)=Ry(n,1)^2;
+          M(n,2)=2*Ry(n,1)*Ry(n,2);
+          M(n,3)=Ry(n,2)^2;
+        end
+      end
+      
+      for itry=1:2
+        zx=x./dx;
+        Bx=zeros(4,3);
+        for n=1:4
+          Bx(n,:)=M(n,:)/dx(n);
+        end
+        Tx=inv(Bx'*Bx);
+        u=Tx*Bx'*zx;du=sqrt(diag(Tx));  %#ok<NASGU,MINV>
+        if itry==1
+          chi2x=zx'*zx-zx'*Bx*Tx*Bx'*zx; %#ok<MINV>
+          dx=dx.*sqrt(chi2x);
+        end
+      end
+      
+      % convert fitted input sigma matrix elements to emittance, BMAG, ...
+      [px,dpx]=obj.emit_params(u(1),u(2),u(3),Tx,bx0,ax0);
+      px(1:3)=abs(px(1:3));
+      emitx=px(1);demitx=dpx(1);
+      bmagx=px(2);dbmagx=dpx(2);
+      embmx=px(3);dembmx=dpx(3);
+      betax=px(4);dbetax=dpx(4);
+      alphx=px(5);dalphx=dpx(5);
+      bcosx=px(6);dbcosx=dpx(6);
+      bsinx=px(7);dbsinx=dpx(7);
+      emitxn=egamma*emitx;demitxn=egamma*demitx;
+      
+      % results txt
+      fprintf('%s emittance parameters at %s\n',dim,wname{1});
+      fprintf('-----------------------------------------------------\n');
+      fprintf('energy      = %10.4f              GeV\n',energy);
+      fprintf('nemit       = %10.4f +- %9.4f um\n',1e6*emitxn,1e6*demitxn);
+      fprintf('nemit*bmag  = %10.4f +- %9.4f um\n',1e6*embmx*egamma,1e6*dembmx*egamma);
+      fprintf('emit        = %10.4f +- %9.4f nm\n',1e9*emitx,1e9*demitx);
+      fprintf('bmag        = %10.4f +- %9.4f      (%9.4f)\n',bmagx,dbmagx,1);
+      fprintf('bmag_cos    = %10.4f +- %9.4f      (%9.4f)\n',bcosx,dbcosx,0);
+      fprintf('bmag_sin    = %10.4f +- %9.4f      (%9.4f)\n',bsinx,dbsinx,0);
+      fprintf('beta        = %10.4f +- %9.4f m    (%9.4f)\n',betax,dbetax,bx0);
+      fprintf('alpha       = %10.4f +- %9.4f      (%9.4f)\n',alphx,dalphx,ax0);
+      fprintf('chisq/N     = %10.4f\n',chi2x);
+      
+      txt_results{1} = sprintf('%s emittance parameters at %s\n',dim,wname{1});
+      txt_results{2} = sprintf('-----------------------------------------------------\n');
+      txt_results{3} = sprintf('energy      = %10.4f              GeV\n',energy);
+      txt_results{4} = sprintf('nemit       = %10.4f +- %9.4f um\n',1e6*emitxn,1e6*demitxn);
+      txt_results{5} = sprintf('nemit*bmag  = %10.4f +- %9.4f um\n',1e6*embmx*egamma,1e6*dembmx*egamma);
+      txt_results{6} = sprintf('emit        = %10.4f +- %9.4f nm\n',1e9*emitx,1e9*demitx);
+      txt_results{7} = sprintf('bmag        = %10.4f +- %9.4f      (%9.4f)\n',bmagx,dbmagx,1);
+      txt_results{8} = sprintf('bmag_cos    = %10.4f +- %9.4f      (%9.4f)\n',bcosx,dbcosx,0);
+      txt_results{9} = sprintf('bmag_sin    = %10.4f +- %9.4f      (%9.4f)\n',bsinx,dbsinx,0);
+      txt_results{10} = sprintf('beta       = %10.4f +- %9.4f m    (%9.4f)\n',betax,dbetax,bx0);
+      txt_results{11} = sprintf('alpha      = %10.4f +- %9.4f      (%9.4f)\n',alphx,dalphx,ax0);
+      txt_results{12} = sprintf('chisq/N    = %10.4f\n',chi2x);
+      
+      % Return data structure
+      emitData.emit=emitx;
+      emitData.nemit=emitxn;
+      emitData.bmag=bmagx;
+      emitData.beta=betax;
+      emitData.alpha=alphx;
+      emitData.demit=demitx;
+      emitData.dnemit=demitxn;
+      emitData.dbmag=dbmagx;
+      emitData.dbeta=dbetax;
+      emitData.dalpha=dalphx;
+      emitData.dim=dim;
+      emitData.sig=data;
+      emitData.dsig=data_err;
+      emitData.beta0=bx0;
+      emitData.alpha0=ax0;
+      emitData.nemit0=5e-6;
+      emitData.emit0=emitData.nemit0/egamma;
+      emitData.R=R;
+      emitData.idw=idw;
+      I = TwissToInitial(obj.LiveModel.DesignTwiss,idw(1),obj.LiveModel.Initial);
+      I.Momentum=energy;
+      emitData.I_design = I ;
+      emitData.section=section;
+      
+      % Write to local emittance properties
+      if dim=="X"
+        obj.TwissFitAnalytic(7) = emitxn * 1e6 ;
+        obj.TwissFitAnalytic(1) = betax ;
+        obj.TwissFitAnalytic(3) = alphx ;
+        obj.TwissFitAnalytic(5) = bmagx ;
+      else
+        obj.TwissFitAnalytic(8) = emitxn * 1e6 ;
+        obj.TwissFitAnalytic(2) = betax ;
+        obj.TwissFitAnalytic(4) = alphx ;
+        obj.TwissFitAnalytic(6) = bmagx ;
+      end
+      obj.TwissFitModel = obj.TwissFitAnalytic ;
+      
+    end
     % Get/Set
     function twiss=get.TwissFit(obj)
       switch obj.TwissFitSource
@@ -839,7 +1014,209 @@ classdef F2_MatchingApp < handle & F2_common
       end
     end
   end
+  methods(Static)
+     function emitMW_plot(emitData,writeToLog)
+      %EMITMW_PLOT Plot data from multi-wire emittance data analysis
+      %emitMW_plot(emitData)
+      global BEAMLINE
+      
+      section=emitData.section;
+      
+      % Get wire names
+      switch section
+        case "L2"
+          wname={'WS11444' 'WS11614' 'WS11744' 'WS12214'};
+        case "L3"
+          wname={'WS18944' 'WS19144' 'WS19244' 'WS19344'};
+        otherwise
+          error('Incorrect section selection');
+      end
+      
+      % --- reconstructed normalized phase space plots
+      % Unpack data
+      e0=emitData.emit0;
+      b0=emitData.beta0;
+      a0=emitData.alpha0;
+      e=emitData.emit;
+      b=emitData.beta;
+      a=emitData.alpha;
+      sig=emitData.sig;
+      dsig=emitData.dsig;
+      R=emitData.R;
+      bmag=emitData.bmag;
+      idw=emitData.idw;
+      I=emitData.I_design;
+      
+      % Target figure axis
+      fhan=figure; fhan.Position(3:4)=[900 500]; subplot(1,2,1);
+      
+      if emitData.dim=="X"
+        txt1='Horizontal';
+        ixy=0;
+      else
+        txt1='Vertical';
+        ixy=1;
+      end
+      
+      % plot measured beam ellipse (normalized coordinates)
+      r=e/e0;
+      if (bmag<1e-6)
+        Sn=r*eye(2);
+      else
+        g=(1+a^2)/b;
+        Z=r*[b,-a;-a,g];
+        A=[1,0;a0,b0]/sqrt(b0);
+        Sn=A*Z*A';
+      end
+      plot_ellipse(inv(Sn),0,0,'k-')
+      v=axis;
+      axis(sqrt(2)*max(abs(v))*[-1,1,-1,1],'square')
+      
+      % plot nominal beam ellipse (normalized coordinates) ... unit circle
+      hold on
+      plot_ellipse(eye(2),0,0,'k--')
+      
+      % plot mapped OTR measurement phases
+      ioff=2*ixy;
+      sig0=sqrt(e0*b0);
+      big=1e3*sqrt(e0/b0);
+      c='bgrm';
+      ho=zeros(1,4);
+      for n=1:4
+        R11=R{n}(1+ioff,1+ioff);
+        R12=R{n}(1+ioff,2+ioff);
+        R21=R{n}(2+ioff,1+ioff);
+        R22=R{n}(2+ioff,2+ioff);
+        sigw=sig(n);
+        dsigw=dsig(n);
+        c1=a0*R22-b0*R21;
+        c2=b0*R11-a0*R12;
+        x1=[R22,-R12;R22,R12]*[sigw+dsigw;big]/sig0;
+        y1=[c1,c2;c1,-c2]*[sigw+dsigw;big]/sig0;
+        x2=[R22,-R12;R22,R12]*[sigw-dsigw;big]/sig0;
+        y2=[c1,c2;c1,-c2]*[sigw-dsigw;big]/sig0;
+        h=plot(x1,y1,c(n),x2,y2,c(n));
+        ho(n)=h(1);
+      end
+      hold off
+      hor_line(0,'k:'),ver_line(0,'k:')
+      
+      % title, labels, and legend
+      title([txt1,' Phase Space @ ',wname{1}])
+      ylabel('Angle')
+      xlabel('Position')
+      
+      % propagated fitted beam size plots
+      subplot(1,2,2);
+      Z=arrayfun(@(x) BEAMLINE{x}.Coordi(3),idw(1):idw(end));
+      if emitData.dim=="X"
+        I.x.Twiss.alpha=a; I.x.Twiss.beta=b;
+      else
+        I.y.Twiss.alpha=a; I.y.Twiss.beta=b;
+      end
+      [~,T]=GetTwiss(idw(1),idw(end),I.x.Twiss,I.y.Twiss);
+      if emitData.dim=="X"
+        sigfit=sqrt(e.*T.betax(1:end-1));
+      else
+        sigfit=sqrt(e.*T.betay(1:end-1));
+      end
+      plot(Z,sigfit*1e6,'b--')
+      hold on
+      errorbar(arrayfun(@(x) BEAMLINE{x}.Coordi(3),idw),sig*1e6,dsig*1e6,'rx');
+      hold off
+      title(sprintf('%s',section));
+      ylabel(sprintf('%s Beam Size [um]',txt1))
+      xlabel('Z [m]')
+      AddMagnetPlotZ(idw(1),idw(end));
+      
+      if exist('writeToLog','var')
+        util_printLog2020(fhan, 'title',sprintf('%s Multi-Wire Emittance Measurement (%c)',section,emitData.dim),'author','F2_Matching.m','text',writeToLog);
+        close(fhan);
+      end
+     end
+  end
   methods(Static,Hidden)
+    function [p,dp] = emit_params(sig11,sig12,sig22,C,b0,a0)
+      
+      %       [p,dp] = emit_params(sig11,sig12,sig22,C,b0,a0);
+      %
+      %       Returns emittance, bmag, emit*bmag, beta, alpha, and errors on
+      %       all these given fitted sigma11(or 33), sigma12(or 34),
+      %       sigma22(or 44) and the 3X3 covariance matrix of this fit.
+      %
+      %     INPUTS:   sig11:  The 1,1 (3,3) sigma matrix element (in m^2-rad)
+      %               sig12:  The 1,2 (3,4) sigma matrix element (in m-rad)
+      %               sig22:  The 2,2 (4,4) sigma matrix element (in rad^2)
+      %               C:      The 3X3 covariance matrix of the above fitted
+      %                       sig11,12,22 (33,34,44) (in squared units of
+      %                       the 3 above sigij's)
+      %               b0:     The matched (design) beta function (in meters)
+      %               a0:     The matched (design) alpha function (unitless)
+      %     OUTPUTS:  p:      p(1) = unnormalized emittance in (meter-radians)
+      %                       p(2) = bmag (unitless beta beat magnitude)
+      %                       p(3) = unnormalized emit*bmag (meter-radians)
+      %                       p(4) = beta function (in meters)
+      %                       p(5) = alpha function (unitless)
+      %                       p(6) = (BMAG^2-1)*cos(phi)/BMAG
+      %                       p(7) = (BMAG^2-1)*sin(phi)/BMAG
+      %               dp:     Measurement errors on above p(1),p(2),...
+      
+      %===============================================================================
+      
+      sig0 = [ b0         -a0
+        -a0 (1+a0^2)/b0];
+      
+      sig  = [sig11 sig12
+        sig12 sig22];
+      
+      ebm = 0.5*trace(inv(sig0)*sig); %#ok<MINV>
+      
+      e2  =  sig11*sig22 - sig12^2;
+      if e2 < 0
+        e  = -sqrt(abs(e2));
+        b  =  sig11/(-e);
+        a  = -sig12/(-e);
+      else
+        e =  sqrt(e2);
+        b =  sig11/e;
+        a = -sig12/e;
+      end
+      
+      bm  = ebm/e;
+      g0  = (1+a0^2)/b0;
+      
+      bm_cos = (b/b0 - abs(bm))/abs(bm);
+      bm_sin = (a - a0*b/b0)/abs(bm);
+      
+      grad_e   = [ sig22/(2*e)
+        -sig12/e
+        sig11/(2*e)];
+      
+      grad_bm  = [(g0/(2*e) - bm*sig22/(2*e^2))
+        (a0/e     + bm*sig12/(e^2))
+        (b0/(2*e) - bm*sig11/(2*e^2))];
+      
+      grad_ebm = [g0/2
+        a0
+        b0/2];
+      
+      grad_b   = [-0.5*sig11*sig22/(e^3)+(1/e)
+        sig11*sig12/(e^3)
+        -0.5*sig11*sig11/(e^3)      ];
+      
+      grad_a   = [ 0.5*sig12*sig22/(e^3)
+        -sig12*sig12/(e^3)-(1/e)
+        0.5*sig11*sig12/(e^3)      ];
+      
+      de       = sqrt(grad_e'*C*grad_e);
+      dbm      = sqrt(grad_bm'*C*grad_bm);
+      debm     = sqrt(grad_ebm'*C*grad_ebm);
+      db       = sqrt(grad_b'*C*grad_b);
+      da       = sqrt(grad_a'*C*grad_a);
+      
+      p  = [ e  bm  ebm  b  a bm_cos bm_sin];
+      dp = [de dbm debm db da 0 0];
+    end
     function opt =  ModelTwissFitFn(x,dims,Rscan,sigma,sigma_err)
       
       S = x(3) .* [x(1) -x(2);-x(2) (1+x(2)^2)/x(1)] ; % Sigma matrix at entrance of scan quad
