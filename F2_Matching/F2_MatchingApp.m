@@ -100,26 +100,32 @@ classdef F2_MatchingApp < handle & F2_common
       obj.MatchQuadInitVals = ps_init.*10 ;
       
       % If matching on PR10571 or WS10561 then get initial Twiss parameters and record them in PVs
-      if ismember(obj.ProfName,obj.InitMatchProf)
-        i1=1;
-      else % match from entrance of first matching quad
+%       if ismember(obj.ProfName,obj.InitMatchProf)
+%         i1=1;
+%       else % match from entrance of first matching quad
         i1=PS(quadps(1)).Element(1);
-      end
+%       end
       
-      % Get Twiss parameters through to initial match point
+      % Get Twiss parameters at initial match point by back-propogating using flipped Lattice
+      isol=findcells(BEAMLINE,'Class','SOLENOID');
+      for ind=isol; BEAMLINE{ind}.B=0; end
+      [~,R]=RmatAtoB(i1,pele);
+      S1=[betax_fit   -alphax_fit                0          0 ;
+          -alphax_fit (1+alphax_fit^2)/betax_fit 0          0 ;
+          0           0                          betay_fit   -alphay_fit ;
+          0           0                          -alphay_fit (1+alphay_fit^2)/betay_fit ] ;
+      R=[R(1,1) R(1,2) 0      0      ;
+         R(2,1) R(2,2) 0      0      ;
+         0      0      R(3,3) R(3,4) ;
+         0      0      R(4,3) R(4,4) ] ;
+      S0=inv(R)*S1*inv(R'); %#ok<MINV>
+      if any(isinf(S0(:))) || any(isnan(S0(:)))
+        error('Match of Initial Twiss Parameters Failed');
+      end
       I = TwissToInitial(obj.LiveModel.DesignTwiss,i1,obj.LiveModel.Initial);
-      I2 = TwissToInitial(obj.LiveModel.DesignTwiss,pele,obj.LiveModel.Initial);
-      I.Momentum = BEAMLINE{i1}.P ;
-      % - First get approx solution by back-propogating using flipped Lattice
-      I2.x.Twiss.beta=betax_fit; I2.x.Twiss.alpha=-alphax_fit;
-      I2.y.Twiss.beta=betay_fit; I2.y.Twiss.alpha=-alphay_fit;
-      I2.Momentum = BEAMLINE{pele}.P ;
-      BL0=BEAMLINE; DeckTool.FlipLattice;
-      [~,T0]=GetTwiss(1+length(BEAMLINE)-pele,1+length(BEAMLINE)-i1,I2.x.Twiss,I2.y.Twiss);
-      bx0 = T0.betax(end); ax0 = -T0.alphax(end); by0=T0.betay(end); ay0=-T0.alphay(end);
-      BEAMLINE=BL0;
+      I.x.Twiss.beta=S0(1,1); I.x.Twiss.alpha=-S0(1,2); I.y.Twiss.beta=S0(3,3); I.y.Twiss.alpha=-S0(3,4);
+      
       % - Fine tune initial Twiss parameters using Matching
-      I.x.Twiss.beta=bx0; I.x.Twiss.alpha=ax0; I.y.Twiss.beta=by0; I.y.Twiss.alpha=ay0;
       M=Match;
       M.beam=MakeBeam6DGauss(I,1e3,3,1);
       M.iInitial=i1;
@@ -393,14 +399,14 @@ classdef F2_MatchingApp < handle & F2_common
         lcaPutNoWait(sprintf('%s:BMAG_Y',obj.ProfName),obj.TwissFit(6));
         lcaPutNoWait(sprintf('%s:EMITN_Y',obj.ProfName),obj.TwissFit(8));
         % Write initial match conditions to PVs
-        if ~isempty(obj.InitMatch) && ismember(obj.ProfName,obj.InitMatchProf) && obj.goodmatch
-          lcaPutNoWait(char(obj.LiveModel.Initial_betaxPV),obj.InitMatch.x.Twiss.beta) ;
-          lcaPutNoWait(char(obj.LiveModel.Initial_betaxPV),obj.InitMatch.x.Twiss.alpha) ;
-          lcaPutNoWait(char(obj.LiveModel.Initial_emitxPV),obj.InitMatch.x.NEmit*1e6) ;
-          lcaPutNoWait(char(obj.LiveModel.Initial_betaxPV),obj.InitMatch.y.Twiss.beta) ;
-          lcaPutNoWait(char(obj.LiveModel.Initial_betaxPV),obj.InitMatch.y.Twiss.alpha) ;
-          lcaPutNoWait(char(obj.LiveModel.Initial_emityPV),obj.InitMatch.y.NEmit*1e6) ;
-        end
+%         if ~isempty(obj.InitMatch) && ismember(obj.ProfName,obj.InitMatchProf) && obj.goodmatch
+%           lcaPutNoWait(char(obj.LiveModel.Initial_betaxPV),obj.InitMatch.x.Twiss.beta) ;
+%           lcaPutNoWait(char(obj.LiveModel.Initial_betaxPV),obj.InitMatch.x.Twiss.alpha) ;
+%           lcaPutNoWait(char(obj.LiveModel.Initial_emitxPV),obj.InitMatch.x.NEmit*1e6) ;
+%           lcaPutNoWait(char(obj.LiveModel.Initial_betaxPV),obj.InitMatch.y.Twiss.beta) ;
+%           lcaPutNoWait(char(obj.LiveModel.Initial_betaxPV),obj.InitMatch.y.Twiss.alpha) ;
+%           lcaPutNoWait(char(obj.LiveModel.Initial_emityPV),obj.InitMatch.y.NEmit*1e6) ;
+%         end
         obj.InitRestore = obj.LiveModel.Initial ;
         if ~isempty(obj.InitMatch)
           obj.LiveModel.Initial=obj.InitMatch ;
@@ -666,11 +672,11 @@ classdef F2_MatchingApp < handle & F2_common
         ah=obj.guihan.UIAxes2;
       end
       ah.reset;
-      if ismember(obj.ProfName,obj.InitMatchProf)
-        i1=1;
-      else
+%       if ismember(obj.ProfName,obj.InitMatchProf)
+%         i1=1;
+%       else
         i1=obj.MatchQuadModelInd(1);
-      end
+%       end
       i2=obj.ProfModelInd;
       z=arrayfun(@(x) BEAMLINE{x}.Coordi(3),i1:i2);
       txt=string.empty;
