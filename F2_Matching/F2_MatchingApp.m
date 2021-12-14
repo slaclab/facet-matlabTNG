@@ -863,18 +863,18 @@ classdef F2_MatchingApp < handle & F2_common
       fprintf('alpha       = %10.4f +- %9.4f      (%9.4f)\n',alphx,dalphx,ax0);
       fprintf('chisq/N     = %10.4f\n',chi2x);
       
-      txt_results{1} = sprintf('%s emittance parameters at %s\n',dim,wname{1});
-      txt_results{2} = sprintf('-----------------------------------------------------\n');
-      txt_results{3} = sprintf('energy      = %10.4f              GeV\n',energy);
-      txt_results{4} = sprintf('nemit       = %10.4f +- %9.4f um\n',1e6*emitxn,1e6*demitxn);
-      txt_results{5} = sprintf('nemit*bmag  = %10.4f +- %9.4f um\n',1e6*embmx*egamma,1e6*dembmx*egamma);
-      txt_results{6} = sprintf('emit        = %10.4f +- %9.4f nm\n',1e9*emitx,1e9*demitx);
-      txt_results{7} = sprintf('bmag        = %10.4f +- %9.4f      (%9.4f)\n',bmagx,dbmagx,1);
-      txt_results{8} = sprintf('bmag_cos    = %10.4f +- %9.4f      (%9.4f)\n',bcosx,dbcosx,0);
-      txt_results{9} = sprintf('bmag_sin    = %10.4f +- %9.4f      (%9.4f)\n',bsinx,dbsinx,0);
-      txt_results{10} = sprintf('beta       = %10.4f +- %9.4f m    (%9.4f)\n',betax,dbetax,bx0);
-      txt_results{11} = sprintf('alpha      = %10.4f +- %9.4f      (%9.4f)\n',alphx,dalphx,ax0);
-      txt_results{12} = sprintf('chisq/N    = %10.4f\n',chi2x);
+      txt_results{1} =  sprintf('%s emittance parameters at %s\n',dim,wname{1});
+      txt_results{2} =  sprintf('----\n');
+      txt_results{3} =  sprintf('energy      = %10.4f              GeV\n',energy);
+      txt_results{4} =  sprintf('nemit       = %10.4f +- %9.4f um\n',1e6*emitxn,1e6*demitxn);
+      txt_results{5} =  sprintf('nemit*bmag  = %10.4f +- %9.4f um\n',1e6*embmx*egamma,1e6*dembmx*egamma);
+      txt_results{6} =  sprintf('emit        = %10.4f +- %9.4f nm\n',1e9*emitx,1e9*demitx);
+      txt_results{7} =  sprintf('bmag        = %10.4f +- %9.4f      (%9.4f)\n',bmagx,dbmagx,1);
+      txt_results{8} =  sprintf('bmag_cos    = %10.4f +- %9.4f      (%9.4f)\n',bcosx,dbcosx,0);
+      txt_results{9} =  sprintf('bmag_sin    = %10.4f +- %9.4f      (%9.4f)\n',bsinx,dbsinx,0);
+      txt_results{10} = sprintf('beta        = %10.4f +- %9.4f m    (%9.4f)\n',betax,dbetax,bx0);
+      txt_results{11} = sprintf('alpha       = %10.4f +- %9.4f      (%9.4f)\n',alphx,dalphx,ax0);
+      txt_results{12} = sprintf('chisq/N     = %10.4f\n',chi2x);
       
       % Return data structure
       emitData.emit=emitx;
