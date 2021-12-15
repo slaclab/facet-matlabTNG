@@ -47,7 +47,7 @@ classdef F2_MatchingApp < handle & F2_common
     TwissFit(1,8)
   end
   properties(Constant)
-    EmitDataProfs = ["PROF:IN10:571" "PROF:LI11:375" "WIRE:IN10:561" "WIRE:LI11:444" "WIRE:LI19:144"] % profile devices for which there are emittance PVs
+    EmitDataProfs = ["PROF:IN10:571" "PROF:LI11:375" "CAMR:LI20:103" "WIRE:IN10:561" "WIRE:LI11:444" "WIRE:LI19:144"] % profile devices for which there are emittance PVs
     InitMatchProf = ["WIRE:IN10:561","PROF:IN10:571"] % Profile devices to associate with initial match conditions
   end
  
@@ -181,7 +181,7 @@ classdef F2_MatchingApp < handle & F2_common
       obj.TwissMatch.z = [arrayfun(@(x) BEAMLINE{x}.Coordi(3),i1:pele) BEAMLINE{pele}.Coordf(3)] ;
       
       % Check match in range and store in Mags BDES field
-      if any(M.varVals>bmax | M.varVals<bmin)
+      if any(M.varVals(:)>bmax | M.varVals(:)<bmin)
         for ips=1:length(quadps)
           PS(quadps(ips)).Ampl = ps_init(ips) ;
         end

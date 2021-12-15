@@ -130,7 +130,6 @@ classdef F2_S20Config_exported < matlab.apps.AppBase
       value = regexprep(value,'<--W_y','') ;
       % Set desired IP location
       app.aobj.WaistDesName = value ;
-      app.aobj.WaistCalc;
     end
 
     % Value changed function: Dx, Dxp, Dy, Dyp, alphax, alphay, 
