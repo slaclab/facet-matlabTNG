@@ -11,6 +11,7 @@ classdef F2_MatchingApp < handle & F2_common
     ShowPlotLegend logical = false
     UseMatchQuad logical % Which matching quads to use
     LoadingScanData logical = false % Sets to true when loading raw emittance scan data (overrides loading in externally calculated Twiss parameters)
+    MatchDir string {mustBeMember(MatchDir,["BKW" "FWD"])} = "BKW"
   end
   properties(SetAccess=private)
     MatchQuadNames string = ["QUAD:IN10:425" "QUAD:IN10:441" "QUAD:IN10:511" "QUAD:IN10:525"] % Read in when select Prof device and/or when change # matching quads
@@ -757,7 +758,7 @@ classdef F2_MatchingApp < handle & F2_common
       % INPUTs:
       %
       %   dim      = "X" or "Y"
-      %   data     = 1x4 vector of measured wire scan rms sizes [m]
+      %   data     = 1x4 vector of measured wire scan rms sizes [m] (zeros or nans indicates not to use data for this wire)
       %   data_err = 1x4 vector of measured wire scan rms size errors [m]
       %   section  = "L2" or "L3"
       %
@@ -768,10 +769,13 @@ classdef F2_MatchingApp < handle & F2_common
       
       global BEAMLINE
       
+      % Treat all zero errors as no error info
       if isempty(data_err)
         data_err=zeros(1,4);
       end
-      data_err(data_err==0)=1e-12;
+      data_err(data_err==0)=1e-6;
+      
+      
       
       % Get wire names
       switch section
