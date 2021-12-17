@@ -48,6 +48,7 @@ classdef F2_MatchingApp < handle & F2_common
     TwissFit(1,8)
   end
   properties(Constant)
+    plotcols = 'bgrm'
     EmitDataProfs string = [] % profile devices for which there are NO emittance PVs
 %     EmitDataProfs = ["PROF:IN10:571" "PROF:LI11:375" "CAMR:LI20:103" "WIRE:IN10:561" "WIRE:LI11:444" "WIRE:LI19:144"] % profile devices for which there are NO emittance PVs
     InitMatchProf = ["WIRE:IN10:561","PROF:IN10:571"] % Profile devices to associate with initial match conditions
@@ -808,6 +809,8 @@ classdef F2_MatchingApp < handle & F2_common
       
       global BEAMLINE
       
+      data=data(:); data_err=data_err(:);
+      
       % Treat all zero errors as no error info
       if isempty(data_err)
         data_err=zeros(1,4);
@@ -953,10 +956,12 @@ classdef F2_MatchingApp < handle & F2_common
       emitData.emit0=emitData.nemit0/egamma;
       emitData.R=R;
       emitData.idw=idw;
+      emitData.wsel=wsel;
       I = TwissToInitial(obj.LiveModel.DesignTwiss,idw(1),obj.LiveModel.Initial);
       I.Momentum=energy;
       emitData.I_design = I ;
       emitData.section=section;
+      emitData.pcols=obj.plotcols;
       
       % Write to local emittance properties
       if dim=="X"
@@ -1103,6 +1108,9 @@ classdef F2_MatchingApp < handle & F2_common
       bmag=emitData.bmag;
       idw=emitData.idw;
       I=emitData.I_design;
+      wsel=emitData.wsel;
+      nw=sum(wsel);
+      pcols=emitData.pcols;
       
       % Target figure axis
       fhan=figure; fhan.Position(3:4)=[900 500]; subplot(1,2,1);
@@ -1137,9 +1145,9 @@ classdef F2_MatchingApp < handle & F2_common
       ioff=2*ixy;
       sig0=sqrt(e0*b0);
       big=1e3*sqrt(e0/b0);
-      c='bgrm';
+      c=pcols(wsel); 
       ho=zeros(1,4);
-      for n=1:4
+      for n=1:nw
         R11=R{n}(1+ioff,1+ioff);
         R12=R{n}(1+ioff,2+ioff);
         R21=R{n}(2+ioff,1+ioff);
@@ -1179,7 +1187,12 @@ classdef F2_MatchingApp < handle & F2_common
       end
       plot(Z,sigfit*1e6,'b--')
       hold on
-      errorbar(arrayfun(@(x) BEAMLINE{x}.Coordi(3),idw),sig*1e6,dsig*1e6,'rx');
+      idz=arrayfun(@(x) BEAMLINE{x}.Coordi(3),idw);
+      errorbar(idz,sig*1e6,dsig*1e6,'kx','MarkerSize',10);
+      ax=axis;
+      for iw=1:length(idw)
+        line([idz(iw) idz(iw)],ax(3:4),'Color',c(iw),'LineStyle','--');
+      end
       hold off
       title(sprintf('%s',section));
       ylabel(sprintf('%s Beam Size [um]',txt1))
