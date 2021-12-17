@@ -14,22 +14,22 @@ classdef F2_FeedbackApp < handle & F2_common
     PVUpdated 
   end
   properties
-    SetpointConversion cell = {[0 1] [0 1] [0 1] [0 1]} % polynomial conversion coefficents for setpoint display (lowest order first)
+    SetpointConversion cell = {[0 1] [0 1] [0 1] [0 1] [0 1] [0 1] [0 1] [0 1]} % polynomial conversion coefficents for setpoint display (lowest order first)
     GuiEnergyUnits logical = false % Display BPM readings as energy, else raw BPM orbit readings
     SettingsGui % Settings applciation GUI pointer
     SettingsGui_whichFeedback uint8 = 0 ;
   end
   properties(SetObservable, AbortSet)
     Enabled uint16 = 0 % Feedback enabled bit
-    FeedbackCoefficients cell = {0.06*0.1 0.01 0.01 0.01} % Feedback coefficients for each feedback
-    FeedbackControlLimits cell = {[5 28] [-180 180] [5 60] [10 63]}
-    FeedbackSetpointLimits cell ={[-5 5] [-15 15] [-10 10] [0 100]}
-    SetpointFilterCoefficients cell ={[0.001 0.1] [0.001 0.1] [0.001 0.1] [0.001 0.1]} % low/high frequency settings for filtering
+    FeedbackCoefficients cell = {0.06*0.1 0.01 0.01 0.01 0.01 0.01 0.01 0.01} % Feedback coefficients for each feedback
+    FeedbackControlLimits cell = {[5 28] [-180 180] [5 60] [10 63] [-0.00454 0.00454] [-0.06 0.06] [-0.00454 0.00454] [-0.06 0.06]}
+    FeedbackSetpointLimits cell ={[-5 5] [-15 15] [-10 10] [0 100] [-10 10] [-10 10] [-10 10] [-10 10]}
+    SetpointFilterCoefficients cell ={[0.001 0.1] [0.001 0.1] [0.001 0.1] [0.001 0.1] [0.001 0.1] [0.001 0.1] [0.001 0.1] [0.001 0.1]} % low/high frequency settings for filtering
     SetpointFilterTypes string {mustBeMember(SetpointFilterTypes,["notch" "pass"])} = ["pass" "pass" "pass" "pass"]
-    SetpointDoFilter logical = [false false false false] % apply filtering to feedback setpoints?
-    SetpointOffsets = [0 0 0 0] % Offsets to apply to feedback setpoints
-    SetpointDeadbands cell = {[-0.2 0.2] [-0.2 0.2] [-0.2 0.2] [-0.01 0.01]} % mm
-    TMITLimits cell = {[0.1 50] [0.1 50] [0.1 50] [0.1 50]} % Limit feedback operation to these TMIT readings (Nele * 1e9)
+    SetpointDoFilter logical = [false false false false false false false false] % apply filtering to feedback setpoints?
+    SetpointOffsets = [0 0 0 0 0 0 0 0] % Offsets to apply to feedback setpoints
+    SetpointDeadbands cell = {[-0.2 0.2] [-0.2 0.2] [-0.2 0.2] [-0.01 0.01] [-0.01 0.01] [-0.01 0.01] [-0.01 0.01] [-0.01 0.01]} % mm
+    TMITLimits cell = {[0.1 50] [0.1 50] [0.1 50] [0.1 50] [0.1 50] [0.1 50] [0.1 50] [0.1 50]} % Limit feedback operation to these TMIT readings (Nele * 1e9)
   end
   properties(Dependent)
     FeedbacksEnabled string % List of feedbacks enabled (tests Enabled bit)
@@ -43,14 +43,17 @@ classdef F2_FeedbackApp < handle & F2_common
     Disp_BC14 % BC14 BPM dispersion
     Disp_BC11 % BC11 BPM dispersion
     RunningStatus
+    Rfb(4,2) % transverse feedbacks response matrices
+    LM % Lucretia live model
+    ANG2BDES(1,4) % Angle to bdes corrector conversions
   end
   properties(Access=private)
     is_shutdown logical = false
     to % Running timer object
   end
   properties(Constant)
-    UseFeedbacks logical = [true true true false]
-    FeedbacksAvailable string = ["DL1E" "BC14E" "BC11E" "BC11BL"]
+    UseFeedbacks logical = [true true true false false false false false]
+    FeedbacksAvailable string = ["DL1E" "BC14E" "BC11E" "BC11BL" "L1X1" "L1X2" "L1Y1" "L1Y2"]
     FeedbackEnabledPV string = "SIOC:SYS1:ML00:AO856"
     FeedbackSetpointsPV string = "SIOC:SYS1:ML00:FWF22"
     DL1E_GainPV string = "SIOC:SYS1:ML00:AO857"
@@ -58,10 +61,24 @@ classdef F2_FeedbackApp < handle & F2_common
     BC14E_GainPV string = "SIOC:SYS1:ML00:AO897"
     BC14E_OffsetPV string = "SIOC:SYS1:ML00:AO898"
     BC14E_KlysNo uint8 = [4 5] ;
+    BC11_CALCPV string =["SIOC:SYS1:ML00:CALCOUT011.SCAN" "SIOC:SYS1:ML00:CALCOUT012.SCAN" "SIOC:SYS1:ML00:CALCOUT013.SCAN" "SIOC:SYS1:ML00:CALCOUT014.SCAN"] % CALCOUT PVs used to control SSSB- change PROC to Passive when off, 0.5 sec when on
     BC11E_GainPV string = "SIOC:SYS1:ML01:AO206"
     BC11E_OffsetPV string = "SIOC:SYS1:ML01:AO207"
     BC11BL_GainPV string = "SIOC:SYS1:ML01:AO220"
     BC11BL_OffsetPV string = "SIOC:SYS1:ML01:AO207"
+    L1_GainPV string = "SIOC:SYS1:ML01:AO233"
+    L1_SetpointLimitLO = "SIOC:SYS1:ML01:AO234"
+    L1_SetpointLimitHI = "SIOC:SYS1:ML01:AO235"
+    L1_TMITLO = "SIOC:SYS1:ML01:AO236"
+    L1_TMITHI = "SIOC:SYS1:ML01:AO237"
+    L1_BPM string = ["BPMS:LI11:201:X1H" "BPMS:LI11:333:X1H" "BPMS:LI11:201:Y1H" "BPMS:LI11:333:Y1H"] % transverse FB BPMs for L1
+    L1_COR string = ["XCOR:IN10:761:BCTRL" "XCOR:LI11:202:BCTRL" "YCOR:IN10:762:BCTRL" "YCOR:LI11:203:BCTRL"] % transverse FB Correctors for L1
+    L1_TMIT string = ["BPMS:LI11:201:TMIT1H" "BPMS:LI11:312:TMIT1H" "BPMS:LI11:201:TMIT1H" "BPMS:LI11:312:TMIT1H"]
+    L1_X string = "SIOC:SYS1:ML01:AO238" % X Offset
+    L1_XANG string = "SIOC:SYS1:ML01:AO239" % XANG Offset
+    L1_Y string = "SIOC:SYS1:ML01:AO240" % Y Offset
+    L1_YANG string = "SIOC:SYS1:ML01:AO241" % YANG Offset
+    L1_STAT string = "SIOC:SYS1:ML01:AO242" % FB status 0 = GOOD
     FbRunningPV string = "F2:WATCHER:FEEDBACKS_STAT"
     GuiUpdateRate = 1 % rate to limit GUI updates
   end
@@ -75,7 +92,7 @@ classdef F2_FeedbackApp < handle & F2_common
         drawnow
       end
       
-      % Load model, get dispersions to set conversion values
+      % Load model, get design dispersions to set conversion values
       load(sprintf('%s/FACET2e/FACET2e.mat',F2_common.modeldir),'BEAMLINE','Initial');
       dl1bpm = findcells(BEAMLINE,'Name','BPM10731') ;
       bc14bpm = findcells(BEAMLINE,'Name','BPM14801') ;
@@ -84,6 +101,19 @@ classdef F2_FeedbackApp < handle & F2_common
       obj.Disp_DL1 = T.etax(dl1bpm) ;
       obj.Disp_BC14 = T.etax(bc14bpm) ;
       obj.Disp_BC11 = T.etax(bc11bpm) ;
+      
+      if any(obj.UseFeedbacks(5:8))
+        obj.LM = F2_LiveModelApp ; % Use live model from here
+        % Get transverse FB response Matrices & bdes to angle conversions
+        for ifb=1:4
+          i1=findcells(BEAMLINE,'Name',char(obj.L1_COR(ifb)));
+          i2=findcells(BEAMLINE,'Name',char(obj.L1_BPM(ifb)));
+          [~,R]=RmatAtoB(i1,i2);
+          obj.Rfb(ifb,1)=R(1,2); obj.Rfb(ifb,2)=R(3,4);
+          obj.ANG2BDES(ifb) = obj.LM.GEV2KGM.BEAMLINE{i1}.P ;
+          obj.FeedbackControlLimits{4+ifn} = obj.FeedbackControlLimits{4+ifn} / obj.ANG2BDES(ifb) ; % put limits in angle units
+        end
+      end
       
       % Generate app pv links
       cntx=PV.Initialize(PVtype.EPICS);
@@ -153,6 +183,18 @@ classdef F2_FeedbackApp < handle & F2_common
         PV(cntx,'Name',"BC11BL_SetpointDeadbandHi",'pvname',"SIOC:SYS1:ML01:AO228",'monitor',true,'mode',"rw");
         PV(cntx,'Name',"BC11BL_TMITLo",'pvname',"SIOC:SYS1:ML01:AO229",'monitor',true,'mode',"rw");
         PV(cntx,'Name',"BC11BL_TMITHi",'pvname',"SIOC:SYS1:ML01:AO230",'monitor',true,'mode',"rw")];
+      end
+      if any(obj.UseFeedbacks(5:8)) % L1 transverse feedbacks
+        obj.pvlist = [obj.pvlist;
+        PV(cntx,'Name',"L1_Gain",'pvname',obj.L1_GainPV,'monitor',true,'mode','rw') ;
+        PV(cntx,'Name',"L1_SetpointDeadbandLo",'pvname',obj.L1_SetpointLimitLO,'monitor',true,'mode',"rw");
+        PV(cntx,'Name',"L1_SetpointDeadbandHi",'pvname',obj.L1_SetpointLimitHI,'monitor',true,'mode',"rw");
+        PV(cntx,'Name',"L1_TMITLo",'pvname',obj.L1_TMITLO,'monitor',true,'mode',"rw");
+        PV(cntx,'Name',"L1_TMITHi",'pvname',L1_TMITHI,'monitor',true,'mode',"rw");
+        PV(cntx,'Name',"L1_X",'pvname',obj.L1_X,'monitor',true,'mode',"rw");
+        PV(cntx,'Name',"L1_XANG",'pvname',obj.L1_XANG,'monitor',true,'mode',"rw");
+        PV(cntx,'Name',"L1_Y",'pvname',obj.L1_Y,'monitor',true,'mode',"rw");
+        PV(cntx,'Name',"L1_YANG",'pvname',obj.L1_YANG,'monitor',true,'mode',"rw")];
       end
       
       % Attach feedback running status PV
@@ -260,6 +302,24 @@ classdef F2_FeedbackApp < handle & F2_common
   %       obj.Feedbacks(4).Debug=1;
       end
       
+      % L1 Transverse feedbacks
+      for ifb=1:4
+        if obj.UseFeedbacks(4+ifb)
+          L1_Control = PV(cntx,'name',"Control",'pvname',obj.L1_COR(ifb),'mode',"rw",'conv',1/obj.ANG2BDES(ifb)) ;
+          B=BufferData('Name',"L1_Setpoint",'DoFilter',obj.SetpointDoFilter(4+ifb),...
+            'FilterType',obj.SetpointFilterTypes(4+ifb));
+          B.DataPV = PV(cntx,'name',"Setpoint",'pvname',obj.L1_BPM(ifb),'monitor',true);
+          obj.Feedbacks(4+ifb) = fbSISO(L1_Control,B) ;
+          obj.Feedbacks(4+ifb).Kp = obj.FeedbackCoefficients{4+ifb}(1) * obj.Rfb(ifb) ;
+          obj.Feedbacks(4+ifb).ControlLimits = obj.FeedbackControlLimits{4+ifb} ;
+          obj.Feedbacks(4+ifb).SetpointLimits = obj.FeedbackSetpointLimits{4+ifb} ;
+          obj.Feedbacks(4+ifb).SetpointDES = obj.SetpointOffsets(4+ifb) ;
+          obj.Feedbacks(4+ifb).QualVar = PV(cntx,'name',"L1_TMIT",'pvname',obj.L1_TMIT(ifb),'conv',1e-9) ;
+          obj.Feedbacks(4+ifb).ControlStatusVar{1} = PV(cntx,'name',"L1_STAT",'pvname',obj.L1_STAT ) ;
+          obj.Feedbacks(4+ifb).ControlStatusGood{1} = {0} ;
+        end
+      end
+      
       % Set rate at which Feedback objects notify GUI updaters
       for ifb=find(obj.UseFeedbacks)
         obj.Feedbacks(ifb).LimitEventRate = obj.GuiUpdateRate ;
@@ -288,7 +348,7 @@ classdef F2_FeedbackApp < handle & F2_common
       
       % Disable de-selected feedback controls
       if ~isempty(obj.guihan)
-        swname=["Switch" "Switch_2" "Switch_5" "Switch_6"];
+        swname=["Switch" "Switch_2" "Switch_5" "Switch_6" "Switch_7" "Switch_7" "Switch_7" "Switch_7"];
         for ifb=find(~obj.UseFeedbacks)
           obj.guihan.(swname(ifb)).Enable = false ;
         end
@@ -346,6 +406,9 @@ classdef F2_FeedbackApp < handle & F2_common
           end
           if obj.UseFeedbacks(4)
             obj.BC11BLUpdated ;
+          end
+          if any(obj.UseFeedbacks(5:8))
+            obj.L1Updated ;
           end
         catch ME
           fprintf(2,'Error updating GUI: %s',ME.message);
@@ -582,6 +645,14 @@ classdef F2_FeedbackApp < handle & F2_common
         drawnow
       end
     end
+    function L1Updated(obj)
+      if obj.is_shutdown
+        return
+      end
+      if ~isempty(obj.guihan)
+        drawnow
+      end
+    end
     function statewatcher(obj)
       if obj.is_shutdown
         return
@@ -632,19 +703,21 @@ classdef F2_FeedbackApp < handle & F2_common
         obj.Enabled=bitset(obj.Enabled,1,0);
       end
       % Update feedback settings
-      fbn=["DL1E" "BC14E" "BC11E" "BC11BL"];
+      fbn=["DL1E" "BC14E" "BC11E" "BC11BL" "L1" "L1" "L1" "L1"];
       for ifb=find(obj.UseFeedbacks)
         obj.FeedbackCoefficients{ifb}(1) = obj.pvs.(fbn(ifb)+"_Gain").val{1} ;
-        obj.SetpointOffsets(ifb) = obj.pvs.(fbn(ifb)+"_Offset").val{1} ;
-        obj.FeedbackControlLimits{ifb} = [obj.pvs.(fbn(ifb)+"_ControlLimitLo").val{1} obj.pvs.(fbn(ifb)+"_ControlLimitHi").val{1}] ;
-        obj.FeedbackSetpointLimits{ifb} = [obj.pvs.(fbn(ifb)+"_SetpointLimitLo").val{1} obj.pvs.(fbn(ifb)+"_SetpointLimitHi").val{1}] ;
-        obj.SetpointDoFilter(ifb) = obj.pvs.(fbn(ifb)+"_SetpointFilterFreq").val{1}~=0 ;
-        if obj.pvs.(fbn(ifb)+"_SetpointFilterFreq").val{1} > 0
-          obj.SetpointFilterCoefficients{ifb}(1) = obj.pvs.(fbn(ifb)+"_SetpointFilterFreq").val{1}/1000 ;
-          obj.SetpointFilterCoefficients{ifb}(2) = obj.pvs.(fbn(ifb)+"_SetpointFilterFreq").val{1}/1000 ;
-        end
         obj.SetpointDeadbands{ifb} = [obj.pvs.(fbn(ifb)+"_SetpointDeadbandLo").val{1} obj.pvs.(fbn(ifb)+"_SetpointDeadbandHi").val{1}] ;
         obj.TMITLimits{ifb} = [obj.pvs.(fbn(ifb)+"_TMITLo").val{1} obj.pvs.(fbn(ifb)+"_TMITHi").val{1}] ;
+        if fbn{ifb}~="L1"
+          obj.SetpointOffsets(ifb) = obj.pvs.(fbn(ifb)+"_Offset").val{1} ;
+          obj.FeedbackControlLimits{ifb} = [obj.pvs.(fbn(ifb)+"_ControlLimitLo").val{1} obj.pvs.(fbn(ifb)+"_ControlLimitHi").val{1}] ;
+          obj.FeedbackSetpointLimits{ifb} = [obj.pvs.(fbn(ifb)+"_SetpointLimitLo").val{1} obj.pvs.(fbn(ifb)+"_SetpointLimitHi").val{1}] ;
+          obj.SetpointDoFilter(ifb) = obj.pvs.(fbn(ifb)+"_SetpointFilterFreq").val{1}~=0 ;
+          if obj.pvs.(fbn(ifb)+"_SetpointFilterFreq").val{1} > 0
+            obj.SetpointFilterCoefficients{ifb}(1) = obj.pvs.(fbn(ifb)+"_SetpointFilterFreq").val{1}/1000 ;
+            obj.SetpointFilterCoefficients{ifb}(2) = obj.pvs.(fbn(ifb)+"_SetpointFilterFreq").val{1}/1000 ;
+          end
+        end
       end
       % Feedback Jitter Settings
       if obj.UseFeedbacks(1)
@@ -678,16 +751,21 @@ classdef F2_FeedbackApp < handle & F2_common
       end
     end
     function shutdown(obj)
-      obj.is_shutdown = true ;
-      obj.Enabled=0; % register stopped status in PV
-      FB = obj ;
-      save(sprintf('%s/F2_Feedback.mat',obj.confdir),'FB');
-      if isempty(obj.guihan)
-        stop(obj.to);
-      end
-      stop(obj.pvlist);
-      for ifb=find(obj.UseFeedbacks)
-        obj.Feedbacks(ifb).shutdown;
+      try
+        obj.is_shutdown = true ;
+        FB = obj ;
+        save(sprintf('%s/F2_Feedback.mat',obj.confdir),'FB');
+        if isempty(obj.guihan)
+          obj.Enabled=0; % register stopped status in PV
+          stop(obj.to);
+        end
+        stop(obj.pvlist);
+        for ifb=find(obj.UseFeedbacks)
+          obj.Feedbacks(ifb).shutdown;
+        end
+      catch ME
+        fprintf(2,'Shutdown error:\n');
+        warning(ME.message);
       end
     end
   end
@@ -801,6 +879,18 @@ classdef F2_FeedbackApp < handle & F2_common
     function set.Enabled(obj,val)
       disp('Changing Feedback Enabled Status:');
       disp(val);
+      % Extra enable/disable steps for BC11 feedback
+      if isempty(obj.guihan) && any(obj.UseFeedbacks(3:4))
+        if bitget(obj.Enabled,3) || bitget(obj.Enabled,4)
+          for ipv=1:length(obj.BC11_CALCPV)
+            lcaPutNoWait(char(obj.BC11_CALCPV(ipv)),'.5 second');
+          end
+        elseif ~bitget(obj.Enabled,3) && ~bitget(obj.Enabled,4)
+          for ipv=1:length(obj.BC11_CALCPV)
+            lcaPutNoWait(char(obj.BC11_CALCPV(ipv)),'Passive');
+          end
+        end
+      end
       if ~isempty(obj.guihan)
         switchid=["Switch" "Switch_2" "Switch_5" "Switch_3" "Switch_6" "Switch_7" "Switch_4"];
       end

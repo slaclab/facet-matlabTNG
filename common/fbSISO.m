@@ -10,7 +10,7 @@ classdef fbSISO < handle
     WriteEnable logical = true % enable writing to PV control
     WriteRateMax = 0 % max rate at which to write to PV control (sec) [0= don't limit]
     Method string {mustBeMember(Method,"PID")} = "PID"
-    Kp {mustBeNonnegative} = 1
+    Kp = 1
     Ki {mustBeNonnegative} = 0
     Kd {mustBeNonnegative} = 0
     LimitEventRate {mustBeNonnegative} = 0 % Limit data reporting rate for DataUpdated and StateChange events if > 0 [seconds]
