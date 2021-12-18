@@ -992,7 +992,6 @@ classdef F2_MatchingApp < handle & F2_common
         end
         emitData.sigma_des(iw) = sqrt(S1(1,1)) ;
       end
-      emitData.SIGMA0 = S0 ;
       txt_results{13} = sprintf('SIGMA_DES   = %10.4f %10.4f %10.4f %10.4f um\n',emitData.sigma_des.*1e6);
       
       % Write to local emittance properties
@@ -1143,9 +1142,9 @@ classdef F2_MatchingApp < handle & F2_common
       wsel=emitData.wsel;
       nw=sum(wsel);
       pcols=emitData.pcols;
-      S0=emitData.SIGMA0;
       id1=emitData.id1;
       
+      S0 = e * [b -a; -a (1+a^2)/b] ;
       % Target figure axis
       fhan=figure; fhan.Position(3:4)=[900 500]; subplot(1,2,1);
       
@@ -1207,7 +1206,7 @@ classdef F2_MatchingApp < handle & F2_common
       
       % propagated fitted beam size plots
       subplot(1,2,2);
-      Z=arrayfun(@(x) BEAMLINE{x}.Coordi(3),id1:idw(end));
+      Z=arrayfun(@(x) BEAMLINE{x}.Coordf(3),id1:idw(end));
       
       sigfit = zeros(1,1+idw(end)-id1);
       for iele=id1:idw(end)
