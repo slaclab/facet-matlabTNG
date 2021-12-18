@@ -829,8 +829,10 @@ classdef F2_MatchingApp < handle & F2_common
       switch section
         case "L2"
           wname={'WS11444' 'WS11614' 'WS11744' 'WS12214'};
+          desemit=[lcaGet('PROF:IN10:571:EMITN_X') lcaGet('PROF:IN10:571:EMITN_Y')].*1e-6 ;
         case "L3"
           wname={'WS18944' 'WS19144' 'WS19244' 'WS19344'};
+          desemit=[lcaGet('WIRE:LI11:614:EMITN_X') lcaGet('WIRE:LI11:614:EMITN_Y')].*1e-6 ;
         otherwise
           error('Incorrect section selection');
       end
@@ -952,7 +954,11 @@ classdef F2_MatchingApp < handle & F2_common
       emitData.dsig=data_err;
       emitData.beta0=bx0;
       emitData.alpha0=ax0;
-      emitData.nemit0=5e-6;
+      if dim=="X"
+        emitData.nemit0=desemit(1);
+      else
+        emitData.nemit0=desemit(2);
+      end
       emitData.emit0=emitData.nemit0/egamma;
       emitData.R=R;
       emitData.idw=idw;
@@ -962,6 +968,32 @@ classdef F2_MatchingApp < handle & F2_common
       emitData.I_design = I ;
       emitData.section=section;
       emitData.pcols=obj.plotcols;
+      emitData.id1=id1;
+      
+      % Get design spot sizes
+      emitData.sigma_des=zeros(1,nw) ;
+      gamma = BEAMLINE{id1}.P/0.511e-3 ;
+      emit = desemit./gamma;
+      if dim=="X"
+        S0 = emit(1) * ...
+          [obj.LiveModel.DesignTwiss.betax(id1)    -obj.LiveModel.DesignTwiss.alphax(id1);
+          -obj.LiveModel.DesignTwiss.alphax(id1)  (1+obj.LiveModel.DesignTwiss.alphax(id1)^2)/obj.LiveModel.DesignTwiss.betax(id1)] ;
+      else
+        S0 = emit(2) * ...
+          [obj.LiveModel.DesignTwiss.betay(id1)    -obj.LiveModel.DesignTwiss.alphay(id1);
+          -obj.LiveModel.DesignTwiss.alphay(id1)  (1+obj.LiveModel.DesignTwiss.alphay(id1)^2)/obj.LiveModel.DesignTwiss.betay(id1)] ;
+      end
+      for iw=1:nw
+        [~,R]=RmatAtoB(id1,idw(iw));
+        if dim=="X"
+          S1 = R(1:2,1:2) * S0 * R(1:2,1:2)' ;
+        else
+          S1 = R(3:4,3:4) * S0 * R(3:4,3:4)' ;
+        end
+        emitData.sigma_des(iw) = sqrt(S1(1,1)) ;
+      end
+      emitData.SIGMA0 = S0 ;
+      txt_results{13} = sprintf('SIGMA_DES   = %10.4f %10.4f %10.4f %10.4f um\n',emitData.sigma_des.*1e6);
       
       % Write to local emittance properties
       if dim=="X"
@@ -1111,6 +1143,8 @@ classdef F2_MatchingApp < handle & F2_common
       wsel=emitData.wsel;
       nw=sum(wsel);
       pcols=emitData.pcols;
+      S0=emitData.SIGMA0;
+      id1=emitData.id1;
       
       % Target figure axis
       fhan=figure; fhan.Position(3:4)=[900 500]; subplot(1,2,1);
@@ -1146,7 +1180,7 @@ classdef F2_MatchingApp < handle & F2_common
       sig0=sqrt(e0*b0);
       big=1e3*sqrt(e0/b0);
       c=pcols(wsel); 
-      ho=zeros(1,4);
+      ho=zeros(1,nw);
       for n=1:nw
         R11=R{n}(1+ioff,1+ioff);
         R12=R{n}(1+ioff,2+ioff);
@@ -1173,18 +1207,19 @@ classdef F2_MatchingApp < handle & F2_common
       
       % propagated fitted beam size plots
       subplot(1,2,2);
-      Z=arrayfun(@(x) BEAMLINE{x}.Coordi(3),idw(1):idw(end));
-      if emitData.dim=="X"
-        I.x.Twiss.alpha=a; I.x.Twiss.beta=b;
-      else
-        I.y.Twiss.alpha=a; I.y.Twiss.beta=b;
+      Z=arrayfun(@(x) BEAMLINE{x}.Coordi(3),id1:idw(end));
+      
+      sigfit = zeros(1,1+idw(end)-id1);
+      for iele=id1:idw(end)
+        [~,R]=RmatAtoB(id1,iele);
+        if emitData.dim=="X"
+          S1 = R(1:2,1:2) * S0 * R(1:2,1:2)' ;
+        else
+          S1 = R(3:4,3:4) * S0 * R(3:4,3:4)' ;
+        end
+        sigfit(1+iele-id1) = sqrt(S1(1,1)) ;
       end
-      [~,T]=GetTwiss(idw(1),idw(end),I.x.Twiss,I.y.Twiss);
-      if emitData.dim=="X"
-        sigfit=sqrt(e.*T.betax(1:end-1));
-      else
-        sigfit=sqrt(e.*T.betay(1:end-1));
-      end
+      
       plot(Z,sigfit*1e6,'b--')
       hold on
       idz=arrayfun(@(x) BEAMLINE{x}.Coordi(3),idw);
