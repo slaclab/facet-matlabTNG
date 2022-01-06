@@ -228,7 +228,7 @@ classdef F2_FeedbackApp < handle & F2_common
       
       % BC14 energy feedback
       if obj.UseFeedbacks(2)
-        BC14_Control=["KLYS:LI14:"+obj.BC14E_KlysNo(1)+"1//PDES" "KLYS:LI14:"+obj.BC14E_KlysNo(2)+"1//PDES"];
+        BC14_Control=["KLYS:LI14:"+obj.BC14E_KlysNo(1)+"1:PDES" "KLYS:LI14:"+obj.BC14E_KlysNo(2)+"1:PDES"];
         BC14_Setpoint=PV(cntx,'name',"Setpoint",'pvname',"BPMS:LI14:801:X1H",'monitor',true);
         B=BufferData('Name',"BC14EnergyBPM",'DoFilter',obj.SetpointDoFilter(2),...
           'FilterType',obj.SetpointFilterTypes(2));

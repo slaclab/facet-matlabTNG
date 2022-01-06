@@ -1,10 +1,8 @@
-function bAct = control_magnetSetBC(name, val, varargin)
-%CONTROL_CMAGNETSET
-%  CONTROL_CMAGNETSET(NAME, VAL, OPTS) set magnet NAME:BDES to VAL and
+function bAct = control_magnetSet(name, val, varargin)
+%CONTROL_MAGNETSET
+%  CONTROL_MAGNETSET(NAME, VAL, OPTS) set magnet NAME:BDES to VAL and
 %  perturbes. Returns the new BACT as VAL. Depending on OPTS, the magnet
 %  can also be trimmed.
-
-% Writes to BCON after setting magnet - other functionality same as control_magnetSet
 
 % Features:
 
@@ -28,6 +26,7 @@ function bAct = control_magnetSetBC(name, val, varargin)
 %                   lcaGetStatus, aidainit
 
 % Author: Henrik Loos, SLAC
+% JAN, 2022 (Glen White): Updated to use AIDA-PVA for SCP channels
 
 % --------------------------------------------------------------------
 
@@ -94,7 +93,6 @@ if any(~isSLC)
     % Set BDES if VAL is not empty.
     if ~isempty(val)
         lcaPut(strcat(name(~isSLC),':BDES'),val(~isSLC));
-        lcaPut(strcat(name(~isSLC),':BCON'),val(~isSLC));
     end
     % Trim or perturb magnets.
     nameCTRL=strcat(name(~isSLC),':CTRL');
@@ -144,7 +142,6 @@ if any(isSLC)
     %if strcmp(opts.action,'PERTURB'), func='PTRB';end
     disp('Wait for SLC magnet trim ...');
     bActSLC(~isColl)=magnetSet(nameSLCQ(~isColl),bDes(~isColl),'BDES',func);
-    bActSLC(~isColl)=magnetSet(nameSLCQ(~isColl),bDes(~isColl),'BCON',func);
     bActSLC(isColl)=magnetSet(nameSLCQ(isColl),bDes(isColl),'VDES',func);
     bActSLC(isQTRM)=control_magnetGet(nameSLC(isQTRM));
     if strcmp(func,'PTRB')
@@ -226,6 +223,7 @@ if ~val
 end
 
 
+% --------------------------------------------------------------------
 % % AIDA-PVA implementation
 function val = magnetSet(name, val, secn, func)
 
@@ -234,10 +232,8 @@ aidapvainit;
 
 try
   builder = pvaRequest(sprintf('MAGNETSET:%s',secn));
-  if ~strcmp(secn,'BCON')
-    builder.with('MAGFUNC', func);
-  end
-%   builder.with('LIMITCHECK','SOME');
+  builder.with('MAGFUNC', func);
+  builder.with('LIMITCHECK','SOME');
   jstruct = AidaPvaStruct();
   if ~iscell(name); name=cellstr(name); end
   if ~iscell(val); val=num2cell(val); end
@@ -251,9 +247,7 @@ catch e
   handleExceptions(e);
 end
 
-
-% --------------------------------------------------------------------
-%AIDA1 implementation
+% AIDA1 implementation
 % function val = magnetSet(name, val, secn, func)
 % 
 % % Initialize aida
@@ -275,17 +269,10 @@ end
 % da.reset;
 % da.setParam('MAGFUNC',func);
 % da.setParam('LIMITCHECK','SOME');
-% val=[];
 % try
 %     out=da.setDaValue(['MAGNETSET//' secn],in);
 %     val=getAsDoubles(out.get(1));
 % catch
-%     fprintf('Aida error trimming %s ... %s',name{unique([1 end])});
-%     pause(1);
-%     try
-%       out=da.setDaValue(['MAGNETSET//' secn],in);
-%       val=getAsDoubles(out.get(1));
-%     catch
-%       fprintf('Aida error trimming a second time, aborting %s ... %s',name{unique([1 end])});
-%     end
+%     disp(sprintf('Aida error trimming %s ... %s',name{unique([1 end])}));
+%     val=nan(size(name));
 % end

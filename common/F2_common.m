@@ -30,53 +30,5 @@ classdef F2_common < handle
       end
     end
   end
-  methods(Static)
-    function aidaput(pv,val)
-      aidainit;
-      import java.util.Vector;
-      import edu.stanford.slac.aida.lib.da.DaObject;
-      import edu.stanford.slac.aida.lib.util.common.*;
-      da = DaObject();
-      da.setParam('TRIM','YES');
-      try
-        da.setDaValue(char(pv),DaValue(java.lang.Float(val)));
-      catch ME
-        da.reset;
-        fprintf(2,'Error setting AIDA PV: %s\n',pv);
-        fprintf(2,'%s',ME.message)
-      end
-      da.reset;
-    end
-    function aidamput(name,val)
-      %AIDAMPUT Set one or more SLC magnet BDES values through AIDA
-      %
-      aidainit;
-      import edu.stanford.slac.aida.lib.da.DaObject;
-      import edu.stanford.slac.err.*;
-      import edu.stanford.slac.aida.lib.da.*;
-      import edu.stanford.slac.aida.lib.util.common.*;
-      da=DaObject;
-      in=DaValue;
-      
-      in.type=0;
-      in.addElement(DaValue(name(:)));
-      %in.addElement(DaValue(java.lang.Float(val))); % Kludge to make Aida format conversion work.
-      in.addElement(DaValue(single(val(:)))); % Kludge to make Aida format conversion work.
-      da.reset;
-      da.setParam('MAGFUNC','TRIM');
-      da.setParam('LIMITCHECK','SOME');
-      da.setDaValue('MAGNETSET//BDES',in);
-    end
-    function dnum = epics2mltime(tstamp)
-      % Put epics time stamp as Matlab datenum format in gui requested
-      % local time
-      persistent toffset tzoffset
-      if isempty(toffset)
-        toffset=datenum('1-jan-1970');
-        tzoffset=-double(java.util.Date().getTimezoneOffset()/60);
-      end
-      dnum=toffset+floor(tstamp+tzoffset*3600)*1e3/86400000;
-    end
-  end
 end
 

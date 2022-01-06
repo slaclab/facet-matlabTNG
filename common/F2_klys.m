@@ -60,7 +60,6 @@ classdef F2_klys < handle
       if exist('AmplOverride','var') && ~isempty(AmplOverride)
         obj.KlysAmplOverride = AmplOverride ;
       end
-      aidainit;
       % Klystron ID 1:10 = LI10:LI19
       obj.KlysInUse=true(8,10);
       obj.KlysInUse([1:2 5:8],1)=false;

@@ -915,8 +915,8 @@ classdef F2_MatchingApp < handle & F2_common
       fprintf('%s emittance parameters at %s\n',dim,wname{1});
       fprintf('-----------------------------------------------------\n');
       fprintf('energy      = %10.4f              GeV\n',energy);
-      fprintf('nemit       = %10.4f +- %9.4f um\n',1e6*emitxn,1e6*demitxn);
-      fprintf('nemit*bmag  = %10.4f +- %9.4f um\n',1e6*embmx*egamma,1e6*dembmx*egamma);
+      fprintf('nemit       = %10.4f +- %9.4f mm-mrad\n',1e6*emitxn,1e6*demitxn);
+      fprintf('nemit*bmag  = %10.4f              mm-mrad\n',1e6*emitxn*bmagx);
       fprintf('emit        = %10.4f +- %9.4f nm\n',1e9*emitx,1e9*demitx);
       fprintf('bmag        = %10.4f +- %9.4f      (%9.4f)\n',bmagx,dbmagx,1);
       fprintf('bmag_cos    = %10.4f +- %9.4f      (%9.4f)\n',bcosx,dbcosx,0);
@@ -928,8 +928,8 @@ classdef F2_MatchingApp < handle & F2_common
       txt_results{1} =  sprintf('%s emittance parameters at %s\n',dim,wname{1});
       txt_results{2} =  sprintf('----\n');
       txt_results{3} =  sprintf('energy      = %10.4f              GeV\n',energy);
-      txt_results{4} =  sprintf('nemit       = %10.4f +- %9.4f um\n',1e6*emitxn,1e6*demitxn);
-      txt_results{5} =  sprintf('nemit*bmag  = %10.4f +- %9.4f um\n',1e6*embmx*egamma,1e6*dembmx*egamma);
+      txt_results{4} =  sprintf('nemit       = %10.4f +- %9.4f mm-mrad\n',1e6*emitxn,1e6*demitxn);
+      txt_results{5} =  sprintf('nemit*bmag  = %10.4f\n            mm-mrad',1e6*emitxn*bmagx);
       txt_results{6} =  sprintf('emit        = %10.4f +- %9.4f nm\n',1e9*emitx,1e9*demitx);
       txt_results{7} =  sprintf('bmag        = %10.4f +- %9.4f      (%9.4f)\n',bmagx,dbmagx,1);
       txt_results{8} =  sprintf('bmag_cos    = %10.4f +- %9.4f      (%9.4f)\n',bcosx,dbcosx,0);

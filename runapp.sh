@@ -1,4 +1,5 @@
 #!/bin/bash
+source /usr/local/facet/epics/setup/epicsenv-7.0.3.1-1.0.bash
 if [ "$#" -eq 2 ] && [ $1 == "-python" ]
   then
     source $PACKAGE_TOP/anaconda/envs/python3.7env/bin/activate
