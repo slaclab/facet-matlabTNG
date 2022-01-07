@@ -24,7 +24,7 @@ end
 %refCamSettings.ROIminX(8)=290;refCamSettings.ROIminY(8) = 384;
             
     if app.setPointOption % Set reference centroid using pre-defined references
-      s20LaserTargetPositions = importdata('/home/fphysics/cemma/S20Laser/S20LaserAlignmentFeedback/s20LaserTargetPositions.mat');
+      s20LaserTargetPositions = importdata('/home/fphysics/cemma/S20Laser/S20LaserAlignmentFeedback/s20LaserTargetPositionswMPA.mat');
       strs = {s20LaserTargetPositions.cameraPV};
         for jj = 1:length(app.camerapvs)
             ind=find(ismember(strs,app.camerapvs{jj}));
