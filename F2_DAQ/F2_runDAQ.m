@@ -66,6 +66,7 @@ classdef F2_runDAQ < handle
                 PV(context,'name',"DAQ_Running",'pvname',"SIOC:SYS1:ML02:AO352",'mode',"rw",'monitor',true); % Is DAQ running?
                 PV(context,'name',"DAQ_Abort",'pvname',"SIOC:SYS1:ML02:AO353",'mode',"rw",'monitor',true); % Abort request
                 PV(context,'name',"DAQ_Instance",'pvname',"SIOC:SYS1:ML02:AO400",'mode',"rw",'monitor',true); % Number of times DAQ is run
+                PV(context,'name',"DAQ_Exp",'pvname',"SIOC:SYS1:ML02:AO398",'mode',"rw",'monitor',true); % Exp number
                 PV(context,'name',"MPS_Shutter",'pvname',"IOC:SYS1:MP01:MSHUTCTL",'mode',"rw",'monitor',true); % MPS Shutter
                 PV(context,'name',"MPS_Shutter_RBV",'pvname',"SHUT:LT10:950:IN_MPS",'mode',"rw",'monitor',true); % MPS Shutter
                 PV(context,'name',"BSA_nRuns",'pvname',"SIOC:SYS1:ML02:AO500",'mode',"rw",'monitor',true); % BSA thing
@@ -93,6 +94,14 @@ classdef F2_runDAQ < handle
             caput(obj.pvs.DAQ_Instance,obj.Instance);
             obj.dispMessage(sprintf('Started DAQ instance %d.',obj.Instance));
             
+            % Update DAQ exp
+            if strcmp(obj.params.experiment,'TEST')
+                expNum = 0;
+            else
+                expNum = str2num(obj.params.experiment(2:end));
+            end
+            caput(obj.pvs.DAQ_Exp,expNum);
+            
             % =========================================
             % Create Data Path on NAS drive 
             % =========================================
@@ -115,19 +124,21 @@ classdef F2_runDAQ < handle
             obj.bsa_list = {obj.pulseIDPV; obj.secPV; obj.nSecPV;};
             for i = 1:numel(obj.params.BSA_list)
                 pvList = feval(obj.params.BSA_list{i});
-                pvDesc = lcaGetSmart(strcat(pvList,'.DESC'));
+                %pvDesc = lcaGetSmart(strcat(pvList,'HSTBR.DESC'));
+                pvDesc = pvList; % Temporary
                 
                 obj.data_struct.metadata.(obj.params.BSA_list{i}).PVs = pvList;
                 obj.data_struct.metadata.(obj.params.BSA_list{i}).Desc = pvDesc;
                 
                 obj.bsa_list = [obj.bsa_list; pvList];
-            end
+            end 
             
             % Fill in non-BSA data
             obj.nonbsa_list = {obj.pulseIDPV; obj.secPV; obj.nSecPV;};
             for i = 1:numel(obj.params.nonBSA_list)
                 pvList = feval(obj.params.nonBSA_list{i});
-                pvDesc = lcaGetSmart(strcat(pvList,'.DESC'));
+                %pvDesc = lcaGetSmart(strcat(pvList,'.DESC'));
+                pvDesc = pvList; % Temporary
                 
                 obj.data_struct.metadata.(obj.params.nonBSA_list{i}).PVs = pvList;
                 obj.data_struct.metadata.(obj.params.nonBSA_list{i}).Desc = pvDesc;

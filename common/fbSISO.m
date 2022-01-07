@@ -10,7 +10,7 @@ classdef fbSISO < handle
     WriteEnable logical = true % enable writing to PV control
     WriteRateMax = 0 % max rate at which to write to PV control (sec) [0= don't limit]
     Method string {mustBeMember(Method,"PID")} = "PID"
-    Kp {mustBeNonnegative} = 1
+    Kp = 1
     Ki {mustBeNonnegative} = 0
     Kd {mustBeNonnegative} = 0
     LimitEventRate {mustBeNonnegative} = 0 % Limit data reporting rate for DataUpdated and StateChange events if > 0 [seconds]
@@ -379,19 +379,17 @@ classdef fbSISO < handle
   end
   methods(Static)
     function aidaput(pv,val)
-      aidainit;
-      import java.util.Vector;
-      import edu.stanford.slac.aida.lib.da.DaObject;
-      import edu.stanford.slac.aida.lib.util.common.*;
-      da = DaObject();
-      da.reset;
-      da.setParam('TRIM','YES');
+      aidapvainit;
+      builder = pvaRequest(char(pv));
+      builder.with('TRIM', 'YES');
       try
-        da.setDaValue(char(pv),DaValue(java.lang.Float(val)));
+        builder.set(val);
         if endsWith(string(pv),"DRVR") % Need to poke phase control to cause drive amplitude to trim in SCP
           ppv = regexprep(pv,"(DRVR)$","KPHR") ;
           pval = aidaget(char(ppv)) ;
-          da.setDaValue(char(ppv),DaValue(java.lang.Float(pval)));
+          builder = pvaRequest(char(ppv));
+          builder.with('TRIM', 'YES');
+          builder.set(pval);
         end
       catch ME
         fprintf(2,'Error setting AIDA PV: %s\n',pv);

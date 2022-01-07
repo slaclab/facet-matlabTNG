@@ -147,7 +147,7 @@ classdef F2_DAQApp < handle
                 obj.DAQ_params.startVals(1) = obj.guihan.StartEditField.Value;
                 obj.DAQ_params.stopVals(1) = obj.guihan.StopEditField.Value;
                 obj.DAQ_params.nSteps(1) = obj.guihan.StepsEditField.Value;
-                obj.DAQ_params.scanVals{1} = str2num(obj.guihan.ScanValuesTextArea.Value{1});
+                obj.DAQ_params.scanVals{1} = obj.guihan.scan_vals;
                 
                 obj.DAQ_params.totalSteps = obj.DAQ_params.nSteps(1);
                 obj.DAQ_params.stepsAll = (1:obj.DAQ_params.nSteps(1))';
@@ -159,7 +159,7 @@ classdef F2_DAQApp < handle
                 obj.DAQ_params.startVals(2) = obj.guihan.StartEditField_2.Value;
                 obj.DAQ_params.stopVals(2) = obj.guihan.StopEditField_2.Value;
                 obj.DAQ_params.nSteps(2) = obj.guihan.StepsEditField_2.Value;
-                obj.DAQ_params.scanVals{2} = str2num(obj.guihan.ScanValuesTextArea_2.Value{1});
+                obj.DAQ_params.scanVals{2} = obj.guihan.scan_vals2;
                 
                 obj.DAQ_params.totalSteps = obj.DAQ_params.nSteps(1)*obj.DAQ_params.nSteps(2);
                 obj.DAQ_params.stepsAll = zeros(obj.DAQ_params.totalSteps,2);
@@ -264,6 +264,7 @@ classdef F2_DAQApp < handle
             
         function display_list(obj,list)
             obj.addMessage(sprintf('Generating display table for %s',list));
+            
             pv_list = feval(list);
             pv_check = pv_list;
             for i = 1:numel(pv_check)

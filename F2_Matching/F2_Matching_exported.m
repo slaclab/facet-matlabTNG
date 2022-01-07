@@ -91,6 +91,7 @@ classdef F2_Matching_exported < matlab.apps.AppBase
     ModelDatePanel                  matlab.ui.container.Panel
     ModelDateEditField              matlab.ui.control.EditField
     ReLoadEMITPVsButton             matlab.ui.control.Button
+    DropDown_2                      matlab.ui.control.DropDown
   end
 
   
@@ -508,6 +509,21 @@ classdef F2_Matching_exported < matlab.apps.AppBase
     % Button pushed function: Button
     function ButtonPushed(app, event)
       app.aobj.emitMW_plot(app.MultiWireData,char(join(string(app.EmitText),""))) ;
+    end
+
+    % Value changed function: DropDown_2
+    function DropDown_2ValueChanged(app, event)
+      value = app.DropDown_2.Value;
+      switch string(value)
+        case "Match BKW"
+          app.aobj.MatchDir="BKW";
+        case "Match FWD"
+          app.aobj.MatchDir="FWD";
+        otherwise
+          error('Unsupported matching direction option');
+      end
+      app.ReLoadEMITPVsButtonPushed();
+      app.TabGroupSelectionChanged();
     end
   end
 
@@ -945,7 +961,7 @@ classdef F2_Matching_exported < matlab.apps.AppBase
 
       % Create DropDown
       app.DropDown = uidropdown(app.ProfileMeasurementDevicePanel);
-      app.DropDown.Items = {'<Select From Below>', 'WIRE:IN10:561', 'PROF:IN10:571', 'PROF:LI11:335', 'PROF:LI11:375', 'WIRE:LI11:444', 'WIRE:LI18:944'};
+      app.DropDown.Items = {'<Select From Below>', 'WIRE:IN10:561', 'PROF:IN10:571', 'PROF:LI11:335', 'PROF:LI11:375', 'WIRE:LI11:444', 'WIRE:LI11:614', 'WIRE:LI11:744', 'WIRE:LI12:214', 'WIRE:LI18:944', 'WIRE:LI19:144', 'WIRE:LI19:244', 'WIRE:LI19:344', 'CAMR:LI20:103'};
       app.DropDown.ValueChangedFcn = createCallbackFcn(app, @DropDownValueChanged, true);
       app.DropDown.Interruptible = 'off';
       app.DropDown.Position = [13 3 214 22];
@@ -1053,6 +1069,13 @@ classdef F2_Matching_exported < matlab.apps.AppBase
       app.ReLoadEMITPVsButton.Interruptible = 'off';
       app.ReLoadEMITPVsButton.Position = [257 88 175 27];
       app.ReLoadEMITPVsButton.Text = 'Re-Load EMIT PVs';
+
+      % Create DropDown_2
+      app.DropDown_2 = uidropdown(app.FACETIIOpticsMatchingUIFigure);
+      app.DropDown_2.Items = {'Match BKW', 'Match FWD'};
+      app.DropDown_2.ValueChangedFcn = createCallbackFcn(app, @DropDown_2ValueChanged, true);
+      app.DropDown_2.Position = [885 90 100 22];
+      app.DropDown_2.Value = 'Match BKW';
 
       % Show the figure after all components are created
       app.FACETIIOpticsMatchingUIFigure.Visible = 'on';

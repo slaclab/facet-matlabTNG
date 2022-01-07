@@ -86,6 +86,11 @@ classdef F2_DAQ_exported < matlab.apps.AppBase
         config_dir = '/u1/facet/matlab/config/F2_DAQ/'
     end
     
+    properties (Access = public)
+        scan_vals
+        scan_vals2
+    end
+    
 
     % Callbacks that handle component events
     methods (Access = private)
@@ -237,8 +242,8 @@ classdef F2_DAQ_exported < matlab.apps.AppBase
                 return
             end
             
-            scan_vals = linspace(start_value,end_value,steps_val);
-            scan_str = num2str(scan_vals,'%0.2f, ');
+            app.scan_vals = linspace(start_value,end_value,steps_val);
+            scan_str = num2str(app.scan_vals,'%0.2f, ');
             app.ScanValuesTextArea.Value = scan_str;
             
         end
@@ -258,8 +263,8 @@ classdef F2_DAQ_exported < matlab.apps.AppBase
                 return
             end
             
-            scan_vals = linspace(start_value,end_value,steps_val);
-            scan_str = num2str(scan_vals,'%0.2f, ');
+            app.scan_vals2 = linspace(start_value,end_value,steps_val);
+            scan_str = num2str(app.scan_vals2,'%0.2f, ');
             app.ScanValuesTextArea_2.Value = scan_str;
             
         end
@@ -379,7 +384,7 @@ classdef F2_DAQ_exported < matlab.apps.AppBase
 
             % Create ExperimentDropDown
             app.ExperimentDropDown = uidropdown(app.DAQSettingsPanel);
-            app.ExperimentDropDown.Items = {'TEST', 'E300', 'E305', 'E320', 'E326', 'E327'};
+            app.ExperimentDropDown.Items = {'TEST', 'E300', 'E305', 'E320', 'E325', 'E326', 'E327'};
             app.ExperimentDropDown.Position = [88 187 71 22];
             app.ExperimentDropDown.Value = 'TEST';
 

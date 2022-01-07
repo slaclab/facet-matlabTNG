@@ -94,24 +94,9 @@ end
 drawnow % Update any GUI processing steps
 
 function err = aidaset(name,val)
-aidainit;
-import edu.stanford.slac.aida.lib.da.DaObject;
-import edu.stanford.slac.err.*;
-import edu.stanford.slac.aida.lib.da.*;
-import edu.stanford.slac.aida.lib.util.common.*;
-da=DaObject;
-in=DaValue;
-
-in.type=0;
-in.addElement(DaValue(name));
-%in.addElement(DaValue(java.lang.Float(val))); % Kludge to make Aida format conversion work.
-in.addElement(DaValue(single(val(:)))); % Kludge to make Aida format conversion work.
-da.reset;
-da.setParam('MAGFUNC','TRIM');
-da.setParam('LIMITCHECK','SOME');
 err=false;
 try
-  da.setDaValue('MAGNETSET//BDES',in);
+  control_magnetSet(name,val);
 catch
   err=true;
 end

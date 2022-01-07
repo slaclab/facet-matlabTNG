@@ -10,11 +10,11 @@ classdef F2_S20ConfigApp < handle & F2_common
     E_override logical = false % Overrides the Energy PV and allows user setting of Sector 20 energy assumption
     isSFQED logical = false % If true, use special matching conditions for SFQED configuration
     isKracken logical = false % If true, use special matching conditions for Kracken configuration
-    WaistDesName string = "PENT" % Model name of (intended) IP waist location
     WaistDesNameDS string = "PDUMP" % Model name of (intended) downstream waist location
     showlegend logical = true % Display legend on Twiss plots or not
   end
   properties(SetObservable, AbortSet)
+    WaistDesName string = "PENT" % Model name of (intended) IP waist location
     E0 = 10 % Beam energy [GeV]
     dE = 1.2 % Energy spread [% RMS]
     WaistResolution {mustBePositive} = 1e-2 % Resolution for finding z location of waist [m]
@@ -118,6 +118,12 @@ classdef F2_S20ConfigApp < handle & F2_common
         PV(context,'name',"BDES_B5",'pvname',"LI20:LGPS:3330:BDES",'monitor',true);
         PV(context,'name',"IP_BETAX",'pvname',"SIOC:SYS1:ML01:AO129",'monitor',false,'mode',"rw");
         PV(context,'name',"IP_BETAY",'pvname',"SIOC:SYS1:ML01:AO130",'monitor',false,'mode',"rw");
+        PV(context,'name',"BETAX_DES",'pvname',"SIOC:SYS1:ML00:AO352",'monitor',true,'mode',"rw"); % Desire BETA_X
+        PV(context,'name',"BETAY_DES",'pvname',"SIOC:SYS1:ML00:AO354",'monitor',true,'mode',"rw"); % Desire BETA_X
+        PV(context,'name',"WaistX_DES_Name",'pvname',"SIOC:SYS1:ML00:SO0351",'monitor',true,'mode',"rw");
+        PV(context,'name',"WaistY_DES_Name",'pvname',"SIOC:SYS1:ML00:SO0353",'monitor',true,'mode',"rw");
+        PV(context,'name',"WaistX_DES_Z",'pvname',"SIOC:SYS1:ML00:AO351");
+        PV(context,'name',"WaistY_DES_Z",'pvname',"SIOC:SYS1:ML00:AO353");
         ] ;
       pset(obj.pvlist,'debug',0) ;
       obj.pvs = struct(obj.pvlist) ;
@@ -150,14 +156,15 @@ classdef F2_S20ConfigApp < handle & F2_common
       obj.InitialDesign = obj.LM.Initial1 ;
       obj.guisetInitial();
       
-      % Get PVs once and propogate state changes
-      caget(obj.pvlist); obj.PVwatchdog() ; 
-      
       % Signify end of startup and first call of Waist location routines
       if ~isempty(obj.guihan)
         obj.guihan.ListBox.Items = obj.WaistStr ;
         obj.guihan.ListBox.Value = obj.WaistDesName ;
       end
+      
+      % Get PVs once and propogate state changes
+      caget(obj.pvlist); obj.PVwatchdog() ; 
+      
       obj.startup=false;
       obj.LM.ModelBDES = obj.Q_BDES ;
       obj.TwissACT=obj.TwissCalc(obj.WaistResolution);
@@ -165,6 +172,7 @@ classdef F2_S20ConfigApp < handle & F2_common
       
       % Start PV updater and attach listener
       addlistener(obj,'PVUpdated',@(~,~) obj.PVwatchdog) ;
+      obj.PVwatchdog() ; 
       run(obj.pvlist,true,1,obj,'PVUpdated');
       
       % Start counter updater if not running in GUI mode
@@ -479,6 +487,17 @@ classdef F2_S20ConfigApp < handle & F2_common
         obj.E0 = obj.pvs.EBC20.val{1} ;
       end
       obj.dE = obj.pvs.dE.val{1} ;
+      obj.BetaDES = [obj.pvs.BETAX_DES.val{1} obj.pvs.BETAY_DES.val{1}] ;
+      if ~isempty(obj.guihan)
+        obj.guihan.BetaX_DES.Value = obj.BetaDES(1)*100 ;
+        obj.guihan.BetaY_DES.Value = obj.BetaDES(2)*100 ;
+      end
+      if obj.WaistDesName ~= string(obj.pvs.WaistX_DES_Name.val{1})
+        obj.WaistDesName = string(obj.pvs.WaistX_DES_Name.val{1}) ;
+      end
+      if ~isempty(obj.guihan)
+%         obj.guihan.ListBox.Value = obj.WaistDesName ; % need to deal with waist pointer text
+      end
       drawnow;
     end
     function Table(obj)
@@ -819,6 +838,9 @@ classdef F2_S20ConfigApp < handle & F2_common
         end
       end
       obj.MatchOK=false;
+      % Write BETA DES PVs
+      caput(obj.pvs.BETAX_DES,beta(1));
+      caput(obj.pvs.BETAY_DES,beta(2));
     end
     function set.dE(obj,dE)
       caput(obj.pvs.dE,dE);
@@ -939,6 +961,12 @@ classdef F2_S20ConfigApp < handle & F2_common
         error('Unkown name: %s',name);
       end
       obj.WaistCalc;
+      caput(obj.pvs.WaistX_DES_Name,char(name));
+      caput(obj.pvs.WaistY_DES_Name,char(name));
+      obj.WaistDesName=name;
+      z=obj.WaistDesZ;
+      caput(obj.pvs.WaistX_DES_Z,z);
+      caput(obj.pvs.WaistY_DES_Z,z);
     end
     function set.WaistDesNameDS(obj,name)
       if ismember(string(name),obj.EleNames)

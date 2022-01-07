@@ -11,6 +11,7 @@ classdef F2_MatchingApp < handle & F2_common
     ShowPlotLegend logical = false
     UseMatchQuad logical % Which matching quads to use
     LoadingScanData logical = false % Sets to true when loading raw emittance scan data (overrides loading in externally calculated Twiss parameters)
+    MatchDir string {mustBeMember(MatchDir,["BKW" "FWD"])} = "BKW"
   end
   properties(SetAccess=private)
     MatchQuadNames string = ["QUAD:IN10:425" "QUAD:IN10:441" "QUAD:IN10:511" "QUAD:IN10:525"] % Read in when select Prof device and/or when change # matching quads
@@ -47,7 +48,9 @@ classdef F2_MatchingApp < handle & F2_common
     TwissFit(1,8)
   end
   properties(Constant)
-    EmitDataProfs = ["PROF:IN10:571" "PROF:LI11:375" "WIRE:IN10:561" "WIRE:LI11:444" "WIRE:LI19:144"] % profile devices for which there are emittance PVs
+    plotcols = 'bgrm'
+    EmitDataProfs string = [] % profile devices for which there are NO emittance PVs
+%     EmitDataProfs = ["PROF:IN10:571" "PROF:LI11:375" "CAMR:LI20:103" "WIRE:IN10:561" "WIRE:LI11:444" "WIRE:LI19:144"] % profile devices for which there are NO emittance PVs
     InitMatchProf = ["WIRE:IN10:561","PROF:IN10:571"] % Profile devices to associate with initial match conditions
   end
  
@@ -75,21 +78,25 @@ classdef F2_MatchingApp < handle & F2_common
       obj.MatchQuadInitVals = []; obj.TwissPreMatch=[]; obj.TwissMatch=[];
       LM_mags=obj.LiveModel.LEM.Mags.LM;
       pele=obj.ProfModelInd;
-      betax_design = obj.LiveModel.DesignTwiss.betax(pele) ;
-      betay_design = obj.LiveModel.DesignTwiss.betay(pele) ;
-      alphax_design = obj.LiveModel.DesignTwiss.alphax(pele) ;
-      alphay_design = obj.LiveModel.DesignTwiss.alphay(pele) ;
       betax_fit = obj.TwissFit(1) ;
       betay_fit = obj.TwissFit(2) ;
       alphax_fit = obj.TwissFit(3) ;
       alphay_fit = obj.TwissFit(4) ;
       
       % Form list of matching quads
-      iquads = LM_mags.ModelUniqueID(:) < pele & obj.LEMQuadID(:) ;
+      if obj.MatchDir=="BKW"
+        iquads = LM_mags.ModelUniqueID(:) < pele & obj.LEMQuadID(:) ;
+      else
+        iquads = LM_mags.ModelUniqueID(:) > pele & obj.LEMQuadID(:) ;
+      end
       if sum(iquads)<double(obj.NumMatchQuads)
         error('Insufficient matching quads available');
       end
-      id1=find(iquads,double(obj.NumMatchQuads),'last') ; id1=id1(obj.UseMatchQuad);
+      if obj.MatchDir=="BKW"
+        id1=find(iquads,double(obj.NumMatchQuads),'last') ; id1=id1(obj.UseMatchQuad);
+      else
+        id1=find(iquads,double(obj.NumMatchQuads),'first') ; id1=id1(obj.UseMatchQuad);
+      end
       quadps = arrayfun(@(x) BEAMLINE{x}.PS,LM_mags.ModelUniqueID(id1)) ;
       idm=ismember(obj.LiveModel.LEM.Mags.LM.ModelUniqueID,LM_mags.ModelUniqueID(id1)) ;
       bmin = obj.LiveModel.LEM.Mags.BMIN(idm)./10;
@@ -102,57 +109,78 @@ classdef F2_MatchingApp < handle & F2_common
       % If matching on PR10571 or WS10561 then get initial Twiss parameters and record them in PVs
 %       if ismember(obj.ProfName,obj.InitMatchProf)
 %         i1=1;
-%       else % match from entrance of first matching quad
-        i1=PS(quadps(1)).Element(1);
+%       else % match from entrance of first matching quad or match point
+        if obj.MatchDir=="BKW"
+          i1=PS(quadps(1)).Element(1);
+          i2=pele;
+        else
+          i1=pele;
+          i2=PS(quadps(end)).Element(end);
+        end
 %       end
       
+      % Design twiss parameters at destination location
+      betax_design = obj.LiveModel.DesignTwiss.betax(i2) ;
+      betay_design = obj.LiveModel.DesignTwiss.betay(i2) ;
+      alphax_design = obj.LiveModel.DesignTwiss.alphax(i2) ;
+      alphay_design = obj.LiveModel.DesignTwiss.alphay(i2) ;
+
       % Get Twiss parameters at initial match point by back-propogating using flipped Lattice
-      isol=findcells(BEAMLINE,'Class','SOLENOID');
-      for ind=isol; BEAMLINE{ind}.B=0; end
-      [~,R]=RmatAtoB(i1,pele);
-      S1=[betax_fit   -alphax_fit                0          0 ;
-          -alphax_fit (1+alphax_fit^2)/betax_fit 0          0 ;
-          0           0                          betay_fit   -alphay_fit ;
-          0           0                          -alphay_fit (1+alphay_fit^2)/betay_fit ] ;
-      R=[R(1,1) R(1,2) 0      0      ;
-         R(2,1) R(2,2) 0      0      ;
-         0      0      R(3,3) R(3,4) ;
-         0      0      R(4,3) R(4,4) ] ;
-      S0=inv(R)*S1*inv(R'); %#ok<MINV>
-      if any(isinf(S0(:))) || any(isnan(S0(:)))
-        error('Match of Initial Twiss Parameters Failed');
-      end
       I = TwissToInitial(obj.LiveModel.DesignTwiss,i1,obj.LiveModel.Initial);
-      I.x.Twiss.beta=S0(1,1); I.x.Twiss.alpha=-S0(1,2); I.y.Twiss.beta=S0(3,3); I.y.Twiss.alpha=-S0(3,4);
+      if obj.MatchDir=="BKW"
+        isol=findcells(BEAMLINE,'Class','SOLENOID');
+        for ind=isol; BEAMLINE{ind}.B=0; end
+        [~,R]=RmatAtoB(i1,i2);
+        S1=[betax_fit   -alphax_fit                0          0 ;
+            -alphax_fit (1+alphax_fit^2)/betax_fit 0          0 ;
+            0           0                          betay_fit   -alphay_fit ;
+            0           0                          -alphay_fit (1+alphay_fit^2)/betay_fit ] ;
+        R=[R(1,1) R(1,2) 0      0      ;
+           R(2,1) R(2,2) 0      0      ;
+           0      0      R(3,3) R(3,4) ;
+           0      0      R(4,3) R(4,4) ] ;
+        S0=inv(R)*S1*inv(R'); %#ok<MINV>
+        if any(isinf(S0(:))) || any(isnan(S0(:)))
+          error('Match of Initial Twiss Parameters Failed');
+        end
+        I.x.Twiss.beta=S0(1,1); I.x.Twiss.alpha=-S0(1,2); I.y.Twiss.beta=S0(3,3); I.y.Twiss.alpha=-S0(3,4);
+      else
+        I.x.Twiss.beta=betax_fit; I.x.Twiss.alpha=alphax_fit; I.y.Twiss.beta=betay_fit; I.y.Twiss.alpha=alphay_fit;
+      end
+      I.Momentum = BEAMLINE{i1}.P;
       
       % - Fine tune initial Twiss parameters using Matching
-      M=Match;
-      M.beam=MakeBeam6DGauss(I,1e3,3,1);
-      M.iInitial=i1;
-      M.initStruc=I;
-      M.verbose=false; % see optimizer output or not
-      M.optim='fminsearch';
-      M.optimDisplay='off';
-      M.useParallel=false;
-      M.addVariable('INITIAL',1,'betax',0.01,1000);
-      M.addVariable('INITIAL',1,'alphax',-100,100);
-      M.addVariable('INITIAL',1,'betay',0.01,1000);
-      M.addVariable('INITIAL',1,'alphay',-100,100);
-      M.addMatch(pele,'beta_x',betax_fit,betax_fit/1000);
-      M.addMatch(pele,'alpha_x',alphax_fit,1e-3);
-      M.addMatch(pele,'beta_y',betay_fit,betay_fit/1000);
-      M.addMatch(pele,'alpha_y',alphay_fit,1e-3);
-      M.doMatch;
-      display(M);
-      if any(abs(M.optimVals-[betax_fit alphax_fit betay_fit alphay_fit])>[betax_fit/100 0.01 betay_fit/100 0.01])
-        error('Match of Initial Twiss Parameters Failed');
+      if obj.MatchDir=="BKW"
+        M=Match;
+        M.beam=MakeBeam6DGauss(I,1e3,3,1);
+        M.iInitial=i1;
+        M.initStruc=I;
+        M.verbose=false; % see optimizer output or not
+        M.optim='fminsearch';
+        M.optimDisplay='off';
+        M.useParallel=false;
+        M.addVariable('INITIAL',1,'betax',0.01,1000);
+        M.addVariable('INITIAL',1,'alphax',-100,100);
+        M.addVariable('INITIAL',1,'betay',0.01,1000);
+        M.addVariable('INITIAL',1,'alphay',-100,100);
+        M.addMatch(pele,'beta_x',betax_fit,betax_fit/1000);
+        M.addMatch(pele,'alpha_x',alphax_fit,1e-3);
+        M.addMatch(pele,'beta_y',betay_fit,betay_fit/1000);
+        M.addMatch(pele,'alpha_y',alphay_fit,1e-3);
+        M.doMatch;
+        display(M);
+        if any(abs(M.optimVals-[betax_fit alphax_fit betay_fit alphay_fit])>[betax_fit/100 0.01 betay_fit/100 0.01])
+          error('Match of Initial Twiss Parameters Failed');
+        end
+        obj.InitMatch=M.initStruc;
+      else
+        obj.InitMatch=I;
       end
-      obj.InitMatch=M.initStruc;
       obj.InitMatch.x.NEmit = obj.TwissFit(7)*1e-6 ;
       obj.InitMatch.y.NEmit = obj.TwissFit(8)*1e-6 ;
-      [~,T]=GetTwiss(i1,pele,obj.InitMatch.x.Twiss,obj.InitMatch.y.Twiss);
+      [~,T]=GetTwiss(i1,i2,obj.InitMatch.x.Twiss,obj.InitMatch.y.Twiss);
       obj.TwissPreMatch=T;
-      obj.TwissPreMatch.z = [arrayfun(@(x) BEAMLINE{x}.Coordi(3),i1:pele) BEAMLINE{pele}.Coordf(3)] ;
+      obj.TwissPreMatch.z = [arrayfun(@(x) BEAMLINE{x}.Coordi(3),i1:i2) BEAMLINE{i2}.Coordf(3)] ;
       % If this is all is required, exit now
       if exist('cmd','var') && cmd=="init"
         return
@@ -170,18 +198,18 @@ classdef F2_MatchingApp < handle & F2_common
       for ips=1:length(quadps)
         M.addVariable('PS', quadps(ips),'Ampl',bmin(ips),bmax(ips));
       end
-      M.addMatch(pele,'beta_x',betax_design,betax_design/1e3);
-      M.addMatch(pele,'beta_y',betay_design,betay_design/1e3);
-      M.addMatch(pele,'alpha_x',alphax_design,1e-3);
-      M.addMatch(pele,'alpha_y',alphay_design,1e-3);
+      M.addMatch(i2,'beta_x',betax_design,betax_design/1e3);
+      M.addMatch(i2,'beta_y',betay_design,betay_design/1e3);
+      M.addMatch(i2,'alpha_x',alphax_design,1e-3);
+      M.addMatch(i2,'alpha_y',alphay_design,1e-3);
       M.doMatch;
       display(M);
-      [~,T]=GetTwiss(i1,pele,obj.InitMatch.x.Twiss,obj.InitMatch.y.Twiss);
+      [~,T]=GetTwiss(i1,i2,obj.InitMatch.x.Twiss,obj.InitMatch.y.Twiss);
       obj.TwissMatch=T;
-      obj.TwissMatch.z = [arrayfun(@(x) BEAMLINE{x}.Coordi(3),i1:pele) BEAMLINE{pele}.Coordf(3)] ;
+      obj.TwissMatch.z = [arrayfun(@(x) BEAMLINE{x}.Coordi(3),i1:i2) BEAMLINE{i2}.Coordf(3)] ;
       
       % Check match in range and store in Mags BDES field
-      if any(M.varVals>bmax | M.varVals<bmin)
+      if any(M.varVals(:)>bmax | M.varVals(:)<bmin)
         for ips=1:length(quadps)
           PS(quadps(ips)).Ampl = ps_init(ips) ;
         end
@@ -389,7 +417,7 @@ classdef F2_MatchingApp < handle & F2_common
     end
     function WriteEmitData(obj)
       %WRITEENMITDATA Write twiss and emittance data to PVs
-      if ~isempty(obj.QuadScanData) && ismember(obj.ProfName,obj.EmitDataProfs)
+      if ~isempty(obj.QuadScanData) && ~ismember(obj.ProfName,obj.EmitDataProfs)
         lcaPutNoWait(sprintf('%s:BETA_X',obj.ProfName),obj.TwissFit(1));
         lcaPutNoWait(sprintf('%s:ALPHA_X',obj.ProfName),obj.TwissFit(3));
         lcaPutNoWait(sprintf('%s:BMAG_X',obj.ProfName),obj.TwissFit(5));
@@ -414,7 +442,7 @@ classdef F2_MatchingApp < handle & F2_common
       end
     end
     function ReadEmitData(obj)
-      if ismember(obj.ProfName,obj.EmitDataProfs) && ~obj.LoadingScanData
+      if ~ismember(obj.ProfName,obj.EmitDataProfs) && ~obj.LoadingScanData
         [betax,pvtime] = lcaGet(sprintf('%s:BETA_X',obj.ProfName));
         betay = lcaGet(sprintf('%s:BETA_Y',obj.ProfName));
         alphax = lcaGet(sprintf('%s:ALPHA_X',obj.ProfName));
@@ -661,7 +689,7 @@ classdef F2_MatchingApp < handle & F2_common
       end
     end
     function PlotTwiss(obj,newfig)
-      global BEAMLINE
+      global BEAMLINE PS
       if ~exist('newfig','var')
         newfig=false;
       end
@@ -672,12 +700,25 @@ classdef F2_MatchingApp < handle & F2_common
         ah=obj.guihan.UIAxes2;
       end
       ah.reset;
-%       if ismember(obj.ProfName,obj.InitMatchProf)
-%         i1=1;
-%       else
-        i1=obj.MatchQuadModelInd(1);
-%       end
-      i2=obj.ProfModelInd;
+      LM_mags=obj.LiveModel.LEM.Mags.LM;
+      if obj.MatchDir=="BKW"
+        iquads = LM_mags.ModelUniqueID(:) < obj.ProfModelInd & obj.LEMQuadID(:) ;
+      else
+        iquads = LM_mags.ModelUniqueID(:) > obj.ProfModelInd & obj.LEMQuadID(:) ;
+      end
+      if obj.MatchDir=="BKW"
+        id1=find(iquads,double(obj.NumMatchQuads),'last') ; id1=id1(obj.UseMatchQuad);
+      else
+        id1=find(iquads,double(obj.NumMatchQuads),'first') ; id1=id1(obj.UseMatchQuad);
+      end
+      quadps = arrayfun(@(x) BEAMLINE{x}.PS,LM_mags.ModelUniqueID(id1)) ;
+      if obj.MatchDir=="BKW"
+        i1=PS(quadps(1)).Element(1);
+        i2=obj.ProfModelInd;
+      else
+        i1=obj.ProfModelInd;
+        i2=PS(quadps(end)).Element(end);
+      end
       z=arrayfun(@(x) BEAMLINE{x}.Coordi(3),i1:i2);
       txt=string.empty;
       if ~isempty(obj.TwissPreMatch)
@@ -757,7 +798,7 @@ classdef F2_MatchingApp < handle & F2_common
       % INPUTs:
       %
       %   dim      = "X" or "Y"
-      %   data     = 1x4 vector of measured wire scan rms sizes [m]
+      %   data     = 1x4 vector of measured wire scan rms sizes [m] (zeros or nans indicates not to use data for this wire)
       %   data_err = 1x4 vector of measured wire scan rms size errors [m]
       %   section  = "L2" or "L3"
       %
@@ -768,32 +809,47 @@ classdef F2_MatchingApp < handle & F2_common
       
       global BEAMLINE
       
+      data=data(:); data_err=data_err(:);
+      
+      % Treat all zero errors as no error info
       if isempty(data_err)
         data_err=zeros(1,4);
       end
-      data_err(data_err==0)=1e-12;
+      data_err(data_err==0)=1e-6;
+      
+      % Which wires to include?
+      wsel=true(4,1);
+      wsel(data==0 | isnan(data))=false;
+      if sum(wsel)<3
+        error('Need min 3 wires');
+      end
+      nw=sum(wsel);
       
       % Get wire names
       switch section
         case "L2"
           wname={'WS11444' 'WS11614' 'WS11744' 'WS12214'};
+          desemit=[lcaGet('PROF:IN10:571:EMITN_X') lcaGet('PROF:IN10:571:EMITN_Y')].*1e-6 ;
         case "L3"
           wname={'WS18944' 'WS19144' 'WS19244' 'WS19344'};
+          desemit=[lcaGet('WIRE:LI11:614:EMITN_X') lcaGet('WIRE:LI11:614:EMITN_Y')].*1e-6 ;
         otherwise
           error('Incorrect section selection');
       end
+      wname=wname(wsel);
+      id1=findcells(BEAMLINE,'Name',wname{1});
       
       % get pointers
-      idw=zeros(1,4);
-      for n=1:4
+      idw=zeros(1,nw);
+      for n=1:nw
         idw(n)=findcells(BEAMLINE,'Name',wname{n});
       end
       
       % get the model
-      R=cell(1,4);
-      Rx=zeros(4,2);Ry=zeros(4,2);
-      for n=1:4
-        [stat,Rab]=RmatAtoB(idw(1),idw(n));
+      R=cell(1,nw);
+      Rx=zeros(nw,2);Ry=zeros(nw,2);
+      for n=1:nw
+        [stat,Rab]=RmatAtoB(id1,idw(n));
         if (stat{1}~=1),error(stat{2}),end
         R{n}=Rab(1:4,1:4);
         Rx(n,:)=[Rab(1,1),Rab(1,2)];
@@ -801,23 +857,23 @@ classdef F2_MatchingApp < handle & F2_common
       end
       
       % get design Twiss at first wire
-      energy=BEAMLINE{idw(1)}.P;
+      energy=BEAMLINE{id1}.P;
       egamma = energy/0.51099906e-3;
       if dim=="X"
-        bx0 = obj.LiveModel.DesignTwiss.betax(idw(1)) ;
-        ax0 = obj.LiveModel.DesignTwiss.alphax(idw(1)) ;
+        bx0 = obj.LiveModel.DesignTwiss.betax(id1) ;
+        ax0 = obj.LiveModel.DesignTwiss.alphax(id1) ;
       else
-        bx0 = obj.LiveModel.DesignTwiss.betay(idw(1));
-        ax0 = obj.LiveModel.DesignTwiss.alphay(idw(1));
+        bx0 = obj.LiveModel.DesignTwiss.betay(id1);
+        ax0 = obj.LiveModel.DesignTwiss.alphay(id1);
       end
       
       % load analysis variables
-      x=data(:).^2 ; % m^2
-      dx=2.*x.*data_err(:) ;
+      x=data(wsel).^2 ; % m^2
+      dx=2.*x.*data_err(wsel) ;
       
       % compute least squares solution
-      M=zeros(4,3);
-      for n=1:4
+      M=zeros(nw,3);
+      for n=1:nw
         if dim=="X"
           M(n,1)=Rx(n,1)^2;
           M(n,2)=2*Rx(n,1)*Rx(n,2);
@@ -831,8 +887,8 @@ classdef F2_MatchingApp < handle & F2_common
       
       for itry=1:2
         zx=x./dx;
-        Bx=zeros(4,3);
-        for n=1:4
+        Bx=zeros(nw,3);
+        for n=1:nw
           Bx(n,:)=M(n,:)/dx(n);
         end
         Tx=inv(Bx'*Bx);
@@ -859,8 +915,8 @@ classdef F2_MatchingApp < handle & F2_common
       fprintf('%s emittance parameters at %s\n',dim,wname{1});
       fprintf('-----------------------------------------------------\n');
       fprintf('energy      = %10.4f              GeV\n',energy);
-      fprintf('nemit       = %10.4f +- %9.4f um\n',1e6*emitxn,1e6*demitxn);
-      fprintf('nemit*bmag  = %10.4f +- %9.4f um\n',1e6*embmx*egamma,1e6*dembmx*egamma);
+      fprintf('nemit       = %10.4f +- %9.4f mm-mrad\n',1e6*emitxn,1e6*demitxn);
+      fprintf('nemit*bmag  = %10.4f              mm-mrad\n',1e6*emitxn*bmagx);
       fprintf('emit        = %10.4f +- %9.4f nm\n',1e9*emitx,1e9*demitx);
       fprintf('bmag        = %10.4f +- %9.4f      (%9.4f)\n',bmagx,dbmagx,1);
       fprintf('bmag_cos    = %10.4f +- %9.4f      (%9.4f)\n',bcosx,dbcosx,0);
@@ -872,8 +928,8 @@ classdef F2_MatchingApp < handle & F2_common
       txt_results{1} =  sprintf('%s emittance parameters at %s\n',dim,wname{1});
       txt_results{2} =  sprintf('----\n');
       txt_results{3} =  sprintf('energy      = %10.4f              GeV\n',energy);
-      txt_results{4} =  sprintf('nemit       = %10.4f +- %9.4f um\n',1e6*emitxn,1e6*demitxn);
-      txt_results{5} =  sprintf('nemit*bmag  = %10.4f +- %9.4f um\n',1e6*embmx*egamma,1e6*dembmx*egamma);
+      txt_results{4} =  sprintf('nemit       = %10.4f +- %9.4f mm-mrad\n',1e6*emitxn,1e6*demitxn);
+      txt_results{5} =  sprintf('nemit*bmag  = %10.4f\n            mm-mrad',1e6*emitxn*bmagx);
       txt_results{6} =  sprintf('emit        = %10.4f +- %9.4f nm\n',1e9*emitx,1e9*demitx);
       txt_results{7} =  sprintf('bmag        = %10.4f +- %9.4f      (%9.4f)\n',bmagx,dbmagx,1);
       txt_results{8} =  sprintf('bmag_cos    = %10.4f +- %9.4f      (%9.4f)\n',bcosx,dbcosx,0);
@@ -898,14 +954,45 @@ classdef F2_MatchingApp < handle & F2_common
       emitData.dsig=data_err;
       emitData.beta0=bx0;
       emitData.alpha0=ax0;
-      emitData.nemit0=5e-6;
+      if dim=="X"
+        emitData.nemit0=desemit(1);
+      else
+        emitData.nemit0=desemit(2);
+      end
       emitData.emit0=emitData.nemit0/egamma;
       emitData.R=R;
       emitData.idw=idw;
+      emitData.wsel=wsel;
       I = TwissToInitial(obj.LiveModel.DesignTwiss,idw(1),obj.LiveModel.Initial);
       I.Momentum=energy;
       emitData.I_design = I ;
       emitData.section=section;
+      emitData.pcols=obj.plotcols;
+      emitData.id1=id1;
+      
+      % Get design spot sizes
+      emitData.sigma_des=zeros(1,nw) ;
+      gamma = BEAMLINE{id1}.P/0.511e-3 ;
+      emit = desemit./gamma;
+      if dim=="X"
+        S0 = emit(1) * ...
+          [obj.LiveModel.DesignTwiss.betax(id1)    -obj.LiveModel.DesignTwiss.alphax(id1);
+          -obj.LiveModel.DesignTwiss.alphax(id1)  (1+obj.LiveModel.DesignTwiss.alphax(id1)^2)/obj.LiveModel.DesignTwiss.betax(id1)] ;
+      else
+        S0 = emit(2) * ...
+          [obj.LiveModel.DesignTwiss.betay(id1)    -obj.LiveModel.DesignTwiss.alphay(id1);
+          -obj.LiveModel.DesignTwiss.alphay(id1)  (1+obj.LiveModel.DesignTwiss.alphay(id1)^2)/obj.LiveModel.DesignTwiss.betay(id1)] ;
+      end
+      for iw=1:nw
+        [~,R]=RmatAtoB(id1,idw(iw));
+        if dim=="X"
+          S1 = R(1:2,1:2) * S0 * R(1:2,1:2)' ;
+        else
+          S1 = R(3:4,3:4) * S0 * R(3:4,3:4)' ;
+        end
+        emitData.sigma_des(iw) = sqrt(S1(1,1)) ;
+      end
+      txt_results{13} = sprintf('SIGMA_DES   = %10.4f %10.4f %10.4f %10.4f um\n',emitData.sigma_des.*1e6);
       
       % Write to local emittance properties
       if dim=="X"
@@ -1052,7 +1139,12 @@ classdef F2_MatchingApp < handle & F2_common
       bmag=emitData.bmag;
       idw=emitData.idw;
       I=emitData.I_design;
+      wsel=emitData.wsel;
+      nw=sum(wsel);
+      pcols=emitData.pcols;
+      id1=emitData.id1;
       
+      S0 = e * [b -a; -a (1+a^2)/b] ;
       % Target figure axis
       fhan=figure; fhan.Position(3:4)=[900 500]; subplot(1,2,1);
       
@@ -1086,9 +1178,9 @@ classdef F2_MatchingApp < handle & F2_common
       ioff=2*ixy;
       sig0=sqrt(e0*b0);
       big=1e3*sqrt(e0/b0);
-      c='bgrm';
-      ho=zeros(1,4);
-      for n=1:4
+      c=pcols(wsel); 
+      ho=zeros(1,nw);
+      for n=1:nw
         R11=R{n}(1+ioff,1+ioff);
         R12=R{n}(1+ioff,2+ioff);
         R21=R{n}(2+ioff,1+ioff);
@@ -1114,21 +1206,27 @@ classdef F2_MatchingApp < handle & F2_common
       
       % propagated fitted beam size plots
       subplot(1,2,2);
-      Z=arrayfun(@(x) BEAMLINE{x}.Coordi(3),idw(1):idw(end));
-      if emitData.dim=="X"
-        I.x.Twiss.alpha=a; I.x.Twiss.beta=b;
-      else
-        I.y.Twiss.alpha=a; I.y.Twiss.beta=b;
+      Z=arrayfun(@(x) BEAMLINE{x}.Coordf(3),id1:idw(end));
+      
+      sigfit = zeros(1,1+idw(end)-id1);
+      for iele=id1:idw(end)
+        [~,R]=RmatAtoB(id1,iele);
+        if emitData.dim=="X"
+          S1 = R(1:2,1:2) * S0 * R(1:2,1:2)' ;
+        else
+          S1 = R(3:4,3:4) * S0 * R(3:4,3:4)' ;
+        end
+        sigfit(1+iele-id1) = sqrt(S1(1,1)) ;
       end
-      [~,T]=GetTwiss(idw(1),idw(end),I.x.Twiss,I.y.Twiss);
-      if emitData.dim=="X"
-        sigfit=sqrt(e.*T.betax(1:end-1));
-      else
-        sigfit=sqrt(e.*T.betay(1:end-1));
-      end
+      
       plot(Z,sigfit*1e6,'b--')
       hold on
-      errorbar(arrayfun(@(x) BEAMLINE{x}.Coordi(3),idw),sig*1e6,dsig*1e6,'rx');
+      idz=arrayfun(@(x) BEAMLINE{x}.Coordi(3),idw);
+      errorbar(idz,sig*1e6,dsig*1e6,'kx','MarkerSize',10);
+      ax=axis;
+      for iw=1:length(idw)
+        line([idz(iw) idz(iw)],ax(3:4),'Color',c(iw),'LineStyle','--');
+      end
       hold off
       title(sprintf('%s',section));
       ylabel(sprintf('%s Beam Size [um]',txt1))
