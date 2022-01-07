@@ -1,23 +1,15 @@
 
 % aidapvainit initializes a Matlab session for using Aida.
 
-global aidainitdone
+global aidapvainitdone
 if isempty(aidainitdone)
   
   % Dynamically add AIDA releated classes
-  javaaddpath('/home/fphysics/whitegr/matlabTNG/common/aida-pva-client.jar')
-%   javaaddpath('/usr/local/lcls/epics/base/base-java6-R4-4-0/easyPVAJava-0.4.3.jar')
-%   javaaddpath('/usr/local/lcls/epics/base/base-java6-R4-4-0/pvAccessJava-4.2.0-Java6-SNAPSHOT.jar')
-%   javaaddpath('/usr/local/lcls/epics/base/base-java6-R4-4-0/pvDataJava-4.0.2.jar')
+  javaaddpath('/usr/local/facet/tools/matlabTNG/common/aida-pva-client.jar')
   
-  aidainitdone = 1;
+  aidapvainitdone = 1;
   disp 'Aida PVA client initialization completed';
 end
-% Import AIDA classes
-% import org.epics.pvaccess.server.rpc.RPCRequestException
-% import edu.stanford.slac.aida.client.AidaPvaClientUtils.*
-% import edu.stanford.slac.aida.client.AidaType.*
-% import org.epics.pvaccess.easyPVA.* ;
 
 % aida-pva-client imports
 import('edu.stanford.slac.aida.client.AidaPvaClientUtils.*');
@@ -30,11 +22,6 @@ import('org.epics.pvaccess.server.rpc.RPCRequestException');
 import('org.epics.pvaccess.*')
 import('org.epics.pvaClient.*')
 import('org.epics.pvdata.*')
-
-% EasyPVA imports
-% import('org.epics.pvaccess.*')
-% import('org.epics.pvaccess.easyPVA.*')
-% import('org.epics.pvdata.*')
 
 AIDA_BOOLEAN = [edu.stanford.slac.aida.client.AidaType.BOOLEAN];
 AIDA_BYTE = [edu.stanford.slac.aida.client.AidaType.BYTE];
