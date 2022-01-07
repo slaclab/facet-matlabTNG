@@ -1,13 +1,9 @@
 
 % aidapvainit initializes a Matlab session for using Aida.
-
-global aidapvainitdone
-if isempty(aidainitdone)
+if isempty(cell2mat(regexp(javaclasspath,'aida-pva-client.jar$','once')))
   
   % Dynamically add AIDA releated classes
   javaaddpath('/usr/local/facet/tools/matlabTNG/common/aida-pva-client.jar')
-  
-  aidapvainitdone = 1;
   disp 'Aida PVA client initialization completed';
 end
 
