@@ -28,15 +28,16 @@ classdef F2_LAA_exported < matlab.apps.AppBase
     
     properties (Access = public)
         camerapvs =  {'CAMR:LT20:0001','CAMR:LT20:0002','CAMR:LT20:0003',...
-        'CAMR:LT20:0004','CAMR:LT20:0009','CAMR:LT20:0010','CAMR:LT20:0101',...
+        'CAMR:LT20:0004','CAMR:LT20:0006','CAMR:LT20:0007',...
+        'CAMR:LT20:0009','CAMR:LT20:0010','CAMR:LT20:0101',...
         'CAMR:LT20:0102','CAMR:LT20:0103','CAMR:LT20:0104','CAMR:LT20:0105',...
         'CAMR:LT20:0106','CAMR:LT20:0107'};% S20 Camera PVs
             
-        motorpvs = {'MOTR:LI20:MC06:S3','MOTR:LI20:MC06:M0',...
+        motorpvs = {'MOTR:LI20:MC06:S3','MOTR:LI20:MC06:M0','MOTR:LI20:MC06:S6',...
         'MOTR:LI20:MC06:S4','MOTR:LI20:MC06:S5','MOTR:LI20:MC07:M0',...
         'MOTR:LI20:MC07:S1','MOTR:LI20:MC08:M0','MOTR:LI20:MC08:S2'};%S20 Motor PVs
         
-        feedbackOnPVs = {'SIOC:SYS1:ML01:AO170','SIOC:SYS1:ML01:AO171',...
+        feedbackOnPVs = {'SIOC:SYS1:ML01:AO170','SIOC:SYS1:ML01:AO171','SIOC:SYS1:ML01:AO172',...
         'SIOC:SYS1:ML01:AO173','SIOC:SYS1:ML01:AO174','SIOC:SYS1:ML01:AO175',...
         'SIOC:SYS1:ML01:AO176','SIOC:SYS1:ML01:AO177','SIOC:SYS1:ML01:AO178'};%Matlab helper PVs for toggling alignment on/off
         
@@ -44,9 +45,9 @@ classdef F2_LAA_exported < matlab.apps.AppBase
         feedbackPausePV = 'SIOC:SYS1:ML01:AO179';
         
         sectionNames = {'Pulse Picker and Regen Out','Preamp Near and Far',...
-            'HeNe Near and Far','B0 and B1','B2 and B3','B4','B5','B6'}
+            'MPA Near and Far','HeNe Near and Far','B0 and B1','B2 and B3','B4','B5','B6'}
         
-        gainPVs = {'SIOC:SYS1:ML01:AO190','SIOC:SYS1:ML01:AO191',...
+        gainPVs = {'SIOC:SYS1:ML01:AO190','SIOC:SYS1:ML01:AO191','SIOC:SYS1:ML01:AO199',...
             'SIOC:SYS1:ML01:AO192','SIOC:SYS1:ML01:AO193',...
             'SIOC:SYS1:ML01:AO194','SIOC:SYS1:ML01:AO195',...
             'SIOC:SYS1:ML01:AO196','SIOC:SYS1:ML01:AO197'}
@@ -54,8 +55,8 @@ classdef F2_LAA_exported < matlab.apps.AppBase
         fitMethod = 2;% Centroid fit method for profmon_process
         umPerPixel ;
         setPointOption = 1;% 2 = Set desired centroid setpoint from current position, 1 uses pre-defined target position
-        feedbackOn = logical([0,0,0,0,0,0,0,0]);
-        k_p = [0.1,0.1,0.2,0.05,0.2,0.2,0.2,0.2];% Default Proportional Gains
+        feedbackOn = logical([0,0,0,0,0,0,0,0,0]);
+        k_p = [0.1,0.1,0.01,0.2,0.05,0.2,0.2,0.2,0.2];% Default Proportional Gains
         k_i = 0.0;% Integral gain term is set to zero for now - can be included later
         refCamSettings = [];
         refSumCts = []; 
@@ -127,6 +128,7 @@ classdef F2_LAA_exported < matlab.apps.AppBase
             app.LogTextArea.Value = ...
                 ['Grabbed Reference Laser Reference Parameters',...
                 app.LogTextArea.Value(:)'];
+            disp(app.requestedSetpoints)
         end
 
         % Button pushed function: ClearReferencesButton
@@ -177,14 +179,14 @@ classdef F2_LAA_exported < matlab.apps.AppBase
                     % Get setpoint and motor pv for the relevant cameras      
                     inputDataStruct.motorpvs = app.motorpvs{ij};
                     
-                    if ij<6% Deals with cameras up to and including B3
+                    if ij<7% Deals with cameras up to and including B3
                         steeringSetpoint = app.requestedSetpoints(1+4*(ij-1):4*ij);
                         inputDataStruct.camerapvs = {app.camerapvs{2*ij-1},app.camerapvs{2*ij}};
                         inputDataStruct.channel_index = [1:4];
                     else% Deals with cameras B4 B5 and B6    
-                        steeringSetpoint = [app.requestedSetpoints(21+2*(ij-6)) app.requestedSetpoints(20+2*(ij-5))];
-                        inputDataStruct.camerapvs = {app.camerapvs{11+(ij-6)}};
-                        if ij==7;inputDataStruct.channel_index = [3,4];
+                        steeringSetpoint = [app.requestedSetpoints(25+2*(ij-7)) app.requestedSetpoints(24+2*(ij-6))];
+                        inputDataStruct.camerapvs = {app.camerapvs{11+(ij-7)}};
+                        if ij==8;inputDataStruct.channel_index = [3,4];
                         else
                             inputDataStruct.channel_index = [1,2];
                         end
@@ -220,7 +222,7 @@ classdef F2_LAA_exported < matlab.apps.AppBase
 
         % Value changed function: OptionsDropDown
         function OptionsDropDownValueChanged(app, event)
-            value = str2num(app.OptionsDropDown.Value)
+            value = str2num(app.OptionsDropDown.Value);
             if value ==1
                 set(app.ShowTargetsButton, 'Enable','on');          
             else
@@ -249,6 +251,14 @@ classdef F2_LAA_exported < matlab.apps.AppBase
         % Button pushed function: ExpertButton
         function ExpertButtonPushed(app, event)
             expertSettings_F2_LAA
+        end
+
+        % Button pushed function: IRmodeButton
+        function IRmodeButtonPushed(app, event)
+            lcaPutSmart(app.feedbackExitPV,1)
+            app.LogTextArea.Value = ['Auto-Alignment Stopped, Launching IR alignment app',app.LogTextArea.Value(:)'];
+            app.StatusLamp.Color = 'Red';
+            IRmode
         end
     end
 
@@ -299,7 +309,7 @@ classdef F2_LAA_exported < matlab.apps.AppBase
 
             % Create LogTextArea
             app.LogTextArea = uitextarea(app.UIFigure);
-            app.LogTextArea.Position = [347 31 268 229];
+            app.LogTextArea.Position = [347 14 268 246];
 
             % Create InitializeReferenceLaserParametersPanel
             app.InitializeReferenceLaserParametersPanel = uipanel(app.UIFigure);
@@ -321,7 +331,7 @@ classdef F2_LAA_exported < matlab.apps.AppBase
             % Create SelectCamerastoAlignPanel
             app.SelectCamerastoAlignPanel = uipanel(app.UIFigure);
             app.SelectCamerastoAlignPanel.Title = '3. Select Cameras to Align';
-            app.SelectCamerastoAlignPanel.Position = [31 29 282 255];
+            app.SelectCamerastoAlignPanel.Position = [31 12 282 272];
 
             % Create UITable
             app.UITable = uitable(app.SelectCamerastoAlignPanel);
@@ -329,7 +339,7 @@ classdef F2_LAA_exported < matlab.apps.AppBase
             app.UITable.RowName = {};
             app.UITable.ColumnEditable = [false true];
             app.UITable.CellEditCallback = createCallbackFcn(app, @UITableCellEdit, true);
-            app.UITable.Position = [13 15 255 208];
+            app.UITable.Position = [13 10 255 230];
 
             % Create InitiateAutoAlignmentPanel
             app.InitiateAutoAlignmentPanel = uipanel(app.UIFigure);
@@ -373,6 +383,7 @@ classdef F2_LAA_exported < matlab.apps.AppBase
 
             % Create IRmodeButton
             app.IRmodeButton = uibutton(app.InitiateAutoAlignmentPanel, 'push');
+            app.IRmodeButton.ButtonPushedFcn = createCallbackFcn(app, @IRmodeButtonPushed, true);
             app.IRmodeButton.BackgroundColor = [0.302 0.7451 0.9333];
             app.IRmodeButton.Position = [188 99 72 23];
             app.IRmodeButton.Text = 'IR mode';
