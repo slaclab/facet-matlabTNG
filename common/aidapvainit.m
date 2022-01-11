@@ -1,5 +1,5 @@
 
-% aidapvainit initializes a Matlab session for using Aida.
+% aidapvainit prepares a local session for accessing aida channels
 if isempty(cell2mat(regexp(javaclasspath,'aida-pva-client.jar$','once')))
   
   % Dynamically add AIDA releated classes

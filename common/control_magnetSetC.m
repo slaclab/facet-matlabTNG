@@ -231,8 +231,8 @@ aidapvainit;
 
 try
   builder = pvaRequest(sprintf('MAGNETSET:%s',secn));
-%   builder.with('MAGFUNC', func);
-%   builder.with('LIMITCHECK','SOME');
+  builder.with('MAGFUNC', func);
+  builder.with('LIMITCHECK','SOME');
   jstruct = AidaPvaStruct();
   if ~iscell(name); name=cellstr(name); end
   if ~iscell(val); val=num2cell(val); end
@@ -246,40 +246,3 @@ catch e
   handleExceptions(e);
 end
 
-% --------------------------------------------------------------------
-%AIDA1 implementation
-% function val = magnetSet(name, val, secn, func)
-% 
-% % Initialize aida
-% %global da in
-% 
-% aidainit;
-%    import edu.stanford.slac.aida.lib.da.DaObject;
-%    import edu.stanford.slac.err.*;
-%    import edu.stanford.slac.aida.lib.da.*;
-%    import edu.stanford.slac.aida.lib.util.common.*;
-%    da=DaObject;
-%    in=DaValue;
-% 
-% if isempty(name), val=[];return, end
-% in.type=0;
-% in.addElement(DaValue(name));
-% %in.addElement(DaValue(java.lang.Float(val))); % Kludge to make Aida format conversion work.
-% in.addElement(DaValue(single(val))); % Kludge to make Aida format conversion work.
-% da.reset;
-% da.setParam('MAGFUNC',func);
-% da.setParam('LIMITCHECK','SOME');
-% val=[];
-% try
-%     out=da.setDaValue(['MAGNETSET//' secn],in);
-%     val=getAsDoubles(out.get(1));
-% catch
-%     fprintf('Aida error trimming %s ... %s',name{unique([1 end])});
-%     pause(1);
-%     try
-%       out=da.setDaValue(['MAGNETSET//' secn],in);
-%       val=getAsDoubles(out.get(1));
-%     catch
-%       fprintf('Aida error trimming a second time, aborting %s ... %s',name{unique([1 end])});
-%     end
-% end
