@@ -2,8 +2,8 @@ global aidapvainitdone;
 aidapva;
 
 if isempty(aidapvainitdone)
-    setupjavapath('/usr/local/facet/tools/matlabTNG/common/aida-pva-client.jar'))
-    setupjavapath('/usr/local/facet/tools/matlabTNG/common/epics-pvaccess.jar'))
+    setupjavapath('/usr/local/facet/tools/matlabTNG/common/aida-pva-client.jar')
+    setupjavapath('/usr/local/facet/tools/matlabTNG/common/epics-pvaccess.jar')
 
     % aida-pva-client imports - imports all methods but not enums, so we need to add enums indivudually later
     import('edu.stanford.slac.aida.client.AidaPvaClientUtils.*');
