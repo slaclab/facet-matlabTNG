@@ -1,13 +1,13 @@
-global aidapvainitdone;
-aidapva;
-
-if isempty(aidapvainitdone)
-    setupjavapath('/usr/local/facet/tools/matlabTNG/common/aida-pva-client.jar'))
-    setupjavapath('/usr/local/facet/tools/matlabTNG/common/epics-pvaccess.jar'))
-
-    % aida-pva-client imports - imports all methods but not enums, so we need to add enums indivudually later
-    import('edu.stanford.slac.aida.client.AidaPvaClientUtils.*');
-    import('edu.stanford.slac.aida.client.AidaType.*');
+% There are two types of Globals in matlab.  Global-globals only work when not inside a function
+% so we need to do the same thing inside a function to create function-globals.
+% These globals are for use in any function.  After this you simply need to use `global <symbolName>` to
+% import the symbol into your scope
+% e.g. `global pvaSet AIDA_STRING AIDA_DOUBLE` to allow use of pvaSet and the two enums.
+% Note that here we need to define ALL API artifacts because functions won't benefit from the imports at the
+% global-global level, for example, we define `AidaPvaStruct` in this function so it can be accessed from within
+% functions, whereas it can otherwise be accessed directly in the global-global context.
+function aidapvafninit()
+    aidapva;
 
     AIDA_BOOLEAN = [edu.stanford.slac.aida.client.AidaType.AIDA_BOOLEAN];
     AIDA_BYTE = [edu.stanford.slac.aida.client.AidaType.AIDA_BYTE];
@@ -29,14 +29,9 @@ if isempty(aidapvainitdone)
     AIDA_STRING_ARRAY = [edu.stanford.slac.aida.client.AidaType.AIDA_STRING_ARRAY];
     AIDA_TABLE = [edu.stanford.slac.aida.client.AidaType.AIDA_TABLE];
 
+    pvaRequest = @(channel) edu.stanford.slac.aida.client.AidaPvaClientUtils.pvaRequest(channel);
+    pvaSet = @(channel, value) edu.stanford.slac.aida.client.AidaPvaClientUtils.pvaSet(channel, value);
     pvaSetM = @(channel, value) ML(edu.stanford.slac.aida.client.AidaPvaClientUtils.pvaSet(channel, value));
-
-    % Globals above only work when not inside a function so we need to do the same thing inside a function
-    % to define these globals for use in any function.  After this you simply need to use `global <symbolName>` to
-    % import the symbol into your scope e.g. `global pvaSet AIDA_STRING AIDA_DOUBLE` to allow use of pvaSet and the two enums.
-    aidapvafninit
-
-    aidapvainitdone = 1;
-    disp 'Aida PVA client initialization completed';
+    AidaPvaStruct = @() edu.stanford.slac.aida.client.AidaPvaClientUtils.AidaPvaStruct();
 end
 
