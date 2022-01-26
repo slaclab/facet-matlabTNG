@@ -230,7 +230,7 @@ end
 function val = magnetSet(name, val, secn, func)
 
 % Initialize aida
-aidapvainit;
+aidapva;
 
 try
   builder = pvaRequest(sprintf('MAGNETSET:%s',secn));
