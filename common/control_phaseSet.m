@@ -88,7 +88,7 @@ end
 % Use AIDA for SLC RF devices.
 pTol=2; % Phase tolerance
 if any(is.SLC)
-  aidapvainit;
+  aidapva;
   
   pAct(is.SLC)=Inf;
   isBad=abs(pAct-pDes) > pTol & is.SLC;

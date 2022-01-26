@@ -379,7 +379,7 @@ classdef fbSISO < handle
   end
   methods(Static)
     function aidaput(pv,val)
-      aidapvainit;
+      aidapva;
       builder = pvaRequest(char(pv));
       builder.with('TRIM', 'YES');
       try

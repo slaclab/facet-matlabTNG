@@ -1,4 +1,5 @@
 function value = aidaget(aidaname, aidaType, aidaParams)
+aidapva
 %   aidaget gets control system data, such as EPICS PV values, model, SLC db, etc.
 %
 %   AIDAGET(aidaname, aidaType, aidaParams) gets scalar or array (1-dimensional)
@@ -126,8 +127,6 @@ function value = aidaget(aidaname, aidaType, aidaParams)
 %
 %   Auth: Sergei Chevtsov, 2005?
 %   Copyright 2008 SLAC.
-
-aidapvainit % Import java classes
 
 if nargin < 1
   disp('You must specify an AIDA target at the very least.');
