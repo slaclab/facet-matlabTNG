@@ -24,7 +24,5 @@ if ~isdeployed
   addpath(ldir+"Twiss");
   addpath(ldir+"gui");
   addpath(ldir+"utils");
-  
-%   addpath("/home/fphysics/greg/Development/aidapva/matlab/ematadditions/lclscvs/matlab/toolbox/emat");
-  %addpath ~/whitegr/cvs/matlab/toolbox
+  aidapvainit;
 end
