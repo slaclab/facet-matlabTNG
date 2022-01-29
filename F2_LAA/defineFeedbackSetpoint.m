@@ -19,9 +19,10 @@ for jj=1:length(app.camerapvs)
     refCamSettings.ROIsizeY(jj) = data.roiYN; % ref ROI y size
     requestedSetpoint(1+2*(jj-1)) = bp(jj,1)-refCamSettings.ROIminX(jj);%x setpoint
     requestedSetpoint(2*jj) = bp(jj,2)-refCamSettings.ROIminY(jj);%y setpoint
+    
+%         disp(lcaGetSmart([app.camerapvs{jj},':NAME']))
+%         disp(refSumCts(jj))
 end
-% Grab B1 ROI manually for now
-%refCamSettings.ROIminX(8)=290;refCamSettings.ROIminY(8) = 384;
             
     if app.setPointOption % Set reference centroid using pre-defined references
       s20LaserTargetPositions = importdata('/home/fphysics/cemma/S20Laser/S20LaserAlignmentFeedback/s20LaserTargetPositionswMPA.mat');
@@ -30,15 +31,12 @@ end
             ind=find(ismember(strs,app.camerapvs{jj}));
             requestedSetpoint(1+2*(jj-1))=s20LaserTargetPositions(ind).XmeanTarget-refCamSettings.ROIminX(jj);
             requestedSetpoint(2*jj)=s20LaserTargetPositions(ind).YmeanTarget-refCamSettings.ROIminY(jj);
+% Diagnostic comments
+%         disp(lcaGetSmart([app.camerapvs{jj},':NAME']))
+%         disp(requestedSetpoint(1+2*(jj-1))+refCamSettings.ROIminX(jj))
+%         disp(requestedSetpoint(2*jj)+refCamSettings.ROIminY(jj))
         end
-
-% Set B4 and B5 and B6 manually for now
- %   requestedSetpoint(21) = 747-refCamSettings.ROIminX(11);
- %   requestedSetpoint(22) = 289-refCamSettings.ROIminY(11);
-    requestedSetpoint(23) = 673.4-refCamSettings.ROIminX(12);
-    requestedSetpoint(24) = 365.08-refCamSettings.ROIminY(12);
-    requestedSetpoint(25) = 587.6-refCamSettings.ROIminX(13);
-    requestedSepoint(26) = 484.92-refCamSettings.ROIminY(13);
+    
     end
 end
 

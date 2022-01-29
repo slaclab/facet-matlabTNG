@@ -185,8 +185,8 @@ classdef F2_LAA_exported < matlab.apps.AppBase
                         inputDataStruct.channel_index = [1:4];
                     else% Deals with cameras B4 B5 and B6    
                         steeringSetpoint = [app.requestedSetpoints(25+2*(ij-7)) app.requestedSetpoints(24+2*(ij-6))];
-                        inputDataStruct.camerapvs = {app.camerapvs{11+(ij-7)}};
-                        if ij==8;inputDataStruct.channel_index = [3,4];
+                        inputDataStruct.camerapvs = {app.camerapvs{13+(ij-7)}};
+                        if ij==8;inputDataStruct.channel_index = [3,4];% are B4 motors backwards with channels?
                         else
                             inputDataStruct.channel_index = [1,2];
                         end
