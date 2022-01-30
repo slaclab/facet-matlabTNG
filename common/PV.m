@@ -924,8 +924,13 @@ classdef PV < handle
           end
           d=dir(cadir);
           jarfiles=dir(fullfile(d.folder,'*.jar'));
+          dp=javaclasspath; % list of entries in dynamic java class path
           for ijar=1:length(jarfiles)
-            javaaddpath(fullfile(jarfiles(ijar).folder,jarfiles(ijar).name));
+            if startsWith(jarfiles(ijar).name,'ca-') || startsWith(jarfiles(ijar).name,'commons-')
+              if ~any(endsWith(dp,jarfiles(ijar).name))
+                javaaddpath(fullfile(jarfiles(ijar).folder,jarfiles(ijar).name));
+              end
+            end
           end
           % Generate context with default parameters
           context = org.epics.ca.Context ;

@@ -24,5 +24,7 @@ if ~isdeployed
   addpath(ldir+"Twiss");
   addpath(ldir+"gui");
   addpath(ldir+"utils");
+  % add ca java classes to path here instead of in PV.Initialize otherwise errors happen
+  javaaddpath common/ca-1.3.2.jar; javaaddpath  common/ca-1.3.2-javadoc.jar;javaaddpath  common/commons-lang3-3.7.jar;javaaddpath  common/commons-lang3-3.7-javadoc.jar;
   aidapvainit;
 end
