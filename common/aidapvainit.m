@@ -3,11 +3,11 @@ aidapva;
 
 if isempty(aidapvainitdone)
     setupjavapath('/usr/local/facet/tools/matlabTNG/common/aida-pva-client.jar')
-    setupjavapath('/usr/local/facet/tools/matlabTNG/common/epics-pvaccess.jar')
-
+%     setupjavapath('/home/fphysics/whitegr/matlabTNG/common/aida-pva-client.jar')
+    
     % aida-pva-client imports - imports all methods but not enums, so we need to add enums indivudually later
-    import('edu.stanford.slac.aida.client.AidaPvaClientUtils.*');
-    import('edu.stanford.slac.aida.client.AidaType.*');
+%     import('edu.stanford.slac.aida.client.AidaPvaClientUtils.*');
+%     import('edu.stanford.slac.aida.client.AidaType.*');
 
     AIDA_BOOLEAN = [edu.stanford.slac.aida.client.AidaType.AIDA_BOOLEAN];
     AIDA_BYTE = [edu.stanford.slac.aida.client.AidaType.AIDA_BYTE];
