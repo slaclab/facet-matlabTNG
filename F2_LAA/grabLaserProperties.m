@@ -21,7 +21,7 @@ end
 % Grab image
 data = profmon_grab(UserData.camerapvs{nCamera},0);    
 img = data.img;% If u want to use unprocessed image for centroid finding
-[img,~,~,~,~]=beamAnalysis_imgProc(data,opts);% Processed Image
+[img,~,~,~,~]=beamAnalysis_imgProc(data,opts);% If you want to use the processed Image
 % Calculate beam statistics
  beamParams = beamAnalysis_beamParams(img, 1:size(img,2), 1:size(img,1),0,opts);
  

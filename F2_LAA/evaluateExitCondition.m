@@ -1,10 +1,10 @@
 function exitcondition = evaluateExitCondition(inputData,refSumCts,refCamSettings,feedbackOnPVs,sectNum,app)
 if lcaGetSmart(feedbackOnPVs{sectNum}) 
     % Get the reference settings for this section of the laser
-    if sectNum<6
+    if sectNum<7%up to and including B3
     refSumCts = [refSumCts(2*sectNum-1) refSumCts(2*sectNum)];
     else
-       refSumCts = refSumCts(11+(sectNum-6));%B4 thru  B6
+       refSumCts = refSumCts(13+(sectNum-7));%B4 thru  B6
     end
     %refCamSettings.ExposureTime = [refCamSettings.ExposureTime(2*sectNum-1) refCamSettings.ExposureTime(2*sectNum)];
     %refCamSettings.ROIminX = [refCamSettings.ROIminX(2*sectNum-1) refCamSettings.ROIminX(2*sectNum)];
