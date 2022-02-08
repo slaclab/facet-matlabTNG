@@ -29,6 +29,16 @@ classdef F2_common < handle
         [bact,bdes] = control_magnetGet(name) ;
       end
     end
+    function dnum = epics2mltime(tstamp)
+      % Put epics time stamp as Matlab datenum format in gui requested
+      % local time
+      persistent toffset tzoffset
+      if isempty(toffset)
+        toffset=datenum('1-jan-1970');
+        tzoffset=-double(java.util.Date().getTimezoneOffset()/60);
+      end
+      dnum=toffset+floor(tstamp+tzoffset*3600)*1e3/86400000;
+    end
   end
 end
 
