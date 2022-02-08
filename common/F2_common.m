@@ -29,6 +29,8 @@ classdef F2_common < handle
         [bact,bdes] = control_magnetGet(name) ;
       end
     end
+  end
+  methods(Static)
     function dnum = epics2mltime(tstamp)
       % Put epics time stamp as Matlab datenum format in gui requested
       % local time
