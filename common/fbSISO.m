@@ -383,13 +383,13 @@ classdef fbSISO < handle
       builder = pvaRequest(char(pv));
       builder.with('TRIM', 'YES');
       try
-        builder.set(val);
+        builder.set(double(val));
         if endsWith(string(pv),"DRVR") % Need to poke phase control to cause drive amplitude to trim in SCP
           ppv = regexprep(pv,"(DRVR)$","KPHR") ;
           pval = aidaget(char(ppv)) ;
           builder = pvaRequest(char(ppv));
           builder.with('TRIM', 'YES');
-          builder.set(pval);
+          builder.set(double(pval));
         end
       catch ME
         fprintf(2,'Error setting AIDA PV: %s\n',pv);

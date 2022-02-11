@@ -234,7 +234,7 @@ classdef F2_FeedbackApp < handle & F2_common
           'FilterType',obj.SetpointFilterTypes(2));
         B.DataPV = BC14_Setpoint ;
         obj.Feedbacks(2) = fbSISO(BC14_Control,B) ;
-        obj.Feedbacks(2).WriteRateMax = 10 ; % limit updates to every 10s
+        obj.Feedbacks(2).WriteRateMax = 5 ; % limit updates to every 5s
         obj.Feedbacks(2).Kp = obj.FeedbackCoefficients{2}(1);
         obj.Feedbacks(2).ControlLimits = obj.FeedbackControlLimits{2} ;
         obj.Feedbacks(2).SetpointLimits = obj.FeedbackSetpointLimits{2} ;
