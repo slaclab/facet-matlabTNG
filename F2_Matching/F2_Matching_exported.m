@@ -213,11 +213,11 @@ classdef F2_Matching_exported < matlab.apps.AppBase
       value = app.UseXDataButton.Value;
       if value && app.UseYDataButton.Value
         str="XY" ;
-      else
+      elseif value
         str="X" ;
-        if ~value
-          app.UseYDataButton.Value=true;
-        end
+      else
+        app.UseYDataButton.Value=true;
+        str="Y";
       end
       app.aobj.DimSelect=str;
     end
@@ -227,11 +227,11 @@ classdef F2_Matching_exported < matlab.apps.AppBase
       value = app.UseYDataButton.Value;
       if value && app.UseXDataButton.Value
         str="XY" ;
-      else
+      elseif value
         str="Y" ;
-        if ~value
-          app.UseXDataButton.Value=true;
-        end
+      else
+        str="X" ;
+        app.UseXDataButton.Value=true;
       end
       app.aobj.DimSelect=str;
     end
