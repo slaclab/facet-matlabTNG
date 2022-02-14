@@ -57,11 +57,12 @@ nshots = 3;% set number of shots for averaging
     else
         channel_index = [1:4];
     end
-    
+    % Print the mirror motion to the log
+    str =['Mirror motion = ',num2str(mirrorMovements)];
+    app.LogTextArea.Value =  [str,app.LogTextArea.Value(:)'];drawnow()
+        
     for n=1:length(channel_index) % This goes to 4 when u include the second mirror
         channel = channel_index(n);        
-        str =['Mirror motion = ',num2str(mirrorMovements(n))];
-        app.LogTextArea.Value =  [str,app.LogTextArea.Value(:)'];drawnow()
         % Check that the motor is reading back if not don't align
         motorStatus = lcaGetSmart([dataStruct.motorpvs,':CH',num2str(channel),':MOTOR_TYPE']);
          if regexp('No motor',motorStatus{1},'once')==1
