@@ -882,10 +882,12 @@ classdef F2_FeedbackApp < handle & F2_common
       % Extra enable/disable steps for BC11 feedback
       if isempty(obj.guihan) && any(obj.UseFeedbacks(3:4))
         if bitget(obj.Enabled,3) || bitget(obj.Enabled,4)
+          fprintf('Enabling BC11 Energy & BL Feedback PVs...');
           for ipv=1:length(obj.BC11_CALCPV)
             lcaPutNoWait(char(obj.BC11_CALCPV(ipv)),'.5 second');
           end
         elseif ~bitget(obj.Enabled,3) && ~bitget(obj.Enabled,4)
+          fprintf('Disabling BC11 Energy & BL Feedback PVs...');
           for ipv=1:length(obj.BC11_CALCPV)
             lcaPutNoWait(char(obj.BC11_CALCPV(ipv)),'Passive');
           end
