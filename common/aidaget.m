@@ -183,6 +183,9 @@ nrParams = numel(aidaParams);
 % Convert // into : for backwards compatibility
 aidaname = regexprep(aidaname,'//',':');
 
+% Use SLC:: prefix for klystrons
+aidaname = regexprep(aidaname,'^KLYS:(.+)','SLC::KLYS:$1') ;
+
 % Form AIDA-PVA request and get value
 builder = pvaRequest(aidaname);
 if nrParams>0

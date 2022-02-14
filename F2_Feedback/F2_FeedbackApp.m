@@ -228,13 +228,17 @@ classdef F2_FeedbackApp < handle & F2_common
       
       % BC14 energy feedback
       if obj.UseFeedbacks(2)
-        BC14_Control=["KLYS:LI14:"+obj.BC14E_KlysNo(1)+"1:PDES" "KLYS:LI14:"+obj.BC14E_KlysNo(2)+"1:PDES"];
+        % Read control PVs from EPICS, write using AIDA
+        BC14_Control={[PV(cntx,'name',"ControlRB1",'pvname',"LI14:KLYS:"+obj.BC14E_KlysNo(1)+"1:PDES"),PV(cntx,'name',"ControlRB1",'pvname',"LI14:KLYS:"+obj.BC14E_KlysNo(2)+"1:PDES")];
+          ["KLYS:LI14:"+obj.BC14E_KlysNo(1)+"1:PDES", "KLYS:LI14:"+obj.BC14E_KlysNo(2)+"1:PDES"]};
+%         BC14_Control=["KLYS:LI14:"+obj.BC14E_KlysNo(1)+"1:PDES", "KLYS:LI14:"+obj.BC14E_KlysNo(2)+"1:PDES"];
         BC14_Setpoint=PV(cntx,'name',"Setpoint",'pvname',"BPMS:LI14:801:X1H",'monitor',true);
         B=BufferData('Name',"BC14EnergyBPM",'DoFilter',obj.SetpointDoFilter(2),...
           'FilterType',obj.SetpointFilterTypes(2));
         B.DataPV = BC14_Setpoint ;
         obj.Feedbacks(2) = fbSISO(BC14_Control,B) ;
         obj.Feedbacks(2).WriteRateMax = 5 ; % limit updates to every 5s
+        obj.Feedbacks(2).LimitRate = 5 ; % limit reading of AIDA PVs to every 5s
         obj.Feedbacks(2).Kp = obj.FeedbackCoefficients{2}(1);
         obj.Feedbacks(2).ControlLimits = obj.FeedbackControlLimits{2} ;
         obj.Feedbacks(2).SetpointLimits = obj.FeedbackSetpointLimits{2} ;
@@ -881,13 +885,13 @@ classdef F2_FeedbackApp < handle & F2_common
       disp(val);
       % Extra enable/disable steps for BC11 feedback
       if isempty(obj.guihan) && any(obj.UseFeedbacks(3:4))
-        if bitget(obj.Enabled,3) || bitget(obj.Enabled,4)
-          fprintf('Enabling BC11 Energy & BL Feedback PVs...');
+        if (obj.UseFeedbacks(3) && bitget(val,3)) || (obj.UseFeedbacks(4) && bitget(val,4))
+          fprintf('Enabling BC11 Energy & BL Feedback PVs...\n');
           for ipv=1:length(obj.BC11_CALCPV)
             lcaPutNoWait(char(obj.BC11_CALCPV(ipv)),'.5 second');
           end
-        elseif ~bitget(obj.Enabled,3) && ~bitget(obj.Enabled,4)
-          fprintf('Disabling BC11 Energy & BL Feedback PVs...');
+        elseif (~bitget(val,3) || ~obj.UseFeedbacks(3)) && (~obj.UseFeedbacks(4) || ~bitget(val,4))
+          fprintf('Disabling BC11 Energy & BL Feedback PVs...\n');
           for ipv=1:length(obj.BC11_CALCPV)
             lcaPutNoWait(char(obj.BC11_CALCPV(ipv)),'Passive');
           end
