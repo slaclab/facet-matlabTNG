@@ -4,12 +4,23 @@ nshots = 3;% set number of shots for averaging
 
     for jj=1:length(dataStruct.camerapvs)% Find beam centroid
         for n=1:nshots
-        [bp(n,:),img]=grabLaserProperties(dataStruct,jj);
+        [bp(n,:),img,data]=grabLaserProperties(dataStruct,jj);
         end
         laserCentroids(1+2*(jj-1)) = mean(bp(:,1));%x setpoint
         laserCentroids(2*jj) = mean(bp(:,2));%y setpoint
+        
+        % Check that the camera image is not more than 10 seconds old (in case the camera has frozen)
+        tenSec = 1/360/24;
+        if abs(now-data.ts)>tenSec% 
+            str = ['Image timestamp more than 10 s old. Alignment skipped for '...
+                ,lcaGetSmart([dataStruct.camerapvs{1},':NAME'])];
+            app.LogTextArea.Value =  [str,app.LogTextArea.Value(:)'];drawnow()   
+                newlaserCentroids = laserCentroids;
+                mirrorMovements = 0;
+            return
+       end
     end
-
+ 
     for jj=1:length(laserCentroids) % Calculate beam offset from setpoint
         if mod(jj,2);axisfactor=1.0;else;axisfactor = 1.0;end % Axis factor makes +ve x and y correspond to right/left and up/down
         laserOffset(jj) = axisfactor*(requestedSetpoint(jj)-laserCentroids(jj));
