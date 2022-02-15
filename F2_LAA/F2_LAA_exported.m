@@ -332,7 +332,7 @@ classdef F2_LAA_exported < matlab.apps.AppBase
         % Close request function: UIFigure
         function UIFigureCloseRequest(app, event)
             delete(app)
-            %exit;
+            exit;
         end
 
         % Button pushed function: ClearLogButton
