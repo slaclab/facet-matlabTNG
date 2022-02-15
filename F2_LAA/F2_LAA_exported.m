@@ -23,6 +23,13 @@ classdef F2_LAA_exported < matlab.apps.AppBase
         IRmodeButton                    matlab.ui.control.Button
         ExpertButton                    matlab.ui.control.Button
         ClearLogButton                  matlab.ui.control.Button
+        SetshutterstatusPanel           matlab.ui.container.Panel
+        HeNestatusLampLabel             matlab.ui.control.Label
+        HeNestatusLamp                  matlab.ui.control.Lamp
+        EPSshutterLampLabel             matlab.ui.control.Label
+        EPSshutterLamp                  matlab.ui.control.Lamp
+        BlockUnblockButton              matlab.ui.control.Button
+        BlockUnblockButton_2            matlab.ui.control.Button
     end
 
     
@@ -64,6 +71,15 @@ classdef F2_LAA_exported < matlab.apps.AppBase
         requestedSetpoints = [];
         calibrationMatrices;
         initialMotorValues;
+        
+        HeNeBlockTRAPV = 'XPS:LA20:LS24:M3';
+        HeNeBlockOut = 8;
+        HeNeBlockIn = 10;
+        
+        EPSShutterPV = 'DO:LA20:10:Bo1';
+        EPSShutterBlocked = 'High';
+        EPSShutterOpen = 'Low';
+        
     end
     % Helper functions
     methods (Access = private)
@@ -94,6 +110,86 @@ classdef F2_LAA_exported < matlab.apps.AppBase
         end
         
  
+        
+        function initiateShutterPanel(app)
+            app.setHeNeStatus();
+            app.setEPSShutterStatus();
+        end
+        
+        function setHeNeStatus(app)
+            HeNeVal = lcaGetSmart([app.HeNeBlockTRAPV,'.RBV']);
+            
+            if abs(HeNeVal - app.HeNeBlockOut) < 0.001
+                app.HeNestatusLamp.Color = [0, 1, 0];
+                app.HeNestatusLamp.Tooltip = 'HeNe block is out, HeNe is being sent';
+                app.BlockUnblockButton.Text = 'Block';
+            elseif  abs(HeNeVal - app.HeNeBlockIn) < 0.001
+                app.HeNestatusLamp.Color = [1, 0, 0];
+                app.HeNestatusLamp.Tooltip = 'HeNe block is in, HeNe is being blocked';
+                app.BlockUnblockButton.Text = 'Unblock';
+            else
+                app.HeNestatusLamp.Color = [1, 1, 0];
+                app.HeNestatusLamp.Tooltip = 'Status unknown';
+                app.BlockUnblockButton.Text = 'Block';
+            end
+        end
+        
+        function setEPSShutterStatus(app)
+            ShutterVal = lcaGetSmart(app.EPSShutterPV);
+            
+            
+            if strcmp(ShutterVal,'High')
+                app.EPSshutterLamp.Color = [1, 0, 0];
+                app.EPSshutterLamp.Tooltip = 'EPS shutter is in';
+                app.BlockUnblockButton_2.Text = 'Unblock';
+            elseif strcmp(ShutterVal,'Low')
+                app.EPSshutterLamp.Color = [0, 1, 0];
+                app.EPSshutterLamp.Tooltip = 'EPS shutter is out';
+                app.BlockUnblockButton_2.Text = 'Block';
+            end
+
+        end
+        
+%         function movePicoMotor(app, motorPV, target)
+%             lcaPutSmart([motorPV,':MOTOR.TWV'], mirrorMovements(n));% Set tweak
+%             lcaPutSmart([motorPV,':MOTOR.TWF'],1.0);% Move mot
+%             motor_status = lcaGetSmart([motorPV,':MOTOR.MSTA']);
+%             while motor_status ~=2
+%                 motor_status = lcaGetSmart([motorPV, ':MOTOR.MSTA']);
+%             end
+%         end
+        function flipEPSShutter(app)
+            ShutterVal = lcaGetSmart(app.EPSShutterPV);
+            
+            if strcmp(ShutterVal, app.EPSShutterBlocked) 
+                lcaPutSmart(app.EPSShutterPV, app.EPSShutterOpen);
+            elseif strcmp(ShutterVal, app.EPSShutterOpen)
+                lcaPutSmart(app.EPSShutterPV, app.EPSShutterBlocked);
+            end
+            
+            app.setEPSShutterStatus();
+        end
+        
+        function moveStepperMotor(app, motorPV, motorName, target)
+            
+            lcaPutSmart(motorPV, target);
+            motorVal = lcaGetSmart([motorPV,'.RBV']);
+            app.LogTextArea.Value = ...
+                  [['Moving motor: ', motorName], ...
+                 app.LogTextArea.Value(:)']  ;
+            
+            while ~(abs(motorVal - target) < 0.001)
+                motorVal = lcaGetSmart([motorPV,'.RBV']);
+                app.setHeNeStatus();
+                drawnow;
+            end
+            
+            
+            app.LogTextArea.Value = ...
+                  [['Finished moving motor: ', motorName], ...
+                 app.LogTextArea.Value(:)'] ;
+        end
+        
     end
     
 
@@ -108,6 +204,8 @@ classdef F2_LAA_exported < matlab.apps.AppBase
             app.calibrationMatrices = loadCalibrationMatrices();
             app.initialMotorValues = getMotorValues(app);
             app.k_p = lcaGetSmart(app.gainPVs);
+            
+            app.initiateShutterPanel();
                        
         end
 
@@ -260,6 +358,34 @@ classdef F2_LAA_exported < matlab.apps.AppBase
             app.StatusLamp.Color = 'Red';
             IRmode
         end
+
+        % Button pushed function: BlockUnblockButton
+        function BlockUnblockButtonPushed(app, event)
+            % Blocks/unblocks the HeNe
+            
+            HeNeVal = lcaGetSmart(app.HeNeBlockTRAPV);
+            
+            app.HeNestatusLamp.Color = [1, 1, 0];
+            app.HeNestatusLamp.Tooltip = 'Status unknown';
+            app.BlockUnblockButton.Text = 'Block';
+            drawnow();
+            
+            if abs(HeNeVal - app.HeNeBlockIn) < 0.001
+                target = app.HeNeBlockOut;
+            else
+                target = app.HeNeBlockIn;
+            end
+            
+            app.moveStepperMotor(app.HeNeBlockTRAPV, 'HeNe block', target);
+            app.setHeNeStatus
+            drawnow();
+            
+        end
+
+        % Button pushed function: BlockUnblockButton_2
+        function BlockUnblockButton_2Pushed(app, event)
+            app.flipEPSShutter();
+        end
     end
 
     % Component initialization
@@ -270,14 +396,14 @@ classdef F2_LAA_exported < matlab.apps.AppBase
 
             % Create UIFigure and hide until all components are created
             app.UIFigure = uifigure('Visible', 'off');
-            app.UIFigure.Position = [100 100 646 515];
+            app.UIFigure.Position = [100 100 641 640];
             app.UIFigure.Name = 'MATLAB App';
             app.UIFigure.CloseRequestFcn = createCallbackFcn(app, @UIFigureCloseRequest, true);
 
             % Create SelectLaserAlignmentTargetPositionsButtonGroup
             app.SelectLaserAlignmentTargetPositionsButtonGroup = uibuttongroup(app.UIFigure);
             app.SelectLaserAlignmentTargetPositionsButtonGroup.Title = '1. Select Laser Alignment Target Positions';
-            app.SelectLaserAlignmentTargetPositionsButtonGroup.Position = [31 377 263 80];
+            app.SelectLaserAlignmentTargetPositionsButtonGroup.Position = [31 502 263 80];
 
             % Create OptionsDropDown
             app.OptionsDropDown = uidropdown(app.SelectLaserAlignmentTargetPositionsButtonGroup);
@@ -298,23 +424,23 @@ classdef F2_LAA_exported < matlab.apps.AppBase
             app.FACETIILaserAutoAlignmentLabel.HorizontalAlignment = 'center';
             app.FACETIILaserAutoAlignmentLabel.FontSize = 14;
             app.FACETIILaserAutoAlignmentLabel.FontWeight = 'bold';
-            app.FACETIILaserAutoAlignmentLabel.Position = [217 483 218 22];
+            app.FACETIILaserAutoAlignmentLabel.Position = [217 608 218 22];
             app.FACETIILaserAutoAlignmentLabel.Text = 'FACET-II Laser Auto Alignment';
 
             % Create LogTextAreaLabel
             app.LogTextAreaLabel = uilabel(app.UIFigure);
             app.LogTextAreaLabel.HorizontalAlignment = 'right';
-            app.LogTextAreaLabel.Position = [347 264 29 22];
+            app.LogTextAreaLabel.Position = [347 389 29 22];
             app.LogTextAreaLabel.Text = 'Log:';
 
             % Create LogTextArea
             app.LogTextArea = uitextarea(app.UIFigure);
-            app.LogTextArea.Position = [347 14 268 246];
+            app.LogTextArea.Position = [347 24 268 361];
 
             % Create InitializeReferenceLaserParametersPanel
             app.InitializeReferenceLaserParametersPanel = uipanel(app.UIFigure);
-            app.InitializeReferenceLaserParametersPanel.Title = '2. Initialize Reference Laser Parameters';
-            app.InitializeReferenceLaserParametersPanel.Position = [31 306 265 57];
+            app.InitializeReferenceLaserParametersPanel.Title = '3. Initialize Reference Laser Parameters';
+            app.InitializeReferenceLaserParametersPanel.Position = [32 318 265 57];
 
             % Create GrabReferencesButton
             app.GrabReferencesButton = uibutton(app.InitializeReferenceLaserParametersPanel, 'push');
@@ -330,8 +456,8 @@ classdef F2_LAA_exported < matlab.apps.AppBase
 
             % Create SelectCamerastoAlignPanel
             app.SelectCamerastoAlignPanel = uipanel(app.UIFigure);
-            app.SelectCamerastoAlignPanel.Title = '3. Select Cameras to Align';
-            app.SelectCamerastoAlignPanel.Position = [31 12 282 272];
+            app.SelectCamerastoAlignPanel.Title = '4. Select Cameras to Align';
+            app.SelectCamerastoAlignPanel.Position = [31 20 282 272];
 
             % Create UITable
             app.UITable = uitable(app.SelectCamerastoAlignPanel);
@@ -343,8 +469,8 @@ classdef F2_LAA_exported < matlab.apps.AppBase
 
             % Create InitiateAutoAlignmentPanel
             app.InitiateAutoAlignmentPanel = uipanel(app.UIFigure);
-            app.InitiateAutoAlignmentPanel.Title = '4 Initiate Auto Alignment';
-            app.InitiateAutoAlignmentPanel.Position = [345 306 271 151];
+            app.InitiateAutoAlignmentPanel.Title = '5. Initiate Auto Alignment';
+            app.InitiateAutoAlignmentPanel.Position = [345 431 271 151];
 
             % Create StartAlignmentButton
             app.StartAlignmentButton = uibutton(app.InitiateAutoAlignmentPanel, 'push');
@@ -397,8 +523,46 @@ classdef F2_LAA_exported < matlab.apps.AppBase
             % Create ClearLogButton
             app.ClearLogButton = uibutton(app.UIFigure, 'push');
             app.ClearLogButton.ButtonPushedFcn = createCallbackFcn(app, @ClearLogButtonPushed, true);
-            app.ClearLogButton.Position = [515 264 100 23];
+            app.ClearLogButton.Position = [515 389 100 23];
             app.ClearLogButton.Text = 'Clear Log';
+
+            % Create SetshutterstatusPanel
+            app.SetshutterstatusPanel = uipanel(app.UIFigure);
+            app.SetshutterstatusPanel.Title = '2. Set shutter status';
+            app.SetshutterstatusPanel.Position = [32 391 262 97];
+
+            % Create HeNestatusLampLabel
+            app.HeNestatusLampLabel = uilabel(app.SetshutterstatusPanel);
+            app.HeNestatusLampLabel.HorizontalAlignment = 'right';
+            app.HeNestatusLampLabel.Position = [8 48 72 22];
+            app.HeNestatusLampLabel.Text = 'HeNe status';
+
+            % Create HeNestatusLamp
+            app.HeNestatusLamp = uilamp(app.SetshutterstatusPanel);
+            app.HeNestatusLamp.Position = [95 48 20 20];
+            app.HeNestatusLamp.Color = [1 1 0];
+
+            % Create EPSshutterLampLabel
+            app.EPSshutterLampLabel = uilabel(app.SetshutterstatusPanel);
+            app.EPSshutterLampLabel.HorizontalAlignment = 'right';
+            app.EPSshutterLampLabel.Position = [137 47 69 22];
+            app.EPSshutterLampLabel.Text = 'EPS shutter';
+
+            % Create EPSshutterLamp
+            app.EPSshutterLamp = uilamp(app.SetshutterstatusPanel);
+            app.EPSshutterLamp.Position = [221 47 20 20];
+
+            % Create BlockUnblockButton
+            app.BlockUnblockButton = uibutton(app.SetshutterstatusPanel, 'push');
+            app.BlockUnblockButton.ButtonPushedFcn = createCallbackFcn(app, @BlockUnblockButtonPushed, true);
+            app.BlockUnblockButton.Position = [13 14 100 23];
+            app.BlockUnblockButton.Text = 'Block/Unblock';
+
+            % Create BlockUnblockButton_2
+            app.BlockUnblockButton_2 = uibutton(app.SetshutterstatusPanel, 'push');
+            app.BlockUnblockButton_2.ButtonPushedFcn = createCallbackFcn(app, @BlockUnblockButton_2Pushed, true);
+            app.BlockUnblockButton_2.Position = [134 14 100 23];
+            app.BlockUnblockButton_2.Text = 'Block/Unblock';
 
             % Show the figure after all components are created
             app.UIFigure.Visible = 'on';
