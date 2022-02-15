@@ -16,6 +16,7 @@ nshots = 3;% set number of shots for averaging
                 ,lcaGetSmart([dataStruct.camerapvs{1},':NAME'])];
             app.LogTextArea.Value =  [str,app.LogTextArea.Value(:)'];drawnow()   
                 newlaserCentroids = laserCentroids;
+                laserOffset = 0;
                 mirrorMovements = 0;
             return
        end
@@ -25,9 +26,14 @@ nshots = 3;% set number of shots for averaging
         if mod(jj,2);axisfactor=1.0;else;axisfactor = 1.0;end % Axis factor makes +ve x and y correspond to right/left and up/down
         laserOffset(jj) = axisfactor*(requestedSetpoint(jj)-laserCentroids(jj));
  %       err_new(jj) = laserOffset(jj)./(requestedSetpoint(jj)-initialCentroid(jj));% Normalized error for integral term in PID
+       laserOffset(jj) = 1.0*round(laserOffset(jj)*100)/100; % Round to nearest hundredth of a pixel 
+        % Set the offset to zero if it's smaller than 0.5 pixels
+        if abs(laserOffset(jj))<0.5
+            laserOffset(jj) = 0.0;
+        end 
     end    
  %   err = [err;err_new];
-    str = ['Beam Offset from requested setpoint = ',num2str(laserOffset)];
+    str = ['Beam Offset from requested setpoint = ',newline,num2str(laserOffset)];
     app.LogTextArea.Value =  [str,app.LogTextArea.Value(:)'];drawnow()
     % Check that the requested move is not 'too large'
     % I.e. when the centroid offset is > half the camera ROI size 
@@ -69,7 +75,7 @@ nshots = 3;% set number of shots for averaging
         channel_index = [1:4];
     end
     % Print the mirror motion to the log
-    str =['Mirror motion = ',num2str(mirrorMovements)];
+    str =['Mirror motion = ',newline,num2str([mirrorMovements'])];
     app.LogTextArea.Value =  [str,app.LogTextArea.Value(:)'];drawnow()
         
     for n=1:length(channel_index) % This goes to 4 when u include the second mirror
