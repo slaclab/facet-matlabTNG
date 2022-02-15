@@ -184,7 +184,7 @@ nrParams = numel(aidaParams);
 aidaname = regexprep(aidaname,'//',':');
 
 % Use SLC:: prefix for klystrons
-aidaname = regexprep(aidaname,'^KLYS:(.+)','SLC::KLYS:$1') ;
+% aidaname = regexprep(aidaname,'^KLYS:(.+)','SLC::KLYS:$1') ;
 
 % Form AIDA-PVA request and get value
 builder = pvaRequest(aidaname);
