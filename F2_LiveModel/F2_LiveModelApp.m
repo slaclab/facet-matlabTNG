@@ -57,7 +57,7 @@ classdef F2_LiveModelApp < handle & F2_common
       % Make live model
       addpath('../F2_LEM');
       if obj.ModelSource~="Design"
-        if exist('KlysZero','var')
+        if ~exist('KlysZero','var')
           obj.LEM=F2_LEMApp; % Makes LEM object and reads in live model
         else
           obj.LEM=F2_LEMApp([],KlysZero); % Makes LEM object and reads in live model
