@@ -92,7 +92,7 @@ classdef F2_klys < handle
     end
     function set.ArchiveDate(obj,val)
       if ~isempty(obj.pvlist)
-        obj.pvlist.pset('ArchiveDate',val);
+        obj.pvlist.pset('ArchiveDate',{val});
       end
       obj.ArchiveDate=val;
     end
