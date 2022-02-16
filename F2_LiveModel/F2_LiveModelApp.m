@@ -26,7 +26,7 @@ classdef F2_LiveModelApp < handle & F2_common
     Initial_emityPV = "PROF:IN10:571:EMITN_Y"
   end
   methods
-    function obj = F2_LiveModelApp
+    function obj = F2_LiveModelApp(KlysZero)
       global BEAMLINE
       
       % Get data from design model
@@ -57,7 +57,11 @@ classdef F2_LiveModelApp < handle & F2_common
       % Make live model
       addpath('../F2_LEM');
       if obj.ModelSource~="Design"
-        obj.LEM=F2_LEMApp; % Makes LEM object and reads in live model
+        if exist('KlysZero','var')
+          obj.LEM=F2_LEMApp; % Makes LEM object and reads in live model
+        else
+          obj.LEM=F2_LEMApp([],KlysZero); % Makes LEM object and reads in live model
+        end
         obj.LEM.Mags.ReadB(true); % sets extant magnet strengths into model
       end
     end

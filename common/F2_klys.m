@@ -6,7 +6,6 @@ classdef F2_klys < handle
   properties
     KlysPhaseOverride(8,10) single = nan(8,10) % override live values for ~nan values
     KlysAmplOverride(8,10) single = nan(8,10) % override live values for ~nan values
-    ArchiveDate(1,6) = [2021,7,1,12,1,1] % [yr,mnth,day,hr,min,sec]
   end
   properties(SetObservable)
     KlysForceZeroPhase logical = false
@@ -14,6 +13,7 @@ classdef F2_klys < handle
     KlysInUse(8,10) logical % Klystron in use? (flags which klystrons are physically present)
     UseArchive logical = false % Extract data from archive if true, else get live data
     UpdateRate {mustBeNonnegative} = 0 ;
+    ArchiveDate(1,6) = [2021,7,1,12,1,1] % [yr,mnth,day,hr,min,sec]
   end
   properties(SetAccess=protected)
     KlysStat(8,10) uint8 = ones(8,10).*2 % Klystron status 0=ACTIVE 1=DEACT 2=OFF/MNT/IGNORE 3=???
@@ -85,8 +85,16 @@ classdef F2_klys < handle
       if val && obj.UpdateRate>0
         obj.UpdateRate=0;
       end
-      obj.pvlist.pset('UseArchive',val);
+      if ~isempty(obj.pvlist)
+        obj.pvlist.pset('UseArchive',val);
+      end
       obj.UseArchive=val;
+    end
+    function set.ArchiveDate(obj,val)
+      if ~isempty(obj.pvlist)
+        obj.pvlist.pset('ArchiveDate',val);
+      end
+      obj.ArchiveDate=val;
     end
     function set.UpdateRate(obj,val)
       if val>0
