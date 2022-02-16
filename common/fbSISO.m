@@ -291,6 +291,7 @@ classdef fbSISO < handle
         end
       end
       % Process the feedback if enabled and not in error state
+%       disp(obj.ControlVar(1).pvname);
       if obj.state==0
         dc = GetFeedback(obj) ;
         if isempty(obj.lastwrite) || etime(clock,obj.lastwrite) > obj.WriteRateMax
