@@ -756,13 +756,13 @@ classdef PV < handle
     end
     function pset(obj,propname,val)
       % If passing a vector of PV objects, loop through and set each
-      if length(val)==1 && length(obj)>1
+      if iscell(val) && length(val)==length(obj)
+        for iobj=1:length(obj)
+          obj(iobj).(propname)=val{iobj} ;
+        end
+      else
         for iobj=1:length(obj)
           obj(iobj).(propname)=val ;
-        end
-      elseif length(val)==length(obj)
-        for iobj=1:length(obj)
-          obj(iobj).(propname)=val(iobj) ;
         end
       end
     end
