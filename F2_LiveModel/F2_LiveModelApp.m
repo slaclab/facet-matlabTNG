@@ -14,8 +14,9 @@ classdef F2_LiveModelApp < handle & F2_common
     InjSolInd
     InjSolBkInd
   end
-  properties(SetObservable)
+  properties(SetObservable,AbortSet)
     ModelSource string {mustBeMember(ModelSource,["Live" "Archive" "Design"])} = "Live"
+    UseFudge logical = false % Use all available fudge factors
   end
   properties(Constant)
     Initial_betaxPV = "SIOC:SYS1:ML01:AO401"
@@ -64,6 +65,11 @@ classdef F2_LiveModelApp < handle & F2_common
         end
         obj.LEM.Mags.ReadB(true); % sets extant magnet strengths into model
       end
+    end
+    function set.UseFudge(obj,use)
+      obj.LEM.Mags.UseFudge = use ;
+      obj.LEM.Mags.ReadB(true) ;
+      obj.UseFudge = use ;
     end
     function set.ModelSource(obj,src)
       switch string(src)

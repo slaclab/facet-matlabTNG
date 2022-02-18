@@ -14,6 +14,8 @@ classdef F2_Matching_exported < matlab.apps.AppBase
     TabGroup                        matlab.ui.container.TabGroup
     MagnetsTab                      matlab.ui.container.Tab
     UITable                         matlab.ui.control.Table
+    ReadMagsButton                  matlab.ui.control.Button
+    ApplyFudgeFactorsCheckBox       matlab.ui.control.CheckBox
     QuadScanFitTab                  matlab.ui.container.Tab
     UIAxes                          matlab.ui.control.UIAxes
     UIAxes_2                        matlab.ui.control.UIAxes
@@ -525,6 +527,19 @@ classdef F2_Matching_exported < matlab.apps.AppBase
       app.ReLoadEMITPVsButtonPushed();
       app.TabGroupSelectionChanged();
     end
+
+    % Button pushed function: ReadMagsButton
+    function ReadMagsButtonPushed(app, event)
+      app.aobj.LiveModel.UpdateModel;
+      app.DropDownValueChanged ; % populates tables
+    end
+
+    % Value changed function: ApplyFudgeFactorsCheckBox
+    function ApplyFudgeFactorsCheckBoxValueChanged(app, event)
+      value = app.ApplyFudgeFactorsCheckBox.Value;
+      app.aobj.UseFudge = value ;
+      app.DropDownValueChanged ; % populates tables
+    end
   end
 
   % Component initialization
@@ -591,7 +606,19 @@ classdef F2_Matching_exported < matlab.apps.AppBase
       app.UITable.ColumnName = {'Column 1'; 'Column 2'; 'Column 3'; 'Column 4'};
       app.UITable.RowName = {};
       app.UITable.Interruptible = 'off';
-      app.UITable.Position = [4 8 744 439];
+      app.UITable.Position = [4 41 744 406];
+
+      % Create ReadMagsButton
+      app.ReadMagsButton = uibutton(app.MagnetsTab, 'push');
+      app.ReadMagsButton.ButtonPushedFcn = createCallbackFcn(app, @ReadMagsButtonPushed, true);
+      app.ReadMagsButton.Position = [12 9 100 23];
+      app.ReadMagsButton.Text = 'Read Mags';
+
+      % Create ApplyFudgeFactorsCheckBox
+      app.ApplyFudgeFactorsCheckBox = uicheckbox(app.MagnetsTab);
+      app.ApplyFudgeFactorsCheckBox.ValueChangedFcn = createCallbackFcn(app, @ApplyFudgeFactorsCheckBoxValueChanged, true);
+      app.ApplyFudgeFactorsCheckBox.Text = 'Apply Fudge Factors';
+      app.ApplyFudgeFactorsCheckBox.Position = [133 9 134 22];
 
       % Create QuadScanFitTab
       app.QuadScanFitTab = uitab(app.TabGroup);
