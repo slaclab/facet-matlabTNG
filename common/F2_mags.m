@@ -13,6 +13,7 @@ classdef F2_mags < handle & matlab.mixin.Copyable & F2_common
     RelTolBACT double = 0.1 % Relative Tolerance for BDES vs BACT errors
     AbsTolBDES double = 0.001 % Absolute Tolerance for BDES errors
     AbsTolBACT double = 0.1 % Absolute Tolerance for BDES vs BACT errors
+    UseFudge logical = false % Use available fudge factors?
   end
   properties(SetObservable)
     BDES double % Store location for BDES values to write
@@ -32,6 +33,8 @@ classdef F2_mags < handle & matlab.mixin.Copyable & F2_common
     BACT_cntrl % BACT values read from control system
     BMIN % BMAX from control system
     BMAX % BMIN from control system where available (else set based on BMAX)
+    BfudName string = ["QM11393" "Q11401" "Q11501" "Q11601" "Q11701" "Q11801" "Q11901"] % ModelNames corresponding to Bfud (fudge factor scalars)
+    Bfud = [1.0379 0.6997 -0.0905 0.1249 -0.3969 0.5169 0.6973] % Fudge factor scalars
   end
   properties(Dependent)
     KDES_cntrl
@@ -84,6 +87,31 @@ classdef F2_mags < handle & matlab.mixin.Copyable & F2_common
         tempmax = obj.BMAX(isinv) ;
         obj.BMAX(isinv) = obj.BMIN(isinv) ;
         obj.BMIN(isinv) = tempmax ;
+        obj.BMAX=obj.BMAX(:)'; obj.BMIN=obj.BMIN(:)';
+      end
+      % Apply any fudge factors
+      if obj.UseFudge && ~isempty(obj.Bfud)
+        [ifud,wfud] = ismember(obj.LM.ModelNames,obj.BfudName) ;
+        if any(ifud)
+          fud=obj.Bfud(wfud(ifud)); fud=fud(:)';
+          obj.BDES_cntrl(ifud) = obj.BDES_cntrl(ifud) .* fud ;
+          obj.BACT_cntrl(ifud) = obj.BACT_cntrl(ifud) .* fud ;
+          if exist('SetModel','var') && SetModel
+            obj.LM.ModelBDES = obj.BDES_cntrl ;
+          end
+          if ~isempty(obj.BMAX)
+            obj.BMIN(ifud) = obj.BMIN(ifud) .* fud ;
+            obj.BMAX(ifud) = obj.BMAX(ifud) .* fud ;
+            dorev=find(obj.BMIN>obj.BMAX);
+            if ~isempty(dorev)
+              for irev=dorev
+                btmp = obj.BMIN(irev) ;
+                obj.BMIN(irev) = obj.BMAX(irev) ;
+                obj.BMAX(irev) = btmp ;
+              end
+            end
+          end
+        end
       end
     end
     function msg=WriteBDES(obj)
@@ -100,6 +128,14 @@ classdef F2_mags < handle & matlab.mixin.Copyable & F2_common
         msg="All magnets within tolerance, nothing to do.";
         return
       end
+      % Reverse any fudge factors applied
+      bdes = obj.BDES ;
+      if obj.UseFudge && ~isempty(obj.Bfud)
+        [ifud,wfud] = ismember(obj.LM.ModelNames,obj.BfudName) ;
+        if any(ifud)
+          bdes(ifud) = bdes(ifud) ./ obj.Bfud(wfud(ifud)) ;
+        end
+      end
       bulk=struct; control_mags={}; control_vals=[];
       for imag=1:length(mnames)
         if ~bdes_err(imag)
@@ -110,8 +146,8 @@ classdef F2_mags < handle & matlab.mixin.Copyable & F2_common
         if isfield(par,'idC') && length(par.idC{1})==2
           bn = regexprep(par.nameL{1},':','') ;
           if isfield(bulk,bn)
-            minB = abs(obj.BDES(imag))-abs(par.bM(2)) ;
-            maxB = abs(obj.BDES(imag)) ;
+            minB = abs(bdes(imag))-abs(par.bM(2)) ;
+            maxB = abs(bdes(imag)) ;
             if minB<bulk.(bn).minB
               bulk.(bn).minB = minB ;
             end
@@ -119,25 +155,25 @@ classdef F2_mags < handle & matlab.mixin.Copyable & F2_common
               bulk.(bn).maxB = maxB ;
             end
             bulk.(bn).boostname{end+1} = par.nameL{2} ;
-            bulk.(bn).boostsign(end+1) = sign(obj.BDES(imag)) ;
-            bulk.(bn).boostval(end+1) = obj.BDES(imag) ;
+            bulk.(bn).boostsign(end+1) = sign(bdes(imag)) ;
+            bulk.(bn).boostval(end+1) = bdes(imag) ;
             bulk.(bn).magname{end+1} = char(mnames(imag)) ;
           else
             bulk.(bn).bulkmax = abs(par.bM(1)) ;
             bulk.(bn).bulksign = sign(par.bM(1)) ;
             bulk.(bn).bulkname = par.nameL{1} ;
-            bulk.(bn).minB = abs(obj.BDES(imag))-abs(par.bM(2)) ;
-            bulk.(bn).maxB = abs(obj.BDES(imag)) ;
+            bulk.(bn).minB = abs(bdes(imag))-abs(par.bM(2)) ;
+            bulk.(bn).maxB = abs(bdes(imag)) ;
             bulk.(bn).boostname{1} = par.nameL{2} ;
-            bulk.(bn).boostsign(1) = sign(obj.BDES(imag)) ;
-            bulk.(bn).boostval(1) = obj.BDES(imag) ;
+            bulk.(bn).boostsign(1) = sign(bdes(imag)) ;
+            bulk.(bn).boostval(1) = bdes(imag) ;
             bulk.(bn).magname{1} = char(mnames(imag)) ;
           end
         elseif isfield(par,'idC') && length(par.idC{1})>2
           error('Dont know what to do with this: %s',mnames(imag));
         else % lucky day, it is a simple 1 PS, 1 magnet deal (or handled by SCP)
           control_mags{end+1}=char(mnames(imag)); %#ok<*AGROW>
-          control_vals(end+1)=obj.BDES(imag);
+          control_vals(end+1)=bdes(imag);
         end
       end
       % Set any bulks such that there is max average movement on each boost
@@ -225,15 +261,15 @@ classdef F2_mags < handle & matlab.mixin.Copyable & F2_common
       end
       
       % Check BDES and BACT within tolerances
-      [bdes,bact]=obj.ReadB;
+      [bdes_new,bact_new]=obj.ReadB;
       for imag = find(obj.BDES_err)
         if bdes_err(imag)
-          msg(end+1) = sprintf("!!!!!! %s: BDES out of Tol: Req= %g Act= %g",mnames(imag),obj.BDES(imag),bdes(imag));
+          msg(end+1) = sprintf("!!!!!! %s: BDES out of Tol: Req= %g Act= %g",mnames(imag),obj.BDES(imag),bdes_new(imag));
         end
       end
       for imag = find(obj.BACT_err)
         if bdes_err(imag)
-          msg(end+1) = sprintf("!!!!!! %s: BACT out of Tol: BDES= %g Act= %g",mnames(imag),obj.BDES(imag),bact(imag));
+          msg(end+1) = sprintf("!!!!!! %s: BACT out of Tol: BDES= %g Act= %g",mnames(imag),obj.BDES(imag),bact_new(imag));
         end
       end
       if ~obj.WriteEnable
