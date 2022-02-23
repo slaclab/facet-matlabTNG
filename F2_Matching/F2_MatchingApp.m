@@ -605,11 +605,12 @@ classdef F2_MatchingApp < handle & F2_common
         fprintf(2,"Failed to match initial Twiss Parameters!\n");
       end
     end
-    function PlotQuadScanData(obj,newfig)
+    function fhan = PlotQuadScanData(obj,newfig)
+      fhan=[];
       if ~exist('newfig','var')
         newfig=false;
       end
-      if ~isempty(obj.guihan) || newfig
+      if ~isempty(obj.guihan) && ~newfig
         obj.guihan.UIAxes.reset;
         obj.guihan.UIAxes_2.reset;
         cla(obj.guihan.UIAxes);
@@ -628,7 +629,7 @@ classdef F2_MatchingApp < handle & F2_common
         yerr = obj.QuadScanData.yerr.(obj.ProfFitMethod) ; 
       end
       if isempty(obj.guihan) || newfig
-        figure;
+        fhan=figure;
         ah1=subplot(2,1,1);
         ah2=subplot(2,1,2);
       else
@@ -689,13 +690,14 @@ classdef F2_MatchingApp < handle & F2_common
         obj.guihan.EditField_7.Value = obj.TwissFitModel(6) ;
       end
     end
-    function PlotTwiss(obj,newfig)
+    function fhan=PlotTwiss(obj,newfig)
       global BEAMLINE PS
+      fhan=[];
       if ~exist('newfig','var')
         newfig=false;
       end
       if isempty(obj.guihan) || newfig
-        figure;
+        fhan=figure;
         ah=axes;
       else
         ah=obj.guihan.UIAxes2;
@@ -810,6 +812,7 @@ classdef F2_MatchingApp < handle & F2_common
       end
       
       % square of wire sizes at each wire and corresponding errors
+      drms(drms==0)=1e-6; % Provide min error
       wsig = rms.^2 ;
       dwsig = 2.*rms.*drms ;
       
@@ -915,15 +918,18 @@ classdef F2_MatchingApp < handle & F2_common
       emitData.sigma_des=zeros(1,4);
       Sw=zeros(1,4);
       S0 = emit*[beta -alpha; -alpha (1+alpha^2)/beta];
+      Rw=cell(1,4);
       for iw=1:4
         [~,R]=RmatAtoB(wind(1),wind(iw));
         ind=wind(iw);
         gamma = BEAMLINE{ind}.P/0.511e-3 ;
         emit = desemit./gamma;
         if dim=="X"
+          Rw{iw}=R(1:2,1:2);
           emitData.sigma_des(iw) = sqrt(emit(1)*obj.LiveModel.DesignTwiss.betax(ind));
           Sw(iw) = R(1:2,1:2)*S0*R(1:2,1:2)';
         else
+          Rw{iw}=R(3:4,3:4);
           emitData.sigma_des(iw) = sqrt(emit(2)*obj.LiveModel.DesignTwiss.betay(ind));
           Sw(iw) = R(3:4,3:4)*S0*R(3:4,3:4)';
         end
@@ -968,24 +974,22 @@ classdef F2_MatchingApp < handle & F2_common
       plot_ellipse(eye(2),0,0,'k--')
       
       % plot mapped OTR measurement phases
-      ioff=2*ixy;
       sig0=sqrt(emit0*beta0);
-      big=1e3*sqrt(emit0/beta0);
-      c=pcols(wsel); 
+      sigp0=1e3*sqrt(emit0/beta0);
+      c=obj.plotcols; 
       ho=zeros(1,nw);
-      for n=1:nw
-        R11=R{n}(1+ioff,1+ioff);
-        R12=R{n}(1+ioff,2+ioff);
-        R21=R{n}(2+ioff,1+ioff);
-        R22=R{n}(2+ioff,2+ioff);
+      ax=axis;
+      for n=1:4
+        x1 = Rw{n} \ [rms(n)+drms(n); sigp0];
+        x2 = Rw{n} \ [rms(n)+drms(n); -sigp0];
         sigw=sig(n);
         dsigw=dsig(n);
         c1=a0*R22-b0*R21;
         c2=b0*R11-a0*R12;
-        x1=[R22,-R12;R22,R12]*[sigw+dsigw;big]/sig0;
-        y1=[c1,c2;c1,-c2]*[sigw+dsigw;big]/sig0;
-        x2=[R22,-R12;R22,R12]*[sigw-dsigw;big]/sig0;
-        y2=[c1,c2;c1,-c2]*[sigw-dsigw;big]/sig0;
+        x1=[R22,-R12;R22,R12]*[sigw+dsigw;sigp0]/sig0;
+        y1=[c1,c2;c1,-c2]*[sigw+dsigw;sigp0]/sig0;
+        x2=[R22,-R12;R22,R12]*[sigw-dsigw;sigp0]/sig0;
+        y2=[c1,c2;c1,-c2]*[sigw-dsigw;sigp0]/sig0;
         h=plot(x1,y1,c(n),x2,y2,c(n));
         ho(n)=h(1);
       end
@@ -1081,9 +1085,11 @@ classdef F2_MatchingApp < handle & F2_common
       if dim=="X"
         bx0 = obj.LiveModel.DesignTwiss.betax(id1) ;
         ax0 = obj.LiveModel.DesignTwiss.alphax(id1) ;
+        emit0 = desemit(1) ./ egamma ;
       else
         bx0 = obj.LiveModel.DesignTwiss.betay(id1);
         ax0 = obj.LiveModel.DesignTwiss.alphay(id1);
+        emit0 = desemit(2) ./ egamma ;
       end
       
       % load analysis variables
@@ -1104,26 +1110,21 @@ classdef F2_MatchingApp < handle & F2_common
         end
       end
       
-      for itry=1:2
-        zx=x./dx;
-        Bx=zeros(nw,3);
-        for n=1:nw
-          Bx(n,:)=M(n,:)/dx(n);
-        end
-        Tx=inv(Bx'*Bx);
-        u=Tx*Bx'*zx;du=sqrt(diag(Tx));  %#ok<NASGU,MINV>
-        if itry==1
-          chi2x=zx'*zx-zx'*Bx*Tx*Bx'*zx; %#ok<MINV>
-          dx=dx.*sqrt(chi2x);
-        end
+      % Solve least-squares problem, weighted by errors
+      zx=x./dx;
+      Bx=zeros(nw,3);
+      for n=1:nw
+        Bx(n,:)=M(n,:)./dx(n);
       end
+      Tx=inv(Bx'*Bx);
+      u=Tx*Bx'*zx;du=sqrt(diag(Tx));  %#ok<NASGU,MINV>
+      chi2x = sum( (Bx*u - zx).^2 ./ zx ) ;
       
       % convert fitted input sigma matrix elements to emittance, BMAG, ...
       [px,dpx]=obj.emit_params(u(1),u(2),u(3),Tx,bx0,ax0);
       px(1:3)=abs(px(1:3));
       emitx=px(1);demitx=dpx(1);
       bmagx=px(2);dbmagx=dpx(2);
-      embmx=px(3);dembmx=dpx(3);
       betax=px(4);dbetax=dpx(4);
       alphx=px(5);dalphx=dpx(5);
       bcosx=px(6);dbcosx=dpx(6);
@@ -1227,6 +1228,50 @@ classdef F2_MatchingApp < handle & F2_common
       end
       obj.TwissFitModel = obj.TwissFitAnalytic ;
       
+    end
+    function logplot(obj,whichplot,Pos1,Pos2)
+      %LOGPLOT Write logbook entry of currently selected Tab
+      %logplot(whichplot,PosMainTab,PosTwissTab)
+      % whichplot: "Magnets" | "QuadScan" | "Optics" | "MultiWire"
+      % provide main tab window and Twiss tab window Position properties
+      switch whichplot
+        case "Magnets"
+          border=2;
+          Position=Pos1; Position(3:4)=Positio(3:4)+border*2;
+          Position(3)=Position(3)+border+Pos2(3);
+          fhan = uifigure; fhan.Position=Position;
+          pos=Position;
+          pos(1:2)=pos(1:2)+border; pos(3:4)=Pos1(3:4);
+          uitable(fhan,'Data',obj.MagnetTable,'Position',pos);
+          pos=Position;
+          pos(1:2)=pos(1:2)+border; pos(1)=pos(1)+border+Pos1(3);
+          pos(3:4)=Pos2(3:4);
+          uitable(fhan,'Data',obj.TwissTable,'Position',pos);
+          titletxt = 'Matching Quad Data' ;
+          logtxt='';
+        case "QuadScan"
+          fhan=obj.PlotQuadScanData(true);
+          TA=obj.TwissFitAnalytic; TA(isnan(TA))=0;
+          emitx_anal = TA(7) ;
+          bmagx_anal = TA(5) ;
+          emitx_mdl = obj.TwissFitModel(7) ;
+          bmagx_mdl = obj.TwissFitModel(5) ;
+          emity_anal = TA(8) ;
+          bmagy_anal = TA(6) ;
+          emity_mdl = obj.TwissFitModel(8) ;
+          bmagy_mdl = obj.TwissFitModel(6) ;
+          titletxt = 'Matching Quad Scan Data' ;
+          logtxt = sprintf('nemit_x/bmagx : %s / %s (analytic) %s / %s (model) [mm-mrad]\n',emitx_anal,bmagx_anal,emitx_mdl,bmagx_mdl) ;
+          logtxt = [logtxt sprintf('nemit_y/bmagy : %s / %s (analytic) %s / %s (model) [mm-mrad]',emity_anal,bmagy_anal,emity_mdl,bmagy_mdl)] ;
+        case "Optics"
+          fhan=obj.PlotTwiss(true);
+          titletxt = 'Matching Twiss Data';
+          logtxt='';
+        otherwise
+          error('Unknown logplot option');
+      end
+      util_printLog2020(fhan, 'title',sprintf('%s - %s',titletxt,char(obj.ProfName)),'author','F2_Matching.m','text',logtxt);
+      delete(fhan);
     end
     % Get/Set
     function set.UseFudge(obj,use)
@@ -1419,9 +1464,9 @@ classdef F2_MatchingApp < handle & F2_common
         c1=a0*R22-b0*R21;
         c2=b0*R11-a0*R12;
         x1=[R22,-R12;R22,R12]*[sigw+dsigw;big]/sig0;
-        y1=[c1,c2;c1,-c2]*[sigw+dsigw;big]/sig0;
+        y1=[c1,c2;c1,-c2]*[sigw+dsigw;big]/big;
         x2=[R22,-R12;R22,R12]*[sigw-dsigw;big]/sig0;
-        y2=[c1,c2;c1,-c2]*[sigw-dsigw;big]/sig0;
+        y2=[c1,c2;c1,-c2]*[sigw-dsigw;big]/big;
         h=plot(x1,y1,c(n),x2,y2,c(n));
         ho(n)=h(1);
       end
