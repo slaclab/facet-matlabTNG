@@ -510,13 +510,17 @@ classdef F2_Matching_exported < matlab.apps.AppBase
 
     % Button pushed function: Button
     function ButtonPushed(app, event)
+      pos=app.FACETIIOpticsMatchingUIFigure.Position;
       switch app.TabGroup.SelectedTab
         case app.MagnetsTab
-          app.aobj.logplot("Magnets");
+          pos(3:4) = app.UITable.Position(3:4);
+          app.aobj.logplot("Magnets",pos,app.UITable2.Position);
         case app.QuadScanFitTab
-          app.aobj.logplot("QuadScan");
+          pos(3:4) = app.QuadScanFitTab.Position(3:4);
+          app.aobj.logplot("QuadScan",pos);
         case app.OpticsPlotTab
-          app.aobj.logplot("Optics");
+          pos(3:4) = app.OpticsPlotTab.Position(3:4);
+          app.aobj.logplot("Optics",pos);
         case app.MultiWireEmittanceTab
           app.aobj.emitMW_plot(app.MultiWireData,char(join(string(app.EmitText),""))) ;
       end
@@ -565,7 +569,7 @@ classdef F2_Matching_exported < matlab.apps.AppBase
 
       % Create FACETIIOpticsMatchingUIFigure and hide until all components are created
       app.FACETIIOpticsMatchingUIFigure = uifigure('Visible', 'off');
-      app.FACETIIOpticsMatchingUIFigure.Position = [100 100 1012 618];
+      app.FACETIIOpticsMatchingUIFigure.Position = [100 100 1013 611];
       app.FACETIIOpticsMatchingUIFigure.Name = 'FACET-II Optics Matching';
       app.FACETIIOpticsMatchingUIFigure.Resize = 'off';
 
@@ -610,7 +614,7 @@ classdef F2_Matching_exported < matlab.apps.AppBase
       % Create TabGroup
       app.TabGroup = uitabgroup(app.FACETIIOpticsMatchingUIFigure);
       app.TabGroup.SelectionChangedFcn = createCallbackFcn(app, @TabGroupSelectionChanged, true);
-      app.TabGroup.Position = [255 143 752 472];
+      app.TabGroup.Position = [255 136 752 472];
 
       % Create MagnetsTab
       app.MagnetsTab = uitab(app.TabGroup);
@@ -984,7 +988,7 @@ classdef F2_Matching_exported < matlab.apps.AppBase
       % Create MessagesPanel
       app.MessagesPanel = uipanel(app.FACETIIOpticsMatchingUIFigure);
       app.MessagesPanel.Title = 'Messages';
-      app.MessagesPanel.Position = [88 14 919 74];
+      app.MessagesPanel.Position = [88 7 919 74];
 
       % Create TextArea
       app.TextArea = uitextarea(app.MessagesPanel);
@@ -993,7 +997,7 @@ classdef F2_Matching_exported < matlab.apps.AppBase
       % Create ProfileMeasurementDevicePanel
       app.ProfileMeasurementDevicePanel = uipanel(app.FACETIIOpticsMatchingUIFigure);
       app.ProfileMeasurementDevicePanel.Title = 'Profile Measurement Device';
-      app.ProfileMeasurementDevicePanel.Position = [11 564 238 50];
+      app.ProfileMeasurementDevicePanel.Position = [11 557 238 50];
 
       % Create DropDown
       app.DropDown = uidropdown(app.ProfileMeasurementDevicePanel);
@@ -1006,7 +1010,7 @@ classdef F2_Matching_exported < matlab.apps.AppBase
       % Create TwissProfileDevicePanel
       app.TwissProfileDevicePanel = uipanel(app.FACETIIOpticsMatchingUIFigure);
       app.TwissProfileDevicePanel.Title = 'Twiss @ Profile Device';
-      app.TwissProfileDevicePanel.Position = [11 97 238 298];
+      app.TwissProfileDevicePanel.Position = [11 90 238 298];
 
       % Create UITable2
       app.UITable2 = uitable(app.TwissProfileDevicePanel);
@@ -1043,7 +1047,7 @@ classdef F2_Matching_exported < matlab.apps.AppBase
       app.DoMatchingButton = uibutton(app.FACETIIOpticsMatchingUIFigure, 'push');
       app.DoMatchingButton.ButtonPushedFcn = createCallbackFcn(app, @DoMatchingButtonPushed, true);
       app.DoMatchingButton.Interruptible = 'off';
-      app.DoMatchingButton.Position = [443 101 175 27];
+      app.DoMatchingButton.Position = [443 94 175 27];
       app.DoMatchingButton.Text = 'Do Matching';
 
       % Create SetMatchingQuadsButton
@@ -1051,13 +1055,13 @@ classdef F2_Matching_exported < matlab.apps.AppBase
       app.SetMatchingQuadsButton.ButtonPushedFcn = createCallbackFcn(app, @SetMatchingQuadsButtonPushed, true);
       app.SetMatchingQuadsButton.Interruptible = 'off';
       app.SetMatchingQuadsButton.Enable = 'off';
-      app.SetMatchingQuadsButton.Position = [631 101 130 27];
+      app.SetMatchingQuadsButton.Position = [631 94 130 27];
       app.SetMatchingQuadsButton.Text = 'Set Matching Quads';
 
       % Create GetQuadScanDataandfitTwissPanel
       app.GetQuadScanDataandfitTwissPanel = uipanel(app.FACETIIOpticsMatchingUIFigure);
       app.GetQuadScanDataandfitTwissPanel.Title = 'Get Quad Scan Data and fit Twiss';
-      app.GetQuadScanDataandfitTwissPanel.Position = [11 398 238 98];
+      app.GetQuadScanDataandfitTwissPanel.Position = [11 391 238 98];
 
       % Create GetDatafromCorrPlotorEmitGUIButton
       app.GetDatafromCorrPlotorEmitGUIButton = uibutton(app.GetQuadScanDataandfitTwissPanel, 'push');
@@ -1085,13 +1089,13 @@ classdef F2_Matching_exported < matlab.apps.AppBase
       app.UndoButton.ButtonPushedFcn = createCallbackFcn(app, @UndoButtonPushed, true);
       app.UndoButton.Interruptible = 'off';
       app.UndoButton.Enable = 'off';
-      app.UndoButton.Position = [773 101 87 27];
+      app.UndoButton.Position = [773 94 87 27];
       app.UndoButton.Text = 'Undo';
 
       % Create ModelDatePanel
       app.ModelDatePanel = uipanel(app.FACETIIOpticsMatchingUIFigure);
       app.ModelDatePanel.Title = 'Model Date';
-      app.ModelDatePanel.Position = [11 506 238 48];
+      app.ModelDatePanel.Position = [11 499 238 48];
 
       % Create ModelDateEditField
       app.ModelDateEditField = uieditfield(app.ModelDatePanel, 'text');
@@ -1103,21 +1107,21 @@ classdef F2_Matching_exported < matlab.apps.AppBase
       app.ReLoadEMITPVsButton = uibutton(app.FACETIIOpticsMatchingUIFigure, 'push');
       app.ReLoadEMITPVsButton.ButtonPushedFcn = createCallbackFcn(app, @ReLoadEMITPVsButtonPushed, true);
       app.ReLoadEMITPVsButton.Interruptible = 'off';
-      app.ReLoadEMITPVsButton.Position = [257 101 175 27];
+      app.ReLoadEMITPVsButton.Position = [257 94 175 27];
       app.ReLoadEMITPVsButton.Text = 'Re-Load EMIT PVs';
 
       % Create DropDown_2
       app.DropDown_2 = uidropdown(app.FACETIIOpticsMatchingUIFigure);
       app.DropDown_2.Items = {'Match BKW', 'Match FWD'};
       app.DropDown_2.ValueChangedFcn = createCallbackFcn(app, @DropDown_2ValueChanged, true);
-      app.DropDown_2.Position = [885 103 100 22];
+      app.DropDown_2.Position = [885 96 100 22];
       app.DropDown_2.Value = 'Match BKW';
 
       % Create Button
       app.Button = uibutton(app.FACETIIOpticsMatchingUIFigure, 'push');
       app.Button.ButtonPushedFcn = createCallbackFcn(app, @ButtonPushed, true);
       app.Button.Icon = 'logbook.gif';
-      app.Button.Position = [11 16 68 69];
+      app.Button.Position = [11 9 68 69];
       app.Button.Text = '';
 
       % Show the figure after all components are created

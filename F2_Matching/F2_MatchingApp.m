@@ -791,226 +791,6 @@ classdef F2_MatchingApp < handle & F2_common
       tab=table(obj.MatchQuadNames(:),string(num2str(Z(:),6)),E(:),bdes(:),bact(:),bmatch(:),b_design(:),usequad(:));
       tab.Properties.VariableNames=["Name";"Z";"E (GeV)";"BDES";"BACT";"BMATCH";"B_DESIGN";"USE"];
     end
-    function [emitData,txt_results] = multiwire_emit(obj,dim,rms,drms,section)
-      global BEAMLINE
-      
-      % Get wire names and corresponding BEAMLINE indices
-      % Also get reference emittance from L0 or BC11 match
-      switch section
-        case "L2"
-          wname={'WS11444' 'WS11614' 'WS11744' 'WS12214'};
-          desemit=[lcaGet('PROF:IN10:571:EMITN_X') lcaGet('PROF:IN10:571:EMITN_Y')].*1e-6 ;
-        case "L3"
-          wname={'WS18944' 'WS19144' 'WS19244' 'WS19344'};
-          desemit=[lcaGet('WIRE:LI11:614:EMITN_X') lcaGet('WIRE:LI11:614:EMITN_Y')].*1e-6 ;
-        otherwise
-          error('Incorrect section selection');
-      end
-      wind=[0 0 0 0];
-      for iw=1:4
-        wind(iw) = findcells(BEAMLINE,'Name',wname{iw}) ;
-      end
-      
-      % square of wire sizes at each wire and corresponding errors
-      drms(drms==0)=1e-6; % Provide min error
-      wsig = rms.^2 ;
-      dwsig = 2.*rms.*drms ;
-      
-      % Form response matrix elements
-      if dim=='X'
-        Rind=1;
-      else
-        Rind=3;
-      end
-      A = zeros(4,3) ;
-      for iw=1:4
-        [~,R]=RmatAtoB(wind(1),wind(iw));
-        A(iw,1) = R(Rind,Rind)^2 ;
-        A(iw,2) = 2*R(Rind,Rind)*R(Rind,Rind+1) ;
-        A(iw,3) = R(Rind,Rind+1)^2 ;
-      end
-      
-      % get design Twiss at first wire
-      energy=BEAMLINE{wind(1)}.P;
-      egamma = energy/0.51099906e-3;
-      if dim=="X"
-        beta0 = obj.LiveModel.DesignTwiss.betax(wind(1)) ;
-        alpha0 = obj.LiveModel.DesignTwiss.alphax(wind(1)) ;
-      else
-        beta0 = obj.LiveModel.DesignTwiss.betay(wind(1));
-        alpha0 = obj.LiveModel.DesignTwiss.alphay(wind(1));
-      end
-      
-      % Solve least-squares problem to get Sigma matrix at first wire and extract Twiss parameters
-      [x,~,mse,S] = lscov(A,wsig(:),dwsig(:)) ; S=S/mse;
-      % - convert fitted input sigma matrix elements to emittance, BMAG, ...
-      [px,dpx]=obj.emit_params(x(1),x(2),x(3),S,beta0,alpha0);
-      px(1:3)=abs(px(1:3));
-      emit=px(1);demit=dpx(1);
-      bmag=px(2);dbmag=dpx(2);
-      beta=px(4);dbeta=dpx(4);
-      alph=px(5);dalph=dpx(5);
-      bcos=px(6);dbcos=dpx(6);
-      bsin=px(7);dbsin=dpx(7);
-      emitn=egamma*emit;demitn=egamma*demit;
-      chi2=1/mse;
-      
-      
-      % results txt
-      fprintf('%s emittance parameters at %s\n',dim,wname{1});
-      fprintf('-----------------------------------------------------\n');
-      fprintf('energy      = %10.4f              GeV\n',energy);
-      fprintf('nemit       = %10.4f +- %9.4f mm-mrad\n',1e6*emitn,1e6*demitn);
-      fprintf('nemit*bmag  = %10.4f          mm-mrad\n',1e6*emitn*bmag);
-      fprintf('emit        = %10.4f +- %9.4f nm\n',1e9*emit,1e9*demit);
-      fprintf('bmag        = %10.4f +- %9.4f      (%9.4f)\n',bmag,dbmag,1);
-      fprintf('bmag_cos    = %10.4f +- %9.4f      (%9.4f)\n',bcos,dbcos,0);
-      fprintf('bmag_sin    = %10.4f +- %9.4f      (%9.4f)\n',bsin,dbsin,0);
-      fprintf('beta        = %10.4f +- %9.4f m    (%9.4f)\n',beta,dbeta,beta0);
-      fprintf('alpha       = %10.4f +- %9.4f      (%9.4f)\n',alph,dalph,alpha0);
-      fprintf('chisq/N     = %10.4f\n',chi2);
-      
-      txt_results{1} =  sprintf('%s emittance parameters at %s\n',dim,wname{1});
-      txt_results{2} =  sprintf('----\n');
-      txt_results{3} =  sprintf('energy      = %10.4f              GeV\n',energy);
-      txt_results{4} =  sprintf('nemit       = %10.4f +- %9.4f mm-mrad\n',1e6*emitn,1e6*demitn);
-      txt_results{5} =  sprintf('nemit*bmag  = %10.4f          mm-mrad\n',1e6*emitn*bmag);
-      txt_results{6} =  sprintf('emit        = %10.4f +- %9.4f nm\n',1e9*emit,1e9*demit);
-      txt_results{7} =  sprintf('bmag        = %10.4f +- %9.4f      (%9.4f)\n',bmag,dbmag,1);
-      txt_results{8} =  sprintf('bmag_cos    = %10.4f +- %9.4f      (%9.4f)\n',bcos,dbcos,0);
-      txt_results{9} =  sprintf('bmag_sin    = %10.4f +- %9.4f      (%9.4f)\n',bsin,dbsin,0);
-      txt_results{10} = sprintf('beta        = %10.4f +- %9.4f m    (%9.4f)\n',beta,dbeta,beta0);
-      txt_results{11} = sprintf('alpha       = %10.4f +- %9.4f      (%9.4f)\n',alph,dalph,alpha0);
-      txt_results{12} = sprintf('chisq/N     = %10.4f\n',chi2);
-      
-      % Return data structure
-      emitData.emit=emit;
-      emitData.nemit=emitn;
-      emitData.bmag=bmag;
-      emitData.beta=beta;
-      emitData.alpha=alph;
-      emitData.demit=demit;
-      emitData.dnemit=demitn;
-      emitData.dbmag=dbmag;
-      emitData.dbeta=dbeta;
-      emitData.dalpha=dalph;
-      emitData.dim=dim;
-      emitData.sig=rms;
-      emitData.dsig=drms;
-      emitData.beta0=beta0;
-      emitData.alpha0=alpha0;
-      if dim=="X"
-        emitData.nemit0=desemit(1);
-      else
-        emitData.nemit0=desemit(2);
-      end
-      emitData.emit0=emitData.nemit0/egamma;
-      emitData.idw=wind;
-      emitData.wsel=wsel;
-      I = TwissToInitial(obj.LiveModel.DesignTwiss,wind(1),obj.LiveModel.Initial);
-      I.Momentum=energy;
-      emitData.I_design = I ;
-      emitData.section=section;
-      emitData.pcols=obj.plotcols;
-      emitData.id1=wind(1);
-      
-      % Get design spot sizes and fitted spot sizes at each BEAMLINE index between wires
-      emitData.sigma_des=zeros(1,4);
-      Sw=zeros(1,4);
-      S0 = emit*[beta -alpha; -alpha (1+alpha^2)/beta];
-      Rw=cell(1,4);
-      for iw=1:4
-        [~,R]=RmatAtoB(wind(1),wind(iw));
-        ind=wind(iw);
-        gamma = BEAMLINE{ind}.P/0.511e-3 ;
-        emit = desemit./gamma;
-        if dim=="X"
-          Rw{iw}=R(1:2,1:2);
-          emitData.sigma_des(iw) = sqrt(emit(1)*obj.LiveModel.DesignTwiss.betax(ind));
-          Sw(iw) = R(1:2,1:2)*S0*R(1:2,1:2)';
-        else
-          Rw{iw}=R(3:4,3:4);
-          emitData.sigma_des(iw) = sqrt(emit(2)*obj.LiveModel.DesignTwiss.betay(ind));
-          Sw(iw) = R(3:4,3:4)*S0*R(3:4,3:4)';
-        end
-      end
-      sigma_des=zeros(1,wind(2)); sigma=sigma_des;
-      for ind=wind(1):wind(2)
-        [~,R]=RmatAtoB(wind(1),ind);
-        gamma = BEAMLINE{ind}.P/0.511e-3 ;
-        emit = desemit./gamma;
-        if dim=="X"
-          sigma_des(ind) = sqrt(emit(1)*obj.LiveModel.DesignTwiss.betax(ind));
-          sigma(ind) = R(1:2,1:2)*S0*R(1:2,1:2)';
-        else
-          sigma_des(ind) = sqrt(emit(2)*obj.LiveModel.DesignTwiss.betay(ind));
-          sigma(ind) = R(3:4,3:4)*S0*R(3:4,3:4)';
-        end
-      end
-      txt_results{13} = sprintf('SIGMA_DES   = %10.4f %10.4f %10.4f %10.4f um\n',emitData.sigma_des.*1e6);
-      
-      % plot measured beam ellipse (normalized coordinates)
-      figure
-      if dim=="X"
-        emit0=desemit(1);
-      else
-        emit0=desemit(2);
-      end
-      r=emit/emit0;
-      if (bmag<1e-6)
-        Sn=r*eye(2);
-      else
-        g=(1+alph^2)/beta;
-        Z=r*[beta,-alph;-alph,g];
-        A=[1,0;alpha0,beta0]/sqrt(beta0);
-        Sn=A*Z*A';
-      end
-      plot_ellipse(inv(Sn),0,0,'k-')
-      v=axis;
-      axis(sqrt(2)*max(abs(v))*[-1,1,-1,1],'square')
-      
-      % plot nominal beam ellipse (normalized coordinates) ... unit circle
-      hold on
-      plot_ellipse(eye(2),0,0,'k--')
-      
-      % plot mapped OTR measurement phases
-      sig0=sqrt(emit0*beta0);
-      sigp0=1e3*sqrt(emit0/beta0);
-      c=obj.plotcols; 
-      ho=zeros(1,nw);
-      ax=axis;
-      for n=1:4
-        x1 = Rw{n} \ [rms(n)+drms(n); sigp0];
-        x2 = Rw{n} \ [rms(n)+drms(n); -sigp0];
-        sigw=sig(n);
-        dsigw=dsig(n);
-        c1=a0*R22-b0*R21;
-        c2=b0*R11-a0*R12;
-        x1=[R22,-R12;R22,R12]*[sigw+dsigw;sigp0]/sig0;
-        y1=[c1,c2;c1,-c2]*[sigw+dsigw;sigp0]/sig0;
-        x2=[R22,-R12;R22,R12]*[sigw-dsigw;sigp0]/sig0;
-        y2=[c1,c2;c1,-c2]*[sigw-dsigw;sigp0]/sig0;
-        h=plot(x1,y1,c(n),x2,y2,c(n));
-        ho(n)=h(1);
-      end
-      hold off
-      hor_line(0,'k:'),ver_line(0,'k:')
-      
-      % Write to local emittance properties
-      if dim=="X"
-        obj.TwissFitAnalytic(7) = emitn * 1e6 ;
-        obj.TwissFitAnalytic(1) = beta ;
-        obj.TwissFitAnalytic(3) = alph ;
-        obj.TwissFitAnalytic(5) = bmag ;
-      else
-        obj.TwissFitAnalytic(8) = emitn * 1e6 ;
-        obj.TwissFitAnalytic(2) = beta ;
-        obj.TwissFitAnalytic(4) = alph ;
-        obj.TwissFitAnalytic(6) = bmag ;
-      end
-      obj.TwissFitModel = obj.TwissFitAnalytic ;
-      
-    end
     function [emitData,txt_results] = emitMW(obj,dim,data,data_err,section)
       %EMITMW Multi-Wire emittance calculation
       %emitData = emitMW(dim,data,section)
@@ -1085,11 +865,9 @@ classdef F2_MatchingApp < handle & F2_common
       if dim=="X"
         bx0 = obj.LiveModel.DesignTwiss.betax(id1) ;
         ax0 = obj.LiveModel.DesignTwiss.alphax(id1) ;
-        emit0 = desemit(1) ./ egamma ;
       else
         bx0 = obj.LiveModel.DesignTwiss.betay(id1);
         ax0 = obj.LiveModel.DesignTwiss.alphay(id1);
-        emit0 = desemit(2) ./ egamma ;
       end
       
       % load analysis variables
@@ -1111,14 +889,19 @@ classdef F2_MatchingApp < handle & F2_common
       end
       
       % Solve least-squares problem, weighted by errors
-      zx=x./dx;
-      Bx=zeros(nw,3);
-      for n=1:nw
-        Bx(n,:)=M(n,:)./dx(n);
+      for itry=1:2
+        zx=x./dx;
+        Bx=zeros(nw,3);
+        for n=1:nw
+          Bx(n,:)=M(n,:)./dx(n);
+        end
+        Tx=inv(Bx'*Bx);
+        u=Tx*Bx'*zx;du=sqrt(diag(Tx));  %#ok<NASGU,MINV>
+        if itry==1
+          chi2x = sum( (Bx*u - zx).^2 ./ zx ) ;
+          dx=dx.*sqrt(chi2x);
+        end
       end
-      Tx=inv(Bx'*Bx);
-      u=Tx*Bx'*zx;du=sqrt(diag(Tx));  %#ok<NASGU,MINV>
-      chi2x = sum( (Bx*u - zx).^2 ./ zx ) ;
       
       % convert fitted input sigma matrix elements to emittance, BMAG, ...
       [px,dpx]=obj.emit_params(u(1),u(2),u(3),Tx,bx0,ax0);
@@ -1235,20 +1018,20 @@ classdef F2_MatchingApp < handle & F2_common
       % whichplot: "Magnets" | "QuadScan" | "Optics" | "MultiWire"
       % provide main tab window and Twiss tab window Position properties
       switch whichplot
-        case "Magnets"
-          border=2;
-          Position=Pos1; Position(3:4)=Positio(3:4)+border*2;
-          Position(3)=Position(3)+border+Pos2(3);
-          fhan = uifigure; fhan.Position=Position;
-          pos=Position;
-          pos(1:2)=pos(1:2)+border; pos(3:4)=Pos1(3:4);
-          uitable(fhan,'Data',obj.MagnetTable,'Position',pos);
-          pos=Position;
-          pos(1:2)=pos(1:2)+border; pos(1)=pos(1)+border+Pos1(3);
-          pos(3:4)=Pos2(3:4);
-          uitable(fhan,'Data',obj.TwissTable,'Position',pos);
-          titletxt = 'Matching Quad Data' ;
-          logtxt='';
+        case "Magnets" % need to use "exportapp" -> only in 2020b
+%           border=2;
+%           Position=Pos1; Position(3:4)=Position(3:4)+border*2;
+%           Position(3)=Position(3)+border+Pos2(3);
+%           fhan = uifigure; fhan.Position=Position;
+%           pos=Position;
+%           pos(1:2)=pos(1:2)+border; pos(3:4)=Pos1(3:4);
+%           uitable(fhan,'Data',obj.MagnetTable,'Position',pos);
+%           pos=Position;
+%           pos(1:2)=pos(1:2)+border; pos(1)=pos(1)+border+Pos1(3);
+%           pos(3:4)=Pos2(3:4);
+%           uitable(fhan,'Data',obj.TwissTable,'Position',pos);
+%           titletxt = 'Matching Quad Data' ;
+%           logtxt='';
         case "QuadScan"
           fhan=obj.PlotQuadScanData(true);
           TA=obj.TwissFitAnalytic; TA(isnan(TA))=0;
@@ -1261,8 +1044,8 @@ classdef F2_MatchingApp < handle & F2_common
           emity_mdl = obj.TwissFitModel(8) ;
           bmagy_mdl = obj.TwissFitModel(6) ;
           titletxt = 'Matching Quad Scan Data' ;
-          logtxt = sprintf('nemit_x/bmagx : %s / %s (analytic) %s / %s (model) [mm-mrad]\n',emitx_anal,bmagx_anal,emitx_mdl,bmagx_mdl) ;
-          logtxt = [logtxt sprintf('nemit_y/bmagy : %s / %s (analytic) %s / %s (model) [mm-mrad]',emity_anal,bmagy_anal,emity_mdl,bmagy_mdl)] ;
+          logtxt = sprintf('nemit_x/bmagx : %g / %g (analytic) %g / %g (model) [mm-mrad]\n',emitx_anal,bmagx_anal,emitx_mdl,bmagx_mdl) ;
+          logtxt = [logtxt sprintf('nemit_y/bmagy : %g / %g (analytic) %g / %g (model) [mm-mrad]',emity_anal,bmagy_anal,emity_mdl,bmagy_mdl)] ;
         case "Optics"
           fhan=obj.PlotTwiss(true);
           titletxt = 'Matching Twiss Data';
@@ -1404,6 +1187,7 @@ classdef F2_MatchingApp < handle & F2_common
       e0=emitData.emit0;
       b0=emitData.beta0;
       a0=emitData.alpha0;
+      g0=(1+a0^2)/b0;
       e=emitData.emit;
       b=emitData.beta;
       a=emitData.alpha;
@@ -1412,7 +1196,6 @@ classdef F2_MatchingApp < handle & F2_common
       R=emitData.R;
       bmag=emitData.bmag;
       idw=emitData.idw;
-      I=emitData.I_design;
       wsel=emitData.wsel;
       nw=sum(wsel);
       pcols=emitData.pcols;
@@ -1451,22 +1234,18 @@ classdef F2_MatchingApp < handle & F2_common
       % plot mapped OTR measurement phases
       ioff=2*ixy;
       sig0=sqrt(e0*b0);
-      big=1e3*sqrt(e0/b0);
+      big=1000*sqrt(e0*g0);
       c=pcols(wsel); 
       ho=zeros(1,nw);
       for n=1:nw
-        R11=R{n}(1+ioff,1+ioff);
-        R12=R{n}(1+ioff,2+ioff);
-        R21=R{n}(2+ioff,1+ioff);
-        R22=R{n}(2+ioff,2+ioff);
         sigw=sig(n);
         dsigw=dsig(n);
-        c1=a0*R22-b0*R21;
-        c2=b0*R11-a0*R12;
-        x1=[R22,-R12;R22,R12]*[sigw+dsigw;big]/sig0;
-        y1=[c1,c2;c1,-c2]*[sigw+dsigw;big]/big;
-        x2=[R22,-R12;R22,R12]*[sigw-dsigw;big]/sig0;
-        y2=[c1,c2;c1,-c2]*[sigw-dsigw;big]/big;
+        X1 = R{n}(1+ioff:2+ioff,1+ioff:2+ioff) \ [sigw+dsigw; big];
+        X2 = R{n}(1+ioff:2+ioff,1+ioff:2+ioff) \ [sigw+dsigw; -big];
+        X3 = R{n}(1+ioff:2+ioff,1+ioff:2+ioff) \ [sigw-dsigw; big]; 
+        X4 = R{n}(1+ioff:2+ioff,1+ioff:2+ioff) \ [sigw-dsigw; -big];
+        x1=[X1(1);X2(1)]./sig0; y1=[X1(2);X2(2)]./sqrt(e0/b0);
+        x2=[X3(1);X4(1)]./sig0; y2=[X3(2);X4(2)]./sqrt(e0/b0);
         h=plot(x1,y1,c(n),x2,y2,c(n));
         ho(n)=h(1);
       end
