@@ -1,5 +1,5 @@
 classdef fbSISO < handle
-  %FBSISO Generic SISO feedback class
+  %FBSISO SISO feedback with PID controller
   
   events
     DataUpdated
