@@ -1201,7 +1201,9 @@ classdef F2_MatchingApp < handle & F2_common
       pcols=emitData.pcols;
       id1=emitData.id1;
       
-      S0 = e * [b -a; -a (1+a^2)/b] ;
+      S = e * [b -a; -a (1+a^2)/b] ;
+      S0 = e0 * [b0 -a0; -a0 (1+a0^2)/b0] ;
+      
       % Target figure axis
       fhan=figure; fhan.Position(3:4)=[900 500]; subplot(1,2,1);
       
@@ -1214,26 +1216,21 @@ classdef F2_MatchingApp < handle & F2_common
       end
       
       % plot measured beam ellipse (normalized coordinates)
-      r=e/e0;
-      if (bmag<1e-6)
-        Sn=r*eye(2);
-      else
-        g=(1+a^2)/b;
-        Z=r*[b,-a;-a,g];
-        A=[1,0;a0,b0]/sqrt(b0);
-        Sn=A*Z*A';
-      end
-      plot_ellipse(inv(Sn),0,0,'k-')
+      [xe,ye]=noplot_ellipse(inv(S0),0,0);
+      ye = (a0*xe+b0*ye)./sqrt(b0) ;
+      xe = xe./sqrt(b0) ;
+      xsca = max(xe(:)); ysca=max(ye(:));
+      plot(xe./xsca,ye./ysca,'k--');
+      hold on
+      [xe,ye]=noplot_ellipse(inv(S),0,0);
+      ye = (a0*xe+b0*ye)./sqrt(b0) ;
+      xe = xe./sqrt(b0) ;
+      plot(xe./xsca,ye./ysca,'k-');
       v=axis;
       axis(sqrt(2)*max(abs(v))*[-1,1,-1,1],'square')
       
-      % plot nominal beam ellipse (normalized coordinates) ... unit circle
-      hold on
-      plot_ellipse(eye(2),0,0,'k--')
-      
       % plot mapped OTR measurement phases
       ioff=2*ixy;
-      sig0=sqrt(e0*b0);
       big=1000*sqrt(e0*g0);
       c=pcols(wsel); 
       ho=zeros(1,nw);
@@ -1244,9 +1241,11 @@ classdef F2_MatchingApp < handle & F2_common
         X2 = R{n}(1+ioff:2+ioff,1+ioff:2+ioff) \ [sigw+dsigw; -big];
         X3 = R{n}(1+ioff:2+ioff,1+ioff:2+ioff) \ [sigw-dsigw; big]; 
         X4 = R{n}(1+ioff:2+ioff,1+ioff:2+ioff) \ [sigw-dsigw; -big];
-        x1=[X1(1);X2(1)]./sig0; y1=[X1(2);X2(2)]./sqrt(e0/b0);
-        x2=[X3(1);X4(1)]./sig0; y2=[X3(2);X4(2)]./sqrt(e0/b0);
-        h=plot(x1,y1,c(n),x2,y2,c(n));
+        x1=[X1(1);X2(1)]; y1=[X1(2);X2(2)];
+        x2=[X3(1);X4(1)]; y2=[X3(2);X4(2)];
+        y1 = (a0*x1+b0*y1)./sqrt(b0) ; x1 = x1./sqrt(b0) ;
+        y2 = (a0*x2+b0*y2)./sqrt(b0) ; x2 = x2./sqrt(b0) ;
+        h=plot(x1./xsca,y1./ysca,c(n),x2./xsca,y2./ysca,c(n));
         ho(n)=h(1);
       end
       hold off
@@ -1265,9 +1264,9 @@ classdef F2_MatchingApp < handle & F2_common
       for iele=id1:idw(end)
         [~,R]=RmatAtoB(id1,iele);
         if emitData.dim=="X"
-          S1 = R(1:2,1:2) * S0 * R(1:2,1:2)' ;
+          S1 = R(1:2,1:2) * S * R(1:2,1:2)' ;
         else
-          S1 = R(3:4,3:4) * S0 * R(3:4,3:4)' ;
+          S1 = R(3:4,3:4) * S * R(3:4,3:4)' ;
         end
         sigfit(1+iele-id1) = sqrt(S1(1,1)) ;
       end
