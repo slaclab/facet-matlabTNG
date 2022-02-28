@@ -67,7 +67,7 @@ classdef F2_Matching_exported < matlab.apps.AppBase
     Wire4_SigmaErr                  matlab.ui.control.NumericEditField
     MeasurementPlaneDropDownLabel   matlab.ui.control.Label
     MeasurementPlaneDropDown        matlab.ui.control.DropDown
-    FetchDataButton                 matlab.ui.control.Button
+    FetchDatafromPVsButton          matlab.ui.control.Button
     EmittanceCalculationOutputPanel  matlab.ui.container.Panel
     TextArea_2                      matlab.ui.control.TextArea
     FitEmittanceButton              matlab.ui.control.Button
@@ -84,7 +84,7 @@ classdef F2_Matching_exported < matlab.apps.AppBase
     ModelButton                     matlab.ui.control.RadioButton
     DoMatchingButton                matlab.ui.control.Button
     SetMatchingQuadsButton          matlab.ui.control.Button
-    GetQuadScanDataandfitTwissPanel  matlab.ui.container.Panel
+    FetchDatafromFilePanel          matlab.ui.container.Panel
     GetDatafromCorrPlotorEmitGUIButton  matlab.ui.control.Button
     UseXDataButton                  matlab.ui.control.StateButton
     UseYDataButton                  matlab.ui.control.StateButton
@@ -186,18 +186,20 @@ classdef F2_Matching_exported < matlab.apps.AppBase
 
     % Button pushed function: GetDatafromCorrPlotorEmitGUIButton
     function GetDatafromCorrPlotorEmitGUIButtonPushed(app, event)
-      app.message("Requesting data transfer from Correlation Plot Software...");
+      app.message("Requesting data transfer from GUI file...");
       drawnow
       app.aobj.LoadingScanData=true;
       try
-        didload=app.aobj.LoadQuadScanData;
+        didload=app.aobj.LoadQuadScanData; % didload=1: quad scan didload=2: multiwire
         if ~didload
           app.message("Data loading aborted",true);
           return
         end
-        app.aobj.FitQuadScanData;
+        if didload==1
+          app.aobj.FitQuadScanData;
+        end
       catch ME
-        app.message(["No quad scan data transfer performed...";string(ME.message)],true);
+        app.message(["No data transfer performed...";string(ME.message)],true);
         app.aobj.LoadingScanData=false;
         return
       end
@@ -205,9 +207,13 @@ classdef F2_Matching_exported < matlab.apps.AppBase
         app.DropDown.Items=[string(app.DropDown.Items) app.aobj.ProfName];
       end
       app.DropDown.Value=app.aobj.ProfName;
-      app.DropDownValueChanged ; % populates tables
+      if didload==1
+        app.DropDownValueChanged ; % populates tables
+      elseif didload==2
+        app.FitEmittanceButtonPushed;
+      end
       app.aobj.LoadingScanData=false;
-      app.message(["Requesting data transfer from Correlation Plot Software...";"Done."]);
+      app.message(["Requesting data transfer from GUI file...";"Done."]);
     end
 
     % Value changed function: UseXDataButton
@@ -444,11 +450,11 @@ classdef F2_Matching_exported < matlab.apps.AppBase
       end
       drawnow
       app.DropDownValueChanged;
-      app.FetchDataButtonPushed;
+      app.FetchDatafromPVsButtonPushed;
     end
 
-    % Button pushed function: FetchDataButton
-    function FetchDataButtonPushed(app, event)
+    % Button pushed function: FetchDatafromPVsButton
+    function FetchDatafromPVsButtonPushed(app, event)
       
       switch string(app.LinacDropDown.Value)
         case "L2"
@@ -504,7 +510,7 @@ classdef F2_Matching_exported < matlab.apps.AppBase
 
     % Value changed function: MeasurementPlaneDropDown
     function MeasurementPlaneDropDownValueChanged(app, event)
-      app.FetchDataButtonPushed;
+      app.FetchDatafromPVsButtonPushed;
       app.TextArea_2.Value="";
     end
 
@@ -958,11 +964,11 @@ classdef F2_Matching_exported < matlab.apps.AppBase
       app.MeasurementPlaneDropDown.Position = [163 412 100 22];
       app.MeasurementPlaneDropDown.Value = 'Horizontal';
 
-      % Create FetchDataButton
-      app.FetchDataButton = uibutton(app.MultiWireEmittanceTab, 'push');
-      app.FetchDataButton.ButtonPushedFcn = createCallbackFcn(app, @FetchDataButtonPushed, true);
-      app.FetchDataButton.Position = [435 410 108 25];
-      app.FetchDataButton.Text = 'Fetch Data';
+      % Create FetchDatafromPVsButton
+      app.FetchDatafromPVsButton = uibutton(app.MultiWireEmittanceTab, 'push');
+      app.FetchDatafromPVsButton.ButtonPushedFcn = createCallbackFcn(app, @FetchDatafromPVsButtonPushed, true);
+      app.FetchDatafromPVsButton.Position = [431 410 126 25];
+      app.FetchDatafromPVsButton.Text = 'Fetch Data from PVs';
 
       % Create EmittanceCalculationOutputPanel
       app.EmittanceCalculationOutputPanel = uipanel(app.MultiWireEmittanceTab);
@@ -1058,27 +1064,27 @@ classdef F2_Matching_exported < matlab.apps.AppBase
       app.SetMatchingQuadsButton.Position = [631 94 130 27];
       app.SetMatchingQuadsButton.Text = 'Set Matching Quads';
 
-      % Create GetQuadScanDataandfitTwissPanel
-      app.GetQuadScanDataandfitTwissPanel = uipanel(app.FACETIIOpticsMatchingUIFigure);
-      app.GetQuadScanDataandfitTwissPanel.Title = 'Get Quad Scan Data and fit Twiss';
-      app.GetQuadScanDataandfitTwissPanel.Position = [11 391 238 98];
+      % Create FetchDatafromFilePanel
+      app.FetchDatafromFilePanel = uipanel(app.FACETIIOpticsMatchingUIFigure);
+      app.FetchDatafromFilePanel.Title = 'Fetch Data from File';
+      app.FetchDatafromFilePanel.Position = [11 391 238 98];
 
       % Create GetDatafromCorrPlotorEmitGUIButton
-      app.GetDatafromCorrPlotorEmitGUIButton = uibutton(app.GetQuadScanDataandfitTwissPanel, 'push');
+      app.GetDatafromCorrPlotorEmitGUIButton = uibutton(app.FetchDatafromFilePanel, 'push');
       app.GetDatafromCorrPlotorEmitGUIButton.ButtonPushedFcn = createCallbackFcn(app, @GetDatafromCorrPlotorEmitGUIButtonPushed, true);
       app.GetDatafromCorrPlotorEmitGUIButton.Interruptible = 'off';
       app.GetDatafromCorrPlotorEmitGUIButton.Position = [14 39 210 31];
       app.GetDatafromCorrPlotorEmitGUIButton.Text = 'Get Data from Corr Plot or Emit GUI';
 
       % Create UseXDataButton
-      app.UseXDataButton = uibutton(app.GetQuadScanDataandfitTwissPanel, 'state');
+      app.UseXDataButton = uibutton(app.FetchDatafromFilePanel, 'state');
       app.UseXDataButton.ValueChangedFcn = createCallbackFcn(app, @UseXDataButtonValueChanged, true);
       app.UseXDataButton.Text = 'Use X Data';
       app.UseXDataButton.Position = [15 9 100 23];
       app.UseXDataButton.Value = true;
 
       % Create UseYDataButton
-      app.UseYDataButton = uibutton(app.GetQuadScanDataandfitTwissPanel, 'state');
+      app.UseYDataButton = uibutton(app.FetchDatafromFilePanel, 'state');
       app.UseYDataButton.ValueChangedFcn = createCallbackFcn(app, @UseYDataButtonValueChanged, true);
       app.UseYDataButton.Text = 'Use Y Data';
       app.UseYDataButton.Position = [123 9 100 23];

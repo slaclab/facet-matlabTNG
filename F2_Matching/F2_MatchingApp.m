@@ -17,6 +17,8 @@ classdef F2_MatchingApp < handle & F2_common
     MatchQuadNames string = ["QUAD:IN10:425" "QUAD:IN10:441" "QUAD:IN10:511" "QUAD:IN10:525"] % Read in when select Prof device and/or when change # matching quads
     TwissFitModel(1,8) = [1 1 0 0 1 1 5 5] % beta_x,beta_y,alpha_x,alpha_y,bmag_x,bmag_y,nemit_x,nemit_y fitted twiss parameters at profile device (nemit in um-rad)
     TwissFitAnalytic(1,8) = [1 1 0 0 1 1 5 5] % beta_x,beta_y,alpha_x,alpha_y,bmag_x,bmag_y,nemit_x,nemit_y fitted twiss parameters at profile device (nemit in um-rad)
+    MultiWireData(2,4) % [x|y , wire # 1-4] [um]
+    MultiWireDataErr(2,4) % [x|y , wire # 1-4] [um]
   end
   properties(SetAccess=private,SetObservable)
     goodmatch logical = false
@@ -278,9 +280,10 @@ classdef F2_MatchingApp < handle & F2_common
       
     end
     function didload=LoadQuadScanData(obj)
-      %LOADSCANDATA Load corr plot data for quad scan
+      %LOADSCANDATA Load corr plot data for quad scan or multiwire
+      %didload=1: quad scan didload=2: multiwire else error
       
-      didload=false;
+      didload=0;
 %       
 %       obj.TwissMatch=[];
 %       obj.TwissPreMatch=[];
@@ -294,7 +297,8 @@ classdef F2_MatchingApp < handle & F2_common
       files = dir(obj.datadir);
       qscanfiles = startsWith(string(arrayfun(@(x) x.name,files,'UniformOutput',false)),"CorrelationPlot-QUAD") | ...
        cellfun(@(xx) ~isempty(xx),regexp(string(arrayfun(@(x) x.name,files,'UniformOutput',false)),"CorrelationPlot-LI%d%d:QUAD", 'once')) | ...
-       startsWith(string(arrayfun(@(x) x.name,files,'UniformOutput',false)),"Emittance-scan") ;
+       startsWith(string(arrayfun(@(x) x.name,files,'UniformOutput',false)),"Emittance-scan") | ...
+       startsWith(string(arrayfun(@(x) x.name,files,'UniformOutput',false)),"Emittance-multi-WIRE");
       if any(qscanfiles)
         [~,latestfile]=max(datenum({files(qscanfiles).date}));
         ifile=find(qscanfiles); ifile=ifile(latestfile);
@@ -309,6 +313,43 @@ classdef F2_MatchingApp < handle & F2_common
       dd = dir(fullfile(pn,fn));
       obj.ModelDate = datevec(dd.datenum) ;
       dat = load(fullfile(pn,fn));
+      
+      % If multi-wire, just need to upload data into multi-wire GUI boxes and done
+      if startsWith(string(fn),"Emittance-multi-WIRE")
+        obj.ProfName = string(dat.data.name{1}) ;
+        if ~isempty(obj.guihan)
+          obj.guihan.TabGroup.SelectedTab = obj.guihan.MultiWireEmittanceTab;
+        end
+        if isfield(dat.data.beam,'xStat')
+          dim=1;
+          obj.MultiWireData(1,:) = arrayfun(@(x) dat.data.beam(x,2).xStat(3),1:4) ;
+          obj.MultiWireDataErr(1,:) = arrayfun(@(x) dat.data.beam(x,2).xStatStd(3),1:4) ;
+        else
+          dim=2;
+          obj.MultiWireData(2,:) = arrayfun(@(x) dat.data.beam(x,2).yStat(3),1:4) ;
+          obj.MultiWireDataErr(2,:) = arrayfun(@(x) dat.data.beam(x,2).yStatStd(3),1:4) ;
+        end
+        if ~isempty(obj.guihan)
+          if dim==1
+            obj.guihan.MeasurementPlaneDropDown.Value = "Horizontal" ;
+          else
+            obj.guihan.MeasurementPlaneDropDown.Value = "Vertical" ;
+          end
+          if obj.ProfName == "WIRE:LI18:944"
+            obj.guihan.LinacDropDown.Value = "L3" ;
+          else
+            obj.guihan.LinacDropDown.Value = "L2" ;
+          end
+          for iwire=1:4
+            obj.guihan.("Wire"+iwire+"_Sigma").Value = obj.MultiWireData(dim,iwire) ;
+            obj.guihan.("Wire"+iwire+"_SigmaErr").Value = obj.MultiWireDataErr(dim,iwire) ;
+          end
+        end
+        didload=2;
+        return
+      end
+      
+      % The rest is dealing with an actual quad scan...
       if startsWith(string(fn),'Emittance') % data from emittance_gui?
         iscorplot=false;
       else % data from corr plot
@@ -414,7 +455,7 @@ classdef F2_MatchingApp < handle & F2_common
         obj.QuadScanData=[];
         return
       end
-      didload=true;
+      didload=1;
     end
     function WriteEmitData(obj)
       %WRITEENMITDATA Write twiss and emittance data to PVs
@@ -1012,7 +1053,7 @@ classdef F2_MatchingApp < handle & F2_common
       obj.TwissFitModel = obj.TwissFitAnalytic ;
       
     end
-    function logplot(obj,whichplot,Pos1,Pos2)
+    function logplot(obj,whichplot,Pos1,Pos2) %#ok<INUSD>
       %LOGPLOT Write logbook entry of currently selected Tab
       %logplot(whichplot,PosMainTab,PosTwissTab)
       % whichplot: "Magnets" | "QuadScan" | "Optics" | "MultiWire"
@@ -1194,7 +1235,7 @@ classdef F2_MatchingApp < handle & F2_common
       sig=emitData.sig;
       dsig=emitData.dsig;
       R=emitData.R;
-      bmag=emitData.bmag;
+%       bmag=emitData.bmag;
       idw=emitData.idw;
       wsel=emitData.wsel;
       nw=sum(wsel);
