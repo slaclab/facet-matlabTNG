@@ -96,6 +96,7 @@ classdef F2_S20Config_exported < matlab.apps.AppBase
     BMATCH_Q2D                      matlab.ui.control.NumericEditField
     ShowTableButton                 matlab.ui.control.Button
     UpdateButton                    matlab.ui.control.Button
+    TCAVConfigButton                matlab.ui.control.Button
     TwissParameterPlotPanel         matlab.ui.container.Panel
     UIAxes                          matlab.ui.control.UIAxes
     UIAxes2                         matlab.ui.control.UIAxes
@@ -213,7 +214,7 @@ classdef F2_S20Config_exported < matlab.apps.AppBase
     % Value changed function: DropDown_2
     function DropDown_2ValueChanged(app, event)
       value = app.DropDown_2.Value;
-      app.WaistDesNameDS = value ;
+      app.aobj.WaistDesNameDS = value ;
     end
 
     % Value changed function: DropDown_3
@@ -321,6 +322,18 @@ classdef F2_S20Config_exported < matlab.apps.AppBase
     function DetachPlotMenuSelected(app, event)
       fh=figure;
       app.aobj.Plot(fh);
+    end
+
+    % Button pushed function: TCAVConfigButton
+    function TCAVConfigButtonPushed(app, event)
+      app.ListBox.Value = "DSOTR" ;
+      app.DropDown_2.Value = "DTOTR" ;
+      app.BetaX_DES.Value = 5 ;
+      app.BetaY_DES.Value = 5 ;
+      app.ListBoxValueChanged;
+      app.DropDown_2ValueChanged;
+      app.BetaX_DESValueChanged;
+      app.BetaY_DESValueChanged;
     end
   end
 
@@ -651,7 +664,7 @@ classdef F2_S20Config_exported < matlab.apps.AppBase
 
       % Create DropDown_2
       app.DropDown_2 = uidropdown(app.DownstreamIPMatchConditionsPanel);
-      app.DropDown_2.Items = {'WDSOTR', 'PDUMP'};
+      app.DropDown_2.Items = {'WDSOTR', 'DTOTR', 'PGAM1', 'CNEAR', 'PDUMP'};
       app.DropDown_2.ValueChangedFcn = createCallbackFcn(app, @DropDown_2ValueChanged, true);
       app.DropDown_2.Position = [6 30 179 22];
       app.DropDown_2.Value = 'PDUMP';
@@ -979,6 +992,12 @@ classdef F2_S20Config_exported < matlab.apps.AppBase
       app.UpdateButton.Visible = 'off';
       app.UpdateButton.Position = [528 198 100 23];
       app.UpdateButton.Text = 'Update';
+
+      % Create TCAVConfigButton
+      app.TCAVConfigButton = uibutton(app.MatchingPanel, 'push');
+      app.TCAVConfigButton.ButtonPushedFcn = createCallbackFcn(app, @TCAVConfigButtonPushed, true);
+      app.TCAVConfigButton.Position = [518 196 118 26];
+      app.TCAVConfigButton.Text = 'TCAV Config';
 
       % Create TwissParameterPlotPanel
       app.TwissParameterPlotPanel = uipanel(app.FACETIISector20ConfiguratorUIFigure);
