@@ -183,7 +183,7 @@ classdef F2_S20ConfigApp < handle & F2_common
       end
       
     end
-    function CounterTimerFun(obj,~,~)
+    function CounterTimerFun(~,~,~)
       lcaPutNoWait('F2:WATCHER:WAISTLOCATOR_STAT',1);
     end
     function oval = MatchFun(obj,x,I,objdes,qno,ele,mode)
