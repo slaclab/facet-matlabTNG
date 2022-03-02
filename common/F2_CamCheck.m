@@ -47,6 +47,9 @@ classdef F2_CamCheck < handle
             % Ignore transport cameras in DAQ
             if obj.DAQ_bool; obj.remove_transport(); end
             
+            % Ignore transport cameras in DAQ
+            if obj.DAQ_bool; obj.remove_monitor(); end
+            
             % Ignore cmos cameras in DAQ
             %if obj.DAQ_bool; obj.remove_cmos(); end
             
@@ -75,6 +78,13 @@ classdef F2_CamCheck < handle
             
         end
         
+        function remove_monitor(obj)
+        % Remove laser transport cameras because they dont have triggers
+            monitor_cams = strcmp(obj.camera_info(:,4),'S20 Monitor');
+            obj.camera_info(monitor_cams,:) = [];
+            
+        end
+        
         function remove_cmos(obj)
         % Remove laser transport cameras because they dont have triggers
             scmos_cams = strcmp(obj.camera_info(:,4),'S20 sCMOS');
@@ -94,10 +104,12 @@ classdef F2_CamCheck < handle
                              'cpu-li20-pm02',       'SIOC:LI20:PM02';
                              'cpu-li20-pm03',       'SIOC:LI20:PM03';
                              'cpu-li20-pm04',       'SIOC:LI20:PM04';
+                             'facet-li20-pm01',     'SIOC:LI20:PM20';
                              'facet-li20-pm02',     'SIOC:LI20:PM21';
                              'facet-li20-pm03',     'SIOC:LI20:PM22';
                              'facet-li20-pm04',     'SIOC:LI20:PM23';
                              'cpu-li20-pm05',       'SIOC:LI20:PM05';
+                             'cpu-li20-pm06',       'SIOC:LI20:PM06';
                              %'facet-b244-cs01',     'SIOC:LI20:CS01';
                              %'facet-b244-cs02',     'SIOC:LI20:CS02';
                              %'facet-b244-cs03',     'SIOC:LI20:CS03';
@@ -115,7 +127,7 @@ classdef F2_CamCheck < handle
             
             bad_inds = false(numel(obj.siocs),1);
             for i = 1:numel(obj.siocs)
-                status = lcaGet([obj.siocs{i} ':HEARTBEATSUM'],0,'DBF_ENUM');
+                status = lcaGetSmart([obj.siocs{i} ':HEARTBEATSUM'],0,'DBF_ENUM');
                 if status ~= 0
                     obj.dispMessage(['Warning: IOC ' obj.siocs{i} ' serving camera ' obj.camNames{i} ' is down.']);
                     if obj.DAQ_bool
