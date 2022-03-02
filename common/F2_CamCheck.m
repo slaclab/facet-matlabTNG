@@ -48,7 +48,7 @@ classdef F2_CamCheck < handle
             if obj.DAQ_bool; obj.remove_transport(); end
             
             % Ignore cmos cameras in DAQ
-            if obj.DAQ_bool; obj.remove_cmos(); end
+            %if obj.DAQ_bool; obj.remove_cmos(); end
             
             % Get camera IOC status, remove bad cameras if DAQ
             obj.add_SIOCs();
@@ -97,6 +97,7 @@ classdef F2_CamCheck < handle
                              'facet-li20-pm02',     'SIOC:LI20:PM21';
                              'facet-li20-pm03',     'SIOC:LI20:PM22';
                              'facet-li20-pm04',     'SIOC:LI20:PM23';
+                             'cpu-li20-pm05',       'SIOC:LI20:PM05';
                              %'facet-b244-cs01',     'SIOC:LI20:CS01';
                              %'facet-b244-cs02',     'SIOC:LI20:CS02';
                              %'facet-b244-cs03',     'SIOC:LI20:CS03';
