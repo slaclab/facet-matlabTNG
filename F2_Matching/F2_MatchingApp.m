@@ -1191,8 +1191,13 @@ classdef F2_MatchingApp < handle & F2_common
       obj.NumMatchQuads=num;
       obj.QuadScanData=[];
       obj.LM.ModelClasses="QUAD";
-      iquads = obj.LM.ModelUniqueID < obj.ProfModelInd ;
-      idq=find(iquads,double(obj.NumMatchQuads),'last') ;
+      if obj.MatchDir=="BKW"
+        iquads = obj.LM.ModelUniqueID < obj.ProfModelInd ;
+        idq=find(iquads,double(obj.NumMatchQuads),'last') ;
+      else
+        iquads = obj.LM.ModelUniqueID > obj.ProfModelInd ;
+        idq=find(iquads,double(obj.NumMatchQuads),'first') ;
+      end
       obj.MatchQuadNames = obj.LM.ControlNames(idq) ;
       obj.MatchQuadModelInd = obj.LM.ModelUniqueID(idq) ;
       obj.MatchQuadID = idq ;
