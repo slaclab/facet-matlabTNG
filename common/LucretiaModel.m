@@ -54,7 +54,7 @@ classdef LucretiaModel < handle & matlab.mixin.Copyable
     function obj = LucretiaModel(LucretiaFile)
       global BEAMLINE PS KLYSTRON WF
       if ~exist('LucretiaFile','var') % use default file location if not provided
-        LucretiaFile = "/usr/local/facet/tools/facet2-lattice/Lucretia/models/FACET2e/FACET2e.mat" ;
+        LucretiaFile = F2_common.LucretiaLattice ;
       end
       % Load Lucretia BEAMLINE database and configure
       ld = load(LucretiaFile,'BEAMLINE','Initial') ;

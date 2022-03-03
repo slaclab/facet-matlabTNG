@@ -93,7 +93,7 @@ classdef F2_FeedbackApp < handle & F2_common
       end
       
       % Load model, get design dispersions to set conversion values
-      load(sprintf('%s/FACET2e/FACET2e.mat',F2_common.modeldir),'BEAMLINE','Initial');
+      load(F2_common.LucretiaLattice,'BEAMLINE','Initial');
       dl1bpm = findcells(BEAMLINE,'Name','BPM10731') ;
       bc14bpm = findcells(BEAMLINE,'Name','BPM14801') ;
       bc11bpm = findcells(BEAMLINE,'Name','BPM11333') ;

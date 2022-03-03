@@ -111,7 +111,7 @@ classdef F2_OrbitApp < handle & F2_common
       end
       obj.dtheta_y=zeros(size(obj.ycornames));
       % Load model, get dispersions at ebpms
-      load(sprintf('%s/FACET2e/FACET2e.mat',F2_common.modeldir),'BEAMLINE','Initial');
+      load(F2_common.LucretiaLattice,'BEAMLINE','Initial');
       [~,T]=GetTwiss(1,length(BEAMLINE),Initial.x.Twiss,Initial.y.Twiss);
       for ibpm=1:length(obj.ebpms)
         bpmind = findcells(BEAMLINE,'Name',char(obj.ebpms(ibpm))) ;
