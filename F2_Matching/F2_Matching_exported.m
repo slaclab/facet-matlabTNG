@@ -559,12 +559,6 @@ classdef F2_Matching_exported < matlab.apps.AppBase
       app.aobj.UseFudge = value ;
       app.DropDownValueChanged ; % populates tables
     end
-
-    % Size changed function: QuadScanFitTab
-    function QuadScanFitTabSizeChanged(app, event)
-      position = app.QuadScanFitTab.Position; %#ok<NASGU> 
-      
-    end
   end
 
   % Component initialization
@@ -675,7 +669,6 @@ classdef F2_Matching_exported < matlab.apps.AppBase
 
       % Create QuadScanFitTab
       app.QuadScanFitTab = uitab(app.TabGroup);
-      app.QuadScanFitTab.SizeChangedFcn = createCallbackFcn(app, @QuadScanFitTabSizeChanged, true);
       app.QuadScanFitTab.Title = 'Quad Scan Fit';
 
       % Create UIAxes
