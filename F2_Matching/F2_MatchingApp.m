@@ -212,7 +212,7 @@ classdef F2_MatchingApp < handle & F2_common
       obj.TwissMatch.z = [arrayfun(@(x) BEAMLINE{x}.Coordi(3),i1:i2) BEAMLINE{i2}.Coordf(3)] ;
       
       % Check match in range and store in Mags BDES field
-      if any(M.varVals(:)>bmax | M.varVals(:)<bmin)
+      if any(M.varVals(:)>bmax(:) | M.varVals(:)<bmin(:))
         for ips=1:length(quadps)
           PS(quadps(ips)).Ampl = ps_init(ips) ;
         end
