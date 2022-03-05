@@ -888,7 +888,7 @@ classdef PV < handle
           obj.channel{ipv}.close();
           if isempty(obj.pvdatatype)
             obj.channel{ipv} = org.epics.ca.Channels.create(obj.context,org.epics.ca.ChannelDescriptor(char(obj.pvname(ipv)),pvd{ipv},true)) ;
-          elseif ~isecell(obj.pvdatatype)
+          elseif ~iscell(obj.pvdatatype)
             obj.channel{ipv} = org.epics.ca.Channels.create(obj.context,org.epics.ca.ChannelDescriptor(char(obj.pvname(ipv)),obj.pvdatatype,true)) ;
           else
             obj.channel{ipv} = org.epics.ca.Channels.create(obj.context,org.epics.ca.ChannelDescriptor(char(obj.pvname(ipv)),obj.pvdatatype{ipv},true)) ;
