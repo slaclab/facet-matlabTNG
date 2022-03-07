@@ -4,8 +4,8 @@ classdef F2_common < handle
   properties(Constant)
     confdir = "/u1/facet/matlab/config"
     modeldir = "/usr/local/facet/tools/facet2-lattice/Lucretia/models"
-%     LucretiaLattice = "/usr/local/facet/tools/facet2-lattice/Lucretia/models/FACET2e/FACET2e.mat"
-    LucretiaLattice = "/usr/local/facet/tools/facet2-lattice/Lucretia/models/FACET2e/FACET2e_altL2Match.mat"
+    LucretiaLattice = "/usr/local/facet/tools/facet2-lattice/Lucretia/models/FACET2e/FACET2e.mat"
+    % LucretiaLattice = "/usr/local/facet/tools/facet2-lattice/Lucretia/models/FACET2e/FACET2e_altL2Match.mat" % lattice with Q11401 OFF
   end
   properties
     UseArchive logical = false % Extract data from archive if true, else get live data
