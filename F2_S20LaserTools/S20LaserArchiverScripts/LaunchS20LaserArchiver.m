@@ -1,0 +1,33 @@
+% This script tracks the drift of the laser in S10 or  S20 by recording 
+% multiple figures of merit that determine beam quality over time
+% C Emma - Feb 2020
+
+UserData.camerapvs = {'CAMR:LT20:0001','CAMR:LT20:0002',...
+    'CAMR:LT20:0003','CAMR:LT20:0004','CAMR:LT20:0005','CAMR:LT20:0006','CAMR:LT20:0007','CAMR:LT20:0008',...
+    'CAMR:LT20:0009','CAMR:LT20:0010','CAMR:LT20:0101','CAMR:LT20:0102','CAMR:LT20:0103','CAMR:LT20:0104',...
+    'CAMR:LT20:0105','CAMR:LT20:0106','CAMR:LT20:0107'};
+
+UserData.matlabPvs = {'SIOC:SYS1:ML00:FWF09',...
+    'SIOC:SYS1:ML00:FWF10','SIOC:SYS1:ML00:FWF11','SIOC:SYS1:ML00:FWF12',...
+    'SIOC:SYS1:ML00:FWF13','SIOC:SYS1:ML00:FWF14','SIOC:SYS1:ML00:FWF15',...
+    'SIOC:SYS1:ML00:FWF16','SIOC:SYS1:ML00:FWF57','SIOC:SYS1:ML00:FWF58','SIOC:SYS1:ML00:FWF59',...
+    'SIOC:SYS1:ML00:FWF60','SIOC:SYS1:ML00:FWF61','SIOC:SYS1:ML00:FWF62',...
+    'SIOC:SYS1:ML00:FWF63','SIOC:SYS1:ML00:FWF64','SIOC:SYS1:ML00:FWF65'};
+
+% Set options
+UserData.pv_lroom_temp = 'DAQ:LA20:TM01:Temp_F';
+UserData.nshotsForAverage = 3;      % Find the average beam properties over nshots
+UserData.nDataPointsPerShot = 13;   % How many data points u save each shot
+UserData.nLaserParamsPerShot = 10;  % How laser parameters u save each shot
+UserData.pauseTime = 120;           % Pause time between taking data [s]
+UserData.fitMethod = 2;             % See beamAnalysis_beamParams.m
+UserData.smoothingSigma = 5;        % For uniformity calc. In units of pixels on camera
+%UserData.umPerPixel = [3.75,3.75,4.08,4.08,9.9,4.08,4.08,4.08,3.75,3.75,3.75,3.75,3.75,3.75,4.08,3.75,3.75];     % From Manta G-125,g-095,g-033b spec sheets
+UserData.umPerPixel = ones(1,length(UserData.camerapvs));%everything in pixels
+%%%%%%%%%%%%%%%%%%% NO USER INPUT BELOW THIS LINE %%%%%%%%%%%%%%%%%%%%%%%%%
+ %% Start the laser Watchdog
+ laserTimerObjS20 = timer;
+ set(laserTimerObjS20,'UserData',UserData,'StartFcn',@laserTimerStart,...
+     'Period',UserData.pauseTime,'StopFcn',@laserTimerCleanup,'ExecutionMode','fixedSpacing',...
+     'TimerFcn',@takeLaserTimerData);
+start(laserTimerObjS20)
