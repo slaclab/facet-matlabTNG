@@ -1,4 +1,5 @@
 function exitcondition = evaluateExitCondition(inputData,refSumCts,refCamSettings,feedbackOnPVs,sectNum,app)
+
 if lcaGetSmart(feedbackOnPVs{sectNum}) 
     % Get the reference settings for this section of the laser
     if sectNum<7%up to and including B3
@@ -65,7 +66,7 @@ if lcaGetSmart(feedbackOnPVs{sectNum})
         app.LogTextArea.Value =  [str,app.LogTextArea.Value(:)'];drawnow()
     end
     %laserOffScreen = 0;
-    exitcondition = any([laserOffScreen ~lcaGetSmart(feedbackOnPVs{sectNum}) rmstols exposureTimeTol]);
+    exitcondition = any([lcaGetSmart(app.feedbackExitPV) laserOffScreen ~lcaGetSmart(feedbackOnPVs{sectNum}) rmstols exposureTimeTol]);
     %if sectNum>5;exitcondition = 1;end
 else
     exitcondition = 1;

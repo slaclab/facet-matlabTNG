@@ -1,6 +1,10 @@
 function [newlaserCentroids,mirrorMovements,laserOffset] = alignLaserToSetpoint(dataStruct,requestedSetpoint,calibrationMatrix,k_p,k_i,app)
 % Note - This does not include the integral term for the feedback
-nshots = 3;% set number of shots for averaging 
+if regexp(dataStruct.camerapvs{1},'CAMR:LT20:0006')% Special case for MPA near and far
+    nshots = 50;% Average over many shots for MPA near and far
+else
+    nshots = 3;% set number of shots for averaging 
+end
 
     for jj=1:length(dataStruct.camerapvs)% Find beam centroid
         for n=1:nshots
@@ -48,8 +52,7 @@ nshots = 3;% set number of shots for averaging
 
     tols = any(abs(laserOffset)>app.maxMisalignmentTolerance);
     if any(tols)% If requested move is too large exit
-    str = ['Warning - Measured laser offset is larger than the max',...
-        ' tolerance of ',num2str(app.maxMisalignmentTolerance),' pix',...
+    str = ['Warning - Laser offset is larger than the max tolerance of ', strcat(num2str(app.maxMisalignmentTolerance),' pix'),...
         'Alignment skipped for ',lcaGetSmart([dataStruct.camerapvs{1},':NAME'])];
     app.LogTextArea.Value =  [str,app.LogTextArea.Value(:)'];drawnow()  
     newlaserCentroids = laserCentroids;
@@ -110,8 +113,20 @@ nshots = 3;% set number of shots for averaging
          lcaPutSmart([dataStruct.motorpvs,':CH',num2str(channel),':MOTOR.TWV'], mirrorMovements(n));% Set tweak
          lcaPutSmart([dataStruct.motorpvs,':CH',num2str(channel),':MOTOR.TWF'],1.0);% Move mot
          motor_status= lcaGetSmart([dataStruct.motorpvs,':CH',num2str(channel),':MOTOR.MSTA']);
-         while motor_status ~=2
+         while motor_status ~=2 
          motor_status= lcaGetSmart([dataStruct.motorpvs,':CH',num2str(channel),':MOTOR.MSTA']);
+         
+         % Check that someone didn't stop the auto-alignment mid
+         % motor move - if so stop moving and exit - this doesnt work right now
+%          if lcaGetSmart(app.feedbackExitPV)
+%             app.LogTextArea.Value = ['Auto-Alignment Stopped',app.LogTextArea.Value(:)'];
+%             app.StatusLamp.Color = 'Red';
+%             lcaPutSmart([dataStruct.motorpvs,':CH',num2str(channel),':MOTOR.TWV'], 0);% Set tweak to zero
+%             newLaserCentroids = laserCentroids;
+%             mirrorMovements = 0;
+%             continue
+%          end
+         
          end
          motorPositions(n) = lcaGetSmart([dataStruct.motorpvs,':CH',num2str(channel),':MOTOR']);
         pause(.5)
