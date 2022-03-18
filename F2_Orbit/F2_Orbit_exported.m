@@ -207,8 +207,8 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
       value = app.ListBox.Value;
       app.aobj.usebpm=true(size(app.aobj.usebpm));
       app.aobj.usebpm(~ismember(app.aobj.bpmid,value)) = false ;
-      if ~isempty(app.aobj.BPMS.readid)
-        app.aobj.usebpm(~ismember(app.aobj.bpmid,app.aobj.BPMS.readid))=false;
+      if ~isempty(app.aobj.BPMS.modelID)
+        app.aobj.usebpm(~ismember(app.aobj.bpmid,app.aobj.BPMS.modelID))=false;
       end
       app.TabGroupSelectionChanged;
     end
@@ -359,7 +359,7 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
       nmodes=app.NmodesEditField.Value;
       switch string(app.CorrelatPanel.Value)
         case "E_DL1"
-          id=find(ismember(app.aobj.BPMS.names,app.aobj.ebpms(1)));
+          id=find(ismember(app.aobj.BPMS.modelnames,app.aobj.ebpms(1)));
           if isempty(id)
             errordlg('DL1 Energy BPM not read out','SVD Corr Error');
             return
@@ -466,6 +466,7 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
       title(app.UIAxes, {''; ''})
       xlabel(app.UIAxes, 'X')
       ylabel(app.UIAxes, 'Y')
+      app.UIAxes.FontSize = 14;
       app.UIAxes.Position = [6 222 684 220];
 
       % Create CalcCorrectionButton
@@ -502,6 +503,7 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
       title(app.UIAxes_2, {''; ''})
       xlabel(app.UIAxes_2, 'X')
       ylabel(app.UIAxes_2, 'Y')
+      app.UIAxes_2.FontSize = 14;
       app.UIAxes_2.Position = [6 3 684 220];
 
       % Create CorrectionSolverButtonGroup
@@ -572,6 +574,7 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
       title(app.UIAxes_3, {''; ''})
       xlabel(app.UIAxes_3, 'X')
       ylabel(app.UIAxes_3, 'Y')
+      app.UIAxes_3.FontSize = 14;
       app.UIAxes_3.Position = [52 439 638 119];
 
       % Create CorrectorsTab
@@ -587,6 +590,7 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
       title(app.UIAxes2, '')
       xlabel(app.UIAxes2, 'X')
       ylabel(app.UIAxes2, 'Y')
+      app.UIAxes2.FontSize = 14;
       app.UIAxes2.Layout.Row = 1;
       app.UIAxes2.Layout.Column = 1;
 
@@ -595,6 +599,7 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
       title(app.UIAxes3, '')
       xlabel(app.UIAxes3, 'X')
       ylabel(app.UIAxes3, 'Y')
+      app.UIAxes3.FontSize = 14;
       app.UIAxes3.Layout.Row = 2;
       app.UIAxes3.Layout.Column = 1;
 
@@ -607,6 +612,7 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
       title(app.UIAxes5, '')
       xlabel(app.UIAxes5, 'X')
       ylabel(app.UIAxes5, 'Y')
+      app.UIAxes5.FontSize = 14;
       app.UIAxes5.Position = [3 227 687 220];
 
       % Create UIAxes5_2
@@ -614,6 +620,7 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
       title(app.UIAxes5_2, '')
       xlabel(app.UIAxes5_2, 'X')
       ylabel(app.UIAxes5_2, 'Y')
+      app.UIAxes5_2.FontSize = 14;
       app.UIAxes5_2.Position = [3 4 687 220];
 
       % Create SumDispersionPanel
@@ -642,6 +649,7 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
       title(app.UIAxes5_3, '')
       xlabel(app.UIAxes5_3, 'X')
       ylabel(app.UIAxes5_3, 'Y')
+      app.UIAxes5_3.FontSize = 14;
       app.UIAxes5_3.Position = [47 454 644 104];
 
       % Create DL1_EFB_Jit
@@ -658,6 +666,7 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
       title(app.UIAxes6, '')
       xlabel(app.UIAxes6, 'X')
       ylabel(app.UIAxes6, 'Y')
+      app.UIAxes6.FontSize = 14;
       app.UIAxes6.Position = [13 277 656 266];
 
       % Create PlotOptionPanel
@@ -741,6 +750,7 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
       title(app.UIAxes6_2, '')
       xlabel(app.UIAxes6_2, 'X')
       ylabel(app.UIAxes6_2, 'Y')
+      app.UIAxes6_2.FontSize = 14;
       app.UIAxes6_2.Position = [11 9 656 266];
 
       % Create RegionSelectPanel

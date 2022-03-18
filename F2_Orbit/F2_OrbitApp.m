@@ -63,7 +63,7 @@ classdef F2_OrbitApp < handle & F2_common
     function obj = F2_OrbitApp(appobj)
       global BEAMLINE
       obj.LiveModel = F2_LiveModelApp ;
-      obj.BPMS = F2_bpms(copy(obj.LiveModel.LM)) ;
+      obj.BPMS = F2_bpms(obj.LiveModel.LM) ;
       if exist('appobj','var')
         obj.aobj = appobj ;
       end
@@ -127,9 +127,7 @@ classdef F2_OrbitApp < handle & F2_common
       obj.usebpm=false(size(obj.usebpm));
       obj.LM.ModelClasses="MONI";
       obj.usebpm(~obj.badbpms & ismember(obj.bpmid,obj.LM.ModelID)) = true ;
-      if ~isempty(obj.BPMS.readid)
-        obj.usebpm(~ismember(obj.bpmid,obj.BPMS.readid))=false;
-      end
+      obj.usebpm(~ismember(obj.bpmid,obj.BPMS.modelID))=false;
       % Corrector data:
       obj.LM.ModelClasses="XCOR";
       id = obj.xcorid ; 
@@ -160,7 +158,7 @@ classdef F2_OrbitApp < handle & F2_common
         error('No BPM data taken');
       end
       % Get orbit to correct
-      id = ismember(obj.BPMS.readid,obj.bpmid(obj.usebpm)) ;
+      id = ismember(obj.BPMS.modelID,obj.bpmid(obj.usebpm)) ;
       xm = mean(obj.BPMS.xdat(id,:),2,'omitnan').*1e-3 ;
       ym = mean(obj.BPMS.ydat(id,:),2,'omitnan').*1e-3 ;
       xstd = std(obj.BPMS.xdat(id,:),[],2,'omitnan').*1e-3 ;
@@ -316,9 +314,7 @@ classdef F2_OrbitApp < handle & F2_common
       obj.LM.ModelClasses="MONI";
       obj.usebpm=false(size(obj.usebpm));
       obj.usebpm(~obj.badbpms & ismember(obj.bpmid,obj.LM.ModelID)) = true ;
-      if ~isempty(obj.BPMS.readid)
-        obj.usebpm(~ismember(obj.bpmid,obj.BPMS.readid))=false;
-      end
+      obj.usebpm(~ismember(obj.bpmid,obj.BPMS.modelID))=false;
       obj.LM.ModelClasses="XCOR";
       obj.usexcor(~obj.badxcors & ismember(obj.xcorid,obj.LM.ModelID)) = true ;
       obj.LM.ModelClasses="YCOR";
@@ -357,7 +353,7 @@ classdef F2_OrbitApp < handle & F2_common
     function dispdat = svddisp(obj)
       global BEAMLINE
       % Get energy
-      id = find(ismember(obj.BPMS.names,obj.ebpms)&ismember(obj.BPMS.names,obj.bpmnames(obj.usebpm))) ;
+      id = find(ismember(obj.BPMS.modelnames,obj.ebpms)&ismember(obj.BPMS.modelnames,obj.bpmnames(obj.usebpm))) ;
       if isempty(id)
         error('BPM selection doesn''t include and energy BPM');
       end
@@ -365,11 +361,11 @@ classdef F2_OrbitApp < handle & F2_common
       dispx=nan(1,sum(obj.usebpm)); dispy=dispx; dispx_err=dispx; dispy_err=dispx;
       dat = obj.svdresponse(1,ide,10) ; % reconstituted BPM readings using mode most responsive to energy BPM
       xe = dat.xdat(ide,:) ;
-      disp = obj.ebpms_disp(ismember(obj.ebpms,obj.BPMS.names(ide)))' ;
+      disp = obj.ebpms_disp(ismember(obj.ebpms,obj.BPMS.modelnames(ide)))' ;
       dp =  xe./disp  ; % dP/P @ energy BPMS
-      nbpm=find(ismember(obj.BPMS.names,obj.bpmnames(obj.usebpm)));
+      nbpm=find(ismember(obj.BPMS.modelnames,obj.bpmnames(obj.usebpm)));
       for ibpm=1:length(nbpm)
-        dp0=dp .* BEAMLINE{obj.BPMS.readid(ide)}.P / BEAMLINE{obj.BPMS.readid(nbpm(ibpm))}.P; % assumed dP/P @ BPM location
+        dp0=dp .* BEAMLINE{obj.BPMS.modelID(ide)}.P / BEAMLINE{obj.BPMS.modelID(nbpm(ibpm))}.P; % assumed dP/P @ BPM location
         gid = ~isnan(obj.BPMS.xdat(nbpm(ibpm),:)) ;
         [q,dq] = noplot_polyfit(dp0(gid),dat.xdat(nbpm(ibpm),gid),1,1) ;
         dispx(ibpm) = q(2) ;
@@ -488,16 +484,16 @@ classdef F2_OrbitApp < handle & F2_common
       res.ymode=iymode;
     end
     function dat = svdanal(obj,nmode)
-      if ~exist('nmode','var') || isempty(nmode) || nmode>length(obj.BPMS.names)
-        nmode=length(obj.BPMS.names);
+      if ~exist('nmode','var') || isempty(nmode) || nmode>length(obj.BPMS.modelnames)
+        nmode=length(obj.BPMS.modelnames);
       end
       xd=obj.BPMS.xdat'; xd(isnan(xd))=0; xd=xd-mean(xd);
       yd=obj.BPMS.ydat'; yd(isnan(yd))=0; yd=yd-mean(yd);
       [Ux,Sx,Vtx]=svd(xd);
       [Uy,Sy,Vty]=svd(yd);
       svals=[diag(Sx) diag(Sy)];
-      dof{1} = zeros(nmode,length(obj.BPMS.names)); dof{2}=dof{1};
-      for ibpm=1:length(obj.BPMS.names)
+      dof{1} = zeros(nmode,length(obj.BPMS.modelnames)); dof{2}=dof{1};
+      for ibpm=1:length(obj.BPMS.modelnames)
         [~,Sx1]=svd(xd(:,1:ibpm));
         [~,Sy1]=svd(yd(:,1:ibpm));
         sz=size(Sx1);
@@ -532,7 +528,7 @@ classdef F2_OrbitApp < handle & F2_common
           figure
           semilogy(abs(diag(R)),'o')
         otherwise
-          id = ismember(obj.BPMS.readid,obj.bpmid(obj.usebpm)) ;
+          id = ismember(obj.BPMS.modelID,obj.bpmid(obj.usebpm)) ;
           xm = mean(obj.BPMS.xdat(id,:),2,'omitnan') ;
           ym = mean(obj.BPMS.ydat(id,:),2,'omitnan') ;
           obj.getr;
@@ -645,34 +641,34 @@ classdef F2_OrbitApp < handle & F2_common
           pl.DataTipTemplate.DataTipRows(1).Label = 'time (s)' ;
           pl.DataTipTemplate.DataTipRows(2).Label = 'Y Mode Amp' ;
         case "EigenVector"
-          id=ismember(obj.BPMS.readid,obj.bpmid(obj.usebpm));
-          z=arrayfun(@(x) BEAMLINE{x}.Coordi(x),obj.BPMS.readid(id));
+          id=ismember(obj.BPMS.modelID,obj.bpmid(obj.usebpm));
+          z=arrayfun(@(x) BEAMLINE{x}.Coordi(x),obj.BPMS.modelID(id));
           pl=plot(ahan(1),z,dat.Vtx(nmode,id)); xlabel(ahan(1),'Z [m]'); ylabel(ahan(1),'X Eigenvector Amplitude');
           pl.DataTipTemplate.DataTipRows(1).Label = 'Linac Z (m)' ;
           pl.DataTipTemplate.DataTipRows(2).Label = 'X Mode Amp' ;
-          pl.DataTipTemplate.DataTipRows(end+1) = dataTipTextRow('Name',obj.BPMS.names(id));
+          pl.DataTipTemplate.DataTipRows(end+1) = dataTipTextRow('Name',obj.BPMS.modelnames(id));
           pl=plot(ahan(2),z,dat.Vty(nmode,id)); xlabel(ahan(2),'Z [m]'); ylabel(ahan(2),'Y Eigenvector Amplitude');
           pl.DataTipTemplate.DataTipRows(1).Label = 'Linac Z (m)' ;
           pl.DataTipTemplate.DataTipRows(2).Label = 'Y Mode Amp' ;
-          pl.DataTipTemplate.DataTipRows(end+1) = dataTipTextRow('Name',obj.BPMS.names(id));
+          pl.DataTipTemplate.DataTipRows(end+1) = dataTipTextRow('Name',obj.BPMS.modelnames(id));
         case "FFT"
           [freq_x,fft_x,freq_y,fft_y]=obj.svdfft(nmode);
           plot(ahan(1),freq_x,fft_x); xlabel(ahan(1),'f [Hz]'); ylabel(ahan(1),'|P1(f)| (X Mode)'); grid(ahan(1),'on');
           plot(ahan(2),freq_y,fft_y); xlabel(ahan(2),'f [Hz]'); ylabel(ahan(2),'|P1(f)| (Y Mode)'); grid(ahan(2),'on');
         case "DoF"
-          id=ismember(obj.BPMS.readid,obj.bpmid(obj.usebpm));
-          z=arrayfun(@(x) BEAMLINE{x}.Coordi(x),obj.BPMS.readid(id));
+          id=ismember(obj.BPMS.modelID,obj.bpmid(obj.usebpm));
+          z=obj.BPMS.modelZ;
           pl=plot(ahan(1),z,dat.dof{1}(id,1:nmode)); xlabel(ahan(1),'Z [m]'); grid(ahan(1),'on'); ylabel(ahan(1),'');
           pl.DataTipTemplate.DataTipRows(1).Label = 'Linac Z (m)' ;
           pl.DataTipTemplate.DataTipRows(2).Label = 'X Mode Amp' ;
-          pl.DataTipTemplate.DataTipRows(end+1) = dataTipTextRow('Name',obj.BPMS.names(id));
+          pl.DataTipTemplate.DataTipRows(end+1) = dataTipTextRow('Name',obj.BPMS.modelnames(id));
           pl=plot(ahan(2),z,dat.dof{2}(id,1:nmode)); xlabel(ahan(2),'Z [m]'); grid(ahan(2),'on'); ylabel(ahan(2),'');
           pl.DataTipTemplate.DataTipRows(1).Label = 'Linac Z (m)' ;
           pl.DataTipTemplate.DataTipRows(2).Label = 'Y Mode Amp' ;
-          pl.DataTipTemplate.DataTipRows(end+1) = dataTipTextRow('Name',obj.BPMS.names(id));
+          pl.DataTipTemplate.DataTipRows(end+1) = dataTipTextRow('Name',obj.BPMS.modelnames(id));
         case "KickAnalysis"
-          id=ismember(obj.BPMS.readid,obj.bpmid(obj.usebpm));
-          z=arrayfun(@(x) BEAMLINE{x}.Coordi(x),obj.BPMS.readid(id));
+          id=ismember(obj.BPMS.modelID,obj.bpmid(obj.usebpm));
+          z=obj.BPMS.modelZ;
           if length(id)<3
             return
           end
@@ -694,11 +690,11 @@ classdef F2_OrbitApp < handle & F2_common
           pl=plot(ahan(1),z,kickx); xlabel(ahan(1),'Z [m]'); ylabel(ahan(1),''); grid(ahan(1),'on');
           pl.DataTipTemplate.DataTipRows(1).Label = 'Linac Z (m)' ;
           pl.DataTipTemplate.DataTipRows(2).Label = 'X Kick' ;
-          pl.DataTipTemplate.DataTipRows(end+1) = dataTipTextRow('Name',obj.BPMS.names(id));
+          pl.DataTipTemplate.DataTipRows(end+1) = dataTipTextRow('Name',obj.BPMS.modelnames(id));
           pl=plot(ahan(2),z,kicky); xlabel(ahan(2),'Z [m]'); ylabel(ahan(2),''); grid(ahan(2),'on');
           pl.DataTipTemplate.DataTipRows(1).Label = 'Linac Z (m)' ;
           pl.DataTipTemplate.DataTipRows(2).Label = 'Y Kick' ;
-          pl.DataTipTemplate.DataTipRows(end+1) = dataTipTextRow('Name',obj.BPMS.names(id));
+          pl.DataTipTemplate.DataTipRows(end+1) = dataTipTextRow('Name',obj.BPMS.modelnames(id));
       end
     end
     function plotcor(obj,ahan)
@@ -782,8 +778,8 @@ classdef F2_OrbitApp < handle & F2_common
       if isempty(obj.BPMS.xdat)
         error('No data to plot')
       end
-      use=ismember(obj.BPMS.readid,obj.bpmid(obj.usebpm));
-      id = double(obj.BPMS.readid(use)) ;
+      use=ismember(obj.BPMS.modelID,obj.bpmid(obj.usebpm));
+      id = double(obj.BPMS.modelID(use)) ;
       if ~any(use)
         error('No Data to plot');
       end
@@ -820,7 +816,7 @@ classdef F2_OrbitApp < handle & F2_common
       pl.DataTipTemplate.DataTipRows(1).Label = 'Linac Z' ;
       pl.DataTipTemplate.DataTipRows(2).Label = '<X>' ;
       pl.DataTipTemplate.DataTipRows(end+1) = dataTipTextRow('RMS_X',xstd);
-      pl.DataTipTemplate.DataTipRows(end+1) = dataTipTextRow('Name',obj.BPMS.names(use));
+      pl.DataTipTemplate.DataTipRows(end+1) = dataTipTextRow('Name',obj.BPMS.modelnames(use));
       xax.XLim(1)=min(z);
       xax.XLim(2)=max(z);
       grid(xax,'on');
@@ -833,7 +829,7 @@ classdef F2_OrbitApp < handle & F2_common
       pl.DataTipTemplate.DataTipRows(1).Label = 'Linac Z' ;
       pl.DataTipTemplate.DataTipRows(2).Label = '<Y>' ;
       pl.DataTipTemplate.DataTipRows(end+1) = dataTipTextRow('RMS_Y',ystd);
-      pl.DataTipTemplate.DataTipRows(end+1) = dataTipTextRow('Name',obj.BPMS.names(use));
+      pl.DataTipTemplate.DataTipRows(end+1) = dataTipTextRow('Name',obj.BPMS.modelnames(use));
       yax.XLim(1)=min(z);
       yax.XLim(2)=max(z);
       grid(yax,'on');

@@ -11,6 +11,7 @@ classdef BufferData < handle
     DoFilter logical = false
     FilterType string {mustBeMember(FilterType,["notch" "pass"])} = "pass" % filter can be pass or notch type
     axhan % axis handle for plotting (use separate figure window if not set)
+    autoenable logical = true
   end
   properties(SetObservable)
     DataPV PV % Connect to data PV ti acquire data
@@ -128,7 +129,9 @@ classdef BufferData < handle
     function set.DataPV(obj,pv)
       pv.gettime=true;
       obj.DataPV = pv ;
-      obj.Enable = true ;
+      if obj.autoenable==true
+        obj.Enable = true ;
+      end
     end
     function tf = get.DataFiltered(obj)
       %FILTER Apply filter to timeseries data (write to filtered field)

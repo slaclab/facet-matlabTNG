@@ -14,9 +14,11 @@ classdef F2_mags < handle & matlab.mixin.Copyable & F2_common
     AbsTolBDES double = 0.001 % Absolute Tolerance for BDES errors
     AbsTolBACT double = 0.1 % Absolute Tolerance for BDES vs BACT errors
     UseFudge logical = false % Use available fudge factors?
+    UpdateRate {mustBeNonnegative(UpdateRate)} = 1 % Update rate when autoupdate>0 (s)
   end
   properties(SetObservable)
     BDES double % Store location for BDES values to write
+    autoupdate uint8 = 0 % 0=no auto update; 1=auto update B; 2= auto update B and Model (updates notify PVUpdated event)
   end
   properties(SetObservable,AbortSet)
     UseSector(1,5) logical = true(1,5) % L0, L1, L2, L3, S20
@@ -36,12 +38,18 @@ classdef F2_mags < handle & matlab.mixin.Copyable & F2_common
     BfudName string = ["QM11393" "Q11401" "Q11501" "Q11601" "Q11701" "Q11801" "Q11901"] % ModelNames corresponding to Bfud (fudge factor scalars)
     Bfud = [1.0379 0.6997 -0.0905 0.1249 -0.3969 0.5169 0.6973] % Fudge factor scalars
   end
+  properties(Access=private)
+    MonitorList string
+    UpdateTimer
+  end
   properties(Dependent)
     KDES_cntrl
     KACT_cntrl
+    KLDES_cntrl
+    KLACT_cntrl
   end
   properties(Constant)
-    version single = 1.0
+    version single = 1.1
   end
   methods
     function obj = F2_mags(LM)
@@ -55,7 +63,20 @@ classdef F2_mags < handle & matlab.mixin.Copyable & F2_common
       %READB Get magnet strengths from control system or achiver if UseArchive property = true
       %ReadB([SetModel])
       % SetModel (Optional) : also set read B fields into Lucretia model
-      [bact,bdes] = obj.MagnetGet(cellstr(obj.LM.ControlNames)) ; bdes=bdes(:)'; bact=bact(:)';
+      if obj.autoupdate>0
+        monipv = [obj.LM.ControlNames+":BDES"; obj.LM.ControlNames+":BACT"];
+        ud = lcaNewMonitorValue(cellstr(monipv)) ; ud_des=ud(1:length(monipv)/2); ud_act=ud(1+length(monipv)/2:end); ud=ud_des | ud_act;
+        if length(obj.BDES_cntrl) == length(ud)
+          bdes = obj.BDES_cntrl; bact = obj.BACT_cntrl;
+          [bact_ud,bdes_ud] = obj.MagnetGet(cellstr(obj.LM.ControlNames(ud))) ;
+          bdes(ud) = bdes_ud; bact(ud) = bact_ud ;
+        else
+          [bact,bdes] = obj.MagnetGet(cellstr(obj.LM.ControlNames)) ;
+        end
+      else
+        [bact,bdes] = obj.MagnetGet(cellstr(obj.LM.ControlNames)) ; 
+      end
+      bdes=bdes(:)'; bact=bact(:)';
       obj.BDES_err = false(size(bdes)) ;
       obj.BACT_err = obj.BDES_err ;
       if length(obj.BDES) == length(bdes)
@@ -79,10 +100,12 @@ classdef F2_mags < handle & matlab.mixin.Copyable & F2_common
         end
         minpv = regexprep(maxpv,"(BMAX)$","BMIN") ;
         dominpv = true(size(minpv)); dominpv(contains(minpv,["QUAS","LGPS","SXTS"])) = false ;
-        dominpv(~startsWith(minpv,"QUAD")) = false ;
+        dominpv(~startsWith(minpv,"QUAD") & ~startsWith(minpv,"XCOR") & ~startsWith(minpv,"YCOR")) = false ;
         obj.BMAX = lcaGet(cellstr(maxpv)) ; % obj.BMAX(val>=0) = val(val>=0) ; obj.BMIN(val<0) = val(val<0) ;
         obj.BMIN = zeros(size(obj.BMAX)) ;
-        obj.BMIN(dominpv) = lcaGet(cellstr(minpv(dominpv))) ;
+        if any(dominpv)
+          obj.BMIN(dominpv) = lcaGet(cellstr(minpv(dominpv))) ;
+        end
         isinv = obj.BMAX<obj.BMIN ;
         tempmax = obj.BMAX(isinv) ;
         obj.BMAX(isinv) = obj.BMIN(isinv) ;
@@ -248,12 +271,12 @@ classdef F2_mags < handle & matlab.mixin.Copyable & F2_common
       if ~isempty(control_mags)
         if obj.WriteEnable
           switch obj.WriteDest
-              case "BDES"
-                control_magnetSet(control_mags',control_vals','action',char(obj.WriteAction));
-              case "BCON"
-                control_magnetSetC(control_mags',control_vals','action',char(obj.WriteAction));
-              case "BDESCON"
-                control_magnetSetBC(control_mags',control_vals','action',char(obj.WriteAction));
+            case "BDES"
+              control_magnetSet(control_mags',control_vals','action',char(obj.WriteAction));
+            case "BCON"
+              control_magnetSetC(control_mags',control_vals','action',char(obj.WriteAction));
+            case "BDESCON"
+              control_magnetSetBC(control_mags',control_vals','action',char(obj.WriteAction));
           end
         else
           msg = [msg; "control_magnetSet: " + string(control_mags(:)) + " = " + string(control_vals(:)) ] ;
@@ -289,7 +312,50 @@ classdef F2_mags < handle & matlab.mixin.Copyable & F2_common
       end
       obj.BDES_err(id)=logical(val);
     end
-    % set/get methods
+  end
+  methods(Access=private)
+    function UpdateProc(obj)
+      %UPDATEPROC Process updated PVs
+      
+      % Check for updated PVs and process as requeted
+      ud = lcaNewMonitorValue(cellstr(obj.MonitorList)) ;
+      if any(ud)
+        notify(obj,"PVUpdated");
+        switch obj.autoupdate
+          case 1
+            obj.ReadB();
+          case 2
+            obj.ReadB(true);
+        end
+      end
+    end
+    function StopProc(obj)
+      if obj.autoupdate
+        fprintf(2,'Update timer erroneously stopped, restarting...');
+        start(obj.UpdateTimer);
+      end
+    end
+  end
+  % set/get methods
+  methods
+    function set.autoupdate(obj,val)
+      obj.autoupdate=val;
+      if val==0 % stop Update Timer
+        stop(obj.UpdateTimer);
+        return
+      end
+      % Add any new PVs to monitor list
+      monipv = [obj.LM.ControlNames+":BDES"; obj.LM.ControlNames+":BACT"];
+      newmoni=monipv(~ismember(monipv,obj.MonitorList));
+      obj.MonitorList = [obj.MonitorList; newmoni] ;
+      lcaSetMonitor(cellstr(newmoni));
+      % (Re)Launch update timer
+      if ~isempty(obj.UpdateTimer)
+        stop(obj.UpdateTimer);
+      end
+      obj.UpdateTimer=timer('Period',obj.UpdateRate,'ExecutionMode','fixedRate','TimerFcn',@(~,~) obj.UpdateProc, 'StopFcn', @(~,~) obj.StopProc );
+      start(obj.UpdateTimer);
+    end
     function set.UseSector(obj,dosec)
       obj.BDES=[];
       obj.BDES_err=[];
@@ -343,7 +409,16 @@ classdef F2_mags < handle & matlab.mixin.Copyable & F2_common
       end
     end
     function kdes = get.KDES_cntrl(obj)
-      kdes = obj.BDES_cntrl./obj.LM.ModelL./obj.LM.ModelP./LucretiaModel.GEV2KGM ;
+      kdes = obj.BDES_cntrl./obj.LM.ModelBDES_L./obj.LM.ModelP./LucretiaModel.GEV2KGM ;
+    end
+    function kdes = get.KACT_cntrl(obj)
+      kdes = obj.BACT_cntrl./obj.LM.ModelBDES_L./obj.LM.ModelP./LucretiaModel.GEV2KGM ;
+    end
+    function kdes = get.KLDES_cntrl(obj)
+      kdes = obj.BDES_cntrl./obj.LM.ModelP./LucretiaModel.GEV2KGM ;
+    end
+    function kdes = get.KLACT_cntrl(obj)
+      kdes = obj.BACT_cntrl./obj.LM.ModelP./LucretiaModel.GEV2KGM ;
     end
   end
 end

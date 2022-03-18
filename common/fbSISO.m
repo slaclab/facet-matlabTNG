@@ -21,7 +21,7 @@ classdef fbSISO < handle
     SetpointDES = 0 % desired setpoint value
     ControlVar % control variable (PV object)
     ControlReadVar % if set, use this PV to read control variavble, whilst setting with ControlVar
-    ControlVarType string {mustBeMember(ControlVarType,["single","doublepm"])} = "single" % doublepm = 2 PVs +/- ControlVal
+    ControlVarType string {mustBeMember(ControlVarType,["single","doublepm","double"])} = "single" % doublepm = 2 PVs +/- ControlVal
     SetpointVar % setpoint variable to use (PV or BufferData object)
     QualVar % Setpoint Quality control (PV object)
     ControlStatusVar cell % Control variable status PV (can be list)
@@ -31,6 +31,8 @@ classdef fbSISO < handle
     Debug uint8 = 0 % 1: write new control vals to console not controls
     Jitter = 0 % Apply jitter to feedback if >0
     JitterTimeout = 2  % Disable jitter after JitterTimeout (min)
+    StatusPV PV % PV to write status (1=OK, 0=Error)
+    StatusPV_bit uint8 = 0 % status bit to write (0= LSB)
   end
   properties(SetObservable)
     Enable logical = false
@@ -43,7 +45,7 @@ classdef fbSISO < handle
   properties(SetAccess=private)
     ControlProto string % if [1x2] use [read proto, write proto]
     ControlStatusVal cell
-    ControlVal % current control variable value (local)
+    ControlVal = 0 % current control variable value (local)
     SetpointVal % current setpoint value (local)
     QualVal % quality control value
     ControlState uint8 = 3 % 0=OK, 1=limit low, 2=limit high, 3=Error
@@ -62,16 +64,22 @@ classdef fbSISO < handle
   end
   
   methods
-    function obj = fbSISO(controlPV,setpoint,qualPV)
+    function obj = fbSISO(controlPV,setpoint,controlType)
       %FBSISO
-      % FB = fbSISO(controlPV,setpointPV)
-      % FB = fbSISO(controlPV,SetPointBufferDataObject)
+      % FB = fbSISO(controlPV,setpointPV [,controlType])
+      % FB = fbSISO(controlPV,SetPointBufferDataObject,...)
       % FB = fbSISO({readControlPV;writeControlPV},...)
+      if nargin==0
+        return
+      end
       if ~exist('controlPV','var')
         error('Must provide PV object for control variable');
       end
       if ~exist('setpoint','var') || (~isa(setpoint,'PV') && ~isa(setpoint,'BufferData'))
         error('Must provide either PV or BufferData object for setpoint variable');
+      end
+      if exist('controlType','var')
+        obj.ControlVarType=controlType;
       end
       obj.SetpointVar = setpoint ;
       if iscell(controlPV)
@@ -80,35 +88,33 @@ classdef fbSISO < handle
       else
         obj.ControlVar = controlPV ;
       end
-      if length(obj.ControlVar)==2
+      if ~exist('controlType','var') && length(obj.ControlVar)==2
         obj.ControlVarType="doublepm";
       end
-      if ~isempty(obj.ControlReadVar) && ~isa(obj.ControlReadVar(1),'PV')
-        obj.ControlProto="AIDA";
-      elseif ~isempty(obj.ControlReadVar)
+      if ~isempty(obj.ControlReadVar) && isa(obj.ControlReadVar(1),'PV')
         for ipv=1:length(obj.ControlReadVar)
           obj.ControlReadVar(ipv).monitor=true;
         end
         obj.ControlProto="EPICS";
+      elseif ~isempty(obj.ControlReadVar) && isa(obj.ControlReadVar(1),'SCP_MKB')
+        obj.ControlProto="MKB";
+      elseif ~isempty(obj.ControlReadVar)
+        obj.ControlProto="AIDA";
       end
-      if ~isa(obj.ControlVar(1),'PV')
-        obj.ControlProto=[obj.ControlProto "AIDA"];
-      elseif obj.ControlVar(1).mode ~= "rw"
-        error('Control Variable PV does not have write permission');
-      else
+      if isa(obj.ControlVar(1),'PV')
         for ipv=1:length(obj.ControlVar)
           obj.ControlVar(ipv).monitor=true;
         end
+        if obj.ControlVar(1).mode ~= "rw"
+          error('Control Variable PV does not have write permission');
+        end
         obj.ControlProto=[obj.ControlProto "EPICS"];
+      elseif isa(obj.ControlVar(1),'SCP_MKB')
+        obj.ControlProto=[obj.ControlProto "MKB"];
+      else
+        obj.ControlProto=[obj.ControlProto "AIDA"];
       end
       addlistener(obj,'DataUpdated',@(~,~) obj.ProcDataUpdated) ;
-      if isa(obj.SetpointVar,'PV')
-        obj.SetpointVar.monitor = true ;
-        run(obj.SetpointVar,true,0.01,obj,'DataUpdated');
-      else % BufferData object
-        obj.SetpointVar.Enable=true;
-        addlistener(obj.SetpointVar,'PVUpdated',@(~,~) obj.ProcDataUpdated) ;
-      end
       % Use quality control PV?
       if exist('qualPV','var') && isa(qualPV,'PV')
         obj.QualVar = qualPV;
@@ -125,6 +131,15 @@ classdef fbSISO < handle
   end
   % set/get and private methods
   methods
+    function Run(obj)
+      if isa(obj.SetpointVar,'PV')
+        obj.SetpointVar.monitor = true ;
+        run(obj.SetpointVar,true,0.01,obj,'DataUpdated');
+      else % BufferData object
+        obj.SetpointVar.Enable=true;
+        addlistener(obj.SetpointVar,'PVUpdated',@(~,~) obj.ProcDataUpdated) ;
+      end
+    end
     function set.LimitRate(obj,val)
       obj.LimitRate=val;
       if isa(obj.SetpointVar,'BufferData') && val>0
@@ -217,22 +232,39 @@ classdef fbSISO < handle
       end
       % Read control variable and check status
       obj.ControlState = 0 ;
-      if isempty(obj.ControlReadVar) && obj.ControlProto(1)=="EPICS"
-        obj.ControlVal = caget(obj.ControlVar(1)) ;
-      elseif obj.ControlProto(1)=="EPICS"
-        obj.ControlVal = caget(obj.ControlReadVar(1)) ;
-      elseif isempty(obj.ControlReadVar) && obj.ControlProto(1)=="AIDA"
-        obj.ControlVal = aidaget(obj.ControlVar(1)) ;
+      if ~isempty(obj.ControlReadVar)
+        if obj.ControlProto(1)=="EPICS"
+          obj.ControlVal = caget(obj.ControlReadVar(1)) ;
+          cvalck = obj.ControlVal ;
+        elseif obj.ControlProto(1)=="MKB"
+          obj.ControlVal = obj.ControlReadVar(1).val ;
+          cvalck = obj.ControlReadVar(1).DeviceVals(1) ;
+        else
+          obj.ControlVal = aidaget(obj.ControlReadVar(1)) ;
+          cvalck = obj.ControlVal ;
+        end
+        if obj.ControlProto(end)=="MKB" % If using a multiknob, differential is always with respect to MKB, but may want to check controls with different protocol
+          obj.ControlVal = obj.ControlVar(1).val ;
+        end
       else
-        obj.ControlVal = aidaget(obj.ControlReadVar(1)) ;
+        if obj.ControlProto(end)=="EPICS"
+          obj.ControlVal = caget(obj.ControlVar(1)) ;
+          cvalck = obj.ControlVal ;
+        elseif obj.ControlProto(end)=="MKB"
+          obj.ControlVal = obj.ControlVar(1).val ;
+          cvalck = obj.ControlVar(1).DeviceVals(1) ;
+        else
+          obj.ControlVal = aidaget(obj.ControlReadVar(1)) ;
+          cvalck = obj.ControlVal ;
+        end
       end
-      if isnan(obj.ControlVal)
+      if isnan(obj.ControlVal) || isnan(cvalck)
         obj.ControlState = 3 ;
       end
-      if obj.ControlVal<obj.ControlLimits(1)
+      if cvalck<obj.ControlLimits(1)
         obj.ControlState = 1 ;
       end
-      if obj.ControlVal>obj.ControlLimits(2)
+      if cvalck>obj.ControlLimits(2)
         obj.ControlState = 2 ;
       end
       % Read setpoint variable and check status
@@ -293,26 +325,38 @@ classdef fbSISO < handle
       % Process the feedback if enabled and not in error state
 %       disp(obj.ControlVar(1).pvname);
       if obj.state==0
+        % Write to status PV bit
+        if ~isempty(obj.StatusPV)
+          newval=uint8(caget(obj.StatusPV));
+          bitset(newval,obj.StatusPV_bit+1,1);
+          caput(obj.StatusPV,newval);
+        end
         dc = GetFeedback(obj) ;
         if isempty(obj.lastwrite) || etime(clock,obj.lastwrite) > obj.WriteRateMax
           obj.lastwrite = clock ;
           if obj.WriteEnable && abs(dc)>0 && ~isnan(dc) && ~isnan(dc)
-            if obj.ControlVarType=="doublepm"
+            if obj.ControlVarType=="doublepm" || obj.ControlVarType=="double"
+              v1 = obj.ControlVal+dc ;
+              if obj.ControlVarType=="doublepm"
+                v2 = -v1 ;
+              else
+                v2 = v1 ;
+              end
               if obj.ControlProto(end)=="EPICS"
                 if obj.Debug>0
-                  fprintf('DEBUG (Not Setting) %s : %g\n',obj.ControlVar(1).pvname,obj.ControlVal+dc);
-                  fprintf('DEBUG (Not Setting) %s : %g\n',obj.ControlVar(2).pvname,-(obj.ControlVal+dc));
+                  fprintf('DEBUG (Not Setting) %s : %g\n',obj.ControlVar(1).pvname,v1);
+                  fprintf('DEBUG (Not Setting) %s : %g\n',obj.ControlVar(2).pvname,v2);
                 else
-                  caput(obj.ControlVar(1),obj.ControlVal+dc) ;
-                  caput(obj.ControlVar(2),-(obj.ControlVal+dc)) ;
+                  caput(obj.ControlVar(1),v1) ;
+                  caput(obj.ControlVar(2),v2) ;
                 end
               else
                 if obj.Debug>0
-                  fprintf('DEBUG (Not Setting) %s : %g\n',obj.ControlVar(1),obj.ControlVal+dc);
-                  fprintf('DEBUG (Not Setting) %s : %g\n',obj.ControlVar(2),-(obj.ControlVal+dc));
+                  fprintf('DEBUG (Not Setting) %s : %g\n',obj.ControlVar(1),v1);
+                  fprintf('DEBUG (Not Setting) %s : %g\n',obj.ControlVar(2),v2);
                 else
-                  obj.aidaput(obj.ControlVar(1),obj.ControlVal+dc) ;
-                  obj.aidaput(obj.ControlVar(2),-(obj.ControlVal+dc)) ;
+                  obj.aidaput(obj.ControlVar(1),v1) ;
+                  obj.aidaput(obj.ControlVar(2),v2) ;
                 end
               end
             else
@@ -321,6 +365,12 @@ classdef fbSISO < handle
                   fprintf('DEBUG (Not Setting) %s : %g\n',obj.ControlVar.pvname,obj.ControlVal+dc);
                 else
                   caput(obj.ControlVar,obj.ControlVal+dc) ;
+                end
+              elseif obj.ControlProto(end)=="MKB"
+                if obj.Debug>0
+                  fprintf('DEBUG (Not Setting) %s : %g\n',obj.ControlVar.Name,obj.ControlVal+dc);
+                else
+                  set(obj.ControlVar,obj.ControlVal+dc) ;
                 end
               else
                 if obj.Debug>0
@@ -339,6 +389,12 @@ classdef fbSISO < handle
 %               fprintf('Skipping pvput due to rate limit for: %s (dt = %g)\n',obj.ControlVar(1),etime(clock,obj.lastwrite));
 %             end
 %           end
+        end
+        % Write to status PV bit
+        if ~isempty(obj.StatusPV)
+          newval=uint8(caget(obj.StatusPV));
+          bitset(newval,obj.StatusPV_bit+1,0);
+          caput(obj.StatusPV,newval);
         end
       end
       % Notify listeners (only if LimitEventRate is satisfied)

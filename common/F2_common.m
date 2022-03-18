@@ -13,8 +13,24 @@ classdef F2_common < handle
   end
   properties(Dependent)
     datadir
+    beamrate
+  end
+  properties(Access=private)
+    monirate logical = false
   end
   methods
+    function beamrate = get.beamrate(obj)
+      if ~obj.monirate
+        lcaSetMonitor('IOC:SYS1:MP01:MS_RATE');
+        obj.monirate=true;
+        beamrate = double(regexp(string(lcaGet('IOC:SYS1:MP01:MS_RATE',1)),'(\d+)','match')) ;
+      else
+        if lcaNewMonitorValue('IOC:SYS1:MP01:MS_RATE')
+          beamrate = double(regexp(string(lcaGet('IOC:SYS1:MP01:MS_RATE',1)),'(\d+)','match')) ;
+        end
+      end
+      beamrate=uint8(beamrate);
+    end
     function dname = get.datadir(obj) %#ok<MANU>
       ds=datestr(now,29);
       dname = "/u1/facet/matlab/data/" + regexp(ds,'^\d+','match','once') + "/" + ...
