@@ -35,16 +35,21 @@ nshots = 3;% set number of shots for averaging
  %   err = [err;err_new];
     str = ['Beam Offset from requested setpoint = ',newline,num2str(laserOffset)];
     app.LogTextArea.Value =  [str,app.LogTextArea.Value(:)'];drawnow()
-    % Check that the requested move is not 'too large'
-    % I.e. when the centroid offset is > half the camera ROI size 
-    for jj=1:length(dataStruct.camerapvs)
-        m=regexp(dataStruct.camerapvs{jj},app.camerapvs,'match');
-        idx = find(~cellfun(@isempty,m));
-        tols(1+2*(jj-1))=app.refCamSettings.ROIsizeX(idx)<0.5*abs(laserOffset(1+2*(jj-1))); 
-        tols(2*jj)=app.refCamSettings.ROIsizeY(idx)<0.5*abs(laserOffset(2*jj));
-    end
+
+%     % Check that the requested move is not 'too large'
+%     % I.e. when the centroid offset is > 0.5*ROI size - not using this
+%     % anymore not we set the max misalignment tolerance in pixels manually
+%     for jj=1:length(dataStruct.camerapvs)
+%         m=regexp(dataStruct.camerapvs{jj},app.camerapvs,'match');
+%         idx = find(~cellfun(@isempty,m));
+%         tols(1+2*(jj-1))=app.refCamSettings.ROIsizeX(idx)<0.5*abs(laserOffset(1+2*(jj-1))); 
+%         tols(2*jj)=app.refCamSettings.ROIsizeY(idx)<0.5*abs(laserOffset(2*jj));
+%     end
+
+    tols = any(abs(laserOffset)>app.maxMisalignmentTolerance);
     if any(tols)% If requested move is too large exit
-    str = ['Warning - Measured laser offset is larger than half the ROI size.',...
+    str = ['Warning - Measured laser offset is larger than the max',...
+        ' tolerance of ',num2str(app.maxMisalignmentTolerance),' pix',...
         'Alignment skipped for ',lcaGetSmart([dataStruct.camerapvs{1},':NAME'])];
     app.LogTextArea.Value =  [str,app.LogTextArea.Value(:)'];drawnow()  
     newlaserCentroids = laserCentroids;
