@@ -59,12 +59,15 @@ classdef F2_LAA_exported < matlab.apps.AppBase
             'SIOC:SYS1:ML01:AO194','SIOC:SYS1:ML01:AO195',...
             'SIOC:SYS1:ML01:AO196','SIOC:SYS1:ML01:AO197'}
         
+        maxMisalignmentTolerancePV = 'SIOC:SYS1:ML01:AO200';
+        
         fitMethod = 2;% Centroid fit method for profmon_process
         umPerPixel ;
         setPointOption = 1;% 2 = Set desired centroid setpoint from current position, 1 uses pre-defined target position
         feedbackOn = logical([0,0,0,0,0,0,0,0,0]);
         k_p = [0.1,0.1,0.01,0.2,0.05,0.2,0.2,0.2,0.2];% Default Proportional Gains
         k_i = 0.0;% Integral gain term is set to zero for now - can be included later
+        maxMisalignmentTolerance;
         refCamSettings = [];
         refSumCts = []; 
         refRMSVals = [];
@@ -254,6 +257,7 @@ classdef F2_LAA_exported < matlab.apps.AppBase
 
         % Button pushed function: StartAlignmentButton
         function StartAlignmentButtonPushed(app, event)
+            
             lcaPutSmart(app.feedbackExitPV,0);% Set exit PV to zero
             lcaPutSmart(app.feedbackPausePV,0);% Set pause PV to zero
             data = app.UITable.Data;
@@ -265,13 +269,23 @@ classdef F2_LAA_exported < matlab.apps.AppBase
             app.LogTextArea.Value = ['Starting Auto Alignment',app.LogTextArea.Value(:)'];
             app.StatusLamp.Color = 'Green';
             drawnow()
-            while lcaGetSmart(app.feedbackExitPV) ==0% Run the feedback             
+            
+            while lcaGetSmart(app.feedbackExitPV) ==0% Start the feedback             
+                    
                     app.k_p = lcaGetSmart(app.gainPVs);% Update gain vals
+                    app.maxMisalignmentTolerance = lcaGetSmart(app.maxMisalignmentTolerancePV);% Update max misalignment tolerance
+                    
                     if any(isnan(app.k_p))                     
                          app.LogTextArea.Value =  ['One or more invalid Gain values. Skipping alignment',...
                          app.LogTextArea.Value(:)'];
                      continue
+                    end
+                    if any([isnan(app.maxMisalignmentTolerance),~isreal(app.maxMisalignmentTolerance),~isnumeric(app.maxMisalignmentTolerance)])
+                         app.LogTextArea.Value =  ['Invalid value for max misalignment tolerance. Skipping alignment',...
+                         app.LogTextArea.Value(:)'];
+                     continue                                   
                     end             
+                    
                 for ij = 1:NLaserSections
                    if lcaGetSmart(app.feedbackPausePV)==0
                     % Get setpoint and motor pv for the relevant cameras      
@@ -332,6 +346,7 @@ classdef F2_LAA_exported < matlab.apps.AppBase
         % Close request function: UIFigure
         function UIFigureCloseRequest(app, event)
             delete(app)
+            disp('Remember to uncomment the exit command')
             exit;
         end
 
