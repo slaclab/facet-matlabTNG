@@ -1,6 +1,6 @@
 function appobj = runF2LaserMultiProfmon(whichLaser)
 %RUNAPP Run FACET-II application from Matlab environment
-appname = 'F2_LaserMultiProfmon_exported';
+appname = 'F2_LaserMultiProfmon';
 
 if ~nargin || ~exist(appname,'dir')
   error('No provided app name or app doesn''t exist');
@@ -24,7 +24,9 @@ switch whichLaser
         cameraPVs = {'CAMR:LT20:0009','CAMR:LT20:0010','CAMR:LT20:0101',...
             'CAMR:LT20:0102','CAMR:LT20:0103','CAMR:LT20:0104',...
     'CAMR:LT20:0105','CAMR:LT20:0106','CAMR:LT20:0107'};
+
 end
+
 assignin('base','cameraPVs',cameraPVs);
     
-appobj=eval([appname]);
+appobj=eval([appname,'_exported']);
