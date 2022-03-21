@@ -1,6 +1,6 @@
 function appobj = runF2LaserMultiProfmon(whichLaser)
 %RUNAPP Run FACET-II application from Matlab environment
-appname = 'F2_LaserMultiProfmon';
+appname = 'F2_LaserMultiProfmon_exported';
 
 if ~nargin || ~exist(appname,'dir')
   error('No provided app name or app doesn''t exist');
