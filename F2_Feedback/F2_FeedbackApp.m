@@ -638,7 +638,7 @@ classdef F2_FeedbackApp < handle & F2_common
       end
       if obj.UseFeedbacks(5)
         E_BC20 = obj.pvs.E_BC20.val{1} ; % GeV
-        obj.SetpointConversion{3}(2) = E_BC20 / obj.Disp_BC20 ; % mm -> MeV
+        obj.SetpointConversion{5}(2) = E_BC20 / obj.Disp_BC20 ; % mm -> MeV
       end
     end
     function pvwatcher(obj)

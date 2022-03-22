@@ -278,6 +278,29 @@ classdef F2_Feedback_exported < matlab.apps.AppBase
       value = string(app.Switch_4.Value) == "On" ;
       caput(app.aobj.pvs.FeedbackEnable,double(bitset(app.aobj.Enabled,5,value)));
     end
+
+    % Value changed function: SetpointEditField_4
+    function SetpointEditField_4ValueChanged(app, event)
+      value = app.SetpointEditField_4.Value;
+      if app.aobj.GuiEnergyUnits
+        value = (value - app.aobj.SetpointConversion{5}(1)) / app.aobj.SetpointConversion{5}(2) ;
+      end
+      caput(app.aobj.pvs.BC20E_Offset,value) ;
+      app.aobj.SetpointOffsets(5) = value ;
+    end
+
+    % Value changed function: SetpointEditField_6
+    function SetpointEditField_6ValueChanged(app, event)
+      value = app.SetpointEditField_6.Value;
+      caput(app.aobj.pvs.BC11BL_Offset,value) ;
+      app.aobj.SetpointOffsets(4) = value ;
+    end
+
+    % Value changed function: SetpointEditField_7
+    function SetpointEditField_7ValueChanged(app, event)
+%       value = app.SetpointEditField_7.Value;
+      
+    end
   end
 
   % Component initialization
@@ -565,6 +588,7 @@ classdef F2_Feedback_exported < matlab.apps.AppBase
 
       % Create SetpointEditField_4
       app.SetpointEditField_4 = uieditfield(app.BC20EnergyFeedbackPanel, 'numeric');
+      app.SetpointEditField_4.ValueChangedFcn = createCallbackFcn(app, @SetpointEditField_4ValueChanged, true);
       app.SetpointEditField_4.HorizontalAlignment = 'center';
       app.SetpointEditField_4.Position = [17 147 109 29];
 
@@ -748,6 +772,7 @@ classdef F2_Feedback_exported < matlab.apps.AppBase
 
       % Create SetpointEditField_6
       app.SetpointEditField_6 = uieditfield(app.BC11BunchLengthFeedbackPanel, 'numeric');
+      app.SetpointEditField_6.ValueChangedFcn = createCallbackFcn(app, @SetpointEditField_6ValueChanged, true);
       app.SetpointEditField_6.HorizontalAlignment = 'center';
       app.SetpointEditField_6.Position = [17 47 100 29];
       app.SetpointEditField_6.Value = 0.4;
@@ -823,6 +848,7 @@ classdef F2_Feedback_exported < matlab.apps.AppBase
 
       % Create SetpointEditField_7
       app.SetpointEditField_7 = uieditfield(app.BC14BunchLengthFeedbackPanel, 'numeric');
+      app.SetpointEditField_7.ValueChangedFcn = createCallbackFcn(app, @SetpointEditField_7ValueChanged, true);
       app.SetpointEditField_7.HorizontalAlignment = 'center';
       app.SetpointEditField_7.Position = [17 46 100 29];
 
