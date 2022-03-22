@@ -46,23 +46,23 @@ classdef F2_LiveModel_exported < matlab.apps.AppBase
       dt = datetime ; % Set current archive date as now
       app.DatePicker.Value = dt ; 
       app.aobj.ArchiveDate = [year(dt),month(dt),day(dt),hour(dt),minute(dt),second(dt)];
-      app.EditField.Value = sprintf('%02d:%02d:%02d',app.aobj.ArchiveDate(4:6)) ;
+      app.EditField.Value = sprintf('%02d:%02d',app.aobj.ArchiveDate(4:5)) ;
       app.DataSourceDropDownValueChanged ; % load model from default source
     end
 
     % Value changed function: DatePicker
     function DatePickerValueChanged(app, event)
       dt1 = app.DatePicker.Value ;
-      dt2 = datetime(app.EditField.Value) ;
-      app.aobj.ArchiveDate = [dt1.Year dt1.Month dt1.Day dt2.Hour dt2.Minute dt2.Second] ;
+      dt2 = regexp(app.EditField.Value,'(\d+):(\d+)','tokens','once') ;
+      app.aobj.ArchiveDate = [dt1.Year dt1.Month dt1.Day str2double(dt2{1}) str2double(dt2{2}) 0] ;
       app.DataSourceDropDownValueChanged ;
     end
 
     % Value changed function: EditField
     function EditFieldValueChanged(app, event)
       dt1 = app.DatePicker.Value ;
-      dt2 = datetime(app.EditField.Value) ;
-      app.aobj.ArchiveDate = [dt1.Year dt1.Month dt1.Day dt2.Hour dt2.Minute dt2.Second] ;
+      dt2 = regexp(app.EditField.Value,'(\d+):(\d+)','tokens','once') ;
+      app.aobj.ArchiveDate = [dt1.Year dt1.Month dt1.Day str2double(dt2{1}) str2double(dt2{2}) 0] ;
       app.DataSourceDropDownValueChanged ;
     end
 
@@ -79,18 +79,20 @@ classdef F2_LiveModel_exported < matlab.apps.AppBase
         app.aobj.ModelSource = app.DataSourceDropDown.Value ;
         regid = [app.INJButton.Value app.L0Button.Value app.DL1Button.Value app.L1Button.Value app.BC11Button.Value app.L2Button.Value app.BC14Button.Value app.L3Button.Value app.BC20Button.Value app.FFSButton.Value app.SPECTButton.Value];
         reg1 = find(regid,1); reg2=find(regid,1,'last');
-        i1 = app.aobj.LM.ModelRegionID(reg1,1); i2 = app.LM.ModelRegionID(reg2,2);
-        [~,T]=GetTwiss(1,i2,app.aobj.Initial.x.Twiss,app.aobj.Initial.y.Twiss);
+        i1 = app.aobj.LM.ModelRegionID(reg1,1); i2 = app.aobj.LM.ModelRegionID(reg2,2);
+        I=TwissToInitial(app.aobj.DesignTwiss,i1,app.aobj.DesignInitial);
+        [~,T]=GetTwiss(double(i1),double(i2),I.x.Twiss,I.y.Twiss);
         tdata=cell(i2-i1+1,6);
-        tind=1;
+        tind=0;
         for iele=i1:i2
+          tind=tind+1;
           tdata{tind,1} = BEAMLINE{iele}.Name ;
           tdata{tind,2} = num2str(BEAMLINE{iele}.Coordi(3)) ;
-          tdata{tind,3} = num2str([T.betax(iele) T.betay(iele)]) ;
-          tdata{tind,4} = num2str([T.alphax(iele) T.alphay(iele)]) ;
-          tdata{tind,5} = num2str([T.etax(iele) T.etay(iele)]) ;
+          tdata{tind,3} = num2str([T.betax(tind) T.betay(tind)],4) ;
+          tdata{tind,4} = num2str([T.alphax(tind) T.alphay(tind)],4) ;
+          tdata{tind,5} = num2str([T.etax(tind) T.etay(tind)],4) ;
           if isfield(BEAMLINE{iele},'B')
-            tdata{tind,6} = num2str(BEAMLINE{iele}.B(1)*10) ;
+            tdata{tind,6} = num2str(10*GetTrueStrength(iele),6) ;
           else
             tdata{tind,6} = '---' ;
           end
@@ -125,10 +127,22 @@ classdef F2_LiveModel_exported < matlab.apps.AppBase
 
     % Button pushed function: PLOTButton
     function PLOTButtonPushed(app, event)
-      regid = [app.INJButton.Value app.L0Button.Value app.DL1Button.Value app.L1Button.Value app.BC11Button.Value app.L2Button.Value app.BC14Button.Value app.L3Button.Value app.BC20Button.Value app.FFSButton.Value app.SPECTButton.Value];
-      reg1 = find(regid,1); reg2=find(regid,1,'last');
-      i1 = app.aobj.LM.ModelRegionID(reg1,1); i2 = app.LM.ModelRegionID(reg2,2);
-      TwissPlot(i1,i2,obj.aobj.Initial,[app.BETACheckBox.Value app.ETAXCheckBox.Value app.ETAYCheckBox.Value],0.01) ;
+      app.PLOTButton.Enable=false; drawnow;
+      try
+        regid = [app.INJButton.Value app.L0Button.Value app.DL1Button.Value app.L1Button.Value app.BC11Button.Value app.L2Button.Value app.BC14Button.Value app.L3Button.Value app.BC20Button.Value app.FFSButton.Value app.SPECTButton.Value];
+        reg1 = find(regid,1); reg2=find(regid,1,'last');
+        i1 = app.aobj.LM.ModelRegionID(reg1,1); i2 = app.aobj.LM.ModelRegionID(reg2,2);
+%         [~,T]=GetTwiss(1,double(i2),app.aobj.Initial.x.Twiss,app.aobj.Initial.y.Twiss);
+        if i1>1
+          I = TwissToInitial(app.aobj.DesignTwiss,i1,app.aobj.DesignInitial);
+        else
+          I = app.aobj.DesignInitial ;
+        end
+        TwissPlot(i1,i2,I,[app.BETACheckBox.Value app.ETAXCheckBox.Value app.ETAYCheckBox.Value],0.01) ;
+      catch ME
+        fprintf(2,'%s\n',ME.message);
+      end
+      app.PLOTButton.Enable=true;
     end
   end
 
