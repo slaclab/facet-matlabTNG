@@ -7,6 +7,7 @@ classdef F2_Feedback_exported < matlab.apps.AppBase
     DL1EnergyMenu                 matlab.ui.container.Menu
     BC11EnergyMenu                matlab.ui.container.Menu
     BC14EnergyMenu                matlab.ui.container.Menu
+    BC20EnergyMenu                matlab.ui.container.Menu
     SettingsMenu                  matlab.ui.container.Menu
     DL1EnergyFeedbackMenu         matlab.ui.container.Menu
     BC11EnergyFeedbackMenu        matlab.ui.container.Menu
@@ -301,6 +302,11 @@ classdef F2_Feedback_exported < matlab.apps.AppBase
 %       value = app.SetpointEditField_7.Value;
       
     end
+
+    % Menu selected function: BC20EnergyMenu
+    function BC20EnergyMenuSelected(app, event)
+      !StripTool /u1/facet/tools/StripTool/config/FB_BC20_E.stp &      
+    end
   end
 
   % Component initialization
@@ -334,6 +340,11 @@ classdef F2_Feedback_exported < matlab.apps.AppBase
       app.BC14EnergyMenu = uimenu(app.StripchartsMenu);
       app.BC14EnergyMenu.MenuSelectedFcn = createCallbackFcn(app, @BC14EnergyMenuSelected, true);
       app.BC14EnergyMenu.Text = 'BC14 Energy';
+
+      % Create BC20EnergyMenu
+      app.BC20EnergyMenu = uimenu(app.StripchartsMenu);
+      app.BC20EnergyMenu.MenuSelectedFcn = createCallbackFcn(app, @BC20EnergyMenuSelected, true);
+      app.BC20EnergyMenu.Text = 'BC20 Energy';
 
       % Create SettingsMenu
       app.SettingsMenu = uimenu(app.FACETIIFeedbackUIFigure);

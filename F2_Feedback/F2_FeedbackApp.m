@@ -426,7 +426,7 @@ classdef F2_FeedbackApp < handle & F2_common
         obj.guihan.EditField_6.Value = obj.Feedbacks(ifb).ControlReadVar(1).val{1} ;
         obj.guihan.Gauge_16.Value = obj.Feedbacks(ifb).ControlReadVar(1).val{1} ;
         obj.guihan.Gauge_17.Value = -obj.Feedbacks(ifb).ControlReadVar(1).val{1} ;
-        if obj.Feedbacks(ifb).ControlVal > obj.FeedbackControlLimits{ifb}(2) || obj.Feedbacks(ifb).ControlVal < obj.FeedbackControlLimits{ifb}(1)
+        if obj.Feedbacks(ifb).ControlReadVar.val{1} > obj.FeedbackControlLimits{ifb}(2) || obj.Feedbacks(ifb).ControlReadVar.val{1} < obj.FeedbackControlLimits{ifb}(1)
           obj.guihan.EditField_6.BackgroundColor='red';
         else
           obj.guihan.EditField_6.BackgroundColor='white';
