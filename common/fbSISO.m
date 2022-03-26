@@ -158,7 +158,7 @@ classdef fbSISO < handle
       else
         state = uint8(1);
       end
-      if obj.ControlState>0 || obj.SetpointState>2 || obj.QualState==1 || obj.QualState==2
+      if obj.ControlState>0 || obj.SetpointState>0 || obj.QualState==1 || obj.QualState==2
         state = uint8(2);
       end
       % Check validity of data
@@ -390,6 +390,7 @@ classdef fbSISO < handle
 %             end
 %           end
         end
+      else
         % Write to status PV bit
         if ~isempty(obj.StatusPV)
           newval=uint8(caget(obj.StatusPV));

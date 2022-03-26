@@ -65,7 +65,7 @@ classdef F2_MatchingApp < handle & F2_common
       obj.LiveModel = F2_LiveModelApp ; % Initially update live model (default)
       obj.LM=copy(obj.LiveModel.LM);
       obj.LM.ModelClasses=["PROF" "WIRE"];
-      obj.ProfModelInd = obj.LM.ModelUniqueID(obj.LM.ControlNames==obj.ProfName) ;
+      obj.ProfModelInd = obj.LM.ModelID(obj.LM.ControlNames==obj.ProfName) ;
       obj.ProfModelInd = obj.ProfModelInd(1) ;
       obj.UseArchive = true ; % default to getting data from archive from now on
       obj.LiveModel.ModelSource = "Live" ;
@@ -88,9 +88,9 @@ classdef F2_MatchingApp < handle & F2_common
       
       % Form list of matching quads
       if obj.MatchDir=="BKW"
-        iquads = LM_mags.ModelUniqueID(:) < pele & obj.LEMQuadID(:) ;
+        iquads = LM_mags.ModelID(:) < pele & obj.LEMQuadID(:) ;
       else
-        iquads = LM_mags.ModelUniqueID(:) > pele & obj.LEMQuadID(:) ;
+        iquads = LM_mags.ModelID(:) > pele & obj.LEMQuadID(:) ;
       end
       if sum(iquads)<double(obj.NumMatchQuads)
         error('Insufficient matching quads available');
@@ -100,8 +100,8 @@ classdef F2_MatchingApp < handle & F2_common
       else
         id1=find(iquads,double(obj.NumMatchQuads),'first') ; id1=id1(obj.UseMatchQuad);
       end
-      quadps = arrayfun(@(x) BEAMLINE{x}.PS,LM_mags.ModelUniqueID(id1)) ;
-      idm=ismember(obj.LiveModel.LEM.Mags.LM.ModelUniqueID,LM_mags.ModelUniqueID(id1)) ;
+      quadps = arrayfun(@(x) BEAMLINE{x}.PS,LM_mags.ModelID(id1)) ;
+      idm=ismember(obj.LiveModel.LEM.Mags.LM.ModelID,LM_mags.ModelID(id1)) ;
       bmin = obj.LiveModel.LEM.Mags.BMIN(idm)./10;
       bmax = obj.LiveModel.LEM.Mags.BMAX(idm)./10;
       
@@ -511,7 +511,7 @@ classdef F2_MatchingApp < handle & F2_common
       qid = obj.QuadScanData.QuadInd ;
       LM_mags=obj.LiveModel.LEM.Mags.LM;
       pele=obj.ProfModelInd;
-      qele = LM_mags.ModelUniqueID(qid);
+      qele = LM_mags.ModelID(qid);
       ips = BEAMLINE{qele}.PS;
       ps0 = PS(ips).Ampl;
       k = obj.quadscan_k ;
@@ -746,16 +746,16 @@ classdef F2_MatchingApp < handle & F2_common
       ah.reset;
       LM_mags=obj.LiveModel.LEM.Mags.LM;
       if obj.MatchDir=="BKW"
-        iquads = LM_mags.ModelUniqueID(:) < obj.ProfModelInd & obj.LEMQuadID(:) ;
+        iquads = LM_mags.ModelID(:) < obj.ProfModelInd & obj.LEMQuadID(:) ;
       else
-        iquads = LM_mags.ModelUniqueID(:) > obj.ProfModelInd & obj.LEMQuadID(:) ;
+        iquads = LM_mags.ModelID(:) > obj.ProfModelInd & obj.LEMQuadID(:) ;
       end
       if obj.MatchDir=="BKW"
         id1=find(iquads,double(obj.NumMatchQuads),'last') ; id1=id1(obj.UseMatchQuad);
       else
         id1=find(iquads,double(obj.NumMatchQuads),'first') ; id1=id1(obj.UseMatchQuad);
       end
-      quadps = arrayfun(@(x) BEAMLINE{x}.PS,LM_mags.ModelUniqueID(id1)) ;
+      quadps = arrayfun(@(x) BEAMLINE{x}.PS,LM_mags.ModelID(id1)) ;
       if obj.MatchDir=="BKW"
         i1=PS(quadps(1)).Element(1);
         i2=obj.ProfModelInd;
@@ -817,11 +817,11 @@ classdef F2_MatchingApp < handle & F2_common
       Z = arrayfun(@(x) BEAMLINE{x}.Coordi(3),obj.MatchQuadModelInd) ;
       E = arrayfun(@(x) BEAMLINE{x}.P,obj.MatchQuadModelInd) ;
       obj.LM.ModelClasses="QUAD";
-      bdes = obj.LiveModel.LEM.Mags.LM.ModelBDES(ismember(obj.LiveModel.LEM.Mags.LM.ModelUniqueID,obj.MatchQuadModelInd)) ;
+      bdes = obj.LiveModel.LEM.Mags.LM.ModelBDES(ismember(obj.LiveModel.LEM.Mags.LM.ModelID,obj.MatchQuadModelInd)) ;
       if obj.ModelSource=="Design"
         bact = bdes ;
       else
-        bact = obj.LiveModel.LEM.Mags.BDES_cntrl(ismember(obj.LiveModel.LEM.Mags.LM.ModelUniqueID,obj.MatchQuadModelInd)) ;
+        bact = obj.LiveModel.LEM.Mags.BDES_cntrl(ismember(obj.LiveModel.LEM.Mags.LM.ModelID,obj.MatchQuadModelInd)) ;
       end
       bmatch = nan(size(bdes)) ;
       if isfield(obj.QuadScanData,'quadmatch')
@@ -969,19 +969,6 @@ classdef F2_MatchingApp < handle & F2_common
       fprintf('alpha       = %10.4f +- %9.4f      (%9.4f)\n',alphx,dalphx,ax0);
       fprintf('chisq/N     = %10.4f\n',chi2x);
       
-      txt_results{1} =  sprintf('%s emittance parameters at %s\n',dim,wname{1});
-      txt_results{2} =  sprintf('----\n');
-      txt_results{3} =  sprintf('energy      = %10.4f              GeV\n',energy);
-      txt_results{4} =  sprintf('nemit       = %10.4f +- %9.4f mm-mrad\n',1e6*emitxn,1e6*demitxn);
-      txt_results{5} =  sprintf('nemit*bmag  = %10.4f          mm-mrad\n',1e6*emitxn*bmagx);
-      txt_results{6} =  sprintf('emit        = %10.4f +- %9.4f nm\n',1e9*emitx,1e9*demitx);
-      txt_results{7} =  sprintf('bmag        = %10.4f +- %9.4f      (%9.4f)\n',bmagx,dbmagx,1);
-      txt_results{8} =  sprintf('bmag_cos    = %10.4f +- %9.4f      (%9.4f)\n',bcosx,dbcosx,0);
-      txt_results{9} =  sprintf('bmag_sin    = %10.4f +- %9.4f      (%9.4f)\n',bsinx,dbsinx,0);
-      txt_results{10} = sprintf('beta        = %10.4f +- %9.4f m    (%9.4f)\n',betax,dbetax,bx0);
-      txt_results{11} = sprintf('alpha       = %10.4f +- %9.4f      (%9.4f)\n',alphx,dalphx,ax0);
-      txt_results{12} = sprintf('chisq/N     = %10.4f\n',chi2x);
-      
       % Return data structure
       emitData.emit=emitx;
       emitData.nemit=emitxn;
@@ -1014,6 +1001,18 @@ classdef F2_MatchingApp < handle & F2_common
       emitData.pcols=obj.plotcols;
       emitData.id1=id1;
       
+      
+      txt_results{1} =  sprintf('%s emittance parameters at %s\n',dim,wname{1});
+      txt_results{2} =  sprintf('----\n');
+      txt_results{3} =  sprintf('energy      = %10.4f           GeV\n',energy);
+      txt_results{4} =  sprintf('nemit       = %10.4f   (%9.4f) mm-mrad\n',1e6*emitxn,1e6*emitData.nemit0);
+      txt_results{5} =  sprintf('nemit*bmag  = %10.4f   (%9.4f) mm-mrad\n',1e6*emitxn*bmagx,1e6*emitData.nemit0);
+      txt_results{6} =  sprintf('emit        = %10.4f   (%9.4f) nm-rad\n',1e9*emitx,1e9*emitData.nemit0/egamma);
+      txt_results{7} =  sprintf('bmag        = %10.4f   (%9.4f)\n',bmagx,1);
+      txt_results{8} =  sprintf('beta        = %10.4f   (%9.4f) m\n',betax,bx0);
+      txt_results{9} =  sprintf('alpha       = %10.4f   (%9.4f)\n',alphx,ax0);
+      txt_results{10} = sprintf('chisq/N     = %10.4f\n',chi2x);
+      
       % Get design spot sizes
       emitData.sigma_des=zeros(1,nw) ;
       gamma = BEAMLINE{id1}.P/0.511e-3 ;
@@ -1036,7 +1035,8 @@ classdef F2_MatchingApp < handle & F2_common
         end
         emitData.sigma_des(iw) = sqrt(S1(1,1)) ;
       end
-      txt_results{13} = sprintf('SIGMA_DES   = %10.4f %10.4f %10.4f %10.4f um\n',emitData.sigma_des.*1e6);
+      txt_results{11} = '=================================================' ;
+      txt_results{12} = sprintf('SIGMA_DES   = %10.4f %10.4f %10.4f %10.4f um\n',emitData.sigma_des.*1e6);
       
       % Write to local emittance properties
       if dim=="X"
@@ -1173,7 +1173,7 @@ classdef F2_MatchingApp < handle & F2_common
         return
       end
       obj.LM.ModelClasses=["PROF" "WIRE"];
-      pind = obj.LM.ModelUniqueID(obj.LM.ControlNames==string(name)) ;
+      pind = obj.LM.ModelID(obj.LM.ControlNames==string(name)) ;
       if isempty(pind)
         error('Profile monitor not found in model')
       else
@@ -1192,14 +1192,14 @@ classdef F2_MatchingApp < handle & F2_common
       obj.QuadScanData=[];
       obj.LM.ModelClasses="QUAD";
       if obj.MatchDir=="BKW"
-        iquads = obj.LM.ModelUniqueID < obj.ProfModelInd ;
+        iquads = obj.LM.ModelID < obj.ProfModelInd ;
         idq=find(iquads,double(obj.NumMatchQuads),'last') ;
       else
-        iquads = obj.LM.ModelUniqueID > obj.ProfModelInd ;
+        iquads = obj.LM.ModelID > obj.ProfModelInd ;
         idq=find(iquads,double(obj.NumMatchQuads),'first') ;
       end
       obj.MatchQuadNames = obj.LM.ControlNames(idq) ;
-      obj.MatchQuadModelInd = obj.LM.ModelUniqueID(idq) ;
+      obj.MatchQuadModelInd = obj.LM.ModelID(idq) ;
       obj.MatchQuadID = idq ;
       obj.UseMatchQuad = true(1,length(obj.MatchQuadNames)) ;
       % Update initial Twiss match

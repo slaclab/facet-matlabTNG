@@ -42,19 +42,27 @@ classdef SCP_MKB < handle
     function mkval = get(obj)
       %MKBGET Get SCP multiknob data
       aidapva;
-      dat = ML(obj.builder.get());
-      obj.DeviceNames = string(dat.values.name) ;
-      obj.DeviceVals = dat.values.value ;
-      mkval = obj.val ;
+      try
+        dat = ML(obj.builder.get());
+        obj.DeviceNames = string(dat.values.name) ;
+        obj.DeviceVals = dat.values.value ;
+        mkval = obj.val ;
+      catch ME
+        fprintf(2,'Error getting MKB %s:\n%s',obj.Name,ME.message);
+      end
     end
     function set(obj,val)
       %MKBSET Set a SCP multiknob value
       %MKBset(val)
       aidapva;
-      dat = ML(obj.builder.set(double(val-obj.val)));
-      obj.DeviceNames = string(dat.values.name) ;
-      obj.DeviceVals = dat.values.value ;
-      obj.val = val ;
+      try
+        dat = ML(obj.builder.set(double(val-obj.val)));
+        obj.DeviceNames = string(dat.values.name) ;
+        obj.DeviceVals = dat.values.value ;
+        obj.val = val ;
+      catch ME
+        fprintf(2,'Error setting MKB %s:\n%s',obj.Name,ME.message);
+      end
     end
   end
 end

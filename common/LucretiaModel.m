@@ -20,8 +20,8 @@ classdef LucretiaModel < handle & matlab.mixin.Copyable
     ModelRegionE(11,2) single % Region boundary  energy (GeV)
     ControlNames string % Names used by control system
     ModelNames string % MAD (Lucretia) model names (unique magnets)
-    ModelID uint16 % BEAMLINE indices of all elements wihin range of UseRegion selection
-    ModelUniqueID uint16 % BEAMLINE indices of all elements wihin range of UseRegion selection, for only 1 of each split element
+    ModelID_all uint16 % BEAMLINE indices of all elements wihin range of UseRegion selection
+    ModelID uint16 % BEAMLINE indices of all elements wihin range of UseRegion selection, for only 1 of each split element
     MissingEleInd uint16
     PSid uint16 % Power supply indicies (0 indicates no PS)
   end
@@ -153,10 +153,11 @@ classdef LucretiaModel < handle & matlab.mixin.Copyable
       end
       obj.ModelDat.RegionE = emod ;
     end
-    function id = get.ModelUniqueID(obj)
-      GetModelDat(obj,"UniqueModelID");
-      id = obj.ModelID(ismember(obj.ModelID,obj.ModelDat.UniqueModelID)) ;
+    function id = get.ModelID(obj)
+      GetModelDat(obj,"ModelID");
+      id = obj.ModelID_all(ismember(obj.ModelID_all,obj.ModelDat.ModelID)) ;
       id(ismember(id,obj.MissingEleInd)) = [] ;
+      id=id(:);
     end
     function names = get.ModelNames(obj)
       % MODELNAMES - model names for BEAMLINE indices for which UseRegion selected
@@ -166,8 +167,7 @@ classdef LucretiaModel < handle & matlab.mixin.Copyable
         return
       end
       GetModelDat(obj,"ModelNames");
-      names = obj.ModelDat.ModelNames(obj.ModelUniqueID) ;
-      names(ismember(names,obj.MissingEle))=[];
+      names = obj.ModelDat.ModelNames(obj.ModelID) ;
     end
     function z = get.ModelZ(obj)
       global BEAMLINE
@@ -191,6 +191,7 @@ classdef LucretiaModel < handle & matlab.mixin.Copyable
       names(obj.ModelNames=="YC10412") = "YCOR:IN10:412" ;
       names(obj.ModelNames=="YC14780") = "YCOR:LI14:780" ;
       names(obj.ModelNames=="XC14702") = "LI14:XCOR:702" ;
+      
 %       names(obj.ModelNames=="Q5FF") = "LI20:LGPS:3011" ;
 %       names(obj.ModelNames=="Q4FF") = "LI20:LGPS:3311" ;
 %       names(obj.ModelNames=="Q3FF") = "LI20:LGPS:3151" ;
@@ -201,7 +202,7 @@ classdef LucretiaModel < handle & matlab.mixin.Copyable
 %       names(obj.ModelNames=="Q1D") = "LI20:LGPS:3261" ;
 %       names(obj.ModelNames=="Q2D") = "LI20:LGPS:3091" ;
     end
-    function id = get.ModelID(obj)
+    function id = get.ModelID_all(obj)
       global BEAMLINE
       if isempty(BEAMLINE)
         id = [];
@@ -217,6 +218,7 @@ classdef LucretiaModel < handle & matlab.mixin.Copyable
         id=id(ismember(id,obj.ModelDat.ClassID));
       end
       id(ismember(id,obj.MissingEleInd))=[];
+      id=id(:);
     end
     function id = get.MissingEleInd(obj)
       global BEAMLINE
@@ -246,14 +248,16 @@ classdef LucretiaModel < handle & matlab.mixin.Copyable
         return
       end
       P = arrayfun(@(x) BEAMLINE{x}.P,1:length(BEAMLINE)) ;
-      P = P(obj.ModelUniqueID) ;
+      P = P(obj.ModelID) ;
+      P=P(:);
     end
     function psid = get.PSid(obj)
       global BEAMLINE
-      uid=obj.ModelUniqueID;
+      uid=obj.ModelID;
       psid=zeros(1,length(uid));
       isps = arrayfun(@(x) isfield(BEAMLINE{x},'PS'),uid) ;
       psid(isps) = arrayfun(@(x) BEAMLINE{x}.PS,uid(isps)) ;
+      psid=psid(:);
     end
     function Brho = get.ModelBrho(obj)
       Brho = obj.ModelBDES ./ obj.GEV2KGM ./ obj.ModelP ;
@@ -269,8 +273,9 @@ classdef LucretiaModel < handle & matlab.mixin.Copyable
       end
       GetModelDat(obj,"ModelBDES_i");
       bdes = arrayfun(@(x) GetTrueStrength(x,1),obj.ModelDat.ModelBDES_i).*10 ;
-      ind = ismember(obj.ModelDat.ModelBDES_i,obj.ModelUniqueID) ;
+      ind = ismember(obj.ModelDat.ModelBDES_i,obj.ModelID) ;
       bdes=bdes(ind) ;
+      bdes=bdes(:);
     end
     function set.ModelBDES(obj,bdes)
       global BEAMLINE PS
@@ -278,7 +283,7 @@ classdef LucretiaModel < handle & matlab.mixin.Copyable
         error('No model in memory');
       end
       GetModelDat(obj,"ModelBDES_i");
-      ind = obj.ModelDat.ModelBDES_i(ismember(obj.ModelDat.ModelBDES_i,obj.ModelUniqueID)) ;
+      ind = obj.ModelDat.ModelBDES_i(ismember(obj.ModelDat.ModelBDES_i,obj.ModelID)) ;
       if length(bdes) ~= length(ind)
         error('Must provide BDES vector same length as model (%d)\n',length(ind));
       end
@@ -294,8 +299,9 @@ classdef LucretiaModel < handle & matlab.mixin.Copyable
         return
       end
       GetModelDat(obj,["ModelBDES_i" "ModelBDES_Z"]);
-      ind = ismember(obj.ModelDat.ModelBDES_i,obj.ModelUniqueID) ;
+      ind = ismember(obj.ModelDat.ModelBDES_i,obj.ModelID) ;
       bdes=obj.ModelDat.ModelBDES_Z(ind) ;
+      bdes=bdes(:);
     end
     function classes = get.ModelClassList(obj)
       global BEAMLINE
@@ -304,7 +310,7 @@ classdef LucretiaModel < handle & matlab.mixin.Copyable
         return
       end
       GetModelDat(obj,"ModelClasses");
-      ind = ismember(1:length(BEAMLINE),obj.ModelUniqueID) ;
+      ind = ismember(1:length(BEAMLINE),obj.ModelID) ;
       classes=obj.ModelDat.ModelClasses(ind) ;
     end
     function L = get.ModelBDES_L(obj)
@@ -314,8 +320,9 @@ classdef LucretiaModel < handle & matlab.mixin.Copyable
         return
       end
       GetModelDat(obj,["ModelBDES_i" "ModelBDES_L"]);
-      ind = ismember(obj.ModelDat.ModelBDES_i,obj.ModelUniqueID) ;
+      ind = ismember(obj.ModelDat.ModelBDES_i,obj.ModelID) ;
       L=obj.ModelDat.ModelBDES_L(ind) ;
+      L=L(:);
     end
     function StoreRefTwiss(obj)
       %STOREREFTWISS Get current Twiss function values and store in RefTwiss object parameter
@@ -359,7 +366,7 @@ classdef LucretiaModel < handle & matlab.mixin.Copyable
           T.(fn{ifn}) = [obj.DesignTwiss.(fn{ifn})(1:i1-2) T.fn{ifn}] ;
         end
       end
-      idsel=1+find(ismember(i1:length(BEAMLINE),obj.ModelUniqueID));
+      idsel=1+find(ismember(i1:length(BEAMLINE),obj.ModelID));
       switch refmodel
         case "Design"
           bref_x=obj.DesignTwiss.betax(idsel);
@@ -418,10 +425,10 @@ classdef LucretiaModel < handle & matlab.mixin.Copyable
               obj.ModelDat.ModelNames = string(cellfun(@(x) x.Name,BEAMLINE,'UniformOutput',false)) ;
             case "ModelClasses"
               obj.ModelDat.ModelClasses = string(cellfun(@(x) x.Class,BEAMLINE,'UniformOutput',false)) ;
-            case "UniqueModelID"
+            case "ModelID"
               slice_ele = findcells(BEAMLINE,'Slices') ;
               noslice_ele = 1:length(BEAMLINE) ; noslice_ele(slice_ele) = [] ;
-              obj.ModelDat.UniqueModelID = sort([noslice_ele arrayfun(@(x) BEAMLINE{x}.Slices(1),slice_ele)]) ;
+              obj.ModelDat.ModelID = sort([noslice_ele arrayfun(@(x) BEAMLINE{x}.Slices(1),slice_ele)]) ;
             case "ModelBDES_L"
               GetModelDat(obj,"ModelBDES_i");
               obj.ModelDat.ModelBDES_L = zeros(1,length(obj.ModelDat.ModelBDES_i)) ;

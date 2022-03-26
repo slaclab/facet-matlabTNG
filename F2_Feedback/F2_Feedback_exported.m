@@ -13,6 +13,7 @@ classdef F2_Feedback_exported < matlab.apps.AppBase
     BC11EnergyFeedbackMenu        matlab.ui.container.Menu
     BC11BLENFeedbackMenu          matlab.ui.container.Menu
     BC14EnergyFeedbackMenu        matlab.ui.container.Menu
+    BC14BLENFeedbackMenu          matlab.ui.container.Menu
     BC20EnergyFeedbackMenu        matlab.ui.container.Menu
     DisplayEnergyUnitsMenu        matlab.ui.container.Menu
     JitterTimeoutMenu             matlab.ui.container.Menu
@@ -89,16 +90,16 @@ classdef F2_Feedback_exported < matlab.apps.AppBase
     NotRunningButton_4            matlab.ui.control.Button
     BC14BunchLengthFeedbackPanel  matlab.ui.container.Panel
     SetpointEditField_7           matlab.ui.control.NumericEditField
-    mmLabel_3                     matlab.ui.control.Label
-    Gauge_12                      matlab.ui.control.LinearGauge
+    fsLabel                       matlab.ui.control.Label
     Gauge_13                      matlab.ui.control.LinearGauge
     L2PHASELabel                  matlab.ui.control.Label
-    BL11359Label                  matlab.ui.control.Label
+    BLENLI14888Label              matlab.ui.control.Label
     EditField_15                  matlab.ui.control.NumericEditField
     EditField_16                  matlab.ui.control.NumericEditField
     StatusLamp_7                  matlab.ui.control.Lamp
     NotRunningButton_7            matlab.ui.control.Button
     Switch_7                      matlab.ui.control.Switch
+    Gauge_12                      matlab.ui.control.LinearGauge
     FeedbackWatcherProcessStatusPanel  matlab.ui.container.Panel
     fbstat                        matlab.ui.control.Label
   end
@@ -299,13 +300,22 @@ classdef F2_Feedback_exported < matlab.apps.AppBase
 
     % Value changed function: SetpointEditField_7
     function SetpointEditField_7ValueChanged(app, event)
-%       value = app.SetpointEditField_7.Value;
+      value = app.SetpointEditField_7.Value;
+      caput(app.aobj.pvs.BC14BL_Offset,value) ;
+      app.aobj.SetpointOffsets(6) = value ;
       
     end
 
     % Menu selected function: BC20EnergyMenu
     function BC20EnergyMenuSelected(app, event)
-      !StripTool /u1/facet/tools/StripTool/config/FB_BC20_E.stp &      
+      !StripTool /u1/facet/tools/StripTool/config/FB_BC20_E.stp &
+    end
+
+    % Menu selected function: BC14BLENFeedbackMenu
+    function BC14BLENFeedbackMenuSelected(app, event)
+      app.BC14BLENFeedbackMenu.Enable = false ;
+      BC14BL_Settings(app.aobj);
+      drawnow
     end
   end
 
@@ -369,6 +379,11 @@ classdef F2_Feedback_exported < matlab.apps.AppBase
       app.BC14EnergyFeedbackMenu = uimenu(app.SettingsMenu);
       app.BC14EnergyFeedbackMenu.MenuSelectedFcn = createCallbackFcn(app, @BC14EnergyFeedbackMenuSelected, true);
       app.BC14EnergyFeedbackMenu.Text = 'BC14 Energy Feedback ...';
+
+      % Create BC14BLENFeedbackMenu
+      app.BC14BLENFeedbackMenu = uimenu(app.SettingsMenu);
+      app.BC14BLENFeedbackMenu.MenuSelectedFcn = createCallbackFcn(app, @BC14BLENFeedbackMenuSelected, true);
+      app.BC14BLENFeedbackMenu.Text = 'BC14 BLEN Feedback...';
 
       % Create BC20EnergyFeedbackMenu
       app.BC20EnergyFeedbackMenu = uimenu(app.SettingsMenu);
@@ -595,34 +610,34 @@ classdef F2_Feedback_exported < matlab.apps.AppBase
       app.BC20EnergyFeedbackPanel.ForegroundColor = [0.7176 0.2745 1];
       app.BC20EnergyFeedbackPanel.Title = 'BC20 Energy Feedback';
       app.BC20EnergyFeedbackPanel.FontWeight = 'bold';
-      app.BC20EnergyFeedbackPanel.Position = [502 14 472 259];
+      app.BC20EnergyFeedbackPanel.Position = [502 7 472 265];
 
       % Create SetpointEditField_4
       app.SetpointEditField_4 = uieditfield(app.BC20EnergyFeedbackPanel, 'numeric');
       app.SetpointEditField_4.ValueChangedFcn = createCallbackFcn(app, @SetpointEditField_4ValueChanged, true);
       app.SetpointEditField_4.HorizontalAlignment = 'center';
-      app.SetpointEditField_4.Position = [17 147 109 29];
+      app.SetpointEditField_4.Position = [17 153 109 29];
 
       % Create mmLabel_7
       app.mmLabel_7 = uilabel(app.BC20EnergyFeedbackPanel);
       app.mmLabel_7.FontSize = 16;
-      app.mmLabel_7.Position = [130 151 41 22];
+      app.mmLabel_7.Position = [130 157 41 22];
       app.mmLabel_7.Text = 'mm';
 
       % Create Switch_4
       app.Switch_4 = uiswitch(app.BC20EnergyFeedbackPanel, 'slider');
       app.Switch_4.Orientation = 'vertical';
       app.Switch_4.ValueChangedFcn = createCallbackFcn(app, @Switch_4ValueChanged, true);
-      app.Switch_4.Position = [17 37 32 72];
+      app.Switch_4.Position = [17 43 32 72];
 
       % Create StatusLamp_4
       app.StatusLamp_4 = uilamp(app.BC20EnergyFeedbackPanel);
-      app.StatusLamp_4.Position = [8 192 31 31];
+      app.StatusLamp_4.Position = [8 198 31 31];
       app.StatusLamp_4.Color = [0 0 0];
 
       % Create BPMSLI202050X57Label
       app.BPMSLI202050X57Label = uilabel(app.BC20EnergyFeedbackPanel);
-      app.BPMSLI202050X57Label.Position = [93 78 122 22];
+      app.BPMSLI202050X57Label.Position = [93 84 122 22];
       app.BPMSLI202050X57Label.Text = 'BPMS:LI20:2050:X57';
 
       % Create EditField_8
@@ -630,36 +645,36 @@ classdef F2_Feedback_exported < matlab.apps.AppBase
       app.EditField_8.Editable = 'off';
       app.EditField_8.HorizontalAlignment = 'center';
       app.EditField_8.FontSize = 10;
-      app.EditField_8.Position = [88 24 128 22];
+      app.EditField_8.Position = [88 30 128 22];
 
       % Create NotRunningButton_6
       app.NotRunningButton_6 = uibutton(app.BC20EnergyFeedbackPanel, 'push');
       app.NotRunningButton_6.FontSize = 8;
       app.NotRunningButton_6.FontWeight = 'bold';
-      app.NotRunningButton_6.Position = [47 197 417 25];
+      app.NotRunningButton_6.Position = [47 203 417 25];
       app.NotRunningButton_6.Text = 'Not Running';
 
       % Create MKBLabel
       app.MKBLabel = uilabel(app.BC20EnergyFeedbackPanel);
-      app.MKBLabel.Position = [217 159 34 22];
+      app.MKBLabel.Position = [217 165 34 22];
       app.MKBLabel.Text = 'MKB:';
 
       % Create DropDown
       app.DropDown = uidropdown(app.BC20EnergyFeedbackPanel);
       app.DropDown.Items = {'S20_ENERGY_3AND4', 'S20_ENERGY_4AND5'};
       app.DropDown.ValueChangedFcn = createCallbackFcn(app, @DropDownValueChanged, true);
-      app.DropDown.Position = [262 159 189 22];
+      app.DropDown.Position = [262 165 189 22];
       app.DropDown.Value = 'S20_ENERGY_3AND4';
 
       % Create BC20_C1Lab
       app.BC20_C1Lab = uilabel(app.BC20EnergyFeedbackPanel);
       app.BC20_C1Lab.HorizontalAlignment = 'right';
-      app.BC20_C1Lab.Position = [204 125 127 22];
+      app.BC20_C1Lab.Position = [204 131 127 22];
       app.BC20_C1Lab.Text = 'LI19:KLYS:31:PDES';
 
       % Create BC20_C2Lab
       app.BC20_C2Lab = uilabel(app.BC20EnergyFeedbackPanel);
-      app.BC20_C2Lab.Position = [338 125 127 22];
+      app.BC20_C2Lab.Position = [338 131 127 22];
       app.BC20_C2Lab.Text = 'LI19:KLYS:41:PDES';
 
       % Create Gauge_19
@@ -667,7 +682,7 @@ classdef F2_Feedback_exported < matlab.apps.AppBase
       app.Gauge_19.Limits = [-180 0];
       app.Gauge_19.Orientation = 'southwest';
       app.Gauge_19.ScaleDirection = 'counterclockwise';
-      app.Gauge_19.Position = [245 37 90 90];
+      app.Gauge_19.Position = [245 43 90 90];
       app.Gauge_19.Value = -60;
 
       % Create Gauge_20
@@ -675,7 +690,7 @@ classdef F2_Feedback_exported < matlab.apps.AppBase
       app.Gauge_20.Limits = [0 180];
       app.Gauge_20.Orientation = 'southeast';
       app.Gauge_20.ScaleDirection = 'counterclockwise';
-      app.Gauge_20.Position = [335 37 90 90];
+      app.Gauge_20.Position = [335 43 90 90];
       app.Gauge_20.Value = 60;
 
       % Create EditField_17
@@ -683,7 +698,7 @@ classdef F2_Feedback_exported < matlab.apps.AppBase
       app.EditField_17.Editable = 'off';
       app.EditField_17.HorizontalAlignment = 'center';
       app.EditField_17.FontSize = 10;
-      app.EditField_17.Position = [273 9 125 22];
+      app.EditField_17.Position = [273 15 125 22];
 
       % Create Gauge_7
       app.Gauge_7 = uigauge(app.BC20EnergyFeedbackPanel, 'linear');
@@ -694,7 +709,7 @@ classdef F2_Feedback_exported < matlab.apps.AppBase
       app.Gauge_7.ScaleColors = [1 0 0;1 0 0;0.3922 0.8314 0.0745];
       app.Gauge_7.ScaleColorLimits = [-100 -75;75 100;-25 25];
       app.Gauge_7.FontSize = 10;
-      app.Gauge_7.Position = [88 50 125 29];
+      app.Gauge_7.Position = [88 56 125 29];
 
       % Create BC11EnergyFeedbackPanel
       app.BC11EnergyFeedbackPanel = uipanel(app.FACETIIFeedbackUIFigure);
@@ -855,75 +870,79 @@ classdef F2_Feedback_exported < matlab.apps.AppBase
       app.BC14BunchLengthFeedbackPanel.ForegroundColor = [0 0 1];
       app.BC14BunchLengthFeedbackPanel.Title = 'BC14 Bunch Length Feedback';
       app.BC14BunchLengthFeedbackPanel.FontWeight = 'bold';
-      app.BC14BunchLengthFeedbackPanel.Position = [22 15 473 125];
+      app.BC14BunchLengthFeedbackPanel.Position = [22 7 473 133];
 
       % Create SetpointEditField_7
       app.SetpointEditField_7 = uieditfield(app.BC14BunchLengthFeedbackPanel, 'numeric');
       app.SetpointEditField_7.ValueChangedFcn = createCallbackFcn(app, @SetpointEditField_7ValueChanged, true);
       app.SetpointEditField_7.HorizontalAlignment = 'center';
-      app.SetpointEditField_7.Position = [17 46 100 29];
+      app.SetpointEditField_7.Position = [17 48 100 29];
+      app.SetpointEditField_7.Value = 50;
 
-      % Create mmLabel_3
-      app.mmLabel_3 = uilabel(app.BC14BunchLengthFeedbackPanel);
-      app.mmLabel_3.FontSize = 16;
-      app.mmLabel_3.Position = [130 49 31 22];
-      app.mmLabel_3.Text = 'mm';
-
-      % Create Gauge_12
-      app.Gauge_12 = uigauge(app.BC14BunchLengthFeedbackPanel, 'linear');
-      app.Gauge_12.Limits = [0.01 1];
-      app.Gauge_12.FontSize = 10;
-      app.Gauge_12.Position = [184 29 126 35];
-      app.Gauge_12.Value = 0.1;
+      % Create fsLabel
+      app.fsLabel = uilabel(app.BC14BunchLengthFeedbackPanel);
+      app.fsLabel.FontSize = 16;
+      app.fsLabel.Position = [128 53 25 22];
+      app.fsLabel.Text = 'fs';
 
       % Create Gauge_13
       app.Gauge_13 = uigauge(app.BC14BunchLengthFeedbackPanel, 'linear');
       app.Gauge_13.Limits = [-180 180];
       app.Gauge_13.FontSize = 10;
-      app.Gauge_13.Position = [334 28 126 35];
+      app.Gauge_13.Position = [334 30 126 35];
 
       % Create L2PHASELabel
       app.L2PHASELabel = uilabel(app.BC14BunchLengthFeedbackPanel);
       app.L2PHASELabel.HorizontalAlignment = 'center';
-      app.L2PHASELabel.Position = [338 61 120 22];
+      app.L2PHASELabel.Position = [338 63 120 22];
       app.L2PHASELabel.Text = 'L2 PHASE';
 
-      % Create BL11359Label
-      app.BL11359Label = uilabel(app.BC14BunchLengthFeedbackPanel);
-      app.BL11359Label.HorizontalAlignment = 'center';
-      app.BL11359Label.Position = [192 62 113 22];
-      app.BL11359Label.Text = 'BL11359';
+      % Create BLENLI14888Label
+      app.BLENLI14888Label = uilabel(app.BC14BunchLengthFeedbackPanel);
+      app.BLENLI14888Label.HorizontalAlignment = 'center';
+      app.BLENLI14888Label.Position = [192 64 113 22];
+      app.BLENLI14888Label.Text = 'BLEN:LI14:888';
 
       % Create EditField_15
       app.EditField_15 = uieditfield(app.BC14BunchLengthFeedbackPanel, 'numeric');
       app.EditField_15.Editable = 'off';
       app.EditField_15.HorizontalAlignment = 'center';
       app.EditField_15.FontSize = 10;
-      app.EditField_15.Position = [185 5 125 22];
+      app.EditField_15.Position = [185 7 125 22];
 
       % Create EditField_16
       app.EditField_16 = uieditfield(app.BC14BunchLengthFeedbackPanel, 'numeric');
       app.EditField_16.Editable = 'off';
       app.EditField_16.HorizontalAlignment = 'center';
       app.EditField_16.FontSize = 10;
-      app.EditField_16.Position = [334 5 125 22];
+      app.EditField_16.Position = [334 7 125 22];
 
       % Create StatusLamp_7
       app.StatusLamp_7 = uilamp(app.BC14BunchLengthFeedbackPanel);
-      app.StatusLamp_7.Position = [7 79 23 23];
+      app.StatusLamp_7.Position = [5 80 30 30];
       app.StatusLamp_7.Color = [0 0 0];
 
       % Create NotRunningButton_7
       app.NotRunningButton_7 = uibutton(app.BC14BunchLengthFeedbackPanel, 'push');
       app.NotRunningButton_7.FontSize = 8;
       app.NotRunningButton_7.FontWeight = 'bold';
-      app.NotRunningButton_7.Position = [36 82 427 18];
+      app.NotRunningButton_7.Position = [46 86 417 22];
       app.NotRunningButton_7.Text = 'Not Running';
 
       % Create Switch_7
       app.Switch_7 = uiswitch(app.BC14BunchLengthFeedbackPanel, 'slider');
-      app.Switch_7.Enable = 'off';
-      app.Switch_7.Position = [51 9 62 28];
+      app.Switch_7.Position = [51 11 62 28];
+
+      % Create Gauge_12
+      app.Gauge_12 = uigauge(app.BC14BunchLengthFeedbackPanel, 'linear');
+      app.Gauge_12.Limits = [-100 100];
+      app.Gauge_12.MajorTicks = [-100 -60 -20 20 60 100];
+      app.Gauge_12.MajorTickLabels = {''};
+      app.Gauge_12.MinorTicks = [-100 -92 -84 -76 -68 -60 -52 -44 -36 -28 -20 -12 -4 4 12 20 28 36 44 52 60 68 76 84 92 100];
+      app.Gauge_12.ScaleColors = [1 0 0;1 0 0;0.3922 0.8314 0.0745];
+      app.Gauge_12.ScaleColorLimits = [-100 -75;75 100;-25 25];
+      app.Gauge_12.FontSize = 10;
+      app.Gauge_12.Position = [186 32 125 32];
 
       % Create FeedbackWatcherProcessStatusPanel
       app.FeedbackWatcherProcessStatusPanel = uipanel(app.FACETIIFeedbackUIFigure);

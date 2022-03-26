@@ -134,7 +134,7 @@ classdef F2_S20ConfigApp < handle & F2_common
       
       % Form waist location list data
       obj.LM.ModelClasses=obj.IPClassList ;
-      obj.EleID = obj.LM.ModelUniqueID ;
+      obj.EleID = obj.LM.ModelID ;
       obj.EleZ = obj.LM.ModelZ ;
       obj.EleNames = obj.LM.ModelNames ;
       obj.EleRange = [obj.LM.istart obj.LM.iend];

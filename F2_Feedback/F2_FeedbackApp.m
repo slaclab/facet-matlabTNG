@@ -1,20 +1,11 @@
 classdef F2_FeedbackApp < handle & F2_common
   %F2_FEEDBACKAPP Support for FACET-II Feedback application
-  %
-  % Notes on BC11 Energy and Bunch length feedbacks:
-  % * Uses custom "SSSB" phase & amplitude controls for 11-1 & 11-2 (tied together)
-  % * Control PVs are SIOC:SYS1:ML01:AO231 for energy and 232 for chirp (bunch length)
-  % * Readback PVs are BPMS:LI11:333:X for energy and BLEN:LI11:359:BZ11359B_S_SUM for bunch length
-  % * Control PVs are converted into Ampl & phase inputs to 11-1 & 11-2 controls bia calcout PVs:
-  %  * SIOC:SYS1:ML00:CALCOUT011 & 012 for 11-1 & 11-2 Ampl
-  %  * SIOC:SYS1:ML00:CALCOUT013 & 014 for 11-1 & 11-2 Phase
-  % * CALC PVs for energy & phase readbacks:
-  %  * SIOC:SYS1:ML00:CALC801 & 802 for Energy & Chirp readback
+  
   events
     PVUpdated 
   end
   properties
-    SetpointConversion cell = {[0 1] [0 1] [0 1] [0 1] [0 1]} % polynomial conversion coefficents for setpoint display (lowest order first)
+    SetpointConversion cell = {[0 1] [0 1] [0 1] [0 1] [0 1] [0 1]} % polynomial conversion coefficents for setpoint display (lowest order first)
     GuiEnergyUnits logical = false % Display BPM readings as energy, else raw BPM orbit readings
     SettingsGui % Settings applciation GUI pointer
     SettingsGui_whichFeedback uint8 = 0 ;
@@ -22,15 +13,15 @@ classdef F2_FeedbackApp < handle & F2_common
   end
   properties(SetObservable, AbortSet)
     Enabled uint16 = 0 % Feedback enabled bit
-    FeedbackCoefficients cell = {0.06*0.1 0.01 0.01 0.01 0.01} % Feedback coefficients for each feedback
-    FeedbackControlLimits cell = {[5 28] [-180 0] [5 60] [10 63] [-180 0]}
-    FeedbackSetpointLimits cell ={[-5 5] [-15 15] [-10 10] [0 100] [-10 10]}
-    SetpointFilterCoefficients cell ={[0.001 0.1] [0.001 0.1] [0.001 0.1] [0.001 0.1] [0.001 0.1]} % low/high frequency settings for filtering
-    SetpointFilterTypes string {mustBeMember(SetpointFilterTypes,["notch" "pass"])} = ["pass" "pass" "pass" "pass" "pass"]
+    FeedbackCoefficients cell = {0.06*0.1 0.01 0.01 0.01 0.01 0.01} % Feedback coefficients for each feedback
+    FeedbackControlLimits cell = {[5 28] [-180 0] [5 60] [10 63] [-180 0] [-180 180]}
+    FeedbackSetpointLimits cell ={[-5 5] [-15 15] [-10 10] [0 100] [-10 10] [-100 100]}
+    SetpointFilterCoefficients cell ={[0.001 0.1] [0.001 0.1] [0.001 0.1] [0.001 0.1] [0.001 0.1] [0.001 0.1]} % low/high frequency settings for filtering
+    SetpointFilterTypes string {mustBeMember(SetpointFilterTypes,["notch" "pass"])} = ["pass" "pass" "pass" "pass" "pass" "pass"]
     SetpointDoFilter logical = [false false false false false] % apply filtering to feedback setpoints?
-    SetpointOffsets = [0 0 0 0 0] % Offsets to apply to feedback setpoints
-    SetpointDeadbands cell = {[-0.2 0.2] [-0.2 0.2] [-0.2 0.2] [-0.01 0.01] [-0.1 0.1]} % mm
-    TMITLimits cell = {[0.1 50] [0.1 50] [0.1 50] [0.1 50] [0.1 50]} % Limit feedback operation to these TMIT readings (Nele * 1e9)
+    SetpointOffsets = [0 0 0 0 0 20] % Offsets to apply to feedback setpoints
+    SetpointDeadbands cell = {[-0.2 0.2] [-0.2 0.2] [-0.2 0.2] [-0.01 0.01] [-0.1 0.1] [50 51]} % mm
+    TMITLimits cell = {[0.1 50] [0.1 50] [0.1 50] [0.1 50] [0.1 50] [0.1 50]} % Limit feedback operation to these TMIT readings (Nele * 1e9)
     BC20E_mkb string {mustBeMember(BC20E_mkb,["S20_ENERGY_3AND4","S20_ENERGY_4AND5","S20_ENERGY_4AND6"])} = "S20_ENERGY_3AND4"
     BC14E_mkb string {mustBeMember(BC14E_mkb,["BC14_ENERGY_4AND5","BC14_ENERGY_5AND6","BC14_ENERGY_4AND6"])} = "BC14_ENERGY_4AND5"
   end
@@ -62,20 +53,21 @@ classdef F2_FeedbackApp < handle & F2_common
     fbinit logical = false % set to true after Feedbacks initialized the first time (data PVs set to run mode)
   end
   properties(Constant)
-    UseFeedbacks logical = [true true true false true]
-    FeedbacksAvailable string = ["DL1E" "BC14E" "BC11E" "BC11BL" "BC20E"]
+    UseFeedbacks logical = [true true true false true true]
+    FeedbacksAvailable string = ["DL1E" "BC14E" "BC11E" "BC11BL" "BC20E" "BC14BL"]
     FeedbackEnabledPV string = "SIOC:SYS1:ML00:AO856"
     DL1E_GainPV string = "SIOC:SYS1:ML00:AO857"
     DL1E_OffsetPV string = "SIOC:SYS1:ML00:AO858"
     BC14E_GainPV string = "SIOC:SYS1:ML00:AO897"
     BC14E_OffsetPV string = "SIOC:SYS1:ML00:AO898"
-%     BC11_CALCPV string =["SIOC:SYS1:ML00:CALCOUT011.SCAN" "SIOC:SYS1:ML00:CALCOUT012.SCAN" "SIOC:SYS1:ML00:CALCOUT013.SCAN" "SIOC:SYS1:ML00:CALCOUT014.SCAN"] % CALCOUT PVs used to control SSSB- change PROC to Passive when off, 0.5 sec when on
     BC11E_GainPV string = "SIOC:SYS1:ML01:AO206"
     BC11E_OffsetPV string = "SIOC:SYS1:ML01:AO207"
     BC11BL_GainPV string = "SIOC:SYS1:ML01:AO220"
     BC11BL_OffsetPV string = "SIOC:SYS1:ML01:AO207"
     BC20E_OffsetPV string ="SIOC:SYS1:ML01:AO234"
     BC20E_GainPV string ="SIOC:SYS1:ML01:AO235"
+    BC14BL_GainPV string = "SIOC:SYS1:ML01:AO246"
+    BC14BL_OffsetPV string = "SIOC:SYS1:ML01:AO247"
     FbRunningPV string = "F2:WATCHER:FEEDBACKS_STAT"
     FbStatusPV string = "SIOC:SYS1:ML00:AO859" ;
     GuiUpdateRate = 1 % rate to limit GUI updates
@@ -190,6 +182,20 @@ classdef F2_FeedbackApp < handle & F2_common
         PV(cntx,'Name',"BC20E_Control2",'pvname',"LI19:KLYS:41:PDES",'monitor',true,'mode',"rw");
         PV(cntx,'Name',"BC20E_mkname",'pvname',"SIOC:SYS1:ML01:AO244.DESC",'monitor',true,'mode',"rw") ];
       end
+      if obj.UseFeedbacks(6)
+        obj.pvlist = [obj.pvlist;
+        PV(cntx,'Name',"BC14BL_Gain",'pvname',obj.BC14BL_GainPV,'monitor',true,'mode','rw') ;
+        PV(cntx,'Name',"BC14BL_Offset",'pvname',obj.BC14BL_OffsetPV,'monitor',true,'mode','rw');
+        PV(cntx,'Name',"BC14BL_ControlLimitLo",'pvname',"SIOC:SYS1:ML01:AO248",'monitor',true,'mode',"rw");
+        PV(cntx,'Name',"BC14BL_ControlLimitHi",'pvname',"SIOC:SYS1:ML01:AO249",'monitor',true,'mode',"rw");
+        PV(cntx,'Name',"BC14BL_SetpointLimitLo",'pvname',"SIOC:SYS1:ML01:AO250",'monitor',true,'mode',"rw");
+        PV(cntx,'Name',"BC14BL_SetpointLimitHi",'pvname',"SIOC:SYS1:ML01:AO251",'monitor',true,'mode',"rw");
+        PV(cntx,'Name',"BC14BL_SetpointFilterFreq",'pvname',"SIOC:SYS1:ML01:AO252",'monitor',true,'mode',"rw");
+        PV(cntx,'Name',"BC14BL_SetpointDeadbandLo",'pvname',"SIOC:SYS1:ML01:AO253",'monitor',true,'mode',"rw");
+        PV(cntx,'Name',"BC14BL_SetpointDeadbandHi",'pvname',"SIOC:SYS1:ML01:AO254",'monitor',true,'mode',"rw");
+        PV(cntx,'Name',"BC14BL_TMITLo",'pvname',"SIOC:SYS1:ML01:AO255",'monitor',true,'mode',"rw");
+        PV(cntx,'Name',"BC14BL_TMITHi",'pvname',"SIOC:SYS1:ML01:AO256",'monitor',true,'mode',"rw")];
+      end
       
       % Attach feedback running status PV
       obj.pvlist(end+1) = PV(cntx,'Name',"FB_RUNNING",'pvname',obj.FbRunningPV,'monitor',true) ;
@@ -221,9 +227,11 @@ classdef F2_FeedbackApp < handle & F2_common
       
       caget(obj.pvlist); notify(obj,"PVUpdated"); % Initialize states
       
-      % Timer to keep watchdog PV updated & GUI fields
-      obj.to=timer('Period',1,'ExecutionMode','fixedRate','TimerFcn',@(~,~) obj.RunningTimer);
-      start(obj.to);
+      % Timer to keep watchdog PV updated
+      if isempty(obj.guihan)
+        obj.to=timer('Period',1,'ExecutionMode','fixedRate','TimerFcn',@(~,~) obj.RunningTimer);
+        start(obj.to);
+      end
       
       % Logger
       if isempty(obj.guihan)
@@ -271,6 +279,9 @@ classdef F2_FeedbackApp < handle & F2_common
         if obj.UseFeedbacks(5)
           addlistener(obj.Feedbacks(5),'DataUpdated',@(~,~) obj.BC20Updated) ;
         end
+        if obj.UseFeedbacks(6)
+          addlistener(obj.Feedbacks(6),'DataUpdated',@(~,~) obj.BC14BLUpdated) ;
+        end
       end
       
     end
@@ -287,326 +298,345 @@ classdef F2_FeedbackApp < handle & F2_common
     end
     function RunningTimer(obj)
       %RUNNINGTIMER Keep watchdog PV updated
-      if isempty(obj.guihan)
-        caput(obj.pvs.Watchdog,'RUNNING');
-      else
-        try
-%           if obj.UseFeedbacks(1)
-%             obj.DL1Updated ;
-%           end
-%           if obj.UseFeedbacks(2)
-%             obj.BC14Updated ;
-%           end
-%           if obj.UseFeedbacks(3)
-%             obj.BC11Updated ;
-%           end
-%           if obj.UseFeedbacks(4)
-%             obj.BC11BLUpdated ;
-%           end
-%           if obj.UseFeedbacks(5)
-%             obj.BC20Updated ;
-%           end
-        catch ME
-          fprintf(2,'Error updating GUI: %s\n',ME.message);
-        end
-      end
+      caput(obj.pvs.Watchdog,'RUNNING');
     end
     function DL1Updated(obj)
       if obj.is_shutdown
         return
       end
-      if ~isempty(obj.guihan)
-        ifb=1;
-        
-        % Controls values
-        obj.guihan.EditField_2.Value = obj.Feedbacks(ifb).ControlVal ;
-        obj.guihan.Gauge_3.Value = obj.Feedbacks(ifb).ControlVal ;
-        obj.guihan.Gauge_3.ScaleColors = [1,0,0;1,0,0;0.39,0.83,0.07] ;
-        obj.guihan.Gauge_3.ScaleColorLimits = [0,obj.FeedbackControlLimits{ifb}(1);obj.FeedbackControlLimits{ifb}(2),obj.FeedbackControlLimits{ifb}(2)+10;obj.FeedbackControlLimits{ifb}(1),obj.FeedbackControlLimits{ifb}(2)] ;
-        obj.guihan.Gauge_3.Limits = [0,obj.FeedbackControlLimits{ifb}(2)+10] ;
-        if obj.Feedbacks(ifb).ControlVal > obj.FeedbackControlLimits{ifb}(2) || obj.Feedbacks(ifb).ControlVal < obj.FeedbackControlLimits{ifb}(1)
-          obj.guihan.EditField_2.BackgroundColor='red';
-        else
-          obj.guihan.EditField_2.BackgroundColor='white';
-        end
-        
-        % Setpoint update
-        val = obj.Feedbacks(1).SetpointVal ;
-        if isempty(val) || isnan(val) || isinf(val)
-          obj.guihan.Gauge.Value = 0 ;
-          obj.guihan.EditField.BackgroundColor = 'black' ;
-          obj.guihan.EditField.Value = 0 ;
-          obj.guihan.Gauge.BackgroundColor = 'black' ;
-          drawnow limitrate
-          return
-        end
-        offs = obj.SetpointOffsets(1) ;
-        valrel = double(val - offs) ;
-        db = obj.SetpointDeadbands{1} ;
-        lims = obj.FeedbackSetpointLimits{1} ;
-        obj.guihan.Gauge.BackgroundColor = 'white' ;
-        if valrel > db(1) && valrel < db(2)
-          obj.guihan.Gauge.Value = 50*(valrel/range(db)) ;
-          obj.guihan.EditField.BackgroundColor = [0.47,0.67,0.19] ;
-        elseif valrel > lims(1) && valrel<db(1)
-          obj.guihan.Gauge.Value = -75 + 50*(1-abs(valrel)/abs(lims(1)-db(1))) ;
-          obj.guihan.EditField.BackgroundColor = [0.94,0.94,0.94] ;
-        elseif valrel < lims(2) && valrel > lims(1)
-          obj.guihan.Gauge.Value = 25 + 50*abs(valrel)/abs(lims(2)-db(2)) ;
-          obj.guihan.EditField.BackgroundColor = [0.94,0.94,0.94] ;
-        elseif valrel<lims(1) 
-          obj.guihan.Gauge.Value = -90 ;
-          obj.guihan.EditField.BackgroundColor = [0.85,0.33,0.10] ;
-        else
-          obj.guihan.Gauge.Value = 90 ;
-          obj.guihan.EditField.BackgroundColor = [0.85,0.33,0.10] ;
-        end
-        if obj.GuiEnergyUnits
-          obj.guihan.mmLabel_5.Text = 'MeV' ;
-          if obj.SetpointConversion{ifb}(2)<0
-            obj.guihan.Gauge.Value = -obj.guihan.Gauge.Value ;
-          end
-          obj.guihan.EditField.Value = obj.SetpointConversion{ifb}(1) + valrel * obj.SetpointConversion{ifb}(2) ;
-        else
-          obj.guihan.EditField.Value = valrel;
-          obj.guihan.mmLabel_5.Text = 'mm' ;
-        end
-        
-        drawnow limitrate
+      ifb=1;
+      
+      % Controls values
+      obj.guihan.EditField_2.Value = obj.Feedbacks(ifb).ControlVal ;
+      obj.guihan.Gauge_3.Value = obj.Feedbacks(ifb).ControlVal ;
+      obj.guihan.Gauge_3.ScaleColors = [1,0,0;1,0,0;0.39,0.83,0.07] ;
+      obj.guihan.Gauge_3.ScaleColorLimits = [0,obj.FeedbackControlLimits{ifb}(1);obj.FeedbackControlLimits{ifb}(2),obj.FeedbackControlLimits{ifb}(2)+10;obj.FeedbackControlLimits{ifb}(1),obj.FeedbackControlLimits{ifb}(2)] ;
+      obj.guihan.Gauge_3.Limits = [0,obj.FeedbackControlLimits{ifb}(2)+10] ;
+      if obj.Feedbacks(ifb).ControlVal > obj.FeedbackControlLimits{ifb}(2) || obj.Feedbacks(ifb).ControlVal < obj.FeedbackControlLimits{ifb}(1)
+        obj.guihan.EditField_2.BackgroundColor='red';
+      else
+        obj.guihan.EditField_2.BackgroundColor='white';
       end
+      
+      % Setpoint update
+      val = obj.Feedbacks(1).SetpointVal ;
+      if isempty(val) || isnan(val) || isinf(val)
+        obj.guihan.Gauge.Value = 0 ;
+        obj.guihan.EditField.BackgroundColor = 'black' ;
+        obj.guihan.EditField.Value = 0 ;
+        obj.guihan.Gauge.BackgroundColor = 'black' ;
+        drawnow limitrate
+        return
+      end
+      offs = obj.SetpointOffsets(1) ;
+      valrel = double(val - offs) ;
+      db = obj.SetpointDeadbands{1} ;
+      lims = obj.FeedbackSetpointLimits{1} ;
+      obj.guihan.Gauge.BackgroundColor = 'white' ;
+      if valrel > db(1) && valrel < db(2)
+        obj.guihan.Gauge.Value = 50*(valrel/range(db)) ;
+        obj.guihan.EditField.BackgroundColor = [0.47,0.67,0.19] ;
+      elseif val > lims(1) && valrel<db(1)
+        obj.guihan.Gauge.Value = -75 + 50*(1-abs(val)/abs(lims(1)-db(1))) ;
+        obj.guihan.EditField.BackgroundColor = [0.94,0.94,0.94] ;
+      elseif val < lims(2) && val > lims(1)
+        obj.guihan.Gauge.Value = 25 + 50*abs(val)/abs(lims(2)-db(2)) ;
+        obj.guihan.EditField.BackgroundColor = [0.94,0.94,0.94] ;
+      elseif val<lims(1)
+        obj.guihan.Gauge.Value = -90 ;
+        obj.guihan.EditField.BackgroundColor = [0.85,0.33,0.10] ;
+      else
+        obj.guihan.Gauge.Value = 90 ;
+        obj.guihan.EditField.BackgroundColor = [0.85,0.33,0.10] ;
+      end
+      if obj.GuiEnergyUnits
+        obj.guihan.mmLabel_5.Text = 'MeV' ;
+        if obj.SetpointConversion{ifb}(2)<0
+          obj.guihan.Gauge.Value = -obj.guihan.Gauge.Value ;
+        end
+        obj.guihan.EditField.Value = obj.SetpointConversion{ifb}(1) + val * obj.SetpointConversion{ifb}(2) ;
+      else
+        obj.guihan.EditField.Value = val;
+        obj.guihan.mmLabel_5.Text = 'mm' ;
+      end
+      
+      drawnow limitrate
     end
     function BC14Updated(obj)
       if obj.is_shutdown
         return
       end
-      if ~isempty(obj.guihan)
-        ifb=2;
-        val = obj.Feedbacks(ifb).SetpointVal ;
-        if isempty(val) || isnan(val) || isinf(val)
-          obj.guihan.Gauge_6.Value = 0 ;
-          obj.guihan.EditField_5.BackgroundColor = 'black' ;
-          obj.guihan.EditField_5.Value = 0 ;
-          obj.guihan.Gauge_6.BackgroundColor = 'black' ;
+      ifb=2;
+      val = obj.Feedbacks(ifb).SetpointVal ;
+      if isempty(val) || isnan(val) || isinf(val)
+        obj.guihan.Gauge_6.Value = 0 ;
+        obj.guihan.EditField_5.BackgroundColor = 'black' ;
+        obj.guihan.EditField_5.Value = 0 ;
+        obj.guihan.Gauge_6.BackgroundColor = 'black' ;
+      else
+        offs = obj.SetpointOffsets(ifb) ;
+        valrel = double(val - offs) ;
+        db = obj.SetpointDeadbands{ifb} ;
+        lims = obj.FeedbackSetpointLimits{ifb} ;
+        obj.guihan.Gauge_6.BackgroundColor = 'white' ;
+        if valrel > db(1) && valrel < db(2)
+          obj.guihan.Gauge_6.Value = 50*(valrel/range(db)) ;
+          obj.guihan.EditField_5.BackgroundColor = [0.47,0.67,0.19] ;
+        elseif val > lims(1) && valrel<db(1)
+          obj.guihan.Gauge_6.Value = -75 + 50*(1-abs(val)/abs(lims(1)-db(1))) ;
+          obj.guihan.EditField_5.BackgroundColor = [0.94,0.94,0.94] ;
+        elseif val < lims(2) && val > lims(1)
+          obj.guihan.Gauge_6.Value = 25 + 50*abs(val)/abs(lims(2)-db(2)) ;
+          obj.guihan.EditField_5.BackgroundColor = [0.94,0.94,0.94] ;
+        elseif val<lims(1)
+          obj.guihan.Gauge_6.Value = 90 ;
+          obj.guihan.EditField_5.BackgroundColor = [0.85,0.33,0.10] ;
         else
-          offs = obj.SetpointOffsets(ifb) ;
-          valrel = double(val - offs) ;
-          db = obj.SetpointDeadbands{ifb} ;
-          lims = obj.FeedbackSetpointLimits{ifb} ;
-          obj.guihan.Gauge_6.BackgroundColor = 'white' ;
-          if valrel > db(1) && valrel < db(2)
-            obj.guihan.Gauge_6.Value = 50*(valrel/range(db)) ;
-            obj.guihan.EditField_5.BackgroundColor = [0.47,0.67,0.19] ;
-          elseif valrel > lims(1) && valrel<db(1)
-            obj.guihan.Gauge_6.Value = -75 + 50*(1-abs(valrel)/abs(lims(1)-db(1))) ;
-            obj.guihan.EditField_5.BackgroundColor = [0.94,0.94,0.94] ;
-          elseif valrel < lims(2) && valrel > lims(1)
-            obj.guihan.Gauge_6.Value = 25 + 50*abs(valrel)/abs(lims(2)-db(2)) ;
-            obj.guihan.EditField_5.BackgroundColor = [0.94,0.94,0.94] ;
-          elseif valrel<lims(1) 
-            obj.guihan.Gauge_6.Value = 90 ;
-            obj.guihan.EditField_5.BackgroundColor = [0.85,0.33,0.10] ;
-          else
-            obj.guihan.Gauge_6.Value = -90 ;
-            obj.guihan.EditField_5.BackgroundColor = [0.85,0.33,0.10] ;
-          end
-          if obj.GuiEnergyUnits
-            obj.guihan.mmLabel_4.Text = 'MeV' ;
-            if obj.SetpointConversion{ifb}(2)<0
-              obj.guihan.Gauge_6.Value = -obj.guihan.Gauge_6.Value ;
-            end
-            obj.guihan.EditField_5.Value = obj.SetpointConversion{ifb}(1) + valrel * obj.SetpointConversion{ifb}(2) ;
-          else
-            obj.guihan.EditField_5.Value = valrel;
-            obj.guihan.mmLabel_4.Text = 'mm' ;
-          end
+          obj.guihan.Gauge_6.Value = -90 ;
+          obj.guihan.EditField_5.BackgroundColor = [0.85,0.33,0.10] ;
         end
-        if isempty(obj.Feedbacks(ifb).ControlReadVar(1).val)
-          caget(obj.Feedbacks(ifb).ControlReadVar(1));
-        end
-        obj.guihan.EditField_6.Value = obj.Feedbacks(ifb).ControlReadVar(1).val{1} ;
-        obj.guihan.Gauge_16.Value = obj.Feedbacks(ifb).ControlReadVar(1).val{1} ;
-        obj.guihan.Gauge_17.Value = -obj.Feedbacks(ifb).ControlReadVar(1).val{1} ;
-        if obj.Feedbacks(ifb).ControlReadVar.val{1} > obj.FeedbackControlLimits{ifb}(2) || obj.Feedbacks(ifb).ControlReadVar.val{1} < obj.FeedbackControlLimits{ifb}(1)
-          obj.guihan.EditField_6.BackgroundColor='red';
+        if obj.GuiEnergyUnits
+          obj.guihan.mmLabel_4.Text = 'MeV' ;
+          if obj.SetpointConversion{ifb}(2)<0
+            obj.guihan.Gauge_6.Value = -obj.guihan.Gauge_6.Value ;
+          end
+          obj.guihan.EditField_5.Value = obj.SetpointConversion{ifb}(1) + val * obj.SetpointConversion{ifb}(2) ;
         else
-          obj.guihan.EditField_6.BackgroundColor='white';
+          obj.guihan.EditField_5.Value = val;
+          obj.guihan.mmLabel_4.Text = 'mm' ;
         end
-        drawnow limitrate
       end
+      if isempty(obj.Feedbacks(ifb).ControlReadVar(1).val)
+        caget(obj.Feedbacks(ifb).ControlReadVar(1));
+      end
+      obj.guihan.EditField_6.Value = obj.Feedbacks(ifb).ControlReadVar(1).val{1} ;
+      obj.guihan.Gauge_16.Value = obj.Feedbacks(ifb).ControlReadVar(1).val{1} ;
+      obj.guihan.Gauge_17.Value = -obj.Feedbacks(ifb).ControlReadVar(1).val{1} ;
+      if obj.Feedbacks(ifb).ControlReadVar.val{1} > obj.FeedbackControlLimits{ifb}(2) || obj.Feedbacks(ifb).ControlReadVar.val{1} < obj.FeedbackControlLimits{ifb}(1)
+        obj.guihan.EditField_6.BackgroundColor='red';
+      else
+        obj.guihan.EditField_6.BackgroundColor='white';
+      end
+      drawnow limitrate
     end
     function BC11Updated(obj)
       if obj.is_shutdown
         return
       end
-      if ~isempty(obj.guihan)
-        ifb=3;
-        val = obj.Feedbacks(ifb).SetpointVal ;
-        if isempty(val) || isnan(val) || isinf(val)
-          obj.guihan.Gauge_8.Value = 0 ;
-          obj.guihan.EditField_11.BackgroundColor = 'black' ;
-          obj.guihan.EditField_11.Value = 0 ;
-          obj.guihan.Gauge_8.BackgroundColor = 'black' ;
+      ifb=3;
+      val = obj.Feedbacks(ifb).SetpointVal ;
+      if isempty(val) || isnan(val) || isinf(val)
+        obj.guihan.Gauge_8.Value = 0 ;
+        obj.guihan.EditField_11.BackgroundColor = 'black' ;
+        obj.guihan.EditField_11.Value = 0 ;
+        obj.guihan.Gauge_8.BackgroundColor = 'black' ;
+      else
+        offs = obj.SetpointOffsets(ifb) ;
+        valrel = double(val - offs) ;
+        db = obj.SetpointDeadbands{ifb} ;
+        lims = obj.FeedbackSetpointLimits{ifb} ;
+        obj.guihan.Gauge_8.BackgroundColor = 'white' ;
+        if valrel > db(1) && valrel < db(2)
+          obj.guihan.Gauge_8.Value = 50*(valrel/range(db)) ;
+          obj.guihan.EditField_11.BackgroundColor = [0.47,0.67,0.19] ;
+        elseif val > lims(1) && valrel<db(1)
+          obj.guihan.Gauge_8.Value = -75 + 50*(1-abs(val)/abs(lims(1)-db(1))) ;
+          obj.guihan.EditField_11.BackgroundColor = [0.94,0.94,0.94] ;
+        elseif val < lims(2) && val > lims(1)
+          obj.guihan.Gauge_8.Value = 25 + 50*abs(val)/abs(lims(2)-db(2)) ;
+          obj.guihan.EditField_11.BackgroundColor = [0.94,0.94,0.94] ;
+        elseif val<lims(1)
+          obj.guihan.Gauge_8.Value = -90 ;
+          obj.guihan.EditField_11.BackgroundColor = [0.85,0.33,0.10] ;
         else
-          offs = obj.SetpointOffsets(ifb) ;
-          valrel = double(val - offs) ;
-          db = obj.SetpointDeadbands{ifb} ;
-          lims = obj.FeedbackSetpointLimits{ifb} ;
-          obj.guihan.Gauge_8.BackgroundColor = 'white' ;
-          if valrel > db(1) && valrel < db(2)
-            obj.guihan.Gauge_8.Value = 50*(valrel/range(db)) ;
-            obj.guihan.EditField_11.BackgroundColor = [0.47,0.67,0.19] ;
-          elseif valrel > lims(1) && valrel<db(1)
-            obj.guihan.Gauge_8.Value = -75 + 50*(1-abs(valrel)/abs(lims(1)-db(1))) ;
-            obj.guihan.EditField_11.BackgroundColor = [0.94,0.94,0.94] ;
-          elseif valrel < lims(2) && val > lims(1)
-            obj.guihan.Gauge_8.Value = 25 + 50*abs(valrel)/abs(lims(2)-db(2)) ;
-            obj.guihan.EditField_11.BackgroundColor = [0.94,0.94,0.94] ;
-          elseif valrel<lims(1) 
-            obj.guihan.Gauge_8.Value = -90 ;
-            obj.guihan.EditField_11.BackgroundColor = [0.85,0.33,0.10] ;
-          else
-            obj.guihan.Gauge_8.Value = 90 ;
-            obj.guihan.EditField_11.BackgroundColor = [0.85,0.33,0.10] ;
-          end
-          if obj.GuiEnergyUnits
-            obj.guihan.mmLabel_6.Text = 'MeV' ;
-            if obj.SetpointConversion{ifb}(2)<0
-              obj.guihan.Gauge_8.Value = -obj.guihan.Gauge_8.Value ;
-            end
-            obj.guihan.EditField_11.Value = obj.SetpointConversion{ifb}(1) + valrel * obj.SetpointConversion{ifb}(2) ;
-          else
-            obj.guihan.EditField_11.Value = valrel;
-            obj.guihan.mmLabel_6.Text = 'mm' ;
-          end
+          obj.guihan.Gauge_8.Value = 90 ;
+          obj.guihan.EditField_11.BackgroundColor = [0.85,0.33,0.10] ;
         end
-        obj.guihan.EditField_12.Value = obj.Feedbacks(ifb).ControlVal ;
-        obj.guihan.Gauge_9.Value = obj.Feedbacks(ifb).ControlVal ;
-        obj.guihan.Gauge_9.ScaleColors = [1,0,0;1,0,0;0.39,0.83,0.07] ;
-        obj.guihan.Gauge_9.ScaleColorLimits = [-10,obj.FeedbackControlLimits{ifb}(1);obj.FeedbackControlLimits{ifb}(2),obj.FeedbackControlLimits{ifb}(2)+10;obj.FeedbackControlLimits{ifb}(1),obj.FeedbackControlLimits{ifb}(2)] ;
-        obj.guihan.Gauge_9.Limits = [0,obj.FeedbackControlLimits{ifb}(2)+10] ;
-        if obj.Feedbacks(ifb).ControlVal > obj.FeedbackControlLimits{ifb}(2) || obj.Feedbacks(ifb).ControlVal < obj.FeedbackControlLimits{ifb}(1)
-          obj.guihan.EditField_12.BackgroundColor='red';
+        if obj.GuiEnergyUnits
+          obj.guihan.mmLabel_6.Text = 'MeV' ;
+          if obj.SetpointConversion{ifb}(2)<0
+            obj.guihan.Gauge_8.Value = -obj.guihan.Gauge_8.Value ;
+          end
+          obj.guihan.EditField_11.Value = obj.SetpointConversion{ifb}(1) + val * obj.SetpointConversion{ifb}(2) ;
         else
-          obj.guihan.EditField_12.BackgroundColor='white';
+          obj.guihan.EditField_11.Value = val;
+          obj.guihan.mmLabel_6.Text = 'mm' ;
         end
-        drawnow limitrate
       end
+      obj.guihan.EditField_12.Value = obj.Feedbacks(ifb).ControlVal ;
+      obj.guihan.Gauge_9.Value = obj.Feedbacks(ifb).ControlVal ;
+      obj.guihan.Gauge_9.ScaleColors = [1,0,0;1,0,0;0.39,0.83,0.07] ;
+      obj.guihan.Gauge_9.ScaleColorLimits = [-10,obj.FeedbackControlLimits{ifb}(1);obj.FeedbackControlLimits{ifb}(2),obj.FeedbackControlLimits{ifb}(2)+10;obj.FeedbackControlLimits{ifb}(1),obj.FeedbackControlLimits{ifb}(2)] ;
+      obj.guihan.Gauge_9.Limits = [0,obj.FeedbackControlLimits{ifb}(2)+10] ;
+      if obj.Feedbacks(ifb).ControlVal > obj.FeedbackControlLimits{ifb}(2) || obj.Feedbacks(ifb).ControlVal < obj.FeedbackControlLimits{ifb}(1)
+        obj.guihan.EditField_12.BackgroundColor='red';
+      else
+        obj.guihan.EditField_12.BackgroundColor='white';
+      end
+      drawnow limitrate
     end
     function BC11BLUpdated(obj)
       if obj.is_shutdown
         return
       end
-      if ~isempty(obj.guihan)
-        ifb=4;
-        val = obj.Feedbacks(ifb).SetpointVal ;
-        if isempty(val) || isnan(val) || isinf(val)
-          obj.guihan.Gauge_10.Value = 0 ;
-          obj.guihan.EditField_13.BackgroundColor = 'black' ;
-          obj.guihan.EditField_13.Value = 0 ;
-          obj.guihan.Gauge_10.BackgroundColor = 'black' ;
+      ifb=4;
+      val = obj.Feedbacks(ifb).SetpointVal ;
+      if isempty(val) || isnan(val) || isinf(val)
+        obj.guihan.Gauge_10.Value = 0 ;
+        obj.guihan.EditField_13.BackgroundColor = 'black' ;
+        obj.guihan.EditField_13.Value = 0 ;
+        obj.guihan.Gauge_10.BackgroundColor = 'black' ;
+      else
+        offs = obj.SetpointOffsets(ifb) ;
+        valrel = double(val - offs) ;
+        db = obj.SetpointDeadbands{ifb} ;
+        lims = obj.FeedbackSetpointLimits{ifb} ;
+        obj.guihan.Gauge_10.BackgroundColor = 'white' ;
+        if valrel > db(1) && valrel < db(2)
+          obj.guihan.Gauge_10.Value = 50*(valrel/range(db)) ;
+          obj.guihan.EditField_13.BackgroundColor = [0.47,0.67,0.19] ;
+        elseif val > lims(1) && valrel<db(1)
+          obj.guihan.Gauge_10.Value = -75 + 50*(1-abs(val)/abs(lims(1)-db(1))) ;
+          obj.guihan.EditField_13.BackgroundColor = [0.94,0.94,0.94] ;
+        elseif val < lims(2) && val > lims(1)
+          obj.guihan.Gauge_10.Value = 25 + 50*abs(val)/abs(lims(2)-db(2)) ;
+          obj.guihan.EditField_13.BackgroundColor = [0.94,0.94,0.94] ;
+        elseif val<lims(1)
+          obj.guihan.Gauge_10.Value = -90 ;
+          obj.guihan.EditField_13.BackgroundColor = [0.85,0.33,0.10] ;
         else
-          offs = obj.SetpointOffsets(ifb) ;
-          valrel = double(val - offs) ;
-          db = obj.SetpointDeadbands{ifb} ;
-          lims = obj.FeedbackSetpointLimits{ifb} ;
-          obj.guihan.Gauge_10.BackgroundColor = 'white' ;
-          if valrel > db(1) && valrel < db(2)
-            obj.guihan.Gauge_10.Value = 50*(valrel/range(db)) ;
-            obj.guihan.EditField_13.BackgroundColor = [0.47,0.67,0.19] ;
-          elseif valrel > lims(1) && valrel<db(1)
-            obj.guihan.Gauge_10.Value = -75 + 50*(1-abs(valrel)/abs(lims(1)-db(1))) ;
-            obj.guihan.EditField_13.BackgroundColor = [0.94,0.94,0.94] ;
-          elseif valrel < lims(2) && val > lims(1)
-            obj.guihan.Gauge_10.Value = 25 + 50*abs(valrel)/abs(lims(2)-db(2)) ;
-            obj.guihan.EditField_13.BackgroundColor = [0.94,0.94,0.94] ;
-          elseif valrel<lims(1) 
-            obj.guihan.Gauge_10.Value = -90 ;
-            obj.guihan.EditField_13.BackgroundColor = [0.85,0.33,0.10] ;
-          else
-            obj.guihan.Gauge_10.Value = 90 ;
-            obj.guihan.EditField_13.BackgroundColor = [0.85,0.33,0.10] ;
-          end
-          obj.guihan.EditField_13.Value = valrel;
+          obj.guihan.Gauge_10.Value = 90 ;
+          obj.guihan.EditField_13.BackgroundColor = [0.85,0.33,0.10] ;
         end
-        obj.guihan.EditField_14.Value = obj.Feedbacks(ifb).ControlVal ;
-        obj.guihan.Gauge_11.Value = obj.Feedbacks(ifb).ControlVal ;
-        obj.guihan.Gauge_11.ScaleColors = [1,0,0;1,0,0;0.39,0.83,0.07] ;
-        obj.guihan.Gauge_11.ScaleColorLimits = [-10,obj.FeedbackControlLimits{ifb}(1);obj.FeedbackControlLimits{ifb}(2),obj.FeedbackControlLimits{ifb}(2)+10;obj.FeedbackControlLimits{ifb}(1),obj.FeedbackControlLimits{ifb}(2)] ;
-        obj.guihan.Gauge_11.Limits = [0,obj.FeedbackControlLimits{ifb}(2)+10] ;
-        if obj.Feedbacks(ifb).ControlVal > obj.FeedbackControlLimits{ifb}(2) || obj.Feedbacks(ifb).ControlVal < obj.FeedbackControlLimits{ifb}(1)
-          obj.guihan.EditField_14.BackgroundColor='red';
-        else
-          obj.guihan.EditField_14.BackgroundColor='white';
-        end
-        drawnow limitrate
+        obj.guihan.EditField_13.Value = val;
       end
+      obj.guihan.EditField_14.Value = obj.Feedbacks(ifb).ControlVal ;
+      obj.guihan.Gauge_11.Value = obj.Feedbacks(ifb).ControlVal ;
+      obj.guihan.Gauge_11.ScaleColors = [1,0,0;1,0,0;0.39,0.83,0.07] ;
+      obj.guihan.Gauge_11.ScaleColorLimits = [-10,obj.FeedbackControlLimits{ifb}(1);obj.FeedbackControlLimits{ifb}(2),obj.FeedbackControlLimits{ifb}(2)+10;obj.FeedbackControlLimits{ifb}(1),obj.FeedbackControlLimits{ifb}(2)] ;
+      obj.guihan.Gauge_11.Limits = [0,obj.FeedbackControlLimits{ifb}(2)+10] ;
+      if obj.Feedbacks(ifb).ControlVal > obj.FeedbackControlLimits{ifb}(2) || obj.Feedbacks(ifb).ControlVal < obj.FeedbackControlLimits{ifb}(1)
+        obj.guihan.EditField_14.BackgroundColor='red';
+      else
+        obj.guihan.EditField_14.BackgroundColor='white';
+      end
+      drawnow limitrate
     end
     function BC20Updated(obj)
       if obj.is_shutdown
         return
       end
-      if ~isempty(obj.guihan)
-        ifb=5;
-        val = obj.Feedbacks(ifb).SetpointVal ;
-        if isempty(val) || isnan(val) || isinf(val)
-          obj.guihan.Gauge_7.Value = 0 ;
-          obj.guihan.EditField_8.BackgroundColor = 'black' ;
-          obj.guihan.EditField_8.Value = 0 ;
-          obj.guihan.Gauge_7.BackgroundColor = 'black' ;
+      ifb=5;
+      val = obj.Feedbacks(ifb).SetpointVal ;
+      if isempty(val) || isnan(val) || isinf(val)
+        obj.guihan.Gauge_7.Value = 0 ;
+        obj.guihan.EditField_8.BackgroundColor = 'black' ;
+        obj.guihan.EditField_8.Value = 0 ;
+        obj.guihan.Gauge_7.BackgroundColor = 'black' ;
+      else
+        offs = obj.SetpointOffsets(ifb) ;
+        valrel = double(val - offs) ;
+        db = obj.SetpointDeadbands{ifb} ;
+        lims = obj.FeedbackSetpointLimits{ifb} ;
+        obj.guihan.Gauge_7.BackgroundColor = 'white' ;
+        if valrel > db(1) && valrel < db(2)
+          obj.guihan.Gauge_7.Value = 50*(valrel/range(db)) ;
+          obj.guihan.EditField_8.BackgroundColor = [0.47,0.67,0.19] ;
+        elseif val > lims(1) && valrel<db(1)
+          obj.guihan.Gauge_7.Value = -75 + 50*(1-abs(val)/abs(lims(1)-db(1))) ;
+          obj.guihan.EditField_8.BackgroundColor = [0.94,0.94,0.94] ;
+        elseif val < lims(2) && val > lims(1)
+          obj.guihan.Gauge_7.Value = 25 + 50*abs(val)/abs(lims(2)-db(2)) ;
+          obj.guihan.EditField_8.BackgroundColor = [0.94,0.94,0.94] ;
+        elseif val<lims(1)
+          obj.guihan.Gauge_7.Value = 90 ;
+          obj.guihan.EditField_8.BackgroundColor = [0.85,0.33,0.10] ;
         else
-          offs = obj.SetpointOffsets(ifb) ;
-          valrel = double(val - offs) ;
-          db = obj.SetpointDeadbands{ifb} ;
-          lims = obj.FeedbackSetpointLimits{ifb} ;
-          obj.guihan.Gauge_7.BackgroundColor = 'white' ;
-          if valrel > db(1) && valrel < db(2)
-            obj.guihan.Gauge_7.Value = 50*(valrel/range(db)) ;
-            obj.guihan.EditField_8.BackgroundColor = [0.47,0.67,0.19] ;
-          elseif valrel > lims(1) && valrel<db(1)
-            obj.guihan.Gauge_7.Value = -75 + 50*(1-abs(valrel)/abs(lims(1)-db(1))) ;
-            obj.guihan.EditField_8.BackgroundColor = [0.94,0.94,0.94] ;
-          elseif valrel < lims(2) && valrel > lims(1)
-            obj.guihan.Gauge_7.Value = 25 + 50*abs(valrel)/abs(lims(2)-db(2)) ;
-            obj.guihan.EditField_8.BackgroundColor = [0.94,0.94,0.94] ;
-          elseif valrel<lims(1) 
-            obj.guihan.Gauge_7.Value = 90 ;
-            obj.guihan.EditField_8.BackgroundColor = [0.85,0.33,0.10] ;
-          else
-            obj.guihan.Gauge_7.Value = -90 ;
-            obj.guihan.EditField_8.BackgroundColor = [0.85,0.33,0.10] ;
-          end
-          if obj.GuiEnergyUnits
-            obj.guihan.mmLabel_7.Text = 'MeV' ;
-            if obj.SetpointConversion{ifb}(2)<0
-              obj.guihan.Gauge_7.Value = -obj.guihan.Gauge_7.Value ;
-            end
-            obj.guihan.EditField_8.Value = obj.SetpointConversion{ifb}(1) + valrel * obj.SetpointConversion{ifb}(2) ;
-          else
-            obj.guihan.EditField_8.Value = valrel;
-            obj.guihan.mmLabel_7.Text = 'mm' ;
-          end
+          obj.guihan.Gauge_7.Value = -90 ;
+          obj.guihan.EditField_8.BackgroundColor = [0.85,0.33,0.10] ;
         end
-        if isempty(obj.Feedbacks(ifb).ControlReadVar(1).val)
-          caget(obj.Feedbacks(ifb).ControlReadVar(1));
-        end
-        obj.guihan.EditField_17.Value = obj.Feedbacks(ifb).ControlReadVar(1).val{1} ;
-        obj.guihan.Gauge_19.Value = obj.Feedbacks(ifb).ControlReadVar(1).val{1} ;
-        obj.guihan.Gauge_20.Value = -obj.Feedbacks(ifb).ControlReadVar(1).val{1} ;
-        if obj.Feedbacks(ifb).ControlReadVar(1).val{1} > obj.FeedbackControlLimits{ifb}(2) || obj.Feedbacks(ifb).ControlReadVar(1).val{1} < obj.FeedbackControlLimits{ifb}(1)
-          obj.guihan.EditField_17.BackgroundColor='red';
+        if obj.GuiEnergyUnits
+          obj.guihan.mmLabel_7.Text = 'MeV' ;
+          if obj.SetpointConversion{ifb}(2)<0
+            obj.guihan.Gauge_7.Value = -obj.guihan.Gauge_7.Value ;
+          end
+          obj.guihan.EditField_8.Value = obj.SetpointConversion{ifb}(1) + val * obj.SetpointConversion{ifb}(2) ;
         else
-          obj.guihan.EditField_17.BackgroundColor='white';
+          obj.guihan.EditField_8.Value = val;
+          obj.guihan.mmLabel_7.Text = 'mm' ;
         end
-        drawnow limitrate
       end
+      if isempty(obj.Feedbacks(ifb).ControlReadVar(1).val)
+        caget(obj.Feedbacks(ifb).ControlReadVar(1));
+      end
+      obj.guihan.EditField_17.Value = obj.Feedbacks(ifb).ControlReadVar(1).val{1} ;
+      obj.guihan.Gauge_19.Value = obj.Feedbacks(ifb).ControlReadVar(1).val{1} ;
+      obj.guihan.Gauge_20.Value = -obj.Feedbacks(ifb).ControlReadVar(1).val{1} ;
+      if obj.Feedbacks(ifb).ControlReadVar(1).val{1} > obj.FeedbackControlLimits{ifb}(2) || obj.Feedbacks(ifb).ControlReadVar(1).val{1} < obj.FeedbackControlLimits{ifb}(1)
+        obj.guihan.EditField_17.BackgroundColor='red';
+      else
+        obj.guihan.EditField_17.BackgroundColor='white';
+      end
+      drawnow limitrate
+    end
+    function BC14BLUpdated(obj)
+      if obj.is_shutdown
+        return
+      end
+      ifb=6;
+      % Controls values
+      obj.guihan.EditField_16.Value = obj.Feedbacks(ifb).ControlVal ;
+      obj.guihan.Gauge_13.Value = obj.Feedbacks(ifb).ControlVal ;
+      obj.guihan.Gauge_13.ScaleColors = [1,0,0;1,0,0;0.39,0.83,0.07] ;
+      obj.guihan.Gauge_13.ScaleColorLimits = [obj.FeedbackControlLimits{ifb}(1)-10,obj.FeedbackControlLimits{ifb}(1);obj.FeedbackControlLimits{ifb}(2),obj.FeedbackControlLimits{ifb}(2)+10;obj.FeedbackControlLimits{ifb}(1),obj.FeedbackControlLimits{ifb}(2)] ;
+      obj.guihan.Gauge_13.Limits = [obj.FeedbackControlLimits{ifb}(1)-10,obj.FeedbackControlLimits{ifb}(2)+10] ;
+      if obj.Feedbacks(ifb).ControlVal > obj.FeedbackControlLimits{ifb}(2) || obj.Feedbacks(ifb).ControlVal < obj.FeedbackControlLimits{ifb}(1)
+        obj.guihan.EditField_16.BackgroundColor='red';
+      else
+        obj.guihan.EditField_16.BackgroundColor='white';
+      end
+      
+      % Setpoint update
+      val = obj.Feedbacks(ifb).SetpointVal ;
+      if isempty(val) || isnan(val) || isinf(val)
+        obj.guihan.Gauge_12.Value = 0 ;
+        obj.guihan.EditField_15.BackgroundColor = 'black' ;
+        obj.guihan.EditField_15.Value = 0 ;
+        obj.guihan.Gauge_12.BackgroundColor = 'black' ;
+        drawnow limitrate
+        return
+      end
+      offs = obj.SetpointOffsets(ifb) ;
+      valrel = double(val - offs) ;
+      db = obj.SetpointDeadbands{ifb} ;
+      lims = obj.FeedbackSetpointLimits{ifb} ;
+      obj.guihan.Gauge_12.BackgroundColor = 'white' ;
+      if valrel > db(1) && valrel < db(2)
+        obj.guihan.Gauge_12.Value = 50*(valrel/range(db)) ;
+        obj.guihan.EditField_15.BackgroundColor = [0.47,0.67,0.19] ;
+      elseif val > lims(1) && valrel<db(1)
+        obj.guihan.Gauge_12.Value = -75 + 50*abs(val)/abs(lims(1)-(offs-db(1))) ;
+        obj.guihan.EditField_15.BackgroundColor = [0.94,0.94,0.94] ;
+      elseif val < lims(2) && val > lims(1)
+        obj.guihan.Gauge_12.Value = 25 + 50*abs(val)/abs(lims(2)-db(2)) ;
+        obj.guihan.EditField_15.BackgroundColor = [0.94,0.94,0.94] ;
+      elseif val<lims(1)
+        obj.guihan.Gauge_12.Value = -90 ;
+        obj.guihan.EditField_15.BackgroundColor = [0.85,0.33,0.10] ;
+      else
+        obj.guihan.Gauge_12.Value = 90 ;
+        obj.guihan.EditField_15.BackgroundColor = [0.85,0.33,0.10] ;
+      end
+      obj.guihan.EditField_15.Value = val;
+      drawnow limitrate
     end
     function statewatcher(obj)
       if obj.is_shutdown
         return
       end
       if ~isempty(obj.guihan)
-        gh=["StatusLamp" "StatusLamp_2" "StatusLamp_5" "StatusLamp_6" "StatusLamp_4" "StatusLamp_7" "StatusLamp_4"];
-        ght=["NotRunningButton"  "NotRunningButton_5" "NotRunningButton_3" "NotRunningButton_4" "NotRunningButton_6" "NotRunningButton_7" "NotRunningButton_6"];
+        gh=["StatusLamp" "StatusLamp_2" "StatusLamp_5" "StatusLamp_6" "StatusLamp_4" "StatusLamp_7"];
+        ght=["NotRunningButton"  "NotRunningButton_5" "NotRunningButton_3" "NotRunningButton_4" "NotRunningButton_6" "NotRunningButton_7"];
         for ifb=find(obj.UseFeedbacks)
           switch obj.Feedbacks(ifb).state
             case 0
@@ -652,7 +682,7 @@ classdef F2_FeedbackApp < handle & F2_common
         obj.Enabled=bitset(obj.Enabled,1,0);
       end
       % Update feedback settings
-      fbn=["DL1E" "BC14E" "BC11E" "BC11BL" "BC20E"];
+      fbn=["DL1E" "BC14E" "BC11E" "BC11BL" "BC20E" "BC14BL"];
       sp=obj.SetpointOffsets;
       for ifb=find(obj.UseFeedbacks)
         sp(ifb) = obj.pvs.(fbn(ifb)+"_Offset").val{1} ;
@@ -741,12 +771,18 @@ classdef F2_FeedbackApp < handle & F2_common
           obj.Feedbacks(2).SetpointLimits = obj.FeedbackSetpointLimits{2} ;
           obj.Feedbacks(2).SetpointDES = obj.SetpointOffsets(2) ;
           obj.Feedbacks(2).QualVar = PV(obj.pvcntx,'name',"FB2_TMIT",'pvname',"BPMS:LI14:801:TMIT1H",'conv',1e-9) ;
-          obj.Feedbacks(2).ControlStatusVar{1} = PV(obj.pvcntx,'name',"FB2_ControlStatus",'pvname',...
-            obj.BC14E_ControlStatusPV(1), 'pvdatatype', "float" ) ;
+          obj.Feedbacks(2).ControlStatusVar{1} = PV(obj.pvcntx,'name',"FB2_ControlStatus1",'pvname',...
+            obj.BC14E_ControlStatusPV(1)+":ONBEAM10", 'pvdatatype', "float" ) ;
           obj.Feedbacks(2).ControlStatusGood{1} = {1} ;
-          obj.Feedbacks(2).ControlStatusVar{2} = PV(obj.pvcntx,'name',"FB2_ControlStatus",'pvname',...
-            obj.BC14E_ControlStatusPV(2), 'pvdatatype', "float" ) ;
+          obj.Feedbacks(2).ControlStatusVar{2} = PV(obj.pvcntx,'name',"FB2_ControlStatus2",'pvname',...
+            obj.BC14E_ControlStatusPV(2)+":ONBEAM10", 'pvdatatype', "float" ) ;
           obj.Feedbacks(2).ControlStatusGood{2} = {1} ;
+          obj.Feedbacks(2).ControlStatusVar{3} = PV(obj.pvcntx,'name',"FB2_ControlStatus3",'pvname',...
+            obj.BC14E_ControlStatusPV(1)+":STATUS", 'pvdatatype', "float" ) ;
+          obj.Feedbacks(2).ControlStatusGood{3} = {50 80} ;
+          obj.Feedbacks(2).ControlStatusVar{4} = PV(obj.pvcntx,'name',"FB2_ControlStatus4",'pvname',...
+            obj.BC14E_ControlStatusPV(2)+":STATUS", 'pvdatatype', "float" ) ;
+          obj.Feedbacks(2).ControlStatusGood{4} = {50 80} ;
           obj.Feedbacks(2).LimitRate=obj.RateLimit;
           obj.Feedbacks(2).LimitEventRate=obj.RateLimit;
           obj.Feedbacks(2).StatusPV = PV(obj.pvcntx,'name',"fbstatus",'pvname',obj.FbStatusPV,'mode',"rw") ;
@@ -815,18 +851,48 @@ classdef F2_FeedbackApp < handle & F2_common
           obj.Feedbacks(5).SetpointLimits = obj.FeedbackSetpointLimits{5} ;
           obj.Feedbacks(5).SetpointDES = obj.SetpointOffsets(5) ;
           obj.Feedbacks(5).QualVar = PV(obj.pvcntx,'name',"FB5_TMIT",'pvname',"BPMS:LI20:2050:TMIT57",'conv',1e-9) ;
-          obj.Feedbacks(5).ControlStatusVar{1} = PV(obj.pvcntx,'name',"FB5_ControlStatus",'pvname',...
-            obj.BC20E_ControlStatusPV(1), 'pvdatatype', "float" ) ;
+          obj.Feedbacks(5).ControlStatusVar{1} = PV(obj.pvcntx,'name',"FB5_ControlStatus1",'pvname',...
+            obj.BC20E_ControlStatusPV(1)+":ONBEAM10", 'pvdatatype', "float" ) ;
           obj.Feedbacks(5).ControlStatusGood{1} = {1} ;
-          obj.Feedbacks(5).ControlStatusVar{2} = PV(obj.pvcntx,'name',"FB5_ControlStatus",'pvname',...
-            obj.BC20E_ControlStatusPV(2), 'pvdatatype', "float" ) ;
+          obj.Feedbacks(5).ControlStatusVar{2} = PV(obj.pvcntx,'name',"FB5_ControlStatus2",'pvname',...
+            obj.BC20E_ControlStatusPV(2)+":ONBEAM10", 'pvdatatype', "float" ) ;
           obj.Feedbacks(5).ControlStatusGood{2} = {1} ;
+          obj.Feedbacks(5).ControlStatusVar{3} = PV(obj.pvcntx,'name',"FB5_ControlStatus3",'pvname',...
+            obj.BC20E_ControlStatusPV(1)+":STATUS", 'pvdatatype', "float" ) ;
+          obj.Feedbacks(5).ControlStatusGood{3} = {50 80} ;
+          obj.Feedbacks(5).ControlStatusVar{4} = PV(obj.pvcntx,'name',"FB5_ControlStatus3",'pvname',...
+            obj.BC20E_ControlStatusPV(2)+":STATUS", 'pvdatatype', "float" ) ;
+          obj.Feedbacks(5).ControlStatusGood{4} = {50 80} ;
           obj.Feedbacks(5).LimitRate=obj.RateLimit;
           obj.Feedbacks(5).LimitEventRate=obj.RateLimit;
           obj.Feedbacks(5).StatusPV = PV(obj.pvcntx,'name',"fbstatus",'pvname',obj.FbStatusPV,'mode',"rw") ;
           obj.Feedbacks(5).StatusPV_bit = 4 ;
           obj.Feedbacks(5).InvertControlVal = true ;
 %           obj.Feedbacks(5).Debug=1;
+        case 6 % BC14 BLEN
+          Control = SCP_MKB("l2_phase") ;
+          ReadControl = PV(obj.pvcntx,'name',"ControlRB",'pvname',"LI11:KLYS:41:PDES") ;
+          Setpoint = PV(obj.pvcntx,'name',"Setpoint",'pvname',"BLEN:LI14:888:BIMAX",'monitor',true);
+          B=BufferData('Name',"BC14_BunchLength",'DoFilter',obj.SetpointDoFilter(4),...
+            'FilterType',obj.SetpointFilterTypes(4),'MaxDataRate',obj.RateLimit,'autoenable',false);
+          B.DataPV = Setpoint ;
+          obj.Feedbacks(6) = fbSISO({ReadControl,Control},B) ;
+          obj.Feedbacks(6).Kp = obj.FeedbackCoefficients{6}(1);
+          obj.Feedbacks(6).ControlLimits = obj.FeedbackControlLimits{6} ;
+          obj.Feedbacks(6).SetpointLimits = obj.FeedbackSetpointLimits{6} ;
+          obj.Feedbacks(6).SetpointDES = obj.SetpointOffsets(6) ;
+          obj.Feedbacks(6).QualVar = PV(obj.pvcntx,'name',"FB6_TMIT",'pvname',"BPMS:LI14:891:TMIT1H",'conv',1e-9) ;
+%           obj.Feedbacks(6).ControlStatusVar{1} = PV(obj.pvcntx,'name',"FB6_ControlStatus1",'pvname',...
+%             "FCUDKLYS:LI14:4:STATUS " ) ;
+%           obj.Feedbacks(6).ControlStatusGood{1} = {1} ;
+%           obj.Feedbacks(6).ControlStatusVar{2} = PV(obj.pvcntx,'name',"FB6_ControlStatus2",'pvname',...
+%             "FCUDKLYS:LI14:5:STATUS " ) ;
+%           obj.Feedbacks(6).ControlStatusGood{2} = {1} ;
+          obj.Feedbacks(6).LimitRate=obj.RateLimit;
+          obj.Feedbacks(6).LimitEventRate=obj.RateLimit;
+          obj.Feedbacks(6).StatusPV = PV(obj.pvcntx,'name',"fbstatus",'pvname',obj.FbStatusPV,'mode',"rw") ;
+          obj.Feedbacks(6).StatusPV_bit = 5 ;
+          %       obj.Feedbacks(6).Debug=1;
       end
     end
     function shutdown(obj)
@@ -942,7 +1008,7 @@ classdef F2_FeedbackApp < handle & F2_common
       disp('Changing Setpoint Offsets:');
       disp(val);
       if ~isempty(obj.guihan)
-        gh = ["SetpointEditField" "SetpointEditField_2" "SetpointEditField_5" "SetpointEditField_6" "SetpointEditField_4" "SetpointEditField_7" "SetpointEditField_4"];
+        gh = ["SetpointEditField" "SetpointEditField_2" "SetpointEditField_5" "SetpointEditField_6" "SetpointEditField_4" "SetpointEditField_7"];
       end
       for ifb=find(obj.UseFeedbacks)
         obj.Feedbacks(ifb).SetpointDES =  obj.SetpointOffsets(ifb) ;
@@ -958,20 +1024,6 @@ classdef F2_FeedbackApp < handle & F2_common
     function set.Enabled(obj,val)
       disp('Changing Feedback Enabled Status:');
       disp(val);
-      % Extra enable/disable steps for BC11 feedback
-      if isempty(obj.guihan) && any(obj.UseFeedbacks(3:4))
-        if (obj.UseFeedbacks(3) && bitget(val,3)) || (obj.UseFeedbacks(4) && bitget(val,4))
-          fprintf('Enabling BC11 Energy & BL Feedback PVs...\n');
-%           for ipv=1:length(obj.BC11_CALCPV)
-%             lcaPutNoWait(char(obj.BC11_CALCPV(ipv)),'.5 second');
-%           end
-        elseif (~bitget(val,3) || ~obj.UseFeedbacks(3)) && (~obj.UseFeedbacks(4) || ~bitget(val,4))
-          fprintf('Disabling BC11 Energy & BL Feedback PVs...\n');
-%           for ipv=1:length(obj.BC11_CALCPV)
-%             lcaPutNoWait(char(obj.BC11_CALCPV(ipv)),'Passive');
-%           end
-        end
-      end
       if ~isempty(obj.guihan)
         switchid=["Switch" "Switch_2" "Switch_5" "Switch_6" "Switch_4" "Switch_7"];
       end
@@ -1050,11 +1102,11 @@ classdef F2_FeedbackApp < handle & F2_common
     function pv = get.BC14E_ControlStatusPV(obj)
       switch obj.BC14E_mkb
         case "BC14_ENERGY_4AND5"
-          pv = ["FCUDKLYS:LI14:4:ONBEAM10" "FCUDKLYS:LI14:5:ONBEAM10"] ;
+          pv = ["FCUDKLYS:LI14:4" "FCUDKLYS:LI14:5"] ;
         case "BC14_ENERGY_5AND6"
-          pv = ["FCUDKLYS:LI14:5:ONBEAM10" "FCUDKLYS:LI14:6:ONBEAM10"] ;
+          pv = ["FCUDKLYS:LI14:5" "FCUDKLYS:LI14:6"] ;
         case "BC14_ENERGY_4AND6"
-          pv = ["FCUDKLYS:LI14:4:ONBEAM10" "FCUDKLYS:LI14:6:ONBEAM10"] ;
+          pv = ["FCUDKLYS:LI14:4" "FCUDKLYS:LI14:6"] ;
       end
     end
     function set.BC20E_mkb(obj,mkname)
@@ -1104,11 +1156,11 @@ classdef F2_FeedbackApp < handle & F2_common
     function pv = get.BC20E_ControlStatusPV(obj)
       switch obj.BC20E_mkb
         case "S20_ENERGY_3AND4"
-          pv = ["FCUDKLYS:LI19:3:ONBEAM10" "FCUDKLYS:LI19:4:ONBEAM10"] ;
+          pv = ["FCUDKLYS:LI19:3" "FCUDKLYS:LI19:4"] ;
         case "S20_ENERGY_4AND5"
-          pv = ["FCUDKLYS:LI19:4:ONBEAM10" "FCUDKLYS:LI19:5:ONBEAM10"] ;
+          pv = ["FCUDKLYS:LI19:4" "FCUDKLYS:LI19:5"] ;
         case "S20_ENERGY_4AND6"
-          pv = ["FCUDKLYS:LI19:4:ONBEAM10" "FCUDKLYS:LI19:6:ONBEAM10"] ;
+          pv = ["FCUDKLYS:LI19:4" "FCUDKLYS:LI19:6"] ;
       end
     end
   end
