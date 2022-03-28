@@ -1035,7 +1035,7 @@ classdef F2_MatchingApp < handle & F2_common
         end
         emitData.sigma_des(iw) = sqrt(S1(1,1)) ;
       end
-      txt_results{11} = '=================================================' ;
+      txt_results{11} =  sprintf('----\n');
       txt_results{12} = sprintf('SIGMA_DES   = %10.4f %10.4f %10.4f %10.4f um\n',emitData.sigma_des.*1e6);
       
       % Write to local emittance properties

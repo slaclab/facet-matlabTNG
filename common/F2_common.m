@@ -20,16 +20,17 @@ classdef F2_common < handle
   end
   methods
     function beamrate = get.beamrate(obj)
+      persistent br
       if ~obj.monirate
         lcaSetMonitor('IOC:SYS1:MP01:MS_RATE');
         obj.monirate=true;
-        beamrate = double(regexp(string(lcaGet('IOC:SYS1:MP01:MS_RATE',1)),'(\d+)','match')) ;
+        br = double(regexp(string(lcaGet('IOC:SYS1:MP01:MS_RATE',1)),'(\d+)','match')) ;
       else
         if lcaNewMonitorValue('IOC:SYS1:MP01:MS_RATE')
-          beamrate = double(regexp(string(lcaGet('IOC:SYS1:MP01:MS_RATE',1)),'(\d+)','match')) ;
+          br = double(regexp(string(lcaGet('IOC:SYS1:MP01:MS_RATE',1)),'(\d+)','match')) ;
         end
       end
-      beamrate=uint8(beamrate);
+      beamrate=uint8(br);
     end
     function dname = get.datadir(obj) %#ok<MANU>
       ds=datestr(now,29);
