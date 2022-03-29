@@ -1,7 +1,7 @@
 function [newlaserCentroids,mirrorMovements,laserOffset] = alignLaserToSetpoint(dataStruct,requestedSetpoint,calibrationMatrix,k_p,k_i,app)
 % Note - This does not include the integral term for the feedback
 if regexp(dataStruct.camerapvs{1},'CAMR:LT20:0006')% Special case for MPA near and far
-    nshots = 50;% Average over many shots for MPA near and far
+    nshots = 20;% Average over many shots for MPA near and far
 else
     nshots = 3;% set number of shots for averaging 
 end
@@ -32,7 +32,7 @@ end
  %       err_new(jj) = laserOffset(jj)./(requestedSetpoint(jj)-initialCentroid(jj));% Normalized error for integral term in PID
        laserOffset(jj) = 1.0*round(laserOffset(jj)*100)/100; % Round to nearest hundredth of a pixel 
         % Set the offset to zero if it's smaller than 0.5 pixels
-        if abs(laserOffset(jj))<0.5
+        if abs(laserOffset(jj))<0.5%set less than 0.5 pix offset to zero
             laserOffset(jj) = 0.0;
         end 
     end    
@@ -49,8 +49,12 @@ end
 %         tols(1+2*(jj-1))=app.refCamSettings.ROIsizeX(idx)<0.5*abs(laserOffset(1+2*(jj-1))); 
 %         tols(2*jj)=app.refCamSettings.ROIsizeY(idx)<0.5*abs(laserOffset(2*jj));
 %     end
-
-    tols = any(abs(laserOffset)>app.maxMisalignmentTolerance);
+    if regexp(dataStruct.camerapvs{1},'CAMR:LT20:0006')% Special case for MPA near and far
+        tols = any(abs(laserOffset)>app.MPANearFarmaxMisalignmentTolerancePV); % Average over many shots for MPA near and far
+    else
+        tols = any(abs(laserOffset)>app.maxMisalignmentTolerance); 
+    end
+    %tols = any(abs(laserOffset)>app.maxMisalignmentTolerance);
     if any(tols)% If requested move is too large exit
     str = ['Warning - Laser offset is larger than the max tolerance of ', strcat(num2str(app.maxMisalignmentTolerance),' pix'),...
         'Alignment skipped for ',lcaGetSmart([dataStruct.camerapvs{1},':NAME'])];
@@ -63,8 +67,7 @@ end
     % Calculate the mirror correction movements
     %mirrorMovements = calibrationMatrix\laserOffset';% Solve linear system - the correction is proportional to the offset
     mirrorMovements = lscov(calibrationMatrix,laserOffset');% Solve linear system
-    % If you want you can add the integral term to improve convergence speed of PID        
-       
+    % If you want you can add the integral term to improve convergence speed of PID               
     %mirrorMovements = k_p*mirrorMovements+k_i*sign(mirrorMovements).*abs(trapz(err))';
     mirrorMovements = k_p*mirrorMovements;
     
@@ -74,8 +77,7 @@ end
     mirrorMovements(isnan(mirrorMovements)) = 0;
     end
     mirrorMovements = 1.0*round(mirrorMovements*1000)/1000; % Round to nearest thousandth revolution    
-
-    
+   
     % Step 4: Move the beam with mirrors using calculated correction
     if isfield(dataStruct,'channel_index')
     channel_index = dataStruct.channel_index;
@@ -111,25 +113,28 @@ end
         
         % Move the motor by setting the tweak value - this is off during GUI testing
          lcaPutSmart([dataStruct.motorpvs,':CH',num2str(channel),':MOTOR.TWV'], mirrorMovements(n));% Set tweak
-         lcaPutSmart([dataStruct.motorpvs,':CH',num2str(channel),':MOTOR.TWF'],1.0);% Move mot
-         motor_status= lcaGetSmart([dataStruct.motorpvs,':CH',num2str(channel),':MOTOR.MSTA']);
-         while motor_status ~=2 
-         motor_status= lcaGetSmart([dataStruct.motorpvs,':CH',num2str(channel),':MOTOR.MSTA']);
          
+         lcaPutSmart([dataStruct.motorpvs,':CH',num2str(channel),':MOTOR.TWF'],1.0);% Move motor
+         
+         motor_status= lcaGetSmart([dataStruct.motorpvs,':CH',num2str(channel),':MOTOR.MSTA']);
+         while motor_status ~=2 % motor_status = 2 means it's done moving
+         motor_status= lcaGetSmart([dataStruct.motorpvs,':CH',num2str(channel),':MOTOR.MSTA']);
+         drawnow()
          % Check that someone didn't stop the auto-alignment mid
          % motor move - if so stop moving and exit - this doesnt work right now
 %          if lcaGetSmart(app.feedbackExitPV)
 %             app.LogTextArea.Value = ['Auto-Alignment Stopped',app.LogTextArea.Value(:)'];
-%             app.StatusLamp.Color = 'Red';
+%             app.StatusLamp.Color = 'Red';drawnow()
+%             %lcaPutSmart(motor_status, 2);% Stop motor
 %             lcaPutSmart([dataStruct.motorpvs,':CH',num2str(channel),':MOTOR.TWV'], 0);% Set tweak to zero
 %             newLaserCentroids = laserCentroids;
 %             mirrorMovements = 0;
-%             continue
+%             return
 %          end
-         
+
          end
          motorPositions(n) = lcaGetSmart([dataStruct.motorpvs,':CH',num2str(channel),':MOTOR']);
-        pause(.5)
+        pause(0.1)
 
     end
     % Calculate the new beam position

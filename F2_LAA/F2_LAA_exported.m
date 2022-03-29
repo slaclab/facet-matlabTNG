@@ -60,6 +60,7 @@ classdef F2_LAA_exported < matlab.apps.AppBase
             'SIOC:SYS1:ML01:AO196','SIOC:SYS1:ML01:AO197'}
         
         maxMisalignmentTolerancePV = 'SIOC:SYS1:ML01:AO200';
+        MPANearFarmaxMisalignmentTolerancePV = 'SIOC:SYS1:ML01:AO189';
         
         fitMethod = 2;% Centroid fit method for profmon_process
         umPerPixel ;
@@ -317,7 +318,7 @@ classdef F2_LAA_exported < matlab.apps.AppBase
                     end
                     else
                     lcaGetSmart(app.feedbackPausePV);                  
-                    if lcaGetSmart(app.feedbackExitPV);continue;end %Makes sure you don't get stuck on pause and exit PVs = 1
+                    if lcaGetSmart(app.feedbackExitPV);break;end %Makes sure you don't get stuck on pause and exit PVs = 1
                    end 
                 end
 
