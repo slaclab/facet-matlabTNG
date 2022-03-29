@@ -50,7 +50,7 @@ end
 %         tols(2*jj)=app.refCamSettings.ROIsizeY(idx)<0.5*abs(laserOffset(2*jj));
 %     end
     if regexp(dataStruct.camerapvs{1},'CAMR:LT20:0006')% Special case for MPA near and far
-        tols = any(abs(laserOffset)>app.MPANearFarmaxMisalignmentTolerancePV); % Average over many shots for MPA near and far
+        tols = any(abs(laserOffset)>app.MPANearFarmaxMisalignmentTolerance); % Average over many shots for MPA near and far
     else
         tols = any(abs(laserOffset)>app.maxMisalignmentTolerance); 
     end

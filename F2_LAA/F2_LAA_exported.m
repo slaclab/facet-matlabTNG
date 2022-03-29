@@ -69,6 +69,7 @@ classdef F2_LAA_exported < matlab.apps.AppBase
         k_p = [0.1,0.1,0.01,0.2,0.05,0.2,0.2,0.2,0.2];% Default Proportional Gains
         k_i = 0.0;% Integral gain term is set to zero for now - can be included later
         maxMisalignmentTolerance;
+        MPANearFarmaxMisalignmentTolerance;
         refCamSettings = [];
         refSumCts = []; 
         refRMSVals = [];
@@ -275,6 +276,7 @@ classdef F2_LAA_exported < matlab.apps.AppBase
                     
                     app.k_p = lcaGetSmart(app.gainPVs);% Update gain vals
                     app.maxMisalignmentTolerance = lcaGetSmart(app.maxMisalignmentTolerancePV);% Update max misalignment tolerance
+                    app.MPANearFarmaxMisalignmentTolerance = lcaGetSmart(app.MPANearFarmaxMisalignmentTolerancePV);% Update max misalignment tolerance
                     
                     if any(isnan(app.k_p))                     
                          app.LogTextArea.Value =  ['One or more invalid Gain values. Skipping alignment',...
