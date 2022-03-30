@@ -1,9 +1,5 @@
 classdef F2_OrbitApp < handle & F2_common
   properties
-    BPMS % Storage for F2_bpms object
-    aobj % Storage for GUI application object
-    LM % LucretiaModel object
-    LiveModel % LiveModel object
     bpmid uint16 % Master list of BPM IDs
     xcorid uint16 % Master list of x corrector IDs
     ycorid uint16 % Master list of y corrector IDs
@@ -24,7 +20,7 @@ classdef F2_OrbitApp < handle & F2_common
     badxcors logical
     badycors logical
     RM % Response matrices X/YCOR -> BPMS [2*nbpm,ncor]
-    corsolv string {mustBeMember(corsolv,["lscov","pinv","lsqminnorm","svd","lsqlin"])} = "lscov" % solver to use for orbit correction
+    corsolv string {mustBeMember(corsolv,["lscov","pinv","lsqminnorm","svd","lsqlin"])} = "lsqlin" % solver to use for orbit correction
     solvtol % tolerance for orbit solution QR factorization tolerance (only use if set)
     usex logical = true % apply x corrections when asked?
     usey logical = true % apply y corrections when asked?
@@ -34,7 +30,14 @@ classdef F2_OrbitApp < handle & F2_common
     usebpmbuff logical = true % If true, use buffered BPM data, else use EPICS-based non-synchronous data
     dormsplot logical = false % if true, plot rms data instead of mean orbit
     fitele uint16 % fit element
-    CorrectionOffset(1,5) = [0 0 0 0 0] % Desired correction offset when using domodelfit
+    CorrectionOffset(4,1) = [0; 0; 0; 0;] % Desired correction offset when using domodelfit
+    npulse {mustBePositive} = 50 % default/GUI value for number of pulses of BPM data to take
+  end
+  properties(Transient)
+    BPMS % Storage for F2_bpms object
+    aobj % Storage for GUI application object
+    LM % LucretiaModel object
+    LiveModel % LiveModel object
   end
   properties(SetAccess=private)
     cordat_x % XCOR data
@@ -46,14 +49,25 @@ classdef F2_OrbitApp < handle & F2_common
     ebpms_disp(1,4) % dispersion at energy BPMS in mm
     DispData % Dispersion data calculated with svddisp method (mm)
     DispFit % Fitted [dispersion_x; dispersion_y] at each BPM in selected regopm calculated with plotdisp method
+    ConfigName string = "none"
+    ConfigDate
   end
   properties(SetAccess=private,Hidden)
     bdesx_restore % bdes values store when written for undo function
     bdesy_restore % bdes values store when written for undo function
+    RefOrbitConfig % {date,id,xref,yref}
+    RefOrbitLocal % {date,id,xref,yref}
   end
   properties(SetObservable)
     UseRegion(1,11) logical = true(1,11) % ["INJ";"L0";"DL1";"L1";"BC11";"L2";"BC14";"L3";"BC20";"FFS";"SPECTDUMP"]
     calcperformed logical =false
+    UseRefOrbit string {mustBeMember(UseRefOrbit,["none","local","config"])} = "none"
+  end
+  properties(Dependent)
+    RefOrbit % Reference orbit [id,xref,yref]
+    RefOrbitDate
+    Configs
+    ConfigsDate
   end
   properties(Constant)
     ebpms string = ["BPM10731" "BPM11333" "BPM14801" "M3E"] % energy BPMs for DL1, BC11, BC14 & BC20
@@ -63,6 +77,7 @@ classdef F2_OrbitApp < handle & F2_common
       "YC11105" "YC11141" "YC11203" "YC11273" "YC11305" "YC11321" "YC11365" "YC11399" ]
     klys_bsa = "KLYS:LI10:41:FB:FAST_AACT3" % L0B
     klys_cntrl = "KLYS:LI10:41:ADES" % L0B
+    OrbitConfigDir string = F2_common.confdir + "/F2_Orbit" ;
   end
   methods
     function obj = F2_OrbitApp(appobj)
@@ -123,6 +138,14 @@ classdef F2_OrbitApp < handle & F2_common
         obj.ebpms_disp(ibpm) = T.etax(bpmind)*1e3 ;
       end
       obj.fitele = length(BEAMLINE) ;
+      % Populate Config menu
+      if ~isempty(obj.aobj)
+        confs=obj.Configs;
+        dates=string(datestr(obj.ConfigsDate));
+        for iconf=1:length(confs)
+          uimenu(obj.aobj.SelectMenu,'Text',confs(iconf)+"  ("+dates(iconf)+")",'Tag',confs(iconf),'MenuSelectedFcn',@(source,event) obj.GuiConfigLoad(event));
+        end
+      end
     end
     function acquire(obj,npulse)
       %ACQUIRE Get bpm and corrector data
@@ -181,7 +204,7 @@ classdef F2_OrbitApp < handle & F2_common
       % If using model fitting, find solution to correct fitted orbit at end of region
       if obj.domodelfit
         iend=obj.LM.iend;
-        [~,X1] = obj.orbitfit ; X=X1(1:4); X=-X(:);
+        [~,X1] = obj.orbitfit ; X=X1(1:4); X=obj.CorrectionOffset-X(:);
         ixc = double(obj.xcorid(obj.usexcor)) ; nxc=length(ixc);
         iyc = double(obj.ycorid(obj.useycor)) ;
         icor=[ixc(:); iyc(:)];
@@ -368,33 +391,6 @@ classdef F2_OrbitApp < handle & F2_common
           end
         end
       end
-    end
-    function set.UseRegion(obj,val)
-      obj.UseRegion=val;
-      obj.LM.UseRegion=val;
-      obj.usebpm = false(size(obj.bpmid)) ;
-      obj.usexcor = false(size(obj.xcorid)) ;
-      obj.useycor = false(size(obj.ycorid)) ;
-      obj.LM.ModelClasses="MONI";
-      obj.usebpm=false(size(obj.usebpm));
-      obj.usebpm(~obj.badbpms & ismember(obj.bpmid,obj.LM.ModelID)) = true ;
-      obj.usebpm(~ismember(obj.bpmid,obj.BPMS.modelID))=false;
-      obj.LM.ModelClasses="XCOR";
-      obj.usexcor(~obj.badxcors & ismember(obj.xcorid,obj.LM.ModelID)) = true ;
-      obj.LM.ModelClasses="YCOR";
-      obj.useycor(~obj.badycors & ismember(obj.ycorid,obj.LM.ModelID)) = true ;
-      obj.calcperformed=false;
-      obj.fitele=obj.LM.iend;
-    end
-    function set.calcperformed(obj,val)
-      if ~isempty(obj.aobj)
-        if val
-          obj.aobj.DoCorrectionButton.Enable=true;
-        else
-          obj.aobj.DoCorrectionButton.Enable=false;
-        end
-      end
-      obj.calcperformed=val;
     end
     function [freq_x,fft_x,freq_y,fft_y,modeamp_x,modeamp_y]=svdfft(obj,imode)
       dat = obj.svdanal(imode) ;
@@ -612,6 +608,148 @@ classdef F2_OrbitApp < handle & F2_common
         X1 = R * xf ;
       end
         
+    end
+    function StoreRef(obj)
+      %STOREREF Store new reference orbit from existing data
+      [xm,ym,~,~,~,id] = obj.GetOrbit ;
+      obj.RefOrbitLocal = {now id(:) xm(:) ym(:)} ;
+    end
+    function ConfigSave(obj,name)
+      %CONFIGSAVE Store settings in config file
+      %ConfigSave() Overwrite current config file
+      %ConfigSave(NewConfigName) Write new config file
+      if ~exist('name','var') % default is overwrite current config
+        if obj.ConfigName~="none"
+          name = obj.ConfigName ;
+        else
+          return
+        end
+      end
+      fn = obj.OrbitConfigDir+"/conf_" + name + ".mat" ;
+      OrbitApp = obj ;
+      % Get reference orbit to store
+      reforbit = obj.RefOrbit ;
+      save(fn,'OrbitApp','reforbit');
+    end
+    function ConfigLoad(obj,name)
+      %CONFIGLOAD Restore settings from saved config file
+      if name=="none"
+        return
+      end
+      if ~ismember(name,obj.Configs)
+        error('No matching config file')
+      end
+      fprintf('Loading configuration file: %s\n',name);
+      fn = obj.OrbitConfigDir+"/conf_" + name + ".mat" ;
+      try
+        load(fn,'OrbitApp');
+      catch ME
+        fprintf(2,'Error loading config: %s\n',name);
+        throw(ME);
+      end
+      % Set region
+      obj.UseRegion = OrbitApp.UseRegion ;
+      % Set BPM list
+      obj.usebpm = ismember(obj.bpmnames,OrbitApp.bpmnames(OrbitApp.usebpm));
+      % Set corrector lists
+      obj.usexcor = ismember(obj.xcornames,OrbitApp.xcornames(OrbitApp.usexcor));
+      obj.useycor = ismember(obj.ycornames,OrbitApp.ycornames(OrbitApp.useycor));
+      % Clear data
+      obj.cordat_x = [] ;
+      obj.cordat_y = [] ;
+      obj.dtheta_x = [] ;
+      obj.dtheta_y = [] ;
+      obj.xbpm_cor = [] ;
+      obj.ybpm_cor = [] ;
+      obj.ebpms_disp = zeros(1,4) ;
+      obj.DispData = [] ;
+      obj.DispFit = [] ;
+      % Load everything else...
+      restorelist=["corsolv" "solvtol" "usex" "usey" "nmode" "corplottype" "domodelfit" "usebpmbuff" "dormsplot"  "fitele" "CorrectionOffset" "UseRefOrbit" "npulse"] ;
+      for ilist=1:length(restorelist)
+        obj.(restorelist(ilist)) = OrbitApp.(restorelist(ilist)) ;
+      end
+      obj.ConfigName = name ;
+    end
+    function ConfigDelete(obj,name)
+      %CONFIGDELETE Remove a configuration file
+      %ConfigDelete() Remove current config file
+      %ConfigDelete(ConfigName) Remove named configuration file
+      
+      if ~exist('name','var;')
+        name=obj.ConfigName;
+      end
+      delete(obj.OrbitConfigDir+"/conf_"+name+".mat") ;
+      obj.ConfigName = "none" ;
+      
+    end
+    function GuiConfigLoad(obj,event)
+      %GUICONFIGLOAD callback from GUI menu to load a config
+      global BEAMLINE
+      conf = event.Source.Tag;
+      obj.aobj.FACETIIOrbitToolconfignoneUIFigure.Name = sprintf("FACET-II Orbit Tool [config = %s]",conf);
+      for imenu=1:length(obj.aobj.SelectMenu.Children)
+        obj.aobj.SelectMenu.Children(imenu).Checked=0;
+      end
+      event.Source.Checked=1;
+      obj.ConfigLoad(conf); % Load objecty properties from file
+      % Update GUI fields
+      % --- Region buttons
+      value=obj.UseRegion;
+      obj.aobj.INJButton.Value=value(1);
+      obj.aobj.L0Button.Value=value(2);
+      obj.aobj.DL1Button.Value=value(3);
+      obj.aobj.L1Button.Value=value(4);
+      obj.aobj.BC11Button.Value=value(5);
+      obj.aobj.L2Button.Value=value(6);
+      obj.aobj.BC14Button.Value=value(7);
+      obj.aobj.L3Button.Value=value(8);
+      obj.aobj.BC20Button.Value=value(9);
+      obj.aobj.FFSButton.Value=value(10);
+      obj.aobj.SPECTButton.Value=value(11);
+      % --- Global fields
+      obj.aobj.NPulseEditField.Value = obj.npulse ;
+      obj.aobj.NReafEditField.Value = 0 ;
+      obj.aobj.UseBufferedDataCheckBox.Value = obj.usebpmbuff ;
+      obj.WriteGuiListBox(); % Updates BPM & corrector list boxes
+      % --- Orbit Tab
+      obj.aobj.EditField_13.Value = BEAMLINE{obj.aobj.aobj.fitele}.Name ;
+      obj.aobj.EditField_4.Value = obj.CorrectionOffset(1) ;
+      obj.aobj.EditField_6.Value = obj.CorrectionOffset(2) ;
+      obj.aobj.EditField_8.Value = obj.CorrectionOffset(3) ;
+      obj.aobj.EditField_10.Value = obj.CorrectionOffset(4) ;
+      for n=[3 5 7 9 11]
+        obj.aobj.(sprintf('EditField_%d',n)).Value = 0 ;
+      end
+      switch obj.UseRefOrbit
+        case "none"
+          obj.aobj.DropDown_4.Value = 1 ;
+        case "local"
+          obj.aobj.DropDown_4.Value = 2 ;
+        case "config"
+          obj.aobj.DropDown_4.Value = 3 ;
+      end
+      obj.aobj.TolEditField.Value = obj.solvtol ;
+      switch obj.corsolv % string {mustBeMember(corsolv,["lscov","pinv","lsqminnorm","svd","lsqlin"])}
+        case "lscov"
+          obj.aobj.lscovButton.Value=1;
+        case "pinv"
+          obj.aobj.pinvButton.Value=1;
+        case "lsqminnorm"
+          obj.aobj.lsqminnormButton.Value=1;
+        case "svd"
+          obj.aobj.svdButton.Value=1;
+        case "lsqlin"
+          obj.aobj.lsqlinButton=1;
+      end
+      % --- Correctors Tab
+      switch obj.corplottype
+        case "stem"
+          obj.aobj.StemButton.Value = 1 ;
+        case "quiver"
+          obj.aobj.QuiverButton.Value = 1 ;
+      end
+      drawnow
     end
     % Plotting functions
     function plottol(obj)
@@ -1014,6 +1152,90 @@ classdef F2_OrbitApp < handle & F2_common
       ym = mean(obj.BPMS.ydat,2,'omitnan') ; ym=ym(use);
       xstd = std(obj.BPMS.xdat,[],2,'omitnan') ; xstd=xstd(use);
       ystd = std(obj.BPMS.ydat,[],2,'omitnan') ; ystd=ystd(use);
+      if ~isempty(obj.RefOrbit)
+        rid = ismember(id,obj.RefOrbit(:,1)) ;
+        xm = xm(rid) ; xstd=xstd(rid); ym = ym(rid); ystd=ystd(rid);
+        xm = xm - obj.RefOrbit(:,2) ; ym = ym - obj.RefOrbit(:,3) ;
+        id=id(rid);
+        use = use & ismember(obj.BPMS.modelID,id);
+      end
+    end
+    function WriteGuiListBox(obj)
+      %WRITEGUILISTBOX Update BPM and Corrector list boxes on gui
+      % List all BPMs / correctors in region and show selected ones
+      obj.LM.ModelClasses="MONI";
+      usereg=false(size(obj.usebpm));
+      usereg(~obj.badbpms & ismember(obj.bpmid,obj.LM.ModelID)) = true ;
+      obj.aobj.ListBox.Items = obj.bpmnames(usereg) ;
+      obj.aobj.ListBox.ItemsData = obj.bpmid(usereg) ;
+      obj.aobj.ListBox.Value = obj.bpmid(obj.usebpm) ;
+      obj.LM.ModelClasses="XCOR";
+      usereg=false(size(obj.usexcor));
+      usereg(~obj.badxcors & ismember(obj.xcorid,obj.LM.ModelID)) = true ;
+      obj.aobj.ListBox_2.Items = obj.xcornames(usereg) ;
+      obj.aobj.ListBox_2.ItemsData = obj.xcorid(usereg) ;
+      obj.aobj.ListBox_2.Value = obj.xcorid(obj.usexcor) ;
+      obj.aobj.ListBox_3.Items = obj.ycornames(usereg) ;
+      obj.aobj.ListBox_3.ItemsData = obj.ycorid(usereg) ;
+      obj.aobj.ListBox_3.Value = obj.ycorid(obj.useycor) ;
+    end
+  end
+  %set/get
+  methods
+    function set.UseRegion(obj,val)
+      obj.UseRegion=val;
+      obj.LM.UseRegion=val;
+      obj.usebpm = false(size(obj.bpmid)) ;
+      obj.usexcor = false(size(obj.xcorid)) ;
+      obj.useycor = false(size(obj.ycorid)) ;
+      obj.LM.ModelClasses="MONI";
+      obj.usebpm=false(size(obj.usebpm));
+      obj.usebpm(~obj.badbpms & ismember(obj.bpmid,obj.LM.ModelID)) = true ;
+      obj.usebpm(~ismember(obj.bpmid,obj.BPMS.modelID))=false;
+      obj.LM.ModelClasses="XCOR";
+      obj.usexcor(~obj.badxcors & ismember(obj.xcorid,obj.LM.ModelID)) = true ;
+      obj.LM.ModelClasses="YCOR";
+      obj.useycor(~obj.badycors & ismember(obj.ycorid,obj.LM.ModelID)) = true ;
+      obj.calcperformed=false;
+      obj.fitele=obj.LM.iend;
+    end
+    function set.calcperformed(obj,val)
+      if ~isempty(obj.aobj)
+        if val
+          obj.aobj.DoCorrectionButton.Enable=true;
+        else
+          obj.aobj.DoCorrectionButton.Enable=false;
+        end
+      end
+      obj.calcperformed=val;
+    end
+    function orb = get.RefOrbit(obj)
+      switch obj.UseRefOrbit
+        case "none"
+          orb=[];
+        case "local"
+          orb = [obj.RefOrbitLocal{2} obj.RefOrbitLocal{3} obj.RefOrbitLocal{4}];
+        case "config"
+          orb = [obj.RefOrbitConfig{2} obj.RefOrbitConfig{3} obj.RefOrbitConfig{4}];
+      end
+    end
+    function dt = get.RefOrbitDate(obj)
+      switch obj.UseRefOrbit
+        case "none"
+          dt=[];
+        case "local"
+          dt = obj.RefOrbitLocal{1} ;
+        case "config"
+          dt = obj.RefOrbitConfig{1} ;
+      end
+    end
+    function names = get.Configs(obj)
+      d = dir(obj.OrbitConfigDir+"/conf_*") ;
+      names = regexprep(string({d.name}),["conf_" "\.mat"],"") ;
+    end
+    function dates = get.ConfigsDate(obj)
+      d = dir(obj.OrbitConfigDir+"/conf_*") ;
+      dates = datenum({d.date}) ;
     end
   end
 end
