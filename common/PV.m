@@ -13,7 +13,7 @@ classdef PV < handle
     gettime logical = false % return database write time info
     name string = "none" % user supplied name for PV
     pvname string = "none" % Control system PV string (can be a vector associating this PV to multiple control PVs)
-    monitor=false; % Flag this PV to be monitored
+    monitor logical = false; % Flag this PV to be monitored
     debug uint8 {mustBeMember(debug,[0,1,2])} = 0 % 0=live, 1=read only, 2=no connection
     units string = "none" % User specified units
     conv double % Scalar Conversion factor PV -> reported value or vector of polynomial coefficients (for use with polyval)
@@ -28,11 +28,11 @@ classdef PV < handle
     putwait logical = false % wait for confirmation of pvput command
     timeout double {mustBePositive} = 3 % timout in s for waiting for a new value asynchrounously
     RunStartDelay = 3 % Wait this long after issuing Run method command to start polling of PVs (e.g. to allow startup scripts to complete)
-    ArchiveDate(1,6) = [2021,7,1,12,1,1] % [yr,mnth,day,hr,min,sec]
   end
   properties(SetObservable)
+    ArchiveDate(2,6) = [2021,7,1,12,1,1;2021,8,1,12,1,1] % [yr,mnth,day,hr,min,sec] row 1 for UseArchive=1, range row 1 -> row 2 for UseArchive=2
     guihan = 0 % gui handle to assoicate with this PV (e.g. to write out a variable or control a switch etc) (can be vector of handles)
-    UseArchive logical = false % Extract data from archive if true, else get live data
+    UseArchive uint8 = 0 % 1: Extract data from archive, matching date ArchiveDate(1,:) 2: Extract all data in date range ArchiveDate(1,:) - ArchiveDate(2,:)
     pvdatatype % Set as "string", "float", "int" or "double" to override default PV data type - cell array when more than 1 PV per object
   end
   properties(SetAccess=protected)
@@ -269,14 +269,24 @@ classdef PV < handle
         if obj.type == PVtype.EPICS && islogical(obj.channel{ipv}) && ~obj.channel{ipv}
           error('Channel cleared (with Cleanup method?) for PV: %s',obj.pvname(ipv));
         end
-        if obj.UseArchive % Get data from EPICS archiver
-          st=datenum(obj.ArchiveDate); et=st;
-          [v,t]=archive_dataGet(char(obj.pvname(ipv)),st,et);
-          cavals = cell2mat(cellfun(@(x) x(1),v,'UniformOutput',false)) ;
-          if ~isempty(obj.nmax)
-            cavals=cavals(1:min([length(cavals),obj.nmax]));
+        if obj.UseArchive>0 % Get data from EPICS archiver
+          st=datenum(obj.ArchiveDate(1,:));
+          if obj.UseArchive>1
+            et=datenum(obj.ArchiveDate(2,:));
+          else
+            et=st;
           end
-          catime = cell2mat(cellfun(@(x) x(1),t,'UniformOutput',false)) ;
+          [v,t]=archive_dataGet(char(obj.pvname(ipv)),st,et);
+          if obj.UseArchive>1
+            cavals=v{1};
+            catime=v{1};
+          else
+            cavals = cell2mat(cellfun(@(x) x(1),v,'UniformOutput',false)) ;
+            if ~isempty(obj.nmax)
+              cavals=cavals(1:min([length(cavals),obj.nmax]));
+            end
+            catime = cell2mat(cellfun(@(x) x(1),t,'UniformOutput',false)) ;
+          end
         elseif asyn && isempty(obj.future{ipv}) % Launch asynchronous get thrread
           obj.future{ipv} = obj.channel{ipv}.getAsync();
           obj.future_tic(ipv) = tic ;
@@ -817,7 +827,17 @@ classdef PV < handle
       if logical(val) && obj.monitor
         obj.stop % stop any auto updating of monitored values
       end
-      obj.UseArchive=logical(val);
+      obj.UseArchive=uint8(val);
+    end
+    function set.ArchiveDate(obj,datevec)
+      sz=size(datevec);
+      if sz(1)==1
+        adate=obj.ArchiveDate;
+        adate(1,:)=datevec;
+      else
+        adate=datevec;
+      end
+      obj.ArchiveDate=adate;
     end
   end
   methods(Access=protected)
