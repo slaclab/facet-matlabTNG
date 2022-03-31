@@ -10,7 +10,6 @@ classdef PV < handle
   end
   properties
     verbose uint8 = 0
-    gettime logical = false % return database write time info
     name string = "none" % user supplied name for PV
     pvname string = "none" % Control system PV string (can be a vector associating this PV to multiple control PVs)
     monitor logical = false; % Flag this PV to be monitored
@@ -28,6 +27,7 @@ classdef PV < handle
     putwait logical = false % wait for confirmation of pvput command
     timeout double {mustBePositive} = 3 % timout in s for waiting for a new value asynchrounously
     RunStartDelay = 3 % Wait this long after issuing Run method command to start polling of PVs (e.g. to allow startup scripts to complete)
+    gettime logical = false % return database write time info
   end
   properties(SetObservable)
     ArchiveDate(2,6) = [2021,7,1,12,1,1;2021,8,1,12,1,1] % [yr,mnth,day,hr,min,sec] row 1 for UseArchive=1, range row 1 -> row 2 for UseArchive=2
@@ -279,7 +279,7 @@ classdef PV < handle
           [v,t]=archive_dataGet(char(obj.pvname(ipv)),st,et);
           if obj.UseArchive>1
             cavals=v{1};
-            catime=v{1};
+            catime=t{1};
           else
             cavals = cell2mat(cellfun(@(x) x(1),v,'UniformOutput',false)) ;
             if ~isempty(obj.nmax)
@@ -828,6 +828,9 @@ classdef PV < handle
         obj.stop % stop any auto updating of monitored values
       end
       obj.UseArchive=uint8(val);
+      if obj.UseArchive>1
+        obj.gettime=true;
+      end
     end
     function set.ArchiveDate(obj,datevec)
       sz=size(datevec);
@@ -838,6 +841,25 @@ classdef PV < handle
         adate=datevec;
       end
       obj.ArchiveDate=adate;
+    end
+    function ttA = ArchiveSync(obj,retimeint)
+      %ARCHIVESYNC Synchronize archive data across pvlist
+      %TimeTable = ArchiveSync(pvlist [,Interval])
+      % Interval can be 'dayly' 'hourly' 'minutely' 'secondly' (see "retime" function help for more)
+      ttA=timetable;
+      for ipv=1:length(obj)
+        try
+          dt=datetime(datestr(obj(ipv).time{1}));
+          if exist('retimeint','var')
+            tt=retime(timetable(dt,obj(ipv).val{1}),retimeint,'nearest');
+          else
+            tt=timetable(dt,obj(ipv).val{1});
+          end
+          tt.Properties.VariableNames=obj(ipv).name;
+          ttA=synchronize(ttA,tt);
+        catch
+        end
+      end
     end
   end
   methods(Access=protected)
