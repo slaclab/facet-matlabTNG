@@ -231,7 +231,7 @@ classdef F2_LAA_exported < matlab.apps.AppBase
             app.LogTextArea.Value = ...
                 ['Grabbed Reference Laser Reference Parameters',...
                 app.LogTextArea.Value(:)'];
-            disp(app.requestedSetpoints)
+            
         end
 
         % Button pushed function: ClearReferencesButton

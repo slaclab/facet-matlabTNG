@@ -23,7 +23,7 @@ for jj=1:length(app.camerapvs)
 %         disp(lcaGetSmart([app.camerapvs{jj},':NAME']))
 %         disp(refSumCts(jj))
 end
-            
+          
     if app.setPointOption % Set reference centroid using pre-defined references
       s20LaserTargetPositions = importdata('/home/fphysics/cemma/S20Laser/S20LaserAlignmentFeedback/s20LaserTargetPositionswMPA.mat');
       strs = {s20LaserTargetPositions.cameraPV};
@@ -35,8 +35,13 @@ end
 %         disp(lcaGetSmart([app.camerapvs{jj},':NAME']))
 %         disp(requestedSetpoint(1+2*(jj-1))+refCamSettings.ROIminX(jj))
 %         disp(requestedSetpoint(2*jj)+refCamSettings.ROIminY(jj))
+%             rs(1+2*(jj-1))=s20LaserTargetPositions(ind).XmeanTarget;
+%             rs(2*jj)=s20LaserTargetPositions(ind).YmeanTarget;
+%             disp(refCamSettings.ROIminX(jj)) 
+%             disp(refCamSettings.ROIminY(jj)) 
         end
     
     end
+     
 end
 
