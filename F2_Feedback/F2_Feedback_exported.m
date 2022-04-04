@@ -6,7 +6,9 @@ classdef F2_Feedback_exported < matlab.apps.AppBase
     StripchartsMenu               matlab.ui.container.Menu
     DL1EnergyMenu                 matlab.ui.container.Menu
     BC11EnergyMenu                matlab.ui.container.Menu
+    BC11BLENMenu                  matlab.ui.container.Menu
     BC14EnergyMenu                matlab.ui.container.Menu
+    BC14BLENMenu                  matlab.ui.container.Menu
     BC20EnergyMenu                matlab.ui.container.Menu
     SettingsMenu                  matlab.ui.container.Menu
     DL1EnergyFeedbackMenu         matlab.ui.container.Menu
@@ -317,6 +319,16 @@ classdef F2_Feedback_exported < matlab.apps.AppBase
       BC14BL_Settings(app.aobj);
       drawnow
     end
+
+    % Menu selected function: BC11BLENMenu
+    function BC11BLENMenuSelected(app, event)
+      !StripTool /u1/facet/tools/StripTool/config/FB_BC11_BLEN.stp &
+    end
+
+    % Menu selected function: BC14BLENMenu
+    function BC14BLENMenuSelected(app, event)
+      !StripTool /u1/facet/tools/StripTool/config/FB_BC14_BLEN.stp &
+    end
   end
 
   % Component initialization
@@ -346,10 +358,20 @@ classdef F2_Feedback_exported < matlab.apps.AppBase
       app.BC11EnergyMenu.MenuSelectedFcn = createCallbackFcn(app, @BC11EnergyMenuSelected, true);
       app.BC11EnergyMenu.Text = 'BC11 Energy';
 
+      % Create BC11BLENMenu
+      app.BC11BLENMenu = uimenu(app.StripchartsMenu);
+      app.BC11BLENMenu.MenuSelectedFcn = createCallbackFcn(app, @BC11BLENMenuSelected, true);
+      app.BC11BLENMenu.Text = 'BC11 BLEN';
+
       % Create BC14EnergyMenu
       app.BC14EnergyMenu = uimenu(app.StripchartsMenu);
       app.BC14EnergyMenu.MenuSelectedFcn = createCallbackFcn(app, @BC14EnergyMenuSelected, true);
       app.BC14EnergyMenu.Text = 'BC14 Energy';
+
+      % Create BC14BLENMenu
+      app.BC14BLENMenu = uimenu(app.StripchartsMenu);
+      app.BC14BLENMenu.MenuSelectedFcn = createCallbackFcn(app, @BC14BLENMenuSelected, true);
+      app.BC14BLENMenu.Text = 'BC14 BLEN';
 
       % Create BC20EnergyMenu
       app.BC20EnergyMenu = uimenu(app.StripchartsMenu);

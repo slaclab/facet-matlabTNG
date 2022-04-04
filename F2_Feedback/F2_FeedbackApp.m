@@ -815,16 +815,16 @@ classdef F2_FeedbackApp < handle & F2_common
         case 4 % BC11 BLEN
           BC11_Control = [PV(obj.pvcntx,'name',"Control",'pvname',"KLYS:LI11:11:SSSB_PDES",'mode',"rw") ...
             PV(obj.pvcntx,'name',"Control",'pvname',"KLYS:LI11:21:SSSB_PDES",'mode',"rw")];
-          BC11_Setpoint = PV(obj.pvcntx,'name',"Setpoint",'pvname',"BLEN:LI11:359:BZ11359B_S_SUM",'monitor',true);
+          BC11_Setpoint = PV(obj.pvcntx,'name',"Setpoint",'pvname',"BLEN:LI11:359:BZ11359B_S_SUM",'monitor',true); % raw waveform integral
           B=BufferData('Name',"BC11_BunchLength",'DoFilter',obj.SetpointDoFilter(4),...
             'FilterType',obj.SetpointFilterTypes(4),'MaxDataRate',obj.RateLimit,'autoenable',false);
           B.DataPV = BC11_Setpoint ;
-          obj.Feedbacks(4) = fbSISO(BC11_Control,B,"doublepm") ;
+          obj.Feedbacks(4) = fbSISO(BC11_Control,B,"double") ;
           obj.Feedbacks(4).Kp = obj.FeedbackCoefficients{4}(1);
           obj.Feedbacks(4).ControlLimits = obj.FeedbackControlLimits{4} ;
           obj.Feedbacks(4).SetpointLimits = obj.FeedbackSetpointLimits{4} ;
           obj.Feedbacks(4).SetpointDES = obj.SetpointOffsets(4) ;
-          obj.Feedbacks(4).QualVar = PV(obj.pvcntx,'name',"FB4_TMIT",'pvname',"BPMS:LI11:333:TMIT1H",'conv',1e-9) ;
+          obj.Feedbacks(4).QualVar = PV(obj.pvcntx,'name',"FB4_TMIT",'pvname',"BPMS:LI11:358:TMIT1H",'conv',1e-9) ;
           obj.Feedbacks(4).ControlStatusVar{1} = PV(obj.pvcntx,'name',"FB4_ControlStatus",'pvname',...
             "FCUDKLYS:LI11:1:STATUS " ) ;
           obj.Feedbacks(4).ControlStatusGood{1} = {1} ;
@@ -872,22 +872,18 @@ classdef F2_FeedbackApp < handle & F2_common
         case 6 % BC14 BLEN
           Control = SCP_MKB("l2_phase") ;
           ReadControl = PV(obj.pvcntx,'name',"ControlRB",'pvname',"LI11:KLYS:41:PDES") ;
-          Setpoint = PV(obj.pvcntx,'name',"Setpoint",'pvname',"BLEN:LI14:888:BIMAX",'monitor',true);
+%           Setpoint = PV(obj.pvcntx,'name',"Setpoint",'pvname',"BLEN:LI14:888:BIMAX",'monitor',true); % Processed output
+          Setpoint = PV(obj.pvcntx,'name',"Setpoint",'pvname',"BLEN:LI14:888:BZ14888B_S_SUM",'monitor',true,'conv',1e-3); % Raw waveform integral
           B=BufferData('Name',"BC14_BunchLength",'DoFilter',obj.SetpointDoFilter(4),...
             'FilterType',obj.SetpointFilterTypes(4),'MaxDataRate',obj.RateLimit,'autoenable',false);
           B.DataPV = Setpoint ;
           obj.Feedbacks(6) = fbSISO({ReadControl,Control},B) ;
+%           obj.Feedbacks(6).InvertControlVal = true ;
           obj.Feedbacks(6).Kp = obj.FeedbackCoefficients{6}(1);
           obj.Feedbacks(6).ControlLimits = obj.FeedbackControlLimits{6} ;
           obj.Feedbacks(6).SetpointLimits = obj.FeedbackSetpointLimits{6} ;
           obj.Feedbacks(6).SetpointDES = obj.SetpointOffsets(6) ;
           obj.Feedbacks(6).QualVar = PV(obj.pvcntx,'name',"FB6_TMIT",'pvname',"BPMS:LI14:891:TMIT1H",'conv',1e-9) ;
-%           obj.Feedbacks(6).ControlStatusVar{1} = PV(obj.pvcntx,'name',"FB6_ControlStatus1",'pvname',...
-%             "FCUDKLYS:LI14:4:STATUS " ) ;
-%           obj.Feedbacks(6).ControlStatusGood{1} = {1} ;
-%           obj.Feedbacks(6).ControlStatusVar{2} = PV(obj.pvcntx,'name',"FB6_ControlStatus2",'pvname',...
-%             "FCUDKLYS:LI14:5:STATUS " ) ;
-%           obj.Feedbacks(6).ControlStatusGood{2} = {1} ;
           obj.Feedbacks(6).LimitRate=obj.RateLimit;
           obj.Feedbacks(6).LimitEventRate=obj.RateLimit;
           obj.Feedbacks(6).StatusPV = PV(obj.pvcntx,'name',"fbstatus",'pvname',obj.FbStatusPV,'mode',"rw") ;

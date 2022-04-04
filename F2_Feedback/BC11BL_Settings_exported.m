@@ -25,7 +25,7 @@ classdef BC11BL_Settings_exported < matlab.apps.AppBase
     EditField_6                    matlab.ui.control.NumericEditField
     LowLabel_3                     matlab.ui.control.Label
     HighLabel_3                    matlab.ui.control.Label
-    SetpointBPM11333TMITLimitsNe9Panel  matlab.ui.container.Panel
+    SetpointBPM11358TMITLimitsNe9Panel  matlab.ui.container.Panel
     EditField_7                    matlab.ui.control.NumericEditField
     EditField_8                    matlab.ui.control.NumericEditField
     LowLabel_4                     matlab.ui.control.Label
@@ -168,13 +168,13 @@ classdef BC11BL_Settings_exported < matlab.apps.AppBase
       app.EditField = uieditfield(app.ControlVariableL1BLENVernierLimitsPanel, 'numeric');
       app.EditField.HorizontalAlignment = 'center';
       app.EditField.Position = [13 17 100 22];
-      app.EditField.Value = 5;
+      app.EditField.Value = -180;
 
       % Create EditField_2
       app.EditField_2 = uieditfield(app.ControlVariableL1BLENVernierLimitsPanel, 'numeric');
       app.EditField_2.HorizontalAlignment = 'center';
       app.EditField_2.Position = [138 17 100 22];
-      app.EditField_2.Value = 60;
+      app.EditField_2.Value = 180;
 
       % Create LowLabel
       app.LowLabel = uilabel(app.ControlVariableL1BLENVernierLimitsPanel);
@@ -195,7 +195,6 @@ classdef BC11BL_Settings_exported < matlab.apps.AppBase
       app.EditField_3 = uieditfield(app.SetpointBLEN11359SaturationLimitsmmPanel, 'numeric');
       app.EditField_3.HorizontalAlignment = 'center';
       app.EditField_3.Position = [13 17 100 22];
-      app.EditField_3.Value = -10;
 
       % Create EditField_4
       app.EditField_4 = uieditfield(app.SetpointBLEN11359SaturationLimitsmmPanel, 'numeric');
@@ -233,13 +232,13 @@ classdef BC11BL_Settings_exported < matlab.apps.AppBase
       app.EditField_5 = uieditfield(app.SetpointBLEN11359DeadbandLimitsmmPanel, 'numeric');
       app.EditField_5.HorizontalAlignment = 'center';
       app.EditField_5.Position = [13 17 100 22];
-      app.EditField_5.Value = -0.2;
+      app.EditField_5.Value = -0.1;
 
       % Create EditField_6
       app.EditField_6 = uieditfield(app.SetpointBLEN11359DeadbandLimitsmmPanel, 'numeric');
       app.EditField_6.HorizontalAlignment = 'center';
       app.EditField_6.Position = [138 17 100 22];
-      app.EditField_6.Value = 0.2;
+      app.EditField_6.Value = 0.1;
 
       % Create LowLabel_3
       app.LowLabel_3 = uilabel(app.SetpointBLEN11359DeadbandLimitsmmPanel);
@@ -251,30 +250,30 @@ classdef BC11BL_Settings_exported < matlab.apps.AppBase
       app.HighLabel_3.Position = [174 38 31 22];
       app.HighLabel_3.Text = 'High';
 
-      % Create SetpointBPM11333TMITLimitsNe9Panel
-      app.SetpointBPM11333TMITLimitsNe9Panel = uipanel(app.LeftPanel);
-      app.SetpointBPM11333TMITLimitsNe9Panel.Title = 'Setpoint: BPM11333 TMIT Limits [Ne^9]';
-      app.SetpointBPM11333TMITLimitsNe9Panel.Position = [17 49 260 85];
+      % Create SetpointBPM11358TMITLimitsNe9Panel
+      app.SetpointBPM11358TMITLimitsNe9Panel = uipanel(app.LeftPanel);
+      app.SetpointBPM11358TMITLimitsNe9Panel.Title = 'Setpoint: BPM11358 TMIT Limits [Ne^9]';
+      app.SetpointBPM11358TMITLimitsNe9Panel.Position = [17 49 260 85];
 
       % Create EditField_7
-      app.EditField_7 = uieditfield(app.SetpointBPM11333TMITLimitsNe9Panel, 'numeric');
+      app.EditField_7 = uieditfield(app.SetpointBPM11358TMITLimitsNe9Panel, 'numeric');
       app.EditField_7.HorizontalAlignment = 'center';
       app.EditField_7.Position = [13 17 100 22];
       app.EditField_7.Value = 0.5;
 
       % Create EditField_8
-      app.EditField_8 = uieditfield(app.SetpointBPM11333TMITLimitsNe9Panel, 'numeric');
+      app.EditField_8 = uieditfield(app.SetpointBPM11358TMITLimitsNe9Panel, 'numeric');
       app.EditField_8.HorizontalAlignment = 'center';
       app.EditField_8.Position = [138 17 100 22];
       app.EditField_8.Value = 50;
 
       % Create LowLabel_4
-      app.LowLabel_4 = uilabel(app.SetpointBPM11333TMITLimitsNe9Panel);
+      app.LowLabel_4 = uilabel(app.SetpointBPM11358TMITLimitsNe9Panel);
       app.LowLabel_4.Position = [49 38 28 22];
       app.LowLabel_4.Text = 'Low';
 
       % Create HighLabel_4
-      app.HighLabel_4 = uilabel(app.SetpointBPM11333TMITLimitsNe9Panel);
+      app.HighLabel_4 = uilabel(app.SetpointBPM11358TMITLimitsNe9Panel);
       app.HighLabel_4.Position = [174 38 31 22];
       app.HighLabel_4.Text = 'High';
 

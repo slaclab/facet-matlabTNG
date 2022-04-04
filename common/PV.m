@@ -851,7 +851,7 @@ classdef PV < handle
         try
           dt=datetime(datestr(obj(ipv).time{1}));
           if exist('retimeint','var')
-            tt=retime(timetable(dt,obj(ipv).val{1}),retimeint,'nearest');
+            tt=retime(timetable(dt,obj(ipv).val{1}),retimeint,'previous');
           else
             tt=timetable(dt,obj(ipv).val{1});
           end

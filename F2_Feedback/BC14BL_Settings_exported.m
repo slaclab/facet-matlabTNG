@@ -13,19 +13,19 @@ classdef BC14BL_Settings_exported < matlab.apps.AppBase
     EditField_2                    matlab.ui.control.NumericEditField
     LowLabel                       matlab.ui.control.Label
     HighLabel                      matlab.ui.control.Label
-    SetpointBLEN14801SaturationLimitsfsPanel  matlab.ui.container.Panel
+    SetpointBLEN14888SaturationLimitsfsPanel  matlab.ui.container.Panel
     EditField_3                    matlab.ui.control.NumericEditField
     EditField_4                    matlab.ui.control.NumericEditField
     LowLabel_2                     matlab.ui.control.Label
     HighLabel_2                    matlab.ui.control.Label
     SetpointFilterFreqHz0OFFEditFieldLabel  matlab.ui.control.Label
     FilterFreqEditField            matlab.ui.control.NumericEditField
-    SetpointBLEN14800DeadbandLimitsfsPanel  matlab.ui.container.Panel
+    SetpointBLEN14888DeadbandLimitsfsPanel  matlab.ui.container.Panel
     EditField_5                    matlab.ui.control.NumericEditField
     EditField_6                    matlab.ui.control.NumericEditField
     LowLabel_3                     matlab.ui.control.Label
     HighLabel_3                    matlab.ui.control.Label
-    SetpointBPM14801TMITLimitsNe9Panel  matlab.ui.container.Panel
+    SetpointBPM14891TMITLimitsNe9Panel  matlab.ui.container.Panel
     EditField_7                    matlab.ui.control.NumericEditField
     EditField_8                    matlab.ui.control.NumericEditField
     LowLabel_4                     matlab.ui.control.Label
@@ -186,29 +186,29 @@ classdef BC14BL_Settings_exported < matlab.apps.AppBase
       app.HighLabel.Position = [174 38 31 22];
       app.HighLabel.Text = 'High';
 
-      % Create SetpointBLEN14801SaturationLimitsfsPanel
-      app.SetpointBLEN14801SaturationLimitsfsPanel = uipanel(app.LeftPanel);
-      app.SetpointBLEN14801SaturationLimitsfsPanel.Title = 'Setpoint: BLEN14801 Saturation Limits [fs]';
-      app.SetpointBLEN14801SaturationLimitsfsPanel.Position = [17 232 260 85];
+      % Create SetpointBLEN14888SaturationLimitsfsPanel
+      app.SetpointBLEN14888SaturationLimitsfsPanel = uipanel(app.LeftPanel);
+      app.SetpointBLEN14888SaturationLimitsfsPanel.Title = 'Setpoint: BLEN14888 Saturation Limits [fs]';
+      app.SetpointBLEN14888SaturationLimitsfsPanel.Position = [17 232 260 85];
 
       % Create EditField_3
-      app.EditField_3 = uieditfield(app.SetpointBLEN14801SaturationLimitsfsPanel, 'numeric');
+      app.EditField_3 = uieditfield(app.SetpointBLEN14888SaturationLimitsfsPanel, 'numeric');
       app.EditField_3.HorizontalAlignment = 'center';
       app.EditField_3.Position = [13 17 100 22];
 
       % Create EditField_4
-      app.EditField_4 = uieditfield(app.SetpointBLEN14801SaturationLimitsfsPanel, 'numeric');
+      app.EditField_4 = uieditfield(app.SetpointBLEN14888SaturationLimitsfsPanel, 'numeric');
       app.EditField_4.HorizontalAlignment = 'center';
       app.EditField_4.Position = [138 17 100 22];
       app.EditField_4.Value = 200;
 
       % Create LowLabel_2
-      app.LowLabel_2 = uilabel(app.SetpointBLEN14801SaturationLimitsfsPanel);
+      app.LowLabel_2 = uilabel(app.SetpointBLEN14888SaturationLimitsfsPanel);
       app.LowLabel_2.Position = [49 38 28 22];
       app.LowLabel_2.Text = 'Low';
 
       % Create HighLabel_2
-      app.HighLabel_2 = uilabel(app.SetpointBLEN14801SaturationLimitsfsPanel);
+      app.HighLabel_2 = uilabel(app.SetpointBLEN14888SaturationLimitsfsPanel);
       app.HighLabel_2.Position = [174 38 31 22];
       app.HighLabel_2.Text = 'High';
 
@@ -222,57 +222,57 @@ classdef BC14BL_Settings_exported < matlab.apps.AppBase
       app.FilterFreqEditField = uieditfield(app.LeftPanel, 'numeric');
       app.FilterFreqEditField.Position = [172 18 100 22];
 
-      % Create SetpointBLEN14800DeadbandLimitsfsPanel
-      app.SetpointBLEN14800DeadbandLimitsfsPanel = uipanel(app.LeftPanel);
-      app.SetpointBLEN14800DeadbandLimitsfsPanel.Title = 'Setpoint: BLEN14800 Deadband Limits [fs]';
-      app.SetpointBLEN14800DeadbandLimitsfsPanel.Position = [17 141 260 85];
+      % Create SetpointBLEN14888DeadbandLimitsfsPanel
+      app.SetpointBLEN14888DeadbandLimitsfsPanel = uipanel(app.LeftPanel);
+      app.SetpointBLEN14888DeadbandLimitsfsPanel.Title = 'Setpoint: BLEN14888 Deadband Limits [fs]';
+      app.SetpointBLEN14888DeadbandLimitsfsPanel.Position = [17 141 260 85];
 
       % Create EditField_5
-      app.EditField_5 = uieditfield(app.SetpointBLEN14800DeadbandLimitsfsPanel, 'numeric');
+      app.EditField_5 = uieditfield(app.SetpointBLEN14888DeadbandLimitsfsPanel, 'numeric');
       app.EditField_5.HorizontalAlignment = 'center';
       app.EditField_5.Position = [13 17 100 22];
       app.EditField_5.Value = -5;
 
       % Create EditField_6
-      app.EditField_6 = uieditfield(app.SetpointBLEN14800DeadbandLimitsfsPanel, 'numeric');
+      app.EditField_6 = uieditfield(app.SetpointBLEN14888DeadbandLimitsfsPanel, 'numeric');
       app.EditField_6.HorizontalAlignment = 'center';
       app.EditField_6.Position = [138 17 100 22];
       app.EditField_6.Value = 5;
 
       % Create LowLabel_3
-      app.LowLabel_3 = uilabel(app.SetpointBLEN14800DeadbandLimitsfsPanel);
+      app.LowLabel_3 = uilabel(app.SetpointBLEN14888DeadbandLimitsfsPanel);
       app.LowLabel_3.Position = [49 38 28 22];
       app.LowLabel_3.Text = 'Low';
 
       % Create HighLabel_3
-      app.HighLabel_3 = uilabel(app.SetpointBLEN14800DeadbandLimitsfsPanel);
+      app.HighLabel_3 = uilabel(app.SetpointBLEN14888DeadbandLimitsfsPanel);
       app.HighLabel_3.Position = [174 38 31 22];
       app.HighLabel_3.Text = 'High';
 
-      % Create SetpointBPM14801TMITLimitsNe9Panel
-      app.SetpointBPM14801TMITLimitsNe9Panel = uipanel(app.LeftPanel);
-      app.SetpointBPM14801TMITLimitsNe9Panel.Title = 'Setpoint: BPM14801 TMIT Limits [Ne^9]';
-      app.SetpointBPM14801TMITLimitsNe9Panel.Position = [17 49 260 85];
+      % Create SetpointBPM14891TMITLimitsNe9Panel
+      app.SetpointBPM14891TMITLimitsNe9Panel = uipanel(app.LeftPanel);
+      app.SetpointBPM14891TMITLimitsNe9Panel.Title = 'Setpoint: BPM14891 TMIT Limits [Ne^9]';
+      app.SetpointBPM14891TMITLimitsNe9Panel.Position = [17 49 260 85];
 
       % Create EditField_7
-      app.EditField_7 = uieditfield(app.SetpointBPM14801TMITLimitsNe9Panel, 'numeric');
+      app.EditField_7 = uieditfield(app.SetpointBPM14891TMITLimitsNe9Panel, 'numeric');
       app.EditField_7.HorizontalAlignment = 'center';
       app.EditField_7.Position = [13 17 100 22];
       app.EditField_7.Value = 0.5;
 
       % Create EditField_8
-      app.EditField_8 = uieditfield(app.SetpointBPM14801TMITLimitsNe9Panel, 'numeric');
+      app.EditField_8 = uieditfield(app.SetpointBPM14891TMITLimitsNe9Panel, 'numeric');
       app.EditField_8.HorizontalAlignment = 'center';
       app.EditField_8.Position = [138 17 100 22];
       app.EditField_8.Value = 50;
 
       % Create LowLabel_4
-      app.LowLabel_4 = uilabel(app.SetpointBPM14801TMITLimitsNe9Panel);
+      app.LowLabel_4 = uilabel(app.SetpointBPM14891TMITLimitsNe9Panel);
       app.LowLabel_4.Position = [49 38 28 22];
       app.LowLabel_4.Text = 'Low';
 
       % Create HighLabel_4
-      app.HighLabel_4 = uilabel(app.SetpointBPM14801TMITLimitsNe9Panel);
+      app.HighLabel_4 = uilabel(app.SetpointBPM14891TMITLimitsNe9Panel);
       app.HighLabel_4.Position = [174 38 31 22];
       app.HighLabel_4.Text = 'High';
 
