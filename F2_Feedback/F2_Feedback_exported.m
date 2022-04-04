@@ -329,6 +329,12 @@ classdef F2_Feedback_exported < matlab.apps.AppBase
     function BC14BLENMenuSelected(app, event)
       !StripTool /u1/facet/tools/StripTool/config/FB_BC14_BLEN.stp &
     end
+
+    % Value changed function: Switch_7
+    function Switch_7ValueChanged(app, event)
+      value = string(app.Switch_7.Value) == "On" ;
+      caput(app.aobj.pvs.FeedbackEnable,double(bitset(app.aobj.Enabled,6,value)));
+    end
   end
 
   % Component initialization
@@ -953,6 +959,7 @@ classdef F2_Feedback_exported < matlab.apps.AppBase
 
       % Create Switch_7
       app.Switch_7 = uiswitch(app.BC14BunchLengthFeedbackPanel, 'slider');
+      app.Switch_7.ValueChangedFcn = createCallbackFcn(app, @Switch_7ValueChanged, true);
       app.Switch_7.Position = [51 11 62 28];
 
       % Create Gauge_12

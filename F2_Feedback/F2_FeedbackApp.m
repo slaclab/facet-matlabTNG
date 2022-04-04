@@ -878,7 +878,8 @@ classdef F2_FeedbackApp < handle & F2_common
             'FilterType',obj.SetpointFilterTypes(4),'MaxDataRate',obj.RateLimit,'autoenable',false);
           B.DataPV = Setpoint ;
           obj.Feedbacks(6) = fbSISO({ReadControl,Control},B) ;
-%           obj.Feedbacks(6).InvertControlVal = true ;
+          obj.Feedbacks(2).WriteRateMax = 3 ; % limit update rate
+          obj.Feedbacks(6).InvertControlVal = true ;
           obj.Feedbacks(6).Kp = obj.FeedbackCoefficients{6}(1);
           obj.Feedbacks(6).ControlLimits = obj.FeedbackControlLimits{6} ;
           obj.Feedbacks(6).SetpointLimits = obj.FeedbackSetpointLimits{6} ;
