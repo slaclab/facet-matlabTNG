@@ -25,7 +25,7 @@ end
             return
        end
     end
- 
+
     for jj=1:length(laserCentroids) % Calculate beam offset from setpoint
         if mod(jj,2);axisfactor=1.0;else;axisfactor = 1.0;end % Axis factor makes +ve x and y correspond to right/left and up/down
         laserOffset(jj) = axisfactor*(requestedSetpoint(jj)-laserCentroids(jj));
