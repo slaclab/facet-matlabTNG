@@ -65,7 +65,7 @@ classdef PV < handle
     firstcall logical = true
   end
   properties(Constant)
-    errcol=[0.7 0 0];
+    errcol=[0.7 0 0]; % Color code to use for errors
     caver string = "1.3.2" % EPICS Java CA version to use (ca-<version>.jar must be on matlab search path)
   end
   methods
@@ -839,6 +839,11 @@ classdef PV < handle
         adate(1,:)=datevec;
       else
         adate=datevec;
+      end
+      % If not setting second date vec, or accidentallys setting second date vec
+      % to an earlier time than first, then force it to be a few seconds later
+      if datenum(adate(2,:))<datenum(adate(1,:))
+        adate(2,:) = datevec(datenum(adate(1,:))+0.0001) ;
       end
       obj.ArchiveDate=adate;
     end
