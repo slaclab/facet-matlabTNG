@@ -49,6 +49,13 @@ classdef F2_common < handle
     end
   end
   methods(Static)
+    function LogMessage(src,mess)
+      %LOGMESSAGE Write message using java message logger
+      %LogMessage(AppSource,Message)
+      % e.g. LogMessage('F2_Feedback','Something went wrong')
+      ml = edu.stanford.slac.logapi.MessageLogAPI.getInstance(char(src));
+      ml.log(char(mess));
+    end
     function dnum = epics2mltime(tstamp)
       % Put epics time stamp as Matlab datenum format in gui requested
       % local time
