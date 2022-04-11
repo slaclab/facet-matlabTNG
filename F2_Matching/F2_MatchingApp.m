@@ -459,7 +459,7 @@ classdef F2_MatchingApp < handle & F2_common
     end
     function WriteEmitData(obj)
       %WRITEENMITDATA Write twiss and emittance data to PVs
-      if ~isempty(obj.QuadScanData) && ~ismember(obj.ProfName,obj.EmitDataProfs)
+%       if ~isempty(obj.QuadScanData) && ~ismember(obj.ProfName,obj.EmitDataProfs)
         lcaPutNoWait(sprintf('%s:BETA_X',obj.ProfName),obj.TwissFit(1));
         lcaPutNoWait(sprintf('%s:ALPHA_X',obj.ProfName),obj.TwissFit(3));
         lcaPutNoWait(sprintf('%s:BMAG_X',obj.ProfName),obj.TwissFit(5));
@@ -481,7 +481,7 @@ classdef F2_MatchingApp < handle & F2_common
         if ~isempty(obj.InitMatch)
           obj.LiveModel.Initial=obj.InitMatch ;
         end
-      end
+%       end
     end
     function ReadEmitData(obj)
       if ~ismember(obj.ProfName,obj.EmitDataProfs) && ~obj.LoadingScanData
