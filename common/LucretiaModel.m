@@ -2,7 +2,7 @@ classdef LucretiaModel < handle & matlab.mixin.Copyable
   %LUCRETIAMODEL Interface to Lucretia model
   properties
     Initial % Lucretia Initial structure (start of BEAMLINE)
-    UseMissingEle logical = false % Remove elements listed in MissingEle string from consideration?
+    UseMissingEle logical = true % Remove elements listed in MissingEle string from consideration?
   end
   properties(Dependent)
     istart uint16 % First BEAMLINE element in region

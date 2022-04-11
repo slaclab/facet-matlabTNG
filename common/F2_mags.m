@@ -101,7 +101,7 @@ classdef F2_mags < handle & matlab.mixin.Copyable & F2_common
         minpv = regexprep(maxpv,"(BMAX)$","BMIN") ;
         dominpv = true(size(minpv)); dominpv(contains(minpv,["QUAS","LGPS","SXTS"])) = false ;
         dominpv(~startsWith(minpv,"QUAD") & ~startsWith(minpv,"XCOR") & ~startsWith(minpv,"YCOR")) = false ;
-        obj.BMAX = lcaGet(cellstr(maxpv)) ; % obj.BMAX(val>=0) = val(val>=0) ; obj.BMIN(val<0) = val(val<0) ;
+        obj.BMAX = lcaGet(cellstr(maxpv(:))) ; % obj.BMAX(val>=0) = val(val>=0) ; obj.BMIN(val<0) = val(val<0) ;
         obj.BMIN = zeros(size(obj.BMAX)) ;
         if any(dominpv)
           obj.BMIN(dominpv) = lcaGet(cellstr(minpv(dominpv))) ;
@@ -110,7 +110,7 @@ classdef F2_mags < handle & matlab.mixin.Copyable & F2_common
         tempmax = obj.BMAX(isinv) ;
         obj.BMAX(isinv) = obj.BMIN(isinv) ;
         obj.BMIN(isinv) = tempmax ;
-        obj.BMAX=obj.BMAX(:)'; obj.BMIN=obj.BMIN(:)';
+        obj.BMAX=obj.BMAX(:); obj.BMIN=obj.BMIN(:);
       end
       % Apply any fudge factors
       if obj.UseFudge && ~isempty(obj.Bfud)
@@ -123,8 +123,8 @@ classdef F2_mags < handle & matlab.mixin.Copyable & F2_common
             obj.LM.ModelBDES = obj.BDES_cntrl ;
           end
           if ~isempty(obj.BMAX)
-            obj.BMIN(ifud) = obj.BMIN(ifud) .* fud ;
-            obj.BMAX(ifud) = obj.BMAX(ifud) .* fud ;
+            obj.BMIN(ifud) = obj.BMIN(ifud) .* fud(:) ;
+            obj.BMAX(ifud) = obj.BMAX(ifud) .* fud(:) ;
             dorev=find(obj.BMIN>obj.BMAX);
             if ~isempty(dorev)
               for irev=dorev
