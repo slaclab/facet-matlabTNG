@@ -30,6 +30,9 @@ classdef F2_LAA_exported < matlab.apps.AppBase
         EPSshutterLamp                  matlab.ui.control.Lamp
         BlockUnblockButton              matlab.ui.control.Button
         BlockUnblockButton_2            matlab.ui.control.Button
+        SetcameraexposuresPanel         matlab.ui.container.Panel
+        HeNecamerasButton               matlab.ui.control.Button
+        AmpcamerasButton                matlab.ui.control.Button
     end
 
     
@@ -60,7 +63,6 @@ classdef F2_LAA_exported < matlab.apps.AppBase
             'SIOC:SYS1:ML01:AO196','SIOC:SYS1:ML01:AO197'}
         
         maxMisalignmentTolerancePV = 'SIOC:SYS1:ML01:AO200';
-        MPANearFarmaxMisalignmentTolerancePV = 'SIOC:SYS1:ML01:AO189';
         
         fitMethod = 2;% Centroid fit method for profmon_process
         umPerPixel ;
@@ -69,7 +71,6 @@ classdef F2_LAA_exported < matlab.apps.AppBase
         k_p = [0.1,0.1,0.01,0.2,0.05,0.2,0.2,0.2,0.2];% Default Proportional Gains
         k_i = 0.0;% Integral gain term is set to zero for now - can be included later
         maxMisalignmentTolerance;
-        MPANearFarmaxMisalignmentTolerance;
         refCamSettings = [];
         refSumCts = []; 
         refRMSVals = [];
@@ -183,7 +184,7 @@ classdef F2_LAA_exported < matlab.apps.AppBase
                   [['Moving motor: ', motorName], ...
                  app.LogTextArea.Value(:)']  ;
             
-            while ~(abs(motorVal - target) < 0.001)
+            while ~(abs(motorVal - target) < 0.01)
                 motorVal = lcaGetSmart([motorPV,'.RBV']);
                 app.setHeNeStatus();
                 drawnow;
@@ -231,7 +232,7 @@ classdef F2_LAA_exported < matlab.apps.AppBase
             app.LogTextArea.Value = ...
                 ['Grabbed Reference Laser Reference Parameters',...
                 app.LogTextArea.Value(:)'];
-            
+            disp(app.requestedSetpoints)
         end
 
         % Button pushed function: ClearReferencesButton
@@ -276,7 +277,6 @@ classdef F2_LAA_exported < matlab.apps.AppBase
                     
                     app.k_p = lcaGetSmart(app.gainPVs);% Update gain vals
                     app.maxMisalignmentTolerance = lcaGetSmart(app.maxMisalignmentTolerancePV);% Update max misalignment tolerance
-                    app.MPANearFarmaxMisalignmentTolerance = lcaGetSmart(app.MPANearFarmaxMisalignmentTolerancePV);% Update max misalignment tolerance
                     
                     if any(isnan(app.k_p))                     
                          app.LogTextArea.Value =  ['One or more invalid Gain values. Skipping alignment',...
@@ -320,7 +320,7 @@ classdef F2_LAA_exported < matlab.apps.AppBase
                     end
                     else
                     lcaGetSmart(app.feedbackPausePV);                  
-                    if lcaGetSmart(app.feedbackExitPV);break;end %Makes sure you don't get stuck on pause and exit PVs = 1
+                    if lcaGetSmart(app.feedbackExitPV);continue;end %Makes sure you don't get stuck on pause and exit PVs = 1
                    end 
                 end
 
@@ -349,6 +349,7 @@ classdef F2_LAA_exported < matlab.apps.AppBase
         % Close request function: UIFigure
         function UIFigureCloseRequest(app, event)
             delete(app)
+            disp('Remember to uncomment the exit command')
             exit;
         end
 
@@ -403,6 +404,29 @@ classdef F2_LAA_exported < matlab.apps.AppBase
         function BlockUnblockButton_2Pushed(app, event)
             app.flipEPSShutter();
         end
+
+        % Button pushed function: HeNecamerasButton
+        function HeNecamerasButtonPushed(app, event)
+            lcaPutSmart('CAMR:LT20:0101:AcquireTime',5e-4);
+            lcaPutSmart('CAMR:LT20:0102:AcquireTime',5e-4);
+            lcaPutSmart('CAMR:LT20:0103:AcquireTime',1e-3);
+            lcaPutSmart('CAMR:LT20:0104:AcquireTime',0.3);
+            lcaPutSmart('CAMR:LT20:0105:AcquireTime',4);
+            lcaPutSmart('CAMR:LT20:0106:AcquireTime',1);
+            lcaPutSmart('CAMR:LT20:0107:AcquireTime',2);
+        end
+
+        % Button pushed function: AmpcamerasButton
+        function AmpcamerasButtonPushed(app, event)
+            lcaPutSmart('CAMR:LT20:0001:AcquireTime',1e-4)
+            lcaPutSmart('CAMR:LT20:0002:AcquireTime',1e-4)
+            lcaPutSmart('CAMR:LT20:0003:AcquireTime',1e-4)
+            lcaPutSmart('CAMR:LT20:0004:AcquireTime',1e-4)
+            lcaPutSmart('CAMR:LT20:0006:AcquireTime',1e-4)
+            lcaPutSmart('CAMR:LT20:0007:AcquireTime',1e-4)
+            lcaPutSmart('CAMR:LT20:0009:AcquireTime',1e-4)
+            lcaPutSmart('CAMR:LT20:0010:AcquireTime',1e-4)
+        end
     end
 
     % Component initialization
@@ -413,14 +437,14 @@ classdef F2_LAA_exported < matlab.apps.AppBase
 
             % Create UIFigure and hide until all components are created
             app.UIFigure = uifigure('Visible', 'off');
-            app.UIFigure.Position = [100 100 641 640];
+            app.UIFigure.Position = [100 100 637 729];
             app.UIFigure.Name = 'MATLAB App';
             app.UIFigure.CloseRequestFcn = createCallbackFcn(app, @UIFigureCloseRequest, true);
 
             % Create SelectLaserAlignmentTargetPositionsButtonGroup
             app.SelectLaserAlignmentTargetPositionsButtonGroup = uibuttongroup(app.UIFigure);
             app.SelectLaserAlignmentTargetPositionsButtonGroup.Title = '1. Select Laser Alignment Target Positions';
-            app.SelectLaserAlignmentTargetPositionsButtonGroup.Position = [31 502 263 80];
+            app.SelectLaserAlignmentTargetPositionsButtonGroup.Position = [35 592 280 80];
 
             % Create OptionsDropDown
             app.OptionsDropDown = uidropdown(app.SelectLaserAlignmentTargetPositionsButtonGroup);
@@ -441,23 +465,23 @@ classdef F2_LAA_exported < matlab.apps.AppBase
             app.FACETIILaserAutoAlignmentLabel.HorizontalAlignment = 'center';
             app.FACETIILaserAutoAlignmentLabel.FontSize = 14;
             app.FACETIILaserAutoAlignmentLabel.FontWeight = 'bold';
-            app.FACETIILaserAutoAlignmentLabel.Position = [217 608 218 22];
+            app.FACETIILaserAutoAlignmentLabel.Position = [217 697 218 22];
             app.FACETIILaserAutoAlignmentLabel.Text = 'FACET-II Laser Auto Alignment';
 
             % Create LogTextAreaLabel
             app.LogTextAreaLabel = uilabel(app.UIFigure);
             app.LogTextAreaLabel.HorizontalAlignment = 'right';
-            app.LogTextAreaLabel.Position = [347 389 29 22];
+            app.LogTextAreaLabel.Position = [345 437 29 22];
             app.LogTextAreaLabel.Text = 'Log:';
 
             % Create LogTextArea
             app.LogTextArea = uitextarea(app.UIFigure);
-            app.LogTextArea.Position = [347 24 268 361];
+            app.LogTextArea.Position = [345 22 268 411];
 
             % Create InitializeReferenceLaserParametersPanel
             app.InitializeReferenceLaserParametersPanel = uipanel(app.UIFigure);
-            app.InitializeReferenceLaserParametersPanel.Title = '3. Initialize Reference Laser Parameters';
-            app.InitializeReferenceLaserParametersPanel.Position = [32 318 265 57];
+            app.InitializeReferenceLaserParametersPanel.Title = '4. Initialize Reference Laser Parameters';
+            app.InitializeReferenceLaserParametersPanel.Position = [35 314 280 57];
 
             % Create GrabReferencesButton
             app.GrabReferencesButton = uibutton(app.InitializeReferenceLaserParametersPanel, 'push');
@@ -473,8 +497,8 @@ classdef F2_LAA_exported < matlab.apps.AppBase
 
             % Create SelectCamerastoAlignPanel
             app.SelectCamerastoAlignPanel = uipanel(app.UIFigure);
-            app.SelectCamerastoAlignPanel.Title = '4. Select Cameras to Align';
-            app.SelectCamerastoAlignPanel.Position = [31 20 282 272];
+            app.SelectCamerastoAlignPanel.Title = '5. Select Cameras to Align';
+            app.SelectCamerastoAlignPanel.Position = [35 18 280 277];
 
             % Create UITable
             app.UITable = uitable(app.SelectCamerastoAlignPanel);
@@ -482,12 +506,12 @@ classdef F2_LAA_exported < matlab.apps.AppBase
             app.UITable.RowName = {};
             app.UITable.ColumnEditable = [false true];
             app.UITable.CellEditCallback = createCallbackFcn(app, @UITableCellEdit, true);
-            app.UITable.Position = [13 10 255 230];
+            app.UITable.Position = [13 15 255 230];
 
             % Create InitiateAutoAlignmentPanel
             app.InitiateAutoAlignmentPanel = uipanel(app.UIFigure);
-            app.InitiateAutoAlignmentPanel.Title = '5. Initiate Auto Alignment';
-            app.InitiateAutoAlignmentPanel.Position = [345 431 271 151];
+            app.InitiateAutoAlignmentPanel.Title = '6. Initiate Auto Alignment';
+            app.InitiateAutoAlignmentPanel.Position = [345 520 271 151];
 
             % Create StartAlignmentButton
             app.StartAlignmentButton = uibutton(app.InitiateAutoAlignmentPanel, 'push');
@@ -540,13 +564,13 @@ classdef F2_LAA_exported < matlab.apps.AppBase
             % Create ClearLogButton
             app.ClearLogButton = uibutton(app.UIFigure, 'push');
             app.ClearLogButton.ButtonPushedFcn = createCallbackFcn(app, @ClearLogButtonPushed, true);
-            app.ClearLogButton.Position = [515 389 100 23];
+            app.ClearLogButton.Position = [515 478 100 23];
             app.ClearLogButton.Text = 'Clear Log';
 
             % Create SetshutterstatusPanel
             app.SetshutterstatusPanel = uipanel(app.UIFigure);
             app.SetshutterstatusPanel.Title = '2. Set shutter status';
-            app.SetshutterstatusPanel.Position = [32 391 262 97];
+            app.SetshutterstatusPanel.Position = [35 475 280 97];
 
             % Create HeNestatusLampLabel
             app.HeNestatusLampLabel = uilabel(app.SetshutterstatusPanel);
@@ -580,6 +604,23 @@ classdef F2_LAA_exported < matlab.apps.AppBase
             app.BlockUnblockButton_2.ButtonPushedFcn = createCallbackFcn(app, @BlockUnblockButton_2Pushed, true);
             app.BlockUnblockButton_2.Position = [134 14 100 23];
             app.BlockUnblockButton_2.Text = 'Block/Unblock';
+
+            % Create SetcameraexposuresPanel
+            app.SetcameraexposuresPanel = uipanel(app.UIFigure);
+            app.SetcameraexposuresPanel.Title = '3. Set camera exposures';
+            app.SetcameraexposuresPanel.Position = [35 391 280 64];
+
+            % Create HeNecamerasButton
+            app.HeNecamerasButton = uibutton(app.SetcameraexposuresPanel, 'push');
+            app.HeNecamerasButton.ButtonPushedFcn = createCallbackFcn(app, @HeNecamerasButtonPushed, true);
+            app.HeNecamerasButton.Position = [14 12 100 23];
+            app.HeNecamerasButton.Text = 'HeNe cameras';
+
+            % Create AmpcamerasButton
+            app.AmpcamerasButton = uibutton(app.SetcameraexposuresPanel, 'push');
+            app.AmpcamerasButton.ButtonPushedFcn = createCallbackFcn(app, @AmpcamerasButtonPushed, true);
+            app.AmpcamerasButton.Position = [135 11 100 23];
+            app.AmpcamerasButton.Text = 'Amp cameras';
 
             % Show the figure after all components are created
             app.UIFigure.Visible = 'on';
