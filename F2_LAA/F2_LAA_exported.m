@@ -190,10 +190,16 @@ classdef F2_LAA_exported < matlab.apps.AppBase
                 drawnow;
             end
             
-            
             app.LogTextArea.Value = ...
                   [['Finished moving motor: ', motorName], ...
                  app.LogTextArea.Value(:)'] ;
+        end
+        
+        function appendMessage(app, msg)
+            app.LogTextArea.Value = ...
+                  [msg, ...
+                 app.LogTextArea.Value(:)'] ;
+            pause(1e-2);
         end
         
     end
@@ -414,6 +420,7 @@ classdef F2_LAA_exported < matlab.apps.AppBase
             lcaPutSmart('CAMR:LT20:0105:AcquireTime',4);
             lcaPutSmart('CAMR:LT20:0106:AcquireTime',1);
             lcaPutSmart('CAMR:LT20:0107:AcquireTime',2);
+            app.appendMessage('Transport cameras exposure time set');
         end
 
         % Button pushed function: AmpcamerasButton
@@ -426,6 +433,7 @@ classdef F2_LAA_exported < matlab.apps.AppBase
             lcaPutSmart('CAMR:LT20:0007:AcquireTime',1e-4)
             lcaPutSmart('CAMR:LT20:0009:AcquireTime',1e-4)
             lcaPutSmart('CAMR:LT20:0010:AcquireTime',1e-4)
+            app.appendMessage('Amp cameras exposure time set');
         end
     end
 
@@ -486,13 +494,13 @@ classdef F2_LAA_exported < matlab.apps.AppBase
             % Create GrabReferencesButton
             app.GrabReferencesButton = uibutton(app.InitializeReferenceLaserParametersPanel, 'push');
             app.GrabReferencesButton.ButtonPushedFcn = createCallbackFcn(app, @GrabReferencesButtonPushed, true);
-            app.GrabReferencesButton.Position = [11 8 108 23];
+            app.GrabReferencesButton.Position = [22 8 108 23];
             app.GrabReferencesButton.Text = 'Grab References';
 
             % Create ClearReferencesButton
             app.ClearReferencesButton = uibutton(app.InitializeReferenceLaserParametersPanel, 'push');
             app.ClearReferencesButton.ButtonPushedFcn = createCallbackFcn(app, @ClearReferencesButtonPushed, true);
-            app.ClearReferencesButton.Position = [134 8 111 23];
+            app.ClearReferencesButton.Position = [145 8 111 23];
             app.ClearReferencesButton.Text = 'Clear References';
 
             % Create SelectCamerastoAlignPanel
@@ -518,7 +526,7 @@ classdef F2_LAA_exported < matlab.apps.AppBase
             app.StartAlignmentButton.ButtonPushedFcn = createCallbackFcn(app, @StartAlignmentButtonPushed, true);
             app.StartAlignmentButton.BackgroundColor = [0.3922 0.8314 0.0745];
             app.StartAlignmentButton.FontSize = 14;
-            app.StartAlignmentButton.Position = [15 99 121 24];
+            app.StartAlignmentButton.Position = [15 94 121 24];
             app.StartAlignmentButton.Text = 'Start Alignment';
 
             % Create PauseAlignmentButton
@@ -526,7 +534,7 @@ classdef F2_LAA_exported < matlab.apps.AppBase
             app.PauseAlignmentButton.ButtonPushedFcn = createCallbackFcn(app, @PauseAlignmentButtonPushed, true);
             app.PauseAlignmentButton.BackgroundColor = [1 0.4118 0.1608];
             app.PauseAlignmentButton.FontSize = 14;
-            app.PauseAlignmentButton.Position = [15 56 122 24];
+            app.PauseAlignmentButton.Position = [15 57 122 24];
             app.PauseAlignmentButton.Text = 'Pause Alignment';
 
             % Create StopAlignmentButton
@@ -534,31 +542,31 @@ classdef F2_LAA_exported < matlab.apps.AppBase
             app.StopAlignmentButton.ButtonPushedFcn = createCallbackFcn(app, @StopAlignmentButtonPushed, true);
             app.StopAlignmentButton.BackgroundColor = [1 0 0];
             app.StopAlignmentButton.FontSize = 14;
-            app.StopAlignmentButton.Position = [15 9 121 24];
+            app.StopAlignmentButton.Position = [15 19 121 24];
             app.StopAlignmentButton.Text = 'Stop Alignment';
 
             % Create StatusLampLabel
             app.StatusLampLabel = uilabel(app.InitiateAutoAlignmentPanel);
             app.StatusLampLabel.HorizontalAlignment = 'right';
-            app.StatusLampLabel.Position = [171 8 42 22];
+            app.StatusLampLabel.Position = [176 20 42 22];
             app.StatusLampLabel.Text = 'Status:';
 
             % Create StatusLamp
             app.StatusLamp = uilamp(app.InitiateAutoAlignmentPanel);
-            app.StatusLamp.Position = [228 8 20 20];
+            app.StatusLamp.Position = [233 20 20 20];
             app.StatusLamp.Color = [0.902 0.902 0.902];
 
             % Create IRmodeButton
             app.IRmodeButton = uibutton(app.InitiateAutoAlignmentPanel, 'push');
             app.IRmodeButton.ButtonPushedFcn = createCallbackFcn(app, @IRmodeButtonPushed, true);
             app.IRmodeButton.BackgroundColor = [0.302 0.7451 0.9333];
-            app.IRmodeButton.Position = [188 99 72 23];
+            app.IRmodeButton.Position = [181 95 72 23];
             app.IRmodeButton.Text = 'IR mode';
 
             % Create ExpertButton
             app.ExpertButton = uibutton(app.InitiateAutoAlignmentPanel, 'push');
             app.ExpertButton.ButtonPushedFcn = createCallbackFcn(app, @ExpertButtonPushed, true);
-            app.ExpertButton.Position = [188 64 70 23];
+            app.ExpertButton.Position = [183 57 70 23];
             app.ExpertButton.Text = 'Expert...';
 
             % Create ClearLogButton
@@ -575,34 +583,34 @@ classdef F2_LAA_exported < matlab.apps.AppBase
             % Create HeNestatusLampLabel
             app.HeNestatusLampLabel = uilabel(app.SetshutterstatusPanel);
             app.HeNestatusLampLabel.HorizontalAlignment = 'right';
-            app.HeNestatusLampLabel.Position = [8 48 72 22];
+            app.HeNestatusLampLabel.Position = [26 44 72 22];
             app.HeNestatusLampLabel.Text = 'HeNe status';
 
             % Create HeNestatusLamp
             app.HeNestatusLamp = uilamp(app.SetshutterstatusPanel);
-            app.HeNestatusLamp.Position = [95 48 20 20];
+            app.HeNestatusLamp.Position = [113 44 20 20];
             app.HeNestatusLamp.Color = [1 1 0];
 
             % Create EPSshutterLampLabel
             app.EPSshutterLampLabel = uilabel(app.SetshutterstatusPanel);
             app.EPSshutterLampLabel.HorizontalAlignment = 'right';
-            app.EPSshutterLampLabel.Position = [137 47 69 22];
+            app.EPSshutterLampLabel.Position = [151 44 69 22];
             app.EPSshutterLampLabel.Text = 'EPS shutter';
 
             % Create EPSshutterLamp
             app.EPSshutterLamp = uilamp(app.SetshutterstatusPanel);
-            app.EPSshutterLamp.Position = [221 47 20 20];
+            app.EPSshutterLamp.Position = [235 44 20 20];
 
             % Create BlockUnblockButton
             app.BlockUnblockButton = uibutton(app.SetshutterstatusPanel, 'push');
             app.BlockUnblockButton.ButtonPushedFcn = createCallbackFcn(app, @BlockUnblockButtonPushed, true);
-            app.BlockUnblockButton.Position = [13 14 100 23];
+            app.BlockUnblockButton.Position = [29 12 100 23];
             app.BlockUnblockButton.Text = 'Block/Unblock';
 
             % Create BlockUnblockButton_2
             app.BlockUnblockButton_2 = uibutton(app.SetshutterstatusPanel, 'push');
             app.BlockUnblockButton_2.ButtonPushedFcn = createCallbackFcn(app, @BlockUnblockButton_2Pushed, true);
-            app.BlockUnblockButton_2.Position = [134 14 100 23];
+            app.BlockUnblockButton_2.Position = [153 12 100 23];
             app.BlockUnblockButton_2.Text = 'Block/Unblock';
 
             % Create SetcameraexposuresPanel
@@ -613,13 +621,13 @@ classdef F2_LAA_exported < matlab.apps.AppBase
             % Create HeNecamerasButton
             app.HeNecamerasButton = uibutton(app.SetcameraexposuresPanel, 'push');
             app.HeNecamerasButton.ButtonPushedFcn = createCallbackFcn(app, @HeNecamerasButtonPushed, true);
-            app.HeNecamerasButton.Position = [14 12 100 23];
+            app.HeNecamerasButton.Position = [28 11 100 23];
             app.HeNecamerasButton.Text = 'HeNe cameras';
 
             % Create AmpcamerasButton
             app.AmpcamerasButton = uibutton(app.SetcameraexposuresPanel, 'push');
             app.AmpcamerasButton.ButtonPushedFcn = createCallbackFcn(app, @AmpcamerasButtonPushed, true);
-            app.AmpcamerasButton.Position = [135 11 100 23];
+            app.AmpcamerasButton.Position = [149 11 100 23];
             app.AmpcamerasButton.Text = 'Amp cameras';
 
             % Show the figure after all components are created
