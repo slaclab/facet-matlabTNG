@@ -193,6 +193,14 @@ classdef LucretiaModel < handle & matlab.mixin.Copyable
       names(obj.ModelNames=="XC14702") = "LI14:XCOR:702" ;
       names(names=="LI20:LGPS:2371") = "LI20:QUAS:2371" ;
       names(names=="LI20:LGPS:2441") = "LI20:QUAS:2441" ;
+      names(names=="LI20:SXTS:2145") = "LI20:LGPS:2145" ;
+      names(names=="LI20:SXTS:2165") = "LI20:LGPS:2165" ;
+      names(names=="LI20:SXTS:2195") = "LI20:LGPS:2195" ;
+      names(names=="LI20:SXTS:2225") = "LI20:LGPS:2195" ;
+      names(names=="LI20:SXTS:2275") = "LI20:LGPS:2275" ;
+      names(names=="LI20:SXTS:2305") = "LI20:LGPS:2275" ;
+      names(names=="LI20:SXTS:2335") = "LI20:LGPS:2335" ;
+      names(names=="LI20:SXTS:2365") = "LI20:LGPS:2365" ;
       
 %       names(obj.ModelNames=="Q5FF") = "LI20:LGPS:3011" ;
 %       names(obj.ModelNames=="Q4FF") = "LI20:LGPS:3311" ;
