@@ -22,6 +22,7 @@ classdef fbSISO < handle
     ControlVar % control variable (PV object)
     ControlReadVar % if set, use this PV to read control variavble, whilst setting with ControlVar
     ControlVarType string {mustBeMember(ControlVarType,["single","doublepm","double"])} = "single" % doublepm = 2 PVs +/- ControlVal
+    ControlMonitorPV string % EPICS PV to write to which is a duplicate of what is written to ControlVar
     SetpointVar % setpoint variable to use (PV or BufferData object)
     QualVar % Setpoint Quality control (PV object)
     ControlStatusVar cell % Control variable status PV (can be list)
@@ -236,7 +237,7 @@ classdef fbSISO < handle
         if obj.ControlProto(1)=="EPICS"
           obj.ControlVal = caget(obj.ControlReadVar(1)) ;
           cvalck = obj.ControlVal ;
-        elseif obj.ControlProto(1)=="MKB"
+        elseif obj.ControlProto(1)=="MKB" % NB: ControlVal only used for bounary checking for MKB device
           obj.ControlVal = obj.ControlReadVar(1).val ;
           cvalck = obj.ControlReadVar(1).DeviceVals(1) ;
         else
@@ -250,7 +251,7 @@ classdef fbSISO < handle
         if obj.ControlProto(end)=="EPICS"
           obj.ControlVal = caget(obj.ControlVar(1)) ;
           cvalck = obj.ControlVal ;
-        elseif obj.ControlProto(end)=="MKB"
+        elseif obj.ControlProto(end)=="MKB" % NB: ControlVal only used for bounary checking for MKB device
           obj.ControlVal = obj.ControlVar(1).val ;
           cvalck = obj.ControlVar(1).DeviceVals(1) ;
         else
@@ -323,11 +324,10 @@ classdef fbSISO < handle
         end
       end
       % Process the feedback if enabled and not in error state
-%       disp(obj.ControlVar(1).pvname);
       if obj.state==0
         % Write to status PV bit
         if ~isempty(obj.StatusPV)
-          newval=uint8(caget(obj.StatusPV));
+          newval=caget(obj.StatusPV);
           bitset(newval,obj.StatusPV_bit+1,1);
           caput(obj.StatusPV,newval);
         end
@@ -359,6 +359,9 @@ classdef fbSISO < handle
                   obj.aidaput(obj.ControlVar(2),v2) ;
                 end
               end
+              if ~isempty(obj.ControlMonitorPV)
+                lcaPutNoWait(char(obj.ControlMonitorPV),v1);
+              end
             else
               if obj.ControlProto(end)=="EPICS"
                 if obj.Debug>0
@@ -379,6 +382,9 @@ classdef fbSISO < handle
                   obj.aidaput(obj.ControlVar,obj.ControlVal+dc) ;
                 end
               end
+              if ~isempty(obj.ControlMonitorPV)
+                lcaPutNoWait(char(obj.ControlMonitorPV),obj.ControlVal+dc);
+              end
             end
           end
         else
@@ -393,7 +399,7 @@ classdef fbSISO < handle
       else
         % Write to status PV bit
         if ~isempty(obj.StatusPV)
-          newval=uint8(caget(obj.StatusPV));
+          newval=caget(obj.StatusPV);
           bitset(newval,obj.StatusPV_bit+1,0);
           caput(obj.StatusPV,newval);
         end

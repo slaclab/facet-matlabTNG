@@ -80,8 +80,7 @@ classdef F2_Feedback_exported < matlab.apps.AppBase
     Gauge_8                       matlab.ui.control.LinearGauge
     BC11BunchLengthFeedbackPanel  matlab.ui.container.Panel
     SetpointEditField_6           matlab.ui.control.NumericEditField
-    eguLabel                      matlab.ui.control.Label
-    Gauge_10                      matlab.ui.control.LinearGauge
+    fsLabel_2                     matlab.ui.control.Label
     StatusLamp_6                  matlab.ui.control.Lamp
     Switch_6                      matlab.ui.control.Switch
     Gauge_11                      matlab.ui.control.LinearGauge
@@ -90,6 +89,7 @@ classdef F2_Feedback_exported < matlab.apps.AppBase
     EditField_13                  matlab.ui.control.NumericEditField
     EditField_14                  matlab.ui.control.NumericEditField
     NotRunningButton_4            matlab.ui.control.Button
+    Gauge_10                      matlab.ui.control.LinearGauge
     BC14BunchLengthFeedbackPanel  matlab.ui.container.Panel
     SetpointEditField_7           matlab.ui.control.NumericEditField
     fsLabel                       matlab.ui.control.Label
@@ -831,18 +831,11 @@ classdef F2_Feedback_exported < matlab.apps.AppBase
       app.SetpointEditField_6.Position = [17 47 100 29];
       app.SetpointEditField_6.Value = 0.4;
 
-      % Create eguLabel
-      app.eguLabel = uilabel(app.BC11BunchLengthFeedbackPanel);
-      app.eguLabel.FontSize = 16;
-      app.eguLabel.Position = [130 50 32 22];
-      app.eguLabel.Text = 'egu';
-
-      % Create Gauge_10
-      app.Gauge_10 = uigauge(app.BC11BunchLengthFeedbackPanel, 'linear');
-      app.Gauge_10.Limits = [0.1 1];
-      app.Gauge_10.FontSize = 10;
-      app.Gauge_10.Position = [184 30 126 33];
-      app.Gauge_10.Value = 0.4;
+      % Create fsLabel_2
+      app.fsLabel_2 = uilabel(app.BC11BunchLengthFeedbackPanel);
+      app.fsLabel_2.FontSize = 16;
+      app.fsLabel_2.Position = [130 50 25 22];
+      app.fsLabel_2.Text = 'fs';
 
       % Create StatusLamp_6
       app.StatusLamp_6 = uilamp(app.BC11BunchLengthFeedbackPanel);
@@ -869,7 +862,7 @@ classdef F2_Feedback_exported < matlab.apps.AppBase
       % Create BLENLI11359Label
       app.BLENLI11359Label = uilabel(app.BC11BunchLengthFeedbackPanel);
       app.BLENLI11359Label.HorizontalAlignment = 'center';
-      app.BLENLI11359Label.Position = [186 61 88 22];
+      app.BLENLI11359Label.Position = [200 63 88 22];
       app.BLENLI11359Label.Text = 'BLEN:LI11:359';
 
       % Create EditField_13
@@ -892,6 +885,17 @@ classdef F2_Feedback_exported < matlab.apps.AppBase
       app.NotRunningButton_4.FontWeight = 'bold';
       app.NotRunningButton_4.Position = [44 88 419 22];
       app.NotRunningButton_4.Text = 'Not Running';
+
+      % Create Gauge_10
+      app.Gauge_10 = uigauge(app.BC11BunchLengthFeedbackPanel, 'linear');
+      app.Gauge_10.Limits = [-100 100];
+      app.Gauge_10.MajorTicks = [-100 -60 -20 20 60 100];
+      app.Gauge_10.MajorTickLabels = {''};
+      app.Gauge_10.MinorTicks = [-100 -92 -84 -76 -68 -60 -52 -44 -36 -28 -20 -12 -4 4 12 20 28 36 44 52 60 68 76 84 92 100];
+      app.Gauge_10.ScaleColors = [1 0 0;1 0 0;0.3922 0.8314 0.0745];
+      app.Gauge_10.ScaleColorLimits = [-100 -75;75 100;-25 25];
+      app.Gauge_10.FontSize = 10;
+      app.Gauge_10.Position = [185 30 125 32];
 
       % Create BC14BunchLengthFeedbackPanel
       app.BC14BunchLengthFeedbackPanel = uipanel(app.FACETIIFeedbackUIFigure);

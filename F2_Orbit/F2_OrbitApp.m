@@ -584,6 +584,7 @@ classdef F2_OrbitApp < handle & F2_common
       % X1: [x,x',y,y',dE/E] at obj.fitele [mm,mrad]
       
       [xm,ym,xstd,ystd,~,id] = obj.GetOrbit ;
+      xm=xm.*1e-3; ym=ym.*1e-3; xstd=xstd.*1e-3; ystd=ystd.*1e-3;
       
       A = zeros(length(xm)+length(ym),5) ; A(1,:) = [1 0 0 0 0] ; A(length(xm)+1,:) = [0 0 1 0 0] ;
       for ibpm=2:length(id)
@@ -594,7 +595,8 @@ classdef F2_OrbitApp < handle & F2_common
       if obj.dormsplot
         xf = A \ [xstd(:);ystd(:)] ;
       else
-        xf = lscov(A,[xm(:);ym(:)],1./[xstd(:);ystd(:)].^2) ;
+        xf = A \ [xstd(:);ystd(:)] ;
+%         xf = lscov(A,[xm(:);ym(:)],1./[xstd(:);ystd(:)].^2) ;
       end
       i0=obj.LM.istart; 
       [~,R] = RmatAtoB(i0,id(1)); R=R([1:4 6],[1:4 6]);
@@ -607,7 +609,7 @@ classdef F2_OrbitApp < handle & F2_common
         [~,R]=RmatAtoB(id(1),i1);
         X1 = R * xf ;
       end
-        
+      X0=X0.*1e3; X1=X1.*1e3; 
     end
     function StoreRef(obj)
       %STOREREF Store new reference orbit from existing data
