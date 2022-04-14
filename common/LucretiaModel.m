@@ -191,6 +191,8 @@ classdef LucretiaModel < handle & matlab.mixin.Copyable
       names(obj.ModelNames=="YC10412") = "YCOR:IN10:412" ;
       names(obj.ModelNames=="YC14780") = "YCOR:LI14:780" ;
       names(obj.ModelNames=="XC14702") = "LI14:XCOR:702" ;
+      names(names=="LI20:LGPS:2371") = "LI20:QUAS:2371" ;
+      names(names=="LI20:LGPS:2441") = "LI20:QUAS:2441" ;
       
 %       names(obj.ModelNames=="Q5FF") = "LI20:LGPS:3011" ;
 %       names(obj.ModelNames=="Q4FF") = "LI20:LGPS:3311" ;
