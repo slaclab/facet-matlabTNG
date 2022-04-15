@@ -328,8 +328,8 @@ classdef F2_S20Config_exported < matlab.apps.AppBase
     function TCAVConfigButtonPushed(app, event)
       app.ListBox.Value = "DSOTR" ;
       app.DropDown_2.Value = "DTOTR" ;
-      app.BetaX_DES.Value = 5 ;
-      app.BetaY_DES.Value = 5 ;
+      app.BetaX_DES.Value = 6 ;
+      app.BetaY_DES.Value = 6 ;
       app.ListBoxValueChanged;
       app.DropDown_2ValueChanged;
       app.BetaX_DESValueChanged;
