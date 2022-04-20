@@ -285,12 +285,16 @@ classdef F2_mags < handle & matlab.mixin.Copyable & F2_common
       
       % Check BDES and BACT within tolerances
       [bdes_new,bact_new]=obj.ReadB;
-      for imag = find(obj.BDES_err)
+      for imag = find(obj.BDES_err(:)')
         if bdes_err(imag)
+          try
           msg(end+1) = sprintf("!!!!!! %s: BDES out of Tol: Req= %g Act= %g",mnames(imag),obj.BDES(imag),bdes_new(imag));
+          catch ME
+            throw(ME)
+          end
         end
       end
-      for imag = find(obj.BACT_err)
+      for imag = find(obj.BACT_err(:)')
         if bdes_err(imag)
           msg(end+1) = sprintf("!!!!!! %s: BACT out of Tol: BDES= %g Act= %g",mnames(imag),obj.BDES(imag),bact_new(imag));
         end
@@ -398,14 +402,14 @@ classdef F2_mags < handle & matlab.mixin.Copyable & F2_common
       if ~isempty(bdes) && length(bdes)~=length(obj.LM.ControlNames)
         error('BDES vector must be length %d',length(obj.LM.ControlNames))
       end
-      obj.BDES=bdes;
+      obj.BDES=bdes(:)';
       obj.BDES_err = false(size(obj.BDES)) ;
       obj.BACT_err = false(size(obj.BDES)) ;
       if length(obj.BDES) == length(obj.BDES_cntrl)
-        obj.BDES_err(abs(obj.BDES-obj.BDES_cntrl)./abs(obj.BDES) > obj.RelTolBDES) = true ;
-        obj.BDES_err(abs(obj.BDES-obj.BDES_cntrl) < obj.AbsTolBDES) = false ;
-        obj.BACT_err(abs(obj.BDES-obj.BACT_cntrl)./abs(obj.BDES) > obj.RelTolBACT) = true ;
-        obj.BACT_err(abs(obj.BDES-obj.BACT_cntrl) < obj.AbsTolBACT) = false ;
+        obj.BDES_err(abs(obj.BDES(:)'-obj.BDES_cntrl(:)')./abs(obj.BDES(:)') > obj.RelTolBDES(:)') = true ;
+        obj.BDES_err(abs(obj.BDES(:)'-obj.BDES_cntrl(:)') < obj.AbsTolBDES(:)') = false ;
+        obj.BACT_err(abs(obj.BDES(:)'-obj.BACT_cntrl(:)')./abs(obj.BDES(:)') > obj.RelTolBACT(:)') = true ;
+        obj.BACT_err(abs(obj.BDES(:)'-obj.BACT_cntrl(:)') < obj.AbsTolBACT(:)') = false ;
       end
     end
     function kdes = get.KDES_cntrl(obj)

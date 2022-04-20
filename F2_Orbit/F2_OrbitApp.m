@@ -46,7 +46,7 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
     dtheta_y % calculated y corrector kicks (rad)
     xbpm_cor % calculated corrected x bpm vals (mm)
     ybpm_cor % calculated corrected y bpm vals (mm)
-    ebpms_disp(1,4) % dispersion at energy BPMS in mm
+    ebpms_disp(1,5) % dispersion at energy BPMS in mm
     DispData % Dispersion data calculated with svddisp method (mm)
     DispFit % Fitted [dispersion_x; dispersion_y] at each BPM in selected regopm calculated with plotdisp method
     ConfigName string = "none"
@@ -70,7 +70,7 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
     ConfigsDate
   end
   properties(Constant)
-    ebpms string = ["BPM10731" "BPM11333" "BPM14801" "M3E"] % energy BPMs for DL1, BC11, BC14 & BC20
+    ebpms string = ["BPM10731" "BPM11333" "BPM14801" "M3E" "M9E"] % energy BPMs for DL1, BC11, BC14 & BC20 (u/s & d/s)
     epicsxcor = ["XC10121" "XC10221" "XC10311" "XC10381" "XC10411" "XC10491" "XC10521" "XC10641" "XC10721" "XC10761" ...
       "XC11104" "XC11140" "XC11202" "XC11272" "XC11304" "XC11398"]
     epicsycor = ["YC10122" "YC10222" "YC10312" "YC10382" "YC10412" "YC10492" "YC10522" "YC10642" "YC10722" "YC10762" ...
@@ -854,12 +854,7 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
       ahan(1).XLim=[min(z) max(z)];
       ahan(2).XLim=[min(z) max(z)];
       % Plot magnet bar
-      if ~isempty(obj.aobj)
-        obj.aobj.UIAxes5_3.reset;
-        obj.aobj.UIAxes5_3.XLim=[min(z) max(z)];
-        ylabel(obj.aobj.UIAxes5_3,'\eta_x [mm]');
-        AddMagnetPlotZ(id(1),id(end),obj.aobj.UIAxes5_3,'replace');
-      end
+      F2_common.AddMagnetPlotZ(obj.LM.ModelID(1),obj.LM.ModelID(end),ahan(1)) ;
     end
     function plotmia(obj,nmode,cmd,ahan)
       global BEAMLINE
@@ -970,7 +965,7 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
       pl.DataTipTemplate.DataTipRows(end+1) = dataTipTextRow('Name',obj.ycornames(obj.useycor));
       grid(ahan(1),'on');
       grid(ahan(2),'on');
-      xlabel(ahan(1),'Z [m]'); ylabel(ahan(1),'XCOR \theta_x [mrad]');
+      ylabel(ahan(1),'XCOR \theta_x [mrad]');
       xlabel(ahan(2),'Z [m]'); ylabel(ahan(2),'YCOR \theta_y [mrad]');
       ahan(1).XLim=[min(obj.cordat_x.z(obj.usexcor)) max(obj.cordat_x.z(obj.usexcor))];
       ahan(2).XLim=[min(obj.cordat_y.z(obj.useycor)) max(obj.cordat_y.z(obj.useycor))];
@@ -1026,6 +1021,9 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
         hold(ahan(2),'off');
       end
       
+      % Magnet bar
+      F2_common.AddMagnetPlotZ(obj.LM.ModelID(1),obj.LM.ModelID(end),ahan(1)) ;
+      
     end
     function plotbpm(obj,ahan,showmodel,showcors)
       %PLOTBPM Plot BPM averaged orbit
@@ -1065,13 +1063,12 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
       else
         pl=errorbar(xax,z,xm,xstd,'.');
       end
-      xlabel(xax,'Z [m]'); ylabel(xax,'X [mm]');
+      zmin=z(1); zmax=z(end);
+      ylabel(xax,'X [mm]');
       pl.DataTipTemplate.DataTipRows(1).Label = 'Linac Z' ;
       pl.DataTipTemplate.DataTipRows(2).Label = '<X>' ;
       pl.DataTipTemplate.DataTipRows(end+1) = dataTipTextRow('RMS_X',xstd);
       pl.DataTipTemplate.DataTipRows(end+1) = dataTipTextRow('Name',obj.BPMS.modelnames(use));
-%       xax.XLim(1)=BEAMLINE{obj.LM.istart}.Coordi(3);
-%       xax.XLim(2)=BEAMLINE{obj.LM.iend}.Coordi(3);
       grid(xax,'on');
       if obj.BPMS.plotscale>0
         xax.YLim=[-double(obj.BPMS.plotscale) double(obj.BPMS.plotscale)];
@@ -1083,12 +1080,11 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
       else
         pl=errorbar(yax,z,ym,ystd,'.'); xlabel(yax,'Z [m]'); ylabel(yax,'Y [mm]');
       end
+      zmin=min([zmin z(1)]); zmax=max([zmax z(end)]);
       pl.DataTipTemplate.DataTipRows(1).Label = 'Linac Z' ;
       pl.DataTipTemplate.DataTipRows(2).Label = '<Y>' ;
       pl.DataTipTemplate.DataTipRows(end+1) = dataTipTextRow('RMS_Y',ystd);
       pl.DataTipTemplate.DataTipRows(end+1) = dataTipTextRow('Name',obj.BPMS.modelnames(use));
-%       yax.XLim(1)=BEAMLINE{obj.LM.istart}.Coordi(3);
-%       yax.XLim(2)=BEAMLINE{obj.LM.iend}.Coordi(3);
       grid(yax,'on');
       if obj.BPMS.plotscale>0
         yax.YLim=[-double(obj.BPMS.plotscale) double(obj.BPMS.plotscale)];
@@ -1102,9 +1098,11 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
         for icor=find(obj.usexcor(:)')
           line(xax,[obj.cordat_x.z(icor) obj.cordat_x.z(icor)],xax.YLim,'LineStyle','-','Color','black','LineWidth',2);
         end
+        zmin=min([zmin min(obj.cordat_x.z(icor))]); zmax=max([zmax max(obj.cordat_x.z(icor))]);
         for icor=find(obj.useycor(:)')
           line(yax,[obj.cordat_y.z(icor) obj.cordat_y.z(icor)],yax.YLim,'LineStyle','-','Color','black','LineWidth',2);
         end
+        zmin=min([zmin min(obj.cordat_y.z(icor))]); zmax=max([zmax max(obj.cordat_y.z(icor))]);
         hold(xax,'off');
         hold(yax,'off');
       end
@@ -1146,13 +1144,11 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
       end
       % Plot magnet bar
       if ~isempty(obj.aobj)
-        obj.aobj.UIAxes_3.reset;
-        obj.aobj.UIAxes_3.XLim=xax.XLim;
-        ylabel(obj.aobj.UIAxes_3,'X [mm]');
-        i1=obj.LM.ModelID(find(obj.LM.ModelZ>xax.XLim(1),1,'first'));
-        i2=obj.LM.ModelID(find(obj.LM.ModelZ<xax.XLim(2),1,'last'));
-        AddMagnetPlotZ(i1,i2,obj.aobj.UIAxes_3,'replace');
+        F2_common.AddMagnetPlotZ(obj.LM.ModelID(1),obj.LM.ModelID(end),ahan(1)) ;
       end
+      ahan(1).XLim=[zmin zmax];
+      ahan(2).XLim=[zmin zmax];
+      
     end
     function [xm,ym,xstd,ystd,use,id] = GetOrbit(obj)
       %GETORBIT Return mean and rms orbit from raw data

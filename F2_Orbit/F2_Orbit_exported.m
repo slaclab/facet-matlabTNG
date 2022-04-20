@@ -6,7 +6,7 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
     ConfigMenu                   matlab.ui.container.Menu
     SelectMenu                   matlab.ui.container.Menu
     NoneMenu                     matlab.ui.container.Menu
-    NewMenu                      matlab.ui.container.Menu
+    SaveAsMenu                   matlab.ui.container.Menu
     SaveMenu                     matlab.ui.container.Menu
     DeleteMenu                   matlab.ui.container.Menu
     BPMsPanel                    matlab.ui.container.Panel
@@ -33,8 +33,7 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
     lsqlinButton                 matlab.ui.control.RadioButton
     ShowModelFitButton           matlab.ui.control.StateButton
     UndoCorrectionButton         matlab.ui.control.Button
-    UIAxes_3                     matlab.ui.control.UIAxes
-    UseBPMsButton                matlab.ui.control.StateButton
+    ModelFitButton               matlab.ui.control.StateButton
     rmsChoose                    matlab.ui.control.StateButton
     OrbitFitPanel                matlab.ui.container.Panel
     EditField_3                  matlab.ui.control.NumericEditField
@@ -61,16 +60,14 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
     dEMeVLabel                   matlab.ui.control.Label
     EditField_13                 matlab.ui.control.EditField
     SelectFitLocationButton      matlab.ui.control.Button
+    DropDown_5                   matlab.ui.control.DropDown
     DropDown_4                   matlab.ui.control.DropDown
     TakeNewRefButton             matlab.ui.control.Button
     ShowCors                     matlab.ui.control.StateButton
     CorrectorsTab                matlab.ui.container.Tab
-    GridLayout2                  matlab.ui.container.GridLayout
     UIAxes2                      matlab.ui.control.UIAxes
     UIAxes3                      matlab.ui.control.UIAxes
-    PlotTypeButtonGroup          matlab.ui.container.ButtonGroup
-    StemButton                   matlab.ui.control.RadioButton
-    QuiverButton                 matlab.ui.control.RadioButton
+    ShowMaxButton                matlab.ui.control.StateButton
     DispersionTab                matlab.ui.container.Tab
     UIAxes5                      matlab.ui.control.UIAxes
     UIAxes5_2                    matlab.ui.control.UIAxes
@@ -80,6 +77,7 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
     ShowModelFitButton_2         matlab.ui.control.StateButton
     UIAxes5_3                    matlab.ui.control.UIAxes
     DL1_EFB_Jit                  matlab.ui.control.StateButton
+    DropDown_6                   matlab.ui.control.DropDown
     MIATab                       matlab.ui.container.Tab
     UIAxes6                      matlab.ui.control.UIAxes
     PlotOptionPanel              matlab.ui.container.Panel
@@ -109,7 +107,7 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
     BC20Button                   matlab.ui.control.StateButton
     FFSButton                    matlab.ui.control.StateButton
     SPECTButton                  matlab.ui.control.StateButton
-    AcquireOrbitButton           matlab.ui.control.Button
+    AcquireButton                matlab.ui.control.Button
     NPulseEditFieldLabel         matlab.ui.control.Label
     NPulseEditField              matlab.ui.control.NumericEditField
     PlotRangeDropDownLabel       matlab.ui.control.Label
@@ -185,27 +183,25 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
       global BEAMLINE
       switch app.TabGroup.SelectedTab
         case app.OrbitTab
-          app.UseBPMsButton.Value=app.aobj.domodelfit;
+          app.ModelFitButton.Value=app.aobj.domodelfit;
           if ~isempty(app.aobj.BPMS.xdat) && any(~isnan(app.aobj.BPMS.xdat(:)))
             try
               [~,X1]=app.aobj.orbitfit;
             catch
               X1=nan(5,1);
+              disp('Orbit fit failed');
             end
-            try
+            if ~isnan(X1(1))
               app.EditField_3.Value = X1(1) ;
               app.EditField_5.Value = X1(2) ;
               app.EditField_7.Value = X1(3) ;
               app.EditField_9.Value = X1(4) ;
               app.EditField_11.Value = X1(5) * BEAMLINE{app.aobj.fitele}.P * 1000 ;
-            catch ME
-              disp('Orbit fit failed:');
-              disp(ME.message);
             end
             app.aobj.plotbpm([app.UIAxes app.UIAxes_2],app.ShowModelFitButton.Value,app.ShowCors.Value);
           end
         case app.CorrectorsTab
-          app.aobj.plotcor([app.UIAxes2 app.UIAxes3]);
+          app.aobj.plotcor([app.UIAxes2 app.UIAxes3],app.ShowMaxButton.Value);
         case app.DispersionTab
           if ~app.aobj.usebpmbuff
             errordlg('Must acquire data with Buffered data selected to analyze dispersion','Disp Calc Error');
@@ -226,9 +222,9 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
       drawnow
     end
 
-    % Button pushed function: AcquireOrbitButton
-    function AcquireOrbitButtonPushed(app, event)
-      app.AcquireOrbitButton.Enable=false;
+    % Button pushed function: AcquireButton
+    function AcquireButtonPushed(app, event)
+      app.AcquireButton.Enable=false;
       app.NReadEditField.Value=0;
       drawnow
       try
@@ -239,10 +235,10 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
         app.aobj.WriteGuiListBox();
         app.NReadEditField.Value = double(app.aobj.BPMS.nread) ;
         app.TabGroupSelectionChanged();
-        app.AcquireOrbitButton.Enable=true; drawnow;
+        app.AcquireButton.Enable=true; drawnow;
       catch ME
         errordlg(sprintf('Failed to acquire new BPM values: %s',ME.message));
-        app.AcquireOrbitButton.Enable=true; drawnow;
+        app.AcquireButton.Enable=true; drawnow;
         lcaPutNoWait('SIOC:SYS1:ML01:AO217',0);
       end
       if app.DL1_EFB_Jit.Value
@@ -482,15 +478,10 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
       end
     end
 
-    % Value changed function: UseBPMsButton
-    function UseBPMsButtonValueChanged(app, event)
-      value = app.UseBPMsButton.Value;
+    % Value changed function: ModelFitButton
+    function ModelFitButtonValueChanged(app, event)
+      value = app.ModelFitButton.Value;
       app.aobj.domodelfit=value;
-      if value
-        app.UseBPMsButton.Text = "Use Model Fit";
-      else
-        app.UseBPMsButton.Text = "Use BPMs";
-      end
     end
 
     % Value changed function: UseBufferedDataCheckBox
@@ -503,15 +494,10 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
     function rmsChooseValueChanged(app, event)
       value = app.rmsChoose.Value;
       app.aobj.dormsplot=value;
-      if value
-        app.rmsChoose.Text = "Use RMS";
-      else
-        app.rmsChoose.Text = "Use Orbit";
-      end
       app.TabGroupSelectionChanged;
     end
 
-    % Selection changed function: PlotTypeButtonGroup
+    % Callback function
     function PlotTypeButtonGroupSelectionChanged(app, event)
       selectedButton = app.PlotTypeButtonGroup.SelectedObject;
       switch selectedButton
@@ -555,9 +541,11 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
 
     % Button pushed function: SelectFitLocationButton
     function SelectFitLocationButtonPushed(app, event)
+      LM=copy(app.aobj.LM);
+      LM.ModelClasses="All";
       ele = ElementChooser(app.aobj.LM).GetChoice;
       if ~isnan(ele(1))
-        if ele < app.aobj.LM.istart || ele > app.aobj.LM.iend
+        if app.aobj.LM.ModelID() < app.aobj.LM.istart || app.aobj.LM.ModelID(ele) > app.aobj.LM.iend
           errordlg('Chosen element outside of active region','Element Choice Error');
           return
         end
@@ -575,11 +563,11 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
     function DropDown_4ValueChanged(app, event)
       value = app.DropDown_4.Value;
       switch value
-        case 1
+        case '1'
           app.aobj.UseRefOrbit="none";
-        case 2
+        case '2'
           app.aobj.UseRefOrbit="local";
-        case 3
+        case '3'
           app.aobj.UseRefOrbit="config";
         otherwise
           error('Ref orbit selection error');
@@ -601,16 +589,30 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
     function NPulseEditFieldValueChanged(app, event)
       value = app.NPulseEditField.Value;
       app.aobj.npulse = value ;
+      app.TabGroupSelectionChanged;
     end
 
-    % Menu selected function: NewMenu
-    function NewMenuSelected(app, event)
+    % Menu selected function: SaveAsMenu
+    function SaveAsMenuSelected(app, event)
       cname=inputdlg('Provide new configuration name','Save New Config',1);
       if ~isempty(cname)
         name=string(cname{1});
-        app.aobj.ConfigSave(name);
-        uimenu(app.SelectMenu,'Text',name + "  (" + datestr(now) + ")",'Tag',name,'MenuSelectedFcn',@(source,event) app.aobj.GuiConfigLoad(event));
+        if ismember(name,app.aobj.Configs)
+          if string(questdlg('Configuration file exists, overwrite?','Overwrite Config?','Yes','No','No'))=="Yes"
+            app.aobj.ConfigSave(name);
+          end
+        else
+          app.aobj.ConfigSave(name);
+          uimenu(app.SelectMenu,'Text',name + "  (" + datestr(now) + ")",'Tag',name,'MenuSelectedFcn',@(source,event) app.aobj.GuiConfigLoad(event));
+        end
         app.FACETIIOrbitToolconfignoneUIFigure.Name = sprintf("FACET-II Orbit Tool [config = %s]",name);
+        for imenu=1:length(app.SelectMenu.Children)
+          if string(app.SelectMenu.Children(imenu).Tag) == name
+            app.SelectMenu.Children(imenu).Checked=1;
+          else
+            app.SelectMenu.Children(imenu).Checked=0;
+          end
+        end
       end
     end
 
@@ -622,6 +624,32 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
       end
       app.NoneMenu.Checked = 1 ;
       app.FACETIIOrbitToolconfignoneUIFigure.Name = sprintf("FACET-II Orbit Tool [config = %s]","none");
+    end
+
+    % Value changed function: DropDown_5
+    function DropDown_5ValueChanged(app, event)
+      value = app.DropDown_5.Value;
+      app.DropDown_6.Value = value ;
+      app.aobj.orbitfitmethod=value;
+      app.TabGroupSelectionChanged;
+    end
+
+    % Value changed function: ShowCors
+    function ShowCorsValueChanged(app, event)
+      app.TabGroupSelectionChanged;
+    end
+
+    % Value changed function: ShowMaxButton
+    function ShowMaxButtonValueChanged(app, event)
+      app.TabGroupSelectionChanged;
+    end
+
+    % Value changed function: DropDown_6
+    function DropDown_6ValueChanged(app, event)
+      value = app.DropDown_6.Value;
+      app.DropDown_5.Value = value ;
+      app.aobj.orbitfitmethod=value;
+      app.TabGroupSelectionChanged;
     end
   end
 
@@ -652,10 +680,10 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
       app.NoneMenu.Text = 'None';
       app.NoneMenu.Tag = 'none';
 
-      % Create NewMenu
-      app.NewMenu = uimenu(app.ConfigMenu);
-      app.NewMenu.MenuSelectedFcn = createCallbackFcn(app, @NewMenuSelected, true);
-      app.NewMenu.Text = 'New';
+      % Create SaveAsMenu
+      app.SaveAsMenu = uimenu(app.ConfigMenu);
+      app.SaveAsMenu.MenuSelectedFcn = createCallbackFcn(app, @SaveAsMenuSelected, true);
+      app.SaveAsMenu.Text = 'Save As...';
 
       % Create SaveMenu
       app.SaveMenu = uimenu(app.ConfigMenu);
@@ -716,7 +744,7 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
       xlabel(app.UIAxes, 'X')
       ylabel(app.UIAxes, 'Y')
       app.UIAxes.FontSize = 14;
-      app.UIAxes.Position = [134 223 712 220];
+      app.UIAxes.Position = [134 264 712 290];
 
       % Create CalcCorrectionButton
       app.CalcCorrectionButton = uibutton(app.OrbitTab, 'push');
@@ -753,7 +781,7 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
       xlabel(app.UIAxes_2, 'X')
       ylabel(app.UIAxes_2, 'Y')
       app.UIAxes_2.FontSize = 14;
-      app.UIAxes_2.Position = [134 4 712 220];
+      app.UIAxes_2.Position = [134 4 712 247];
 
       % Create CorrectionSolverButtonGroup
       app.CorrectionSolverButtonGroup = uibuttongroup(app.OrbitTab);
@@ -818,154 +846,153 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
       app.UndoCorrectionButton.Position = [14 441 105 29];
       app.UndoCorrectionButton.Text = 'Undo Correction';
 
-      % Create UIAxes_3
-      app.UIAxes_3 = uiaxes(app.OrbitTab);
-      title(app.UIAxes_3, {''; ''})
-      xlabel(app.UIAxes_3, 'X')
-      ylabel(app.UIAxes_3, 'Y')
-      app.UIAxes_3.FontSize = 14;
-      app.UIAxes_3.Position = [180 440 666 115];
-
-      % Create UseBPMsButton
-      app.UseBPMsButton = uibutton(app.OrbitTab, 'state');
-      app.UseBPMsButton.ValueChangedFcn = createCallbackFcn(app, @UseBPMsButtonValueChanged, true);
-      app.UseBPMsButton.Text = 'Use BPMs';
-      app.UseBPMsButton.Position = [17 346 100 23];
+      % Create ModelFitButton
+      app.ModelFitButton = uibutton(app.OrbitTab, 'state');
+      app.ModelFitButton.ValueChangedFcn = createCallbackFcn(app, @ModelFitButtonValueChanged, true);
+      app.ModelFitButton.Text = 'Use Model Fit';
+      app.ModelFitButton.Position = [17 346 100 23];
 
       % Create rmsChoose
       app.rmsChoose = uibutton(app.OrbitTab, 'state');
       app.rmsChoose.ValueChangedFcn = createCallbackFcn(app, @rmsChooseValueChanged, true);
-      app.rmsChoose.Text = 'Use Orbit';
+      app.rmsChoose.Text = 'Show RMS';
       app.rmsChoose.Position = [9 247 115 27];
 
       % Create OrbitFitPanel
       app.OrbitFitPanel = uipanel(app.OrbitTab);
       app.OrbitFitPanel.AutoResizeChildren = 'off';
       app.OrbitFitPanel.Title = 'Orbit Fit';
-      app.OrbitFitPanel.Position = [868 59 172 476];
+      app.OrbitFitPanel.Position = [868 46 172 508];
 
       % Create EditField_3
       app.EditField_3 = uieditfield(app.OrbitFitPanel, 'numeric');
       app.EditField_3.Editable = 'off';
-      app.EditField_3.Position = [24 348 90 22];
+      app.EditField_3.Position = [26 352 90 22];
 
       % Create EditField_4
       app.EditField_4 = uieditfield(app.OrbitFitPanel, 'numeric');
       app.EditField_4.ValueChangedFcn = createCallbackFcn(app, @EditField_4ValueChanged, true);
-      app.EditField_4.Position = [24 322 90 22];
+      app.EditField_4.Position = [26 326 90 22];
 
       % Create EditField_5
       app.EditField_5 = uieditfield(app.OrbitFitPanel, 'numeric');
       app.EditField_5.Editable = 'off';
-      app.EditField_5.Position = [24 266 90 22];
+      app.EditField_5.Position = [26 270 90 22];
 
       % Create EditField_6
       app.EditField_6 = uieditfield(app.OrbitFitPanel, 'numeric');
       app.EditField_6.ValueChangedFcn = createCallbackFcn(app, @EditField_6ValueChanged, true);
-      app.EditField_6.Position = [24 241 90 22];
+      app.EditField_6.Position = [26 245 90 22];
 
       % Create EditField_7
       app.EditField_7 = uieditfield(app.OrbitFitPanel, 'numeric');
       app.EditField_7.Editable = 'off';
-      app.EditField_7.Position = [22 183 90 22];
+      app.EditField_7.Position = [24 187 90 22];
 
       % Create EditField_8
       app.EditField_8 = uieditfield(app.OrbitFitPanel, 'numeric');
       app.EditField_8.ValueChangedFcn = createCallbackFcn(app, @EditField_8ValueChanged, true);
-      app.EditField_8.Position = [22 157 90 22];
+      app.EditField_8.Position = [24 161 90 22];
 
       % Create EditField_9
       app.EditField_9 = uieditfield(app.OrbitFitPanel, 'numeric');
       app.EditField_9.Editable = 'off';
-      app.EditField_9.Position = [22 95 90 22];
+      app.EditField_9.Position = [24 99 90 22];
 
       % Create EditField_10
       app.EditField_10 = uieditfield(app.OrbitFitPanel, 'numeric');
       app.EditField_10.ValueChangedFcn = createCallbackFcn(app, @EditField_10ValueChanged, true);
-      app.EditField_10.Position = [22 70 90 22];
+      app.EditField_10.Position = [24 74 90 22];
 
       % Create XmmLabel
       app.XmmLabel = uilabel(app.OrbitFitPanel);
-      app.XmmLabel.Position = [42 369 44 22];
+      app.XmmLabel.Position = [44 373 44 22];
       app.XmmLabel.Text = 'X (mm)';
 
       % Create XANGmmLabel
       app.XANGmmLabel = uilabel(app.OrbitFitPanel);
-      app.XANGmmLabel.Position = [42 287 70 22];
+      app.XANGmmLabel.Position = [44 291 70 22];
       app.XANGmmLabel.Text = 'XANG (mm)';
 
       % Create YmmLabel
       app.YmmLabel = uilabel(app.OrbitFitPanel);
-      app.YmmLabel.Position = [40 209 44 22];
+      app.YmmLabel.Position = [42 213 44 22];
       app.YmmLabel.Text = 'Y (mm)';
 
       % Create YANGmmLabel
       app.YANGmmLabel = uilabel(app.OrbitFitPanel);
-      app.YANGmmLabel.Position = [40 118 70 22];
+      app.YANGmmLabel.Position = [42 122 70 22];
       app.YANGmmLabel.Text = 'YANG (mm)';
 
       % Create ACTLabel
       app.ACTLabel = uilabel(app.OrbitFitPanel);
-      app.ACTLabel.Position = [124 348 29 22];
+      app.ACTLabel.Position = [126 352 29 22];
       app.ACTLabel.Text = 'ACT';
 
       % Create DESLabel
       app.DESLabel = uilabel(app.OrbitFitPanel);
-      app.DESLabel.Position = [123 321 30 22];
+      app.DESLabel.Position = [125 325 30 22];
       app.DESLabel.Text = 'DES';
 
       % Create ACTLabel_2
       app.ACTLabel_2 = uilabel(app.OrbitFitPanel);
-      app.ACTLabel_2.Position = [124 268 29 22];
+      app.ACTLabel_2.Position = [126 272 29 22];
       app.ACTLabel_2.Text = 'ACT';
 
       % Create DESLabel_2
       app.DESLabel_2 = uilabel(app.OrbitFitPanel);
-      app.DESLabel_2.Position = [123 241 30 22];
+      app.DESLabel_2.Position = [125 245 30 22];
       app.DESLabel_2.Text = 'DES';
 
       % Create ACTLabel_3
       app.ACTLabel_3 = uilabel(app.OrbitFitPanel);
-      app.ACTLabel_3.Position = [118 183 29 22];
+      app.ACTLabel_3.Position = [120 187 29 22];
       app.ACTLabel_3.Text = 'ACT';
 
       % Create DESLabel_3
       app.DESLabel_3 = uilabel(app.OrbitFitPanel);
-      app.DESLabel_3.Position = [117 156 30 22];
+      app.DESLabel_3.Position = [119 160 30 22];
       app.DESLabel_3.Text = 'DES';
 
       % Create ACTLabel_4
       app.ACTLabel_4 = uilabel(app.OrbitFitPanel);
-      app.ACTLabel_4.Position = [120 96 29 22];
+      app.ACTLabel_4.Position = [122 100 29 22];
       app.ACTLabel_4.Text = 'ACT';
 
       % Create DESLabel_4
       app.DESLabel_4 = uilabel(app.OrbitFitPanel);
-      app.DESLabel_4.Position = [119 69 30 22];
+      app.DESLabel_4.Position = [121 73 30 22];
       app.DESLabel_4.Text = 'DES';
 
       % Create EditField_11
       app.EditField_11 = uieditfield(app.OrbitFitPanel, 'numeric');
       app.EditField_11.Editable = 'off';
-      app.EditField_11.Position = [24 12 90 22];
+      app.EditField_11.Position = [26 16 90 22];
 
       % Create dEMeVLabel
       app.dEMeVLabel = uilabel(app.OrbitFitPanel);
-      app.dEMeVLabel.Position = [42 35 56 22];
+      app.dEMeVLabel.Position = [44 39 56 22];
       app.dEMeVLabel.Text = 'dE (MeV)';
 
       % Create EditField_13
       app.EditField_13 = uieditfield(app.OrbitFitPanel, 'text');
       app.EditField_13.Editable = 'off';
       app.EditField_13.HorizontalAlignment = 'center';
-      app.EditField_13.Position = [11 401 142 22];
+      app.EditField_13.Position = [11 433 142 22];
       app.EditField_13.Value = '<FitLocation>';
 
       % Create SelectFitLocationButton
       app.SelectFitLocationButton = uibutton(app.OrbitFitPanel, 'push');
       app.SelectFitLocationButton.ButtonPushedFcn = createCallbackFcn(app, @SelectFitLocationButtonPushed, true);
-      app.SelectFitLocationButton.Position = [11 427 142 23];
+      app.SelectFitLocationButton.Position = [11 459 142 23];
       app.SelectFitLocationButton.Text = 'Select Fit Location';
+
+      % Create DropDown_5
+      app.DropDown_5 = uidropdown(app.OrbitFitPanel);
+      app.DropDown_5.Items = {'lscov', 'backslash'};
+      app.DropDown_5.ValueChangedFcn = createCallbackFcn(app, @DropDown_5ValueChanged, true);
+      app.DropDown_5.Position = [13 402 139 22];
+      app.DropDown_5.Value = 'lscov';
 
       % Create DropDown_4
       app.DropDown_4 = uidropdown(app.OrbitTab);
@@ -983,6 +1010,7 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
 
       % Create ShowCors
       app.ShowCors = uibutton(app.OrbitTab, 'state');
+      app.ShowCors.ValueChangedFcn = createCallbackFcn(app, @ShowCorsValueChanged, true);
       app.ShowCors.Text = 'Show Corrector Locations';
       app.ShowCors.Position = [868 10 156 28];
 
@@ -990,45 +1018,25 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
       app.CorrectorsTab = uitab(app.TabGroup);
       app.CorrectorsTab.Title = 'Correctors';
 
-      % Create GridLayout2
-      app.GridLayout2 = uigridlayout(app.CorrectorsTab);
-      app.GridLayout2.ColumnWidth = {'12x', '1x'};
-
       % Create UIAxes2
-      app.UIAxes2 = uiaxes(app.GridLayout2);
+      app.UIAxes2 = uiaxes(app.CorrectorsTab);
       title(app.UIAxes2, '')
       xlabel(app.UIAxes2, 'X')
       ylabel(app.UIAxes2, 'Y')
-      app.UIAxes2.FontSize = 14;
-      app.UIAxes2.Layout.Row = 1;
-      app.UIAxes2.Layout.Column = 1;
+      app.UIAxes2.Position = [9 282 1025 240];
 
       % Create UIAxes3
-      app.UIAxes3 = uiaxes(app.GridLayout2);
+      app.UIAxes3 = uiaxes(app.CorrectorsTab);
       title(app.UIAxes3, '')
       xlabel(app.UIAxes3, 'X')
       ylabel(app.UIAxes3, 'Y')
-      app.UIAxes3.FontSize = 14;
-      app.UIAxes3.Layout.Row = 2;
-      app.UIAxes3.Layout.Column = 1;
+      app.UIAxes3.Position = [8 21 1024 240];
 
-      % Create PlotTypeButtonGroup
-      app.PlotTypeButtonGroup = uibuttongroup(app.GridLayout2);
-      app.PlotTypeButtonGroup.SelectionChangedFcn = createCallbackFcn(app, @PlotTypeButtonGroupSelectionChanged, true);
-      app.PlotTypeButtonGroup.Title = 'Plot Type';
-      app.PlotTypeButtonGroup.Layout.Row = 1;
-      app.PlotTypeButtonGroup.Layout.Column = 2;
-
-      % Create StemButton
-      app.StemButton = uiradiobutton(app.PlotTypeButtonGroup);
-      app.StemButton.Text = 'Stem';
-      app.StemButton.Position = [7 216 58 22];
-      app.StemButton.Value = true;
-
-      % Create QuiverButton
-      app.QuiverButton = uiradiobutton(app.PlotTypeButtonGroup);
-      app.QuiverButton.Text = 'Quiver';
-      app.QuiverButton.Position = [7 194 65 22];
+      % Create ShowMaxButton
+      app.ShowMaxButton = uibutton(app.CorrectorsTab, 'state');
+      app.ShowMaxButton.ValueChangedFcn = createCallbackFcn(app, @ShowMaxButtonValueChanged, true);
+      app.ShowMaxButton.Text = 'Show Min.Max Envelope';
+      app.ShowMaxButton.Position = [889 534 150 23];
 
       % Create DispersionTab
       app.DispersionTab = uitab(app.TabGroup);
@@ -1081,8 +1089,16 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
 
       % Create DL1_EFB_Jit
       app.DL1_EFB_Jit = uibutton(app.DispersionTab, 'state');
+      app.DL1_EFB_Jit.Enable = 'off';
       app.DL1_EFB_Jit.Text = 'DL1 Energy FB Jitter';
       app.DL1_EFB_Jit.Position = [910 21 127 39];
+
+      % Create DropDown_6
+      app.DropDown_6 = uidropdown(app.DispersionTab);
+      app.DropDown_6.Items = {'lscov', 'backslash'};
+      app.DropDown_6.ValueChangedFcn = createCallbackFcn(app, @DropDown_6ValueChanged, true);
+      app.DropDown_6.Position = [922 358 99 22];
+      app.DropDown_6.Value = 'lscov';
 
       % Create MIATab
       app.MIATab = uitab(app.TabGroup);
@@ -1289,12 +1305,12 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
       app.SPECTButton.Layout.Column = 11;
       app.SPECTButton.Value = true;
 
-      % Create AcquireOrbitButton
-      app.AcquireOrbitButton = uibutton(app.FACETIIOrbitToolconfignoneUIFigure, 'push');
-      app.AcquireOrbitButton.ButtonPushedFcn = createCallbackFcn(app, @AcquireOrbitButtonPushed, true);
-      app.AcquireOrbitButton.Interruptible = 'off';
-      app.AcquireOrbitButton.Position = [187 9 100 23];
-      app.AcquireOrbitButton.Text = 'Acquire Orbit';
+      % Create AcquireButton
+      app.AcquireButton = uibutton(app.FACETIIOrbitToolconfignoneUIFigure, 'push');
+      app.AcquireButton.ButtonPushedFcn = createCallbackFcn(app, @AcquireButtonPushed, true);
+      app.AcquireButton.Interruptible = 'off';
+      app.AcquireButton.Position = [187 9 100 23];
+      app.AcquireButton.Text = 'Acquire';
 
       % Create NPulseEditFieldLabel
       app.NPulseEditFieldLabel = uilabel(app.FACETIIOrbitToolconfignoneUIFigure);
