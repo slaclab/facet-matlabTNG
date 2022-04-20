@@ -1,4 +1,4 @@
-classdef F2_OrbitApp < handle & F2_common
+classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
   properties
     bpmid uint16 % Master list of BPM IDs
     xcorid uint16 % Master list of x corrector IDs
@@ -25,13 +25,13 @@ classdef F2_OrbitApp < handle & F2_common
     usex logical = true % apply x corrections when asked?
     usey logical = true % apply y corrections when asked?
     nmode uint8 = inf % # of svd modes to include in correction (for corsolv="svd")
-    corplottype string {mustBeMember(corplottype,["stem","quiver"])} = "stem" % Plotting type for correctors
     domodelfit logical = false % If true, correct based on model fit, else, correct based on raw BPM readings
     usebpmbuff logical = true % If true, use buffered BPM data, else use EPICS-based non-synchronous data
     dormsplot logical = false % if true, plot rms data instead of mean orbit
     fitele uint16 % fit element
     CorrectionOffset(4,1) = [0; 0; 0; 0;] % Desired correction offset when using domodelfit
     npulse {mustBePositive} = 50 % default/GUI value for number of pulses of BPM data to take
+    orbitfitmethod string {mustBeMember(orbitfitmethod,["lscov","backslash"])} = "lscov"
   end
   properties(Transient)
     BPMS % Storage for F2_bpms object
@@ -118,7 +118,7 @@ classdef F2_OrbitApp < handle & F2_common
         obj.xcorpv{icor,1} = char(obj.xcorcnames(icor)+":BDES");
         obj.xcormaxpv{icor,1} = char(obj.xcorcnames(icor)+":BMAX");
       end
-      obj.dtheta_x=zeros(size(obj.xcornames));
+      obj.dtheta_x=zeros(size(obj.xcornames)); obj.dtheta_x=obj.dtheta_x(:);
       obj.LM.ModelClasses="YCOR";
       obj.ycornames = obj.LM.ModelNames ;
       obj.ycorcnames = obj.LM.ControlNames ;
@@ -129,13 +129,11 @@ classdef F2_OrbitApp < handle & F2_common
         obj.ycorpv{icor,1} = char(obj.ycorcnames(icor)+":BDES");
         obj.ycormaxpv{icor,1} = char(obj.ycorcnames(icor)+":BMAX");
       end
-      obj.dtheta_y=zeros(size(obj.ycornames));
-      % Load model, get dispersions at ebpms
-      load(F2_common.LucretiaLattice,'BEAMLINE','Initial');
-      [~,T]=GetTwiss(1,length(BEAMLINE),Initial.x.Twiss,Initial.y.Twiss);
+      obj.dtheta_y=zeros(size(obj.ycornames));obj.dtheta_y=obj.dtheta_y(:);
+      % get dispersions at ebpms
       for ibpm=1:length(obj.ebpms)
         bpmind = findcells(BEAMLINE,'Name',char(obj.ebpms(ibpm))) ;
-        obj.ebpms_disp(ibpm) = T.etax(bpmind)*1e3 ;
+        obj.ebpms_disp(ibpm) = obj.LM.DesignTwiss.etax(bpmind)*1e3 ;
       end
       obj.fitele = length(BEAMLINE) ;
       % Populate Config menu
@@ -210,17 +208,17 @@ classdef F2_OrbitApp < handle & F2_common
         icor=[ixc(:); iyc(:)];
         R = zeros(4,length(icor));
         for ncor=1:length(icor)
-          [~,Rm]=RmatAtoB(icor(ncor),iend);
+          [~,Rm]=RmatAtoB(icor(ncor),double(iend));
           if ncor<=nxc
             R(1,ncor) = Rm(1,2) ;
             R(2,ncor) = Rm(2,2) ;
             R(3,ncor) = Rm(3,2) ;
             R(4,ncor) = Rm(4,2) ;
           else
-            R(1,ncor+nxc) = Rm(1,4) ;
-            R(2,ncor+nxc) = Rm(2,4) ;
-            R(3,ncor+nxc) = Rm(3,4) ;
-            R(4,ncor+nxc) = Rm(4,4) ;
+            R(1,ncor) = Rm(1,4) ;
+            R(2,ncor) = Rm(2,4) ;
+            R(3,ncor) = Rm(3,4) ;
+            R(4,ncor) = Rm(4,4) ;
           end
         end
         switch obj.corsolv
@@ -258,7 +256,7 @@ classdef F2_OrbitApp < handle & F2_common
           case "lscov"
             dcor = lscov(A,B,W) ;
           case "pinv"
-            dcor = pinv(A)*B ;
+            dcor = A\B ;
           case "lsqminnorm"
             if ~isempty(obj.solvtol)
               dcor = lsqminnorm(A,B,obj.solvtol) ;
@@ -280,8 +278,8 @@ classdef F2_OrbitApp < handle & F2_common
       end
       
       % Store correction kicks and expected BPM response
-      obj.dtheta_x(obj.usexcor) = dcor(1:sum(obj.usexcor)) ;
-      obj.dtheta_y(obj.useycor) = dcor(1+sum(obj.usexcor):end) ;
+      obj.dtheta_x(obj.usexcor) = dcor(1:sum(obj.usexcor)) ; obj.dtheta_x=obj.dtheta_x(:);
+      obj.dtheta_y(obj.useycor) = dcor(1+sum(obj.usexcor):end) ; obj.dtheta_y=obj.dtheta_y(:);
       bpm_cor = [xm(:); ym(:)] + A*dcor ;
       obj.xbpm_cor(obj.usebpm) = 1e3.*bpm_cor(1:sum(obj.usebpm)) ;
       obj.ybpm_cor(obj.usebpm) = 1e3.*bpm_cor(1+sum(obj.usebpm):end) ;
@@ -375,7 +373,7 @@ classdef F2_OrbitApp < handle & F2_common
       ixc = double(obj.xcorid(obj.usexcor)) ;
       iyc = double(obj.ycorid(obj.useycor)) ;
       ibpm = double(obj.bpmid(obj.usebpm)) ;
-      icor=[ixc iyc];
+      icor=[ixc; iyc];
       obj.RM = zeros(2*length(ibpm),length(icor));
       for ncor=1:length(icor)
         for nbpm=1:length(ibpm)
@@ -416,7 +414,7 @@ classdef F2_OrbitApp < handle & F2_common
       % Get energy
       id = find(ismember(obj.BPMS.modelnames,obj.ebpms)&ismember(obj.BPMS.modelnames,obj.bpmnames(obj.usebpm))) ;
       if isempty(id)
-        error('BPM selection doesn''t include and energy BPM');
+        error('BPM selection doesn''t include an energy BPM');
       end
       ide = id(end) ;
       dispx=nan(1,sum(obj.usebpm)); dispy=dispx; dispx_err=dispx; dispy_err=dispx;
@@ -580,7 +578,7 @@ classdef F2_OrbitApp < handle & F2_common
     function [X0,X1] = orbitfit(obj)
       %ORBITFIT Fit an orbit to selected location
       %[X0,X1] = orbitfit()
-      % X0: [x,x',y,y',dE/E] at start of region [mm,mrad]
+      % X0: [x,x',y,y',dE/E] at start of region (istart) [mm,mrad]
       % X1: [x,x',y,y',dE/E] at obj.fitele [mm,mrad]
       
       [xm,ym,xstd,ystd,~,id] = obj.GetOrbit ;
@@ -595,21 +593,25 @@ classdef F2_OrbitApp < handle & F2_common
       if obj.dormsplot
         xf = A \ [xstd(:);ystd(:)] ;
       else
-        xf = A \ [xstd(:);ystd(:)] ;
-%         xf = lscov(A,[xm(:);ym(:)],1./[xstd(:);ystd(:)].^2) ;
+        if string(obj.orbitfitmethod)=="lscov"
+          xf = lscov(A,[xm(:);ym(:)],1./[xstd(:);ystd(:)].^2) ;
+        else
+          xf = A \ [xstd(:);ystd(:)] ;
+        end
       end
       i0=obj.LM.istart; 
-      [~,R] = RmatAtoB(i0,id(1)); R=R([1:4 6],[1:4 6]);
+      [~,R] = RmatAtoB(double(i0),double(id(1))); R=R([1:4 6],[1:4 6]);
       X0 = R \ xf ;
       if nargout>1
         i1=obj.fitele;
         if id(1)>=i1
           error('First available BPM after desired fit location!');
         end
-        [~,R]=RmatAtoB(id(1),i1);
+        [~,R]=RmatAtoB(double(id(1)),double(i1)); R=R([1:4 6],[1:4 6]);
         X1 = R * xf ;
+        X1(1:4)=X1(1:4).*1e3; 
       end
-      X0=X0.*1e3; X1=X1.*1e3; 
+      X0(1:4)=X0(1:4).*1e3; 
     end
     function StoreRef(obj)
       %STOREREF Store new reference orbit from existing data
@@ -628,10 +630,12 @@ classdef F2_OrbitApp < handle & F2_common
         end
       end
       fn = obj.OrbitConfigDir+"/conf_" + name + ".mat" ;
-      OrbitApp = obj ;
       % Get reference orbit to store
       reforbit = obj.RefOrbit ;
-      save(fn,'OrbitApp','reforbit');
+      % For some bizzarre reason, usebpm, usexcor & useycor all load with false values regardless of their saved state, so use separate variables for these
+      OrbitApp=copy(obj);
+      usebpm=obj.usebpm; usexcor=obj.usexcor; useycor=obj.useycor; %#ok<PROPLC>
+      save(fn,'OrbitApp','reforbit','usebpm','usexcor','useycor');
     end
     function ConfigLoad(obj,name)
       %CONFIGLOAD Restore settings from saved config file
@@ -642,20 +646,20 @@ classdef F2_OrbitApp < handle & F2_common
         error('No matching config file')
       end
       fprintf('Loading configuration file: %s\n',name);
-      fn = obj.OrbitConfigDir+"/conf_" + name + ".mat" ;
       try
-        load(fn,'OrbitApp');
+        % For some bizzarre reason, usebpm, usexcor & useycor all load with false values regardless of their saved state, so use separate variables for these
+        ld = load(obj.OrbitConfigDir+"/conf_" + name + ".mat",'OrbitApp','usebpm','usexcor','useycor') ;
       catch ME
         fprintf(2,'Error loading config: %s\n',name);
         throw(ME);
       end
       % Set region
-      obj.UseRegion = OrbitApp.UseRegion ;
+      obj.UseRegion = ld.OrbitApp.UseRegion ;
       % Set BPM list
-      obj.usebpm = ismember(obj.bpmnames,OrbitApp.bpmnames(OrbitApp.usebpm));
+      obj.usebpm = ismember(obj.bpmnames,ld.OrbitApp.bpmnames(ld.usebpm));
       % Set corrector lists
-      obj.usexcor = ismember(obj.xcornames,OrbitApp.xcornames(OrbitApp.usexcor));
-      obj.useycor = ismember(obj.ycornames,OrbitApp.ycornames(OrbitApp.useycor));
+      obj.usexcor = ismember(obj.xcornames,ld.OrbitApp.xcornames(ld.usexcor));
+      obj.useycor = ismember(obj.ycornames,ld.OrbitApp.ycornames(ld.useycor));
       % Clear data
       obj.cordat_x = [] ;
       obj.cordat_y = [] ;
@@ -663,13 +667,12 @@ classdef F2_OrbitApp < handle & F2_common
       obj.dtheta_y = [] ;
       obj.xbpm_cor = [] ;
       obj.ybpm_cor = [] ;
-      obj.ebpms_disp = zeros(1,4) ;
       obj.DispData = [] ;
       obj.DispFit = [] ;
       % Load everything else...
-      restorelist=["corsolv" "solvtol" "usex" "usey" "nmode" "corplottype" "domodelfit" "usebpmbuff" "dormsplot"  "fitele" "CorrectionOffset" "UseRefOrbit" "npulse"] ;
+      restorelist=["corsolv" "solvtol" "usex" "usey" "nmode" "domodelfit" "usebpmbuff" "dormsplot"  "fitele" "CorrectionOffset" "UseRefOrbit" "npulse" "orbitfitmethod"] ;
       for ilist=1:length(restorelist)
-        obj.(restorelist(ilist)) = OrbitApp.(restorelist(ilist)) ;
+        obj.(restorelist(ilist)) = ld.OrbitApp.(restorelist(ilist)) ;
       end
       obj.ConfigName = name ;
     end
@@ -711,7 +714,7 @@ classdef F2_OrbitApp < handle & F2_common
       obj.aobj.SPECTButton.Value=value(11);
       % --- Global fields
       obj.aobj.NPulseEditField.Value = obj.npulse ;
-      obj.aobj.NReafEditField.Value = 0 ;
+      obj.aobj.NReadEditField.Value = 0 ;
       obj.aobj.UseBufferedDataCheckBox.Value = obj.usebpmbuff ;
       obj.WriteGuiListBox(); % Updates BPM & corrector list boxes
       % --- Orbit Tab
@@ -720,18 +723,20 @@ classdef F2_OrbitApp < handle & F2_common
       obj.aobj.EditField_6.Value = obj.CorrectionOffset(2) ;
       obj.aobj.EditField_8.Value = obj.CorrectionOffset(3) ;
       obj.aobj.EditField_10.Value = obj.CorrectionOffset(4) ;
+      obj.aobj.DropDown_5.Value = obj.orbitfitmethod ;
+      obj.aobj.DropDown_6.Value = obj.orbitfitmethod ;
       for n=[3 5 7 9 11]
         obj.aobj.(sprintf('EditField_%d',n)).Value = 0 ;
       end
       switch obj.UseRefOrbit
         case "none"
-          obj.aobj.DropDown_4.Value = 1 ;
+          obj.aobj.DropDown_4.Value = '1' ;
         case "local"
-          obj.aobj.DropDown_4.Value = 2 ;
+          obj.aobj.DropDown_4.Value = '2' ;
         case "config"
-          obj.aobj.DropDown_4.Value = 3 ;
+          obj.aobj.DropDown_4.Value = '3' ;
       end
-      obj.aobj.TolEditField.Value = obj.solvtol ;
+      obj.aobj.TolEditField.Value = 0 ;
       switch obj.corsolv % string {mustBeMember(corsolv,["lscov","pinv","lsqminnorm","svd","lsqlin"])}
         case "lscov"
           obj.aobj.lscovButton.Value=1;
@@ -739,18 +744,19 @@ classdef F2_OrbitApp < handle & F2_common
           obj.aobj.pinvButton.Value=1;
         case "lsqminnorm"
           obj.aobj.lsqminnormButton.Value=1;
+          if ~isempty(obj.solvtol)
+            obj.aobj.TolEditField.Value = obj.solvtol ;
+          end
         case "svd"
           obj.aobj.svdButton.Value=1;
+          if ~isinf(obj.nmode)
+            obj.aobj.TolEditField.Value = obj.nmode ;
+          end
         case "lsqlin"
-          obj.aobj.lsqlinButton=1;
+          obj.aobj.lsqlinButton.Value=1;
       end
+      obj.aobj.ModelFitButton.Value=obj.domodelfit;
       % --- Correctors Tab
-      switch obj.corplottype
-        case "stem"
-          obj.aobj.StemButton.Value = 1 ;
-        case "quiver"
-          obj.aobj.QuiverButton.Value = 1 ;
-      end
       drawnow
     end
     % Plotting functions
@@ -813,16 +819,18 @@ classdef F2_OrbitApp < handle & F2_common
       dispx_err = dd.xerr; dispy_err = dd.yerr ;
       
       % Fit model dispersion response from first BPM in the selection
-      if exist('domodelfit','var') && obj.domodelfit
-        A = zeros(length(dispx)+length(dispy),4) ; A(1,:) = [1 0 0 0] ; A(length(dispx)+1,:) = [0 0 1 0] ;
-        for ibpm=2:length(id)
-          [~,R]=RmatAtoB(double(id(1)),double(id(ibpm)));
-          A(ibpm,:) = [R(1,1) R(1,2) R(1,3) R(1,4)];
-          A(ibpm+length(dispx),:) = [R(3,1) R(3,2) R(3,3) R(3,4)];
-        end
-        disp0 = lscov(A,[dispx(:);dispy(:)],1./[dispx_err(:);dispy_err(:)].^2) ;
-        obj.DispFit = A * disp0(:) ;
+      A = zeros(length(dispx)+length(dispy),4) ; A(1,:) = [1 0 0 0] ; A(length(dispx)+1,:) = [0 0 1 0] ;
+      for ibpm=2:length(id)
+        [~,R]=RmatAtoB(double(id(1)),double(id(ibpm)));
+        A(ibpm,:) = [R(1,1) R(1,2) R(1,3) R(1,4)];
+        A(ibpm+length(dispx),:) = [R(3,1) R(3,2) R(3,3) R(3,4)];
       end
+      if string(obj.orbitfitmethod)=="lscov"
+        disp0 = lscov(A,[dispx(:);dispy(:)],1./[dispx_err(:);dispy_err(:)].^2) ;
+      else
+        disp0 = A \ [dispx(:);dispy(:)] ;
+      end
+      obj.DispFit = A * disp0(:) ;
       
       % Do plots
       pl=errorbar(ahan(1),z,dispx,dispx_err,'.'); grid(ahan(1),'on'); xlabel(ahan(1),'Z [m]'); ylabel(ahan(1),'\eta_x [mm]');
@@ -935,9 +943,9 @@ classdef F2_OrbitApp < handle & F2_common
           pl.DataTipTemplate.DataTipRows(end+1) = dataTipTextRow('Name',obj.BPMS.modelnames(id));
       end
     end
-    function plotcor(obj,ahan)
+    function plotcor(obj,ahan,showmax)
       %PLOTCOR Plot corrector values and propose new corrector values
-      %plotcor([axisHandle_x axisHandle_y])
+      %plotcor([axisHandle_x axisHandle_y],showmax)
       
       if isempty(obj.cordat_x)
         return
@@ -949,78 +957,74 @@ classdef F2_OrbitApp < handle & F2_common
         ahan(1)=subplot(2,1,1);
         ahan(2)=subplot(2,1,2);
       end
-      ahan(1).reset; ahan(2).reset;
+      ahan(1).reset; ahan(2).reset; cla(ahan(1)); cla(ahan(2)); drawnow;
       
       % Plot extant corrector kick values
-      if obj.calcperformed && obj.corplottype=="quiver"
-        pl = quiver(ahan(1),obj.cordat_x.z(obj.usexcor),obj.cordat_x.theta(obj.usexcor),0,obj.dtheta_x(obj.usexcor)) ;
-        pl.DataTipTemplate.DataTipRows(1).Label = 'Linac Z' ;
-        pl.DataTipTemplate.DataTipRows(2).Label = 'X Kick (rad)' ;
-        pl.DataTipTemplate.DataTipRows(end+1) = dataTipTextRow('Name',obj.xcornames(obj.usexcor));
-        pl = quiver(ahan(2),obj.cordat_y.z(obj.useycor),obj.cordat_y.theta(obj.useycor),0,obj.dtheta_y(obj.useycor)) ;
-        pl.DataTipTemplate.DataTipRows(1).Label = 'Linac Z' ;
-        pl.DataTipTemplate.DataTipRows(2).Label = 'Y Kick (rad)' ;
-        pl.DataTipTemplate.DataTipRows(end+1) = dataTipTextRow('Name',obj.ycornames(obj.useycor));
-      else
-        pl=stem(ahan(1),obj.cordat_x.z(obj.usexcor),obj.cordat_x.theta(obj.usexcor),'filled');
-        pl.DataTipTemplate.DataTipRows(1).Label = 'Linac Z' ;
-        pl.DataTipTemplate.DataTipRows(2).Label = 'X Kick (rad)' ;
-        pl.DataTipTemplate.DataTipRows(end+1) = dataTipTextRow('Name',obj.xcornames(obj.usexcor));
-        pl=stem(ahan(2),obj.cordat_y.z(obj.useycor),obj.cordat_y.theta(obj.useycor),'filled');
-        pl.DataTipTemplate.DataTipRows(1).Label = 'Linac Z' ;
-        pl.DataTipTemplate.DataTipRows(2).Label = 'Y Kick (rad)' ;
-        pl.DataTipTemplate.DataTipRows(end+1) = dataTipTextRow('Name',obj.ycornames(obj.useycor));
-      end
+      pl=plot(ahan(1),obj.cordat_x.z(obj.usexcor),obj.cordat_x.theta(obj.usexcor).*1e3,'.','Color',F2_common.ColorOrder(1,:),'MarkerSize',10);
+      pl.DataTipTemplate.DataTipRows(1).Label = 'Linac Z' ;
+      pl.DataTipTemplate.DataTipRows(2).Label = 'X Kick (rad)' ;
+      pl.DataTipTemplate.DataTipRows(end+1) = dataTipTextRow('Name',obj.xcornames(obj.usexcor));
+      pl=plot(ahan(2),obj.cordat_y.z(obj.useycor),obj.cordat_y.theta(obj.useycor).*1e3,'.','Color',F2_common.ColorOrder(1,:),'MarkerSize',10);
+      pl.DataTipTemplate.DataTipRows(1).Label = 'Linac Z' ;
+      pl.DataTipTemplate.DataTipRows(2).Label = 'Y Kick (rad)' ;
+      pl.DataTipTemplate.DataTipRows(end+1) = dataTipTextRow('Name',obj.ycornames(obj.useycor));
       grid(ahan(1),'on');
       grid(ahan(2),'on');
-      xlabel(ahan(1),'Z [m]'); ylabel(ahan(1),'XCOR \theta_x [rad]');
-      xlabel(ahan(2),'Z [m]'); ylabel(ahan(2),'YCOR \theta_y [rad]');
+      xlabel(ahan(1),'Z [m]'); ylabel(ahan(1),'XCOR \theta_x [mrad]');
+      xlabel(ahan(2),'Z [m]'); ylabel(ahan(2),'YCOR \theta_y [mrad]');
       ahan(1).XLim=[min(obj.cordat_x.z(obj.usexcor)) max(obj.cordat_x.z(obj.usexcor))];
       ahan(2).XLim=[min(obj.cordat_y.z(obj.useycor)) max(obj.cordat_y.z(obj.useycor))];
       
       % If calculated, superimpose new kick values proposed
-      if obj.calcperformed && obj.corplottype~="quiver"
+      if obj.calcperformed
         newtheta_x = obj.cordat_x.theta(obj.usexcor)+obj.dtheta_x(obj.usexcor) ;
         newtheta_y = obj.cordat_y.theta(obj.useycor)+obj.dtheta_y(obj.useycor) ;
+        zv_x = obj.cordat_x.z(obj.usexcor); zv_y = obj.cordat_y.z(obj.useycor) ;
         hold(ahan(1),'on');
-        pl=stem(ahan(1),obj.cordat_x.z(obj.usexcor),newtheta_x,'filled');
-        pl.DataTipTemplate.DataTipRows(1).Label = 'Linac Z' ;
-        pl.DataTipTemplate.DataTipRows(2).Label = 'X Kick (rad)' ;
-        pl.DataTipTemplate.DataTipRows(end+1) = dataTipTextRow('Name',obj.xcornames(obj.usexcor));
+        i_p = obj.dtheta_x(obj.usexcor)>=0 ;
+        i_m = obj.dtheta_x(obj.usexcor)<0 ;
+        pl_p=plot(ahan(1),zv_x(i_p),newtheta_x(i_p).*1e3,'^','Color',F2_common.ColorOrder(1,:),'MarkerSize',4);
+        pl_m=plot(ahan(1),zv_x(i_m),newtheta_x(i_m).*1e3,'v','Color',F2_common.ColorOrder(1,:),'MarkerSize',4);
+        for icor=find(obj.usexcor)'
+          y1 = obj.cordat_x.theta(icor) ; y2 = obj.cordat_x.theta(icor)+obj.dtheta_x(icor) ;
+          line(ahan(1),ones(1,2).*obj.cordat_x.z(icor),[y1 y2].*1e3,'Color',F2_common.ColorOrder(1,:));
+        end
+        pl_p.DataTipTemplate.DataTipRows(1).Label = 'Linac Z' ;
+        pl_p.DataTipTemplate.DataTipRows(2).Label = 'X Kick (rad)' ;
+        pl_p.DataTipTemplate.DataTipRows(end+1) = dataTipTextRow('Name',obj.xcornames(i_p));
+        pl_m.DataTipTemplate.DataTipRows(1).Label = 'Linac Z' ;
+        pl_m.DataTipTemplate.DataTipRows(2).Label = 'X Kick (rad)' ;
+        pl_m.DataTipTemplate.DataTipRows(end+1) = dataTipTextRow('Name',obj.xcornames(i_m));
         hold(ahan(1),'off');
         hold(ahan(2),'on');
-        pl=stem(ahan(2),obj.cordat_y.z(obj.useycor),newtheta_y,'filled');
-        pl.DataTipTemplate.DataTipRows(1).Label = 'Linac Z' ;
-        pl.DataTipTemplate.DataTipRows(2).Label = 'Y Kick (rad)' ;
-        pl.DataTipTemplate.DataTipRows(end+1) = dataTipTextRow('Name',obj.ycornames(obj.useycor));
+        i_p = obj.dtheta_y(obj.useycor)'>=0 ;
+        i_m = obj.dtheta_y(obj.useycor)'<0 ;
+        pl_p=plot(ahan(2),zv_y(i_p),newtheta_y(i_p).*1e3,'^','Color',F2_common.ColorOrder(1,:),'MarkerSize',4);
+        pl_m=plot(ahan(2),zv_y(i_m),newtheta_y(i_m).*1e3,'v','Color',F2_common.ColorOrder(1,:),'MarkerSize',4);
+        for icor=find(obj.useycor)'
+          y1 = obj.cordat_y.theta(icor) ; y2 = obj.cordat_y.theta(icor)+obj.dtheta_y(icor) ;
+          line(ahan(2),ones(1,2).*obj.cordat_y.z(icor),[y1 y2].*1e3,'Color',F2_common.ColorOrder(1,:));
+        end
+        pl_p.DataTipTemplate.DataTipRows(1).Label = 'Linac Z' ;
+        pl_p.DataTipTemplate.DataTipRows(2).Label = 'Y Kick (rad)' ;
+        pl_p.DataTipTemplate.DataTipRows(end+1) = dataTipTextRow('Name',obj.ycornames(i_p));
+        pl_m.DataTipTemplate.DataTipRows(1).Label = 'Linac Z' ;
+        pl_m.DataTipTemplate.DataTipRows(2).Label = 'Y Kick (rad)' ;
+        pl_m.DataTipTemplate.DataTipRows(end+1) = dataTipTextRow('Name',obj.ycornames(i_m));
         hold(ahan(2),'off');
       end
       
-      % Plot min/max values if any of the correctors are close
-%       if any(obj.cordat_x.theta(obj.usexcor)./obj.cordat_x.thetamax(obj.usexcor) > 0.9) || ...
-%           obj.calcperformed && any(newtheta_x./obj.cordat_x.thetamax(obj.usexcor) > 0.9)
+      % Plot min/max values
+      if showmax
         hold(ahan(1),'on');
-        plot(ahan(1),obj.cordat_x.z(obj.usexcor),obj.cordat_x.thetamax(obj.usexcor),'k--');
+        plot(ahan(1),obj.cordat_x.z(obj.usexcor),obj.cordat_x.thetamax(obj.usexcor).*1e3,'k--');
+        plot(ahan(1),obj.cordat_x.z(obj.usexcor),-obj.cordat_x.thetamax(obj.usexcor).*1e3,'k--');
         hold(ahan(1),'off');
-%       end
-%       if any(obj.cordat_x.theta(obj.usexcor)./obj.cordat_x.thetamax(obj.usexcor) < -0.9) || ...
-%           obj.calcperformed && any(newtheta_x./obj.cordat_x.thetamax(obj.usexcor) < -0.9)
-        hold(ahan(1),'on');
-        plot(ahan(1),obj.cordat_x.z(obj.usexcor),-obj.cordat_x.thetamax(obj.usexcor),'k--');
-        hold(ahan(1),'off');
-%       end
-%       if any(obj.cordat_y.theta(obj.useycor)./obj.cordat_y.thetamax(obj.useycor) > 0.9) || ...
-%           obj.calcperformed && any(newtheta_y./obj.cordat_y.thetamax(obj.useycor) > 0.9)
         hold(ahan(2),'on');
-        plot(ahan(2),obj.cordat_y.z(obj.useycor),obj.cordat_y.thetamax(obj.useycor),'k--');
+        plot(ahan(2),obj.cordat_y.z(obj.useycor),obj.cordat_y.thetamax(obj.useycor).*1e3,'k--');
+        plot(ahan(2),obj.cordat_y.z(obj.useycor),-obj.cordat_y.thetamax(obj.useycor).*1e3,'k--');
         hold(ahan(2),'off');
-%       end
-%       if any(obj.cordat_y.theta(obj.useycor)./obj.cordat_y.thetamax(obj.useycor) < -0.9) || ...
-%           obj.calcperformed && any(newtheta_y./obj.cordat_y.thetamax(obj.useycor) < -0.9)
-        hold(ahan(2),'on');
-        plot(ahan(2),obj.cordat_y.z(obj.useycor),-obj.cordat_y.thetamax(obj.useycor),'k--');
-        hold(ahan(2),'off');
-%       end
+      end
       
     end
     function plotbpm(obj,ahan,showmodel,showcors)
@@ -1066,8 +1070,8 @@ classdef F2_OrbitApp < handle & F2_common
       pl.DataTipTemplate.DataTipRows(2).Label = '<X>' ;
       pl.DataTipTemplate.DataTipRows(end+1) = dataTipTextRow('RMS_X',xstd);
       pl.DataTipTemplate.DataTipRows(end+1) = dataTipTextRow('Name',obj.BPMS.modelnames(use));
-      xax.XLim(1)=BEAMLINE{obj.LM.istart}.Coordi(3);
-      xax.XLim(2)=BEAMLINE{obj.LM.iend}.Coordi(3);
+%       xax.XLim(1)=BEAMLINE{obj.LM.istart}.Coordi(3);
+%       xax.XLim(2)=BEAMLINE{obj.LM.iend}.Coordi(3);
       grid(xax,'on');
       if obj.BPMS.plotscale>0
         xax.YLim=[-double(obj.BPMS.plotscale) double(obj.BPMS.plotscale)];
@@ -1083,8 +1087,8 @@ classdef F2_OrbitApp < handle & F2_common
       pl.DataTipTemplate.DataTipRows(2).Label = '<Y>' ;
       pl.DataTipTemplate.DataTipRows(end+1) = dataTipTextRow('RMS_Y',ystd);
       pl.DataTipTemplate.DataTipRows(end+1) = dataTipTextRow('Name',obj.BPMS.modelnames(use));
-      yax.XLim(1)=BEAMLINE{obj.LM.istart}.Coordi(3);
-      yax.XLim(2)=BEAMLINE{obj.LM.iend}.Coordi(3);
+%       yax.XLim(1)=BEAMLINE{obj.LM.istart}.Coordi(3);
+%       yax.XLim(2)=BEAMLINE{obj.LM.iend}.Coordi(3);
       grid(yax,'on');
       if obj.BPMS.plotscale>0
         yax.YLim=[-double(obj.BPMS.plotscale) double(obj.BPMS.plotscale)];
@@ -1095,11 +1099,11 @@ classdef F2_OrbitApp < handle & F2_common
       if showcors
         hold(xax,'on');
         hold(yax,'on');
-        for icor=find(obj.usexcor)
-          line(xax,[obj.cordat_x.z(icor) obj.cordat_x.z(icor)],xax.YLim,'LineStyle','--','Color','black');
+        for icor=find(obj.usexcor(:)')
+          line(xax,[obj.cordat_x.z(icor) obj.cordat_x.z(icor)],xax.YLim,'LineStyle','-','Color','black','LineWidth',2);
         end
-        for icor=find(obj.useycor)
-          line(yax,[obj.cordat_y.z(icor) obj.cordat_y.z(icor)],yax.YLim,'LineStyle','--','Color','black');
+        for icor=find(obj.useycor(:)')
+          line(yax,[obj.cordat_y.z(icor) obj.cordat_y.z(icor)],yax.YLim,'LineStyle','-','Color','black','LineWidth',2);
         end
         hold(xax,'off');
         hold(yax,'off');
@@ -1117,30 +1121,37 @@ classdef F2_OrbitApp < handle & F2_common
       end
       % Superimpose model fit if requested
       if showmodel
-        i0=obj.LM.istart;
-        i1=obj.LM.iend;
-        X0 = obj.orbitfit();
-        nele = 1+i1-i0 ;
+        idf=id(1):id(end);
+        X0 = obj.orbitfit(); % X0 is orbit at region start
+        i0m=double(obj.LM.istart); 
+        nele = length(idf) ;
         x_fit=zeros(1,nele); y_fit=zeros(1,nele);
         x_fit(1)=X0(1); y_fit(1)=X0(3);
-        for iele=2:nele
-          [~,R] = RmatAtoB(i0,iele) ;
-          Xf = R * X0 ;
-          x_fit(iele) = Xf(1); y_fit(iele) = Xf(3) ;
+        for n=1:nele
+          if i0m==idf(n)
+            [~,R] = RmatAtoB(i0m,idf(n)) ;
+          else
+            [~,R] = RmatAtoB(i0m,idf(n)-1) ;
+          end
+          Xf = R([1:4 6],[1:4 6]) * X0 ;
+          x_fit(n) = Xf(1); y_fit(n) = Xf(3) ;
         end
+        zi=arrayfun(@(x) BEAMLINE{x}.Coordi(3),idf);
         hold(xax,'on');
-        plot(xax,obj.LM.ModelZ,x_fit);
+        plot(xax,zi,x_fit);
         hold(xax,'off');
         hold(yax,'on');
-        plot(yax,obj.LM.ModelZ,y_fit);
+        plot(yax,zi,y_fit);
         hold(yax,'off');
       end
       % Plot magnet bar
       if ~isempty(obj.aobj)
         obj.aobj.UIAxes_3.reset;
-        obj.aobj.UIAxes_3.XLim=[min(z) max(z)];
+        obj.aobj.UIAxes_3.XLim=xax.XLim;
         ylabel(obj.aobj.UIAxes_3,'X [mm]');
-        AddMagnetPlotZ(id(1),id(end),obj.aobj.UIAxes_3,'replace');
+        i1=obj.LM.ModelID(find(obj.LM.ModelZ>xax.XLim(1),1,'first'));
+        i2=obj.LM.ModelID(find(obj.LM.ModelZ<xax.XLim(2),1,'last'));
+        AddMagnetPlotZ(i1,i2,obj.aobj.UIAxes_3,'replace');
       end
     end
     function [xm,ym,xstd,ystd,use,id] = GetOrbit(obj)
@@ -1177,6 +1188,9 @@ classdef F2_OrbitApp < handle & F2_common
       obj.aobj.ListBox_2.Items = obj.xcornames(usereg) ;
       obj.aobj.ListBox_2.ItemsData = obj.xcorid(usereg) ;
       obj.aobj.ListBox_2.Value = obj.xcorid(obj.usexcor) ;
+      obj.LM.ModelClasses="YCOR";
+      usereg=false(size(obj.useycor));
+      usereg(~obj.badycors & ismember(obj.ycorid,obj.LM.ModelID)) = true ;
       obj.aobj.ListBox_3.Items = obj.ycornames(usereg) ;
       obj.aobj.ListBox_3.ItemsData = obj.ycorid(usereg) ;
       obj.aobj.ListBox_3.Value = obj.ycorid(obj.useycor) ;

@@ -144,6 +144,7 @@ classdef F2_bpms < handle
       else
         obj.read(archivedate,npulse);
       end
+      obj.nread=npulse;
     end
     function read(obj,archivedate,npulse)
       %READ Acquire a single orbit from EPICS
