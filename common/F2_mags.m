@@ -76,7 +76,7 @@ classdef F2_mags < handle & matlab.mixin.Copyable & F2_common
       else
         [bact,bdes] = obj.MagnetGet(cellstr(obj.LM.ControlNames)) ; 
       end
-      bdes=bdes(:); bact=bact(:);
+      bdes=bdes(:)'; bact=bact(:)';
       obj.BDES_err = false(size(bdes)) ;
       obj.BACT_err = obj.BDES_err ;
       if length(obj.BDES) == length(bdes)

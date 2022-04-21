@@ -48,7 +48,8 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
     ybpm_cor % calculated corrected y bpm vals (mm)
     ebpms_disp(1,5) % dispersion at energy BPMS in mm
     DispData % Dispersion data calculated with svddisp method (mm)
-    DispFit % Fitted [dispersion_x; dispersion_y] at each BPM in selected regopm calculated with plotdisp method
+    DispFit % Fitted [dispersion_x; dispersion_y] at each BPM in selected region calculated with plotdisp method
+    DispCorVals
     ConfigName string = "none"
     ConfigDate
   end
@@ -78,6 +79,8 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
     klys_bsa = "KLYS:LI10:41:FB:FAST_AACT3" % L0B
     klys_cntrl = "KLYS:LI10:41:ADES" % L0B
     OrbitConfigDir string = F2_common.confdir + "/F2_Orbit" ;
+    DispDevices string = ["QB10731" "CQ11317" "CQ11352" "CQ14738" "CQ14866" "SQ1" "S1EL" "S2EL" "S2ER" "S1ER"]
+    DispDeviceType uint8 = [1         1         1         1         1        2      3       3     3     3    ] % 1=quad 2=skew quad 3=sext
   end
   methods
     function obj = F2_OrbitApp(appobj)
@@ -442,6 +445,114 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
       dispdat.yerr=dispy_err;
       obj.DispData = dispdat ;
     end
+    function DX_f = dispfit(obj)
+      %DISPFIT Fit BPM dispersion measurements to betatron orbit
+      %[X0,X1] = dispfit
+      % DX_f : fitted dispersion values at fitele location: [Dx,D'x,Dy,D'y]
+      if isempty(obj.DispData)
+        return
+      end
+      dd=obj.DispData;
+      id=obj.bpmid(dd.usebpm) ;
+      ddispx = obj.LiveModel.DesignTwiss.etax(id) ;
+      ddispy = obj.LiveModel.DesignTwiss.etay(id) ;
+      dispx = dd.x - ddispx.*1000 ; dispy = dd.y - ddispy.*1000 ; % subtract design dispersion to show dispersion error
+      dispx_err = dd.xerr; dispy_err = dd.yerr ;
+      
+      % Fit model dispersion response from first BPM in the selection
+      A = zeros(length(dispx)+length(dispy),4) ; A(1,:) = [1 0 0 0] ; A(length(dispx)+1,:) = [0 0 1 0] ;
+      for ibpm=2:length(id)
+        [~,R]=RmatAtoB(double(id(1)),double(id(ibpm)));
+        A(ibpm,:) = [R(1,1) R(1,2) R(1,3) R(1,4)];
+        A(ibpm+length(dispx),:) = [R(3,1) R(3,2) R(3,3) R(3,4)];
+      end
+      if string(obj.orbitfitmethod)=="lscov"
+        disp0 = lscov(A,[dispx(:);dispy(:)],1./[dispx_err(:);dispy_err(:)].^2) ;
+      else
+        disp0 = A \ [dispx(:);dispy(:)] ;
+      end
+      
+      % Store dispersion at each BPM location
+      obj.DispFit = A * disp0(:) ;
+      
+      % Return dispersion fit at fitele location
+      if nargout>0
+        if obj.fitele>=id(1)
+          [~,R] = RmatAtoB(double(id(1)),double(obj.fitele));
+          DX_f = R(1:4,1:4) * disp0(:) ;
+        else
+          [~,R] = RmatAtoB(double(obj.fitele),double(id(1)));
+          DX_f = R(1:4,1:4) \ disp0(:) ;
+        end
+      end
+      
+    end
+    function DX_cor = dispcor(obj,varargin)
+      %DISPCOR Correct measured dispersion with any correction devices in range
+      global BEAMLINE PS
+      
+      % Get correction devices in range
+      obj.LM.ModelClasses=["QUAD" "SEXT"];
+      corsel = find(ismember(obj.DispDevices,obj.LM.ModelNames)) ;
+      if isempty(corsel)
+        error('No dispersion correction devices within selected range');
+      end
+      
+      % Get fitted dispersion at first device entrance
+      fitele_i = obj.fitele ; % Store current fit element
+      obj.fitele = obj.LM.ModelID(obj.LM.ModelNames==obj.DispDevices(corsel(1))) ;
+      DX_f = obj.dispfit() ;
+      
+      % Fit correction device changes to cancel dispersion
+      if nargin==1 % Launch the minimization algorithm
+        % Turn any sextupoles into quads
+        qref=zeros(1,length(obj.DispDevices));
+        for icor=corsel(:)'
+          if obj.DispDeviceType(icor)==3
+            for iele=findcells(BEAMLINE,'Name',char(obj.DispDevices(icor)))
+              qref(icor) = PS(BEAMLINE{iele}.PS).Ampl ;
+              BEAMLINE{iele}.Class='QUAD';
+              PS(BEAMLINE{iele}.PS).Ampl=0;
+            end
+          end
+        end
+        psind = arrayfun(@(x) BEAMLINE{x}.PS,obj.LM.ModelID(ismember(obj.LM.ModelNames,obj.DispDevices))) ;
+        ps_init = arrayfun(@(x) PS(x).Ampl,psind) ;
+        try
+          xmin = fminsearch(@(x) obj.dispcor(x,psind,qref),zeros(1,sum(corsel)),optimset('Display','iter','MaxFunEvals',1000)) ;
+        catch ME
+          warning(ME.identifier,'Dispersion minimization failed: %s',ME.message);
+        end
+        % Turn Sextupoles back again
+        for icor=corsel(:)'
+          if obj.DispDeviceType(icor)==3
+            for iele=findcells(BEAMLINE,'Name',char(obj.DispDevices(icor)))
+              BEAMLINE{iele}.Class='SEXT';
+            end
+          end
+        end
+        % Restore initial magnet settings
+        for icor=corsel(:)'
+          PS(psind(icor)).Ampl = ps_init(icor) ;
+        end
+      else % Process one step of the minimization
+        x=varargin{1};
+        psind=varargin{2};
+        qref=varargin{3};
+        n=1;
+        % Set magnets in model
+        for icor=corsel(:)'
+          if obj.DispDeviceType(icor)<3
+            PS(psind(icor)).Ampl = x(n) ;
+          else
+            PS(psind(icor)).Ampl = x(n)*qref ;
+          end
+          n=n+1;
+        end
+        % Transport dispersion function to downstream of last correction element
+        
+      end
+    end
     function res = svdcorr(obj,corvec,nmode)
       %SVDCORR Find mode most highly correlated to provided vector
       %results = svdcorr(corvec,nmode)
@@ -636,6 +747,7 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
       OrbitApp=copy(obj);
       usebpm=obj.usebpm; usexcor=obj.usexcor; useycor=obj.useycor; %#ok<PROPLC>
       save(fn,'OrbitApp','reforbit','usebpm','usexcor','useycor');
+      obj.ConfigName = name ;
     end
     function ConfigLoad(obj,name)
       %CONFIGLOAD Restore settings from saved config file
@@ -724,7 +836,6 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
       obj.aobj.EditField_8.Value = obj.CorrectionOffset(3) ;
       obj.aobj.EditField_10.Value = obj.CorrectionOffset(4) ;
       obj.aobj.DropDown_5.Value = obj.orbitfitmethod ;
-      obj.aobj.DropDown_6.Value = obj.orbitfitmethod ;
       for n=[3 5 7 9 11]
         obj.aobj.(sprintf('EditField_%d',n)).Value = 0 ;
       end
@@ -756,7 +867,9 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
           obj.aobj.lsqlinButton.Value=1;
       end
       obj.aobj.ModelFitButton.Value=obj.domodelfit;
-      % --- Correctors Tab
+      % --- Dispersion Tab
+      obj.aobj.DropDown_6.Value = obj.orbitfitmethod ;
+      obj.aobj.EditField_23.Value = BEAMLINE{obj.aobj.aobj.fitele}.Name ;
       drawnow
     end
     % Plotting functions
@@ -833,7 +946,7 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
       obj.DispFit = A * disp0(:) ;
       
       % Do plots
-      pl=errorbar(ahan(1),z,dispx,dispx_err,'.'); grid(ahan(1),'on'); xlabel(ahan(1),'Z [m]'); ylabel(ahan(1),'\eta_x [mm]');
+      pl=errorbar(ahan(1),z,dispx,dispx_err,'.'); grid(ahan(1),'on'); ylabel(ahan(1),'\eta_x [mm]');
       pl.DataTipTemplate.DataTipRows(1).Label = 'Linac Z (m)' ;
       pl.DataTipTemplate.DataTipRows(2).Label = '\eta_x (mm)' ;
       pl.DataTipTemplate.DataTipRows(end+1) = dataTipTextRow('Name',names);
@@ -854,7 +967,7 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
       ahan(1).XLim=[min(z) max(z)];
       ahan(2).XLim=[min(z) max(z)];
       % Plot magnet bar
-      F2_common.AddMagnetPlotZ(obj.LM.ModelID(1),obj.LM.ModelID(end),ahan(1)) ;
+      F2_common.AddMagnetPlotZ(obj.LM.istart,obj.LM.iend,ahan(1)) ;
     end
     function plotmia(obj,nmode,cmd,ahan)
       global BEAMLINE
@@ -1022,7 +1135,7 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
       end
       
       % Magnet bar
-      F2_common.AddMagnetPlotZ(obj.LM.ModelID(1),obj.LM.ModelID(end),ahan(1)) ;
+      F2_common.AddMagnetPlotZ(obj.LM.istart,obj.LM.iend,ahan(1)) ;
       
     end
     function plotbpm(obj,ahan,showmodel,showcors)
@@ -1144,7 +1257,7 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
       end
       % Plot magnet bar
       if ~isempty(obj.aobj)
-        F2_common.AddMagnetPlotZ(obj.LM.ModelID(1),obj.LM.ModelID(end),ahan(1)) ;
+        F2_common.AddMagnetPlotZ(obj.LM.istart,obj.LM.iend,ahan(1)) ;
       end
       ahan(1).XLim=[zmin zmax];
       ahan(2).XLim=[zmin zmax];

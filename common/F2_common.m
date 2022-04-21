@@ -186,6 +186,7 @@ classdef F2_common < handle
       hold(ahan,'off');
       ahan.YLim=yax; ahan.YLim(2)=y0+max(barHeight)/2 ;
       ahan.XLim=xax;
+      ahan.YTick(ahan.YTick>yax(2))=[];
     end
     function LogMessage(src,mess)
       %LOGMESSAGE Write message using java message logger
