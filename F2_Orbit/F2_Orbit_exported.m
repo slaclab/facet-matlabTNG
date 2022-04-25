@@ -3,124 +3,148 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
   % Properties that correspond to app components
   properties (Access = public)
     FACETIIOrbitToolconfignoneUIFigure  matlab.ui.Figure
-    ConfigMenu                   matlab.ui.container.Menu
-    SelectMenu                   matlab.ui.container.Menu
-    NoneMenu                     matlab.ui.container.Menu
-    SaveAsMenu                   matlab.ui.container.Menu
-    SaveMenu                     matlab.ui.container.Menu
-    DeleteMenu                   matlab.ui.container.Menu
-    BPMsPanel                    matlab.ui.container.Panel
-    ListBox                      matlab.ui.control.ListBox
-    CorrectorsPanel              matlab.ui.container.Panel
-    ListBox_2                    matlab.ui.control.ListBox
-    ListBox_3                    matlab.ui.control.ListBox
-    TabGroup                     matlab.ui.container.TabGroup
-    OrbitTab                     matlab.ui.container.Tab
-    UIAxes                       matlab.ui.control.UIAxes
-    CalcCorrectionButton         matlab.ui.control.Button
-    DoCorrectionButton           matlab.ui.control.Button
-    USEXButton                   matlab.ui.control.StateButton
-    USEYButton                   matlab.ui.control.StateButton
-    UIAxes_2                     matlab.ui.control.UIAxes
-    CorrectionSolverButtonGroup  matlab.ui.container.ButtonGroup
-    lscovButton                  matlab.ui.control.RadioButton
-    pinvButton                   matlab.ui.control.RadioButton
-    lsqminnormButton             matlab.ui.control.RadioButton
-    TolEditFieldLabel            matlab.ui.control.Label
-    TolEditField                 matlab.ui.control.NumericEditField
-    TolPlotButton                matlab.ui.control.Button
-    svdButton                    matlab.ui.control.RadioButton
-    lsqlinButton                 matlab.ui.control.RadioButton
-    ShowModelFitButton           matlab.ui.control.StateButton
-    UndoCorrectionButton         matlab.ui.control.Button
-    ModelFitButton               matlab.ui.control.StateButton
-    rmsChoose                    matlab.ui.control.StateButton
-    OrbitFitPanel                matlab.ui.container.Panel
-    EditField_3                  matlab.ui.control.NumericEditField
-    EditField_4                  matlab.ui.control.NumericEditField
-    EditField_5                  matlab.ui.control.NumericEditField
-    EditField_6                  matlab.ui.control.NumericEditField
-    EditField_7                  matlab.ui.control.NumericEditField
-    EditField_8                  matlab.ui.control.NumericEditField
-    EditField_9                  matlab.ui.control.NumericEditField
-    EditField_10                 matlab.ui.control.NumericEditField
-    XmmLabel                     matlab.ui.control.Label
-    XANGmmLabel                  matlab.ui.control.Label
-    YmmLabel                     matlab.ui.control.Label
-    YANGmmLabel                  matlab.ui.control.Label
-    ACTLabel                     matlab.ui.control.Label
-    DESLabel                     matlab.ui.control.Label
-    ACTLabel_2                   matlab.ui.control.Label
-    DESLabel_2                   matlab.ui.control.Label
-    ACTLabel_3                   matlab.ui.control.Label
-    DESLabel_3                   matlab.ui.control.Label
-    ACTLabel_4                   matlab.ui.control.Label
-    DESLabel_4                   matlab.ui.control.Label
-    EditField_11                 matlab.ui.control.NumericEditField
-    dEMeVLabel                   matlab.ui.control.Label
-    EditField_13                 matlab.ui.control.EditField
-    SelectFitLocationButton      matlab.ui.control.Button
-    DropDown_5                   matlab.ui.control.DropDown
-    DropDown_4                   matlab.ui.control.DropDown
-    TakeNewRefButton             matlab.ui.control.Button
-    ShowCors                     matlab.ui.control.StateButton
-    CorrectorsTab                matlab.ui.container.Tab
-    UIAxes2                      matlab.ui.control.UIAxes
-    UIAxes3                      matlab.ui.control.UIAxes
-    ShowMaxButton                matlab.ui.control.StateButton
-    DispersionTab                matlab.ui.container.Tab
-    UIAxes5                      matlab.ui.control.UIAxes
-    UIAxes5_2                    matlab.ui.control.UIAxes
-    SumDispersionPanel           matlab.ui.container.Panel
-    EditField                    matlab.ui.control.NumericEditField
-    EditField_2                  matlab.ui.control.NumericEditField
-    ShowModelFitButton_2         matlab.ui.control.StateButton
-    UIAxes5_3                    matlab.ui.control.UIAxes
-    DL1_EFB_Jit                  matlab.ui.control.StateButton
-    DropDown_6                   matlab.ui.control.DropDown
-    MIATab                       matlab.ui.container.Tab
-    UIAxes6                      matlab.ui.control.UIAxes
-    PlotOptionPanel              matlab.ui.container.Panel
-    DropDown_2                   matlab.ui.control.DropDown
-    NmodesLabel                  matlab.ui.control.Label
-    NmodesEditField              matlab.ui.control.NumericEditField
-    CorrelatePanel               matlab.ui.container.Panel
-    DropDown_3                   matlab.ui.control.DropDown
-    rEditFieldLabel              matlab.ui.control.Label
-    rEditField                   matlab.ui.control.EditField
-    pEditFieldLabel              matlab.ui.control.Label
-    pEditField                   matlab.ui.control.EditField
-    PlotButton                   matlab.ui.control.Button
-    modeEditFieldLabel           matlab.ui.control.Label
-    modeEditField                matlab.ui.control.EditField
-    UIAxes6_2                    matlab.ui.control.UIAxes
-    RegionSelectPanel            matlab.ui.container.Panel
-    GridLayout                   matlab.ui.container.GridLayout
-    INJButton                    matlab.ui.control.StateButton
-    L0Button                     matlab.ui.control.StateButton
-    DL1Button                    matlab.ui.control.StateButton
-    L1Button                     matlab.ui.control.StateButton
-    BC11Button                   matlab.ui.control.StateButton
-    L2Button                     matlab.ui.control.StateButton
-    BC14Button                   matlab.ui.control.StateButton
-    L3Button                     matlab.ui.control.StateButton
-    BC20Button                   matlab.ui.control.StateButton
-    FFSButton                    matlab.ui.control.StateButton
-    SPECTButton                  matlab.ui.control.StateButton
-    AcquireButton                matlab.ui.control.Button
-    NPulseEditFieldLabel         matlab.ui.control.Label
-    NPulseEditField              matlab.ui.control.NumericEditField
-    PlotRangeDropDownLabel       matlab.ui.control.Label
-    PlotRangeDropDown            matlab.ui.control.DropDown
-    NReadEditFieldLabel          matlab.ui.control.Label
-    NReadEditField               matlab.ui.control.NumericEditField
-    UpdateLiveModelButton        matlab.ui.control.Button
-    UseBufferedDataCheckBox      matlab.ui.control.CheckBox
+    ConfigMenu                     matlab.ui.container.Menu
+    SelectMenu                     matlab.ui.container.Menu
+    NoneMenu                       matlab.ui.container.Menu
+    SaveAsMenu                     matlab.ui.container.Menu
+    SaveMenu                       matlab.ui.container.Menu
+    DeleteMenu                     matlab.ui.container.Menu
+    BPMsPanel                      matlab.ui.container.Panel
+    ListBox                        matlab.ui.control.ListBox
+    CorrectorsPanel                matlab.ui.container.Panel
+    ListBox_2                      matlab.ui.control.ListBox
+    ListBox_3                      matlab.ui.control.ListBox
+    TabGroup                       matlab.ui.container.TabGroup
+    OrbitTab                       matlab.ui.container.Tab
+    UIAxes                         matlab.ui.control.UIAxes
+    CalcCorrectionButton           matlab.ui.control.Button
+    DoCorrectionButton             matlab.ui.control.Button
+    USEXButton                     matlab.ui.control.StateButton
+    USEYButton                     matlab.ui.control.StateButton
+    UIAxes_2                       matlab.ui.control.UIAxes
+    CorrectionSolverButtonGroup    matlab.ui.container.ButtonGroup
+    lscovButton                    matlab.ui.control.RadioButton
+    pinvButton                     matlab.ui.control.RadioButton
+    lsqminnormButton               matlab.ui.control.RadioButton
+    TolEditFieldLabel              matlab.ui.control.Label
+    TolEditField                   matlab.ui.control.NumericEditField
+    TolPlotButton                  matlab.ui.control.Button
+    svdButton                      matlab.ui.control.RadioButton
+    lsqlinButton                   matlab.ui.control.RadioButton
+    ShowModelFitButton             matlab.ui.control.StateButton
+    UndoCorrectionButton           matlab.ui.control.Button
+    ModelFitButton                 matlab.ui.control.StateButton
+    rmsChoose                      matlab.ui.control.StateButton
+    OrbitFitPanel                  matlab.ui.container.Panel
+    EditField_3                    matlab.ui.control.NumericEditField
+    EditField_4                    matlab.ui.control.NumericEditField
+    EditField_5                    matlab.ui.control.NumericEditField
+    EditField_6                    matlab.ui.control.NumericEditField
+    EditField_7                    matlab.ui.control.NumericEditField
+    EditField_8                    matlab.ui.control.NumericEditField
+    EditField_9                    matlab.ui.control.NumericEditField
+    EditField_10                   matlab.ui.control.NumericEditField
+    XmmLabel                       matlab.ui.control.Label
+    XANGmmLabel                    matlab.ui.control.Label
+    YmmLabel                       matlab.ui.control.Label
+    YANGmmLabel                    matlab.ui.control.Label
+    ACTLabel                       matlab.ui.control.Label
+    DESLabel                       matlab.ui.control.Label
+    ACTLabel_2                     matlab.ui.control.Label
+    DESLabel_2                     matlab.ui.control.Label
+    ACTLabel_3                     matlab.ui.control.Label
+    DESLabel_3                     matlab.ui.control.Label
+    ACTLabel_4                     matlab.ui.control.Label
+    DESLabel_4                     matlab.ui.control.Label
+    EditField_11                   matlab.ui.control.NumericEditField
+    dEMeVLabel                     matlab.ui.control.Label
+    EditField_13                   matlab.ui.control.EditField
+    SelectFitLocationButton        matlab.ui.control.Button
+    DropDown_5                     matlab.ui.control.DropDown
+    DropDown_4                     matlab.ui.control.DropDown
+    TakeNewRefButton               matlab.ui.control.Button
+    ShowCors                       matlab.ui.control.StateButton
+    CorrectorsTab                  matlab.ui.container.Tab
+    UIAxes2                        matlab.ui.control.UIAxes
+    UIAxes3                        matlab.ui.control.UIAxes
+    ShowMaxButton                  matlab.ui.control.StateButton
+    DispersionTab                  matlab.ui.container.Tab
+    UIAxes5                        matlab.ui.control.UIAxes
+    UIAxes5_2                      matlab.ui.control.UIAxes
+    DispersionFitmmmradPanel       matlab.ui.container.Panel
+    EditField_14                   matlab.ui.control.NumericEditField
+    EditField_16                   matlab.ui.control.NumericEditField
+    EditField_18                   matlab.ui.control.NumericEditField
+    EditField_20                   matlab.ui.control.NumericEditField
+    DXLabel                        matlab.ui.control.Label
+    EditField_23                   matlab.ui.control.EditField
+    SelectFitLocationButton_2      matlab.ui.control.Button
+    DropDown_6                     matlab.ui.control.DropDown
+    ShowFitButton                  matlab.ui.control.StateButton
+    DPXLabel                       matlab.ui.control.Label
+    DYLabel                        matlab.ui.control.Label
+    DPYLabel                       matlab.ui.control.Label
+    DispersionCorrectionPanel      matlab.ui.container.Panel
+    DoCorrectionButton_2           matlab.ui.control.Button
+    ShowDevicesButton              matlab.ui.control.StateButton
+    DispersionfromEnergyScanPanel  matlab.ui.container.Panel
+    DoScanButton                   matlab.ui.control.Button
+    DropDown_7                     matlab.ui.control.DropDown
+    MinEditFieldLabel              matlab.ui.control.Label
+    MinEditField                   matlab.ui.control.NumericEditField
+    MaxEditFieldLabel              matlab.ui.control.Label
+    MaxEditField                   matlab.ui.control.NumericEditField
+    NstepEditFieldLabel            matlab.ui.control.Label
+    NstepEditField                 matlab.ui.control.NumericEditField
+    DispScan_minunit               matlab.ui.control.Label
+    DispScan_maxunit               matlab.ui.control.Label
+    MIATab                         matlab.ui.container.Tab
+    UIAxes6                        matlab.ui.control.UIAxes
+    PlotOptionPanel                matlab.ui.container.Panel
+    DropDown_2                     matlab.ui.control.DropDown
+    NmodesLabel                    matlab.ui.control.Label
+    NmodesEditField                matlab.ui.control.NumericEditField
+    CorrelatePanel                 matlab.ui.container.Panel
+    DropDown_3                     matlab.ui.control.DropDown
+    rEditFieldLabel                matlab.ui.control.Label
+    rEditField                     matlab.ui.control.EditField
+    pEditFieldLabel                matlab.ui.control.Label
+    pEditField                     matlab.ui.control.EditField
+    PlotButton                     matlab.ui.control.Button
+    modeEditFieldLabel             matlab.ui.control.Label
+    modeEditField                  matlab.ui.control.EditField
+    UIAxes6_2                      matlab.ui.control.UIAxes
+    RegionSelectPanel              matlab.ui.container.Panel
+    GridLayout                     matlab.ui.container.GridLayout
+    INJButton                      matlab.ui.control.StateButton
+    L0Button                       matlab.ui.control.StateButton
+    DL1Button                      matlab.ui.control.StateButton
+    L1Button                       matlab.ui.control.StateButton
+    BC11Button                     matlab.ui.control.StateButton
+    L2Button                       matlab.ui.control.StateButton
+    BC14Button                     matlab.ui.control.StateButton
+    L3Button                       matlab.ui.control.StateButton
+    BC20Button                     matlab.ui.control.StateButton
+    FFSButton                      matlab.ui.control.StateButton
+    SPECTButton                    matlab.ui.control.StateButton
+    AcquireButton                  matlab.ui.control.Button
+    NPulseEditFieldLabel           matlab.ui.control.Label
+    NPulseEditField                matlab.ui.control.NumericEditField
+    PlotRangeDropDownLabel         matlab.ui.control.Label
+    PlotRangeDropDown              matlab.ui.control.DropDown
+    NReadEditFieldLabel            matlab.ui.control.Label
+    NReadEditField                 matlab.ui.control.NumericEditField
+    UpdateLiveModelButton          matlab.ui.control.Button
+    UseBufferedDataCheckBox        matlab.ui.control.CheckBox
   end
 
   
   properties (Access = public)
     aobj % F2_OrbitApp object
+  end
+  
+  properties (Access = private)
+    escandone logical = false % Description
   end
   
   methods (Access = public)
@@ -203,19 +227,27 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
         case app.CorrectorsTab
           app.aobj.plotcor([app.UIAxes2 app.UIAxes3],app.ShowMaxButton.Value);
         case app.DispersionTab
-          if ~app.aobj.usebpmbuff
-            errordlg('Must acquire data with Buffered data selected to analyze dispersion','Disp Calc Error');
-            return
-          end
+          app.UIAxes5.reset; cla(app.UIAxes5);
+          app.UIAxes5_2.reset; cla(app.UIAxes5_2);
           try
-            dd=app.aobj.svddisp;
-          catch ME
-            errordlg(sprintf('Dispersion calc error:\n%s',ME.message),'Disp Calc Error');
-            return
+            if ~app.escandone
+              app.aobj.svddisp;
+            else
+              app.aobj.ProcEscan;
+            end
+            DX = app.aobj.dispfit ;
+            app.EditField_14.Value = DX(1) ;
+            app.EditField_16.Value = DX(2) ;
+            app.EditField_18.Value = DX(3) ;
+            app.EditField_20.Value = DX(4) ;
+            app.aobj.plotdisp([app.UIAxes5 app.UIAxes5_2],app.ShowFitButton.Value,app.ShowDevicesButton.Value) ;
+          catch
+            warning('Dispersion calc error:\n%s',ME.message);
+            app.EditField_14.Value = inf ;
+            app.EditField_16.Value = inf ;
+            app.EditField_18.Value = inf ;
+            app.EditField_20.Value = inf ;
           end
-          app.EditField.Value = sum(abs(dd.x),'omitnan') ;
-          app.EditField_2.Value = sum(abs(dd.y),'omitnan') ;
-          app.aobj.plotdisp([app.UIAxes5 app.UIAxes5_2],app.ShowModelFitButton_2.Value) ;
         case app.MIATab
           app.DropDown_2ValueChanged;
       end
@@ -224,13 +256,11 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
 
     % Button pushed function: AcquireButton
     function AcquireButtonPushed(app, event)
+      app.escandone=false;
       app.AcquireButton.Enable=false;
       app.NReadEditField.Value=0;
       drawnow
       try
-        if app.DL1_EFB_Jit.Value % Switch on Energy feedback jitter for DL1 FB?
-          lcaPutNoWait('SIOC:SYS1:ML01:AO217',1);
-        end
         app.aobj.acquire(app.NPulseEditField.Value);
         app.aobj.WriteGuiListBox();
         app.NReadEditField.Value = double(app.aobj.BPMS.nread) ;
@@ -239,9 +269,6 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
       catch ME
         errordlg(sprintf('Failed to acquire new BPM values: %s',ME.message));
         app.AcquireButton.Enable=true; drawnow;
-        lcaPutNoWait('SIOC:SYS1:ML01:AO217',0);
-      end
-      if app.DL1_EFB_Jit.Value
         lcaPutNoWait('SIOC:SYS1:ML01:AO217',0);
       end
     end
@@ -429,7 +456,7 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
       subplot(2,1,2); plot(cvec,dat.sdat_y,'.'); xlabel('Correlation Variable'); ylabel('Y Mode Amplitude'); grid on
     end
 
-    % Value changed function: ShowModelFitButton_2
+    % Callback function
     function ShowModelFitButton_2ValueChanged(app, event)
       app.aobj.domodelfit=app.ShowModelFitButton_2.Value;
       app.TabGroupSelectionChanged;
@@ -539,19 +566,22 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
       app.aobj.CorrectionOffset(5) = value ;
     end
 
-    % Button pushed function: SelectFitLocationButton
+    % Button pushed function: SelectFitLocationButton, 
+    % SelectFitLocationButton_2
     function SelectFitLocationButtonPushed(app, event)
       LM=copy(app.aobj.LM);
       LM.ModelClasses="All";
-      ele = ElementChooser(app.aobj.LM).GetChoice;
+      ele = ElementChooser(LM).GetChoice;
       if ~isnan(ele(1))
-        if app.aobj.LM.ModelID() < app.aobj.LM.istart || app.aobj.LM.ModelID(ele) > app.aobj.LM.iend
+        if LM.ModelID(ele) < LM.istart || LM.ModelID(ele) > LM.iend
           errordlg('Chosen element outside of active region','Element Choice Error');
           return
         end
-        app.aobj.fitele=app.aobj.LM.ModelID(ele(1));
-        app.EditField_13.Value=app.aobj.LM.ModelName(ele(1));
+        app.aobj.fitele = LM.ModelID(ele(1)) ;
+        app.EditField_13.Value = LM.ModelNames(ele(1)) ;
+        app.EditField_23.Value = LM.ModelNames(ele(1)) ;
       end
+      app.TabGroupSelectionChanged;
     end
 
     % Button pushed function: TakeNewRefButton
@@ -618,6 +648,10 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
 
     % Menu selected function: DeleteMenu
     function DeleteMenuSelected(app, event)
+      resp=questdlg('Delete current configuration file?','Delete Config?','No');
+      if string(resp)~="Yes"
+        return
+      end
       app.aobj.ConfigDelete();
       for imenu=1:length(app.SelectMenu.Children)
         app.SelectMenu.Children(imenu).Checked=0;
@@ -650,6 +684,102 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
       app.DropDown_5.Value = value ;
       app.aobj.orbitfitmethod=value;
       app.TabGroupSelectionChanged;
+    end
+
+    % Button pushed function: DoScanButton
+    function DoScanButtonPushed(app, event)
+      app.escandone=false;
+      app.DoScanButton.Enable=false; drawnow;
+      try
+        app.aobj.DoEscan(app.NPulseEditField.Value) ;
+      catch ME
+        errordlg('E Scan Error',ME.message);
+        app.DoScanButton.Enabletrue; drawnow;
+        return
+      end
+      app.escandone=true;
+      app.DoScanButton.Enabletrue; drawnow;
+    end
+
+    % Value changed function: ShowFitButton
+    function ShowFitButtonValueChanged(app, event)
+      app.TabGroupSelectionChanged;
+    end
+
+    % Value changed function: ShowDevicesButton
+    function ShowDevicesButtonValueChanged(app, event)
+      app.TabGroupSelectionChanged;
+    end
+
+    % Button pushed function: DoCorrectionButton_2
+    function DoCorrectionButton_2Pushed(app, event)
+      D_init = [app.EditField_14.Value app.EditField_16.Value app.EditField_18.Value app.EditField_20.Value] ;
+      try
+        app.DoCorrectionButton_2.Enable=false; drawnow;
+        DX_cor = app.aobj.dispcor() ;
+      catch ME
+        app.DoCorrectionButton_2.Enable=true; drawnow;
+        errordlg(ME.message,'Disp Correct Error');
+        return
+      end
+      app.DoCorrectionButton_2.Enable=true; drawnow;
+      corvals = app.aobj.DispCorData ;
+      app.aobj.LM.ModelClasses=["QUAD" "SEXT"];
+      corsel = find(ismember(app.aobj.DispDevices,app.aobj.LM.ModelNames)) ;
+      txt = sprintf("Dispersion correction:\nInitial = [%g , %g , %g , %g] mm/mrad\nCorrection = [%g , %g , %g , %g] mm/mrad",D_init,DX_cor);
+      txt = txt + "\n --- \n" + "Correction Devices and calculated changes:" ;
+      for icor=corsel(:)'
+        txt = txt + "\n" ;
+        curval = lcaGet(char(app.aobj.DispDeviceReadPV(icor))) ;
+        switch double(app.aobj.DispDeviceType(icor))
+          case {1,2}
+            txt = txt + app.aobj.DispDevices(icor) + " " + curval + " -> " + (curval+corvals(icor)*10) ;
+            txt = txt + " (BDES)" ;
+          case 3
+            txt = txt + app.aobj.DispDevices(icor) + " " + curval + " -> " + (curval+corvals(icor)*1000) ;
+            txt = txt + " (X / mm)" ;
+          case 4
+            txt = txt + app.aobj.DispDevices(icor) + " " + curval + " -> " + (curval+corvals(icor)*1000) ;
+            txt = txt + " (Y / mm)" ;
+        end
+      end
+      resp = questdlg(sprintf(txt),"Accept Correction?","No") ;
+      if string(resp) == "Yes"
+        app.aobj.SetDispcor() ;
+        UpdateLiveModelButtonPushed(app) ;
+      end
+    end
+
+    % Value changed function: DropDown_7
+    function DropDown_7ValueChanged(app, event)
+      value = string(app.DropDown_7.Value);
+      app.aobj.escandev = value ;
+      iknob=ismember(EnergyKnobNames,value) ;
+      range=app.aobj.escanrange;
+      app.MinEditField.Value = range(1,iknob) ;
+      app.MaxEditFIeld.Value = range(2,iknob) ;
+      app.NstepEditField.Value = app.aobj.nescan(iknob) ;
+    end
+
+    % Value changed function: MinEditField
+    function MinEditFieldValueChanged(app, event)
+      value = app.MinEditField.Value;
+      iknob=ismember(EnergyKnobNames,app.aobj.escandev) ;
+      app.aobj.escanrange(1,iknob) = value ;
+    end
+
+    % Value changed function: MaxEditField
+    function MaxEditFieldValueChanged(app, event)
+      value = app.MaxEditField.Value;
+      iknob=ismember(EnergyKnobNames,app.aobj.escandev) ;
+      app.aobj.escanrange(2,iknob) = value ;
+    end
+
+    % Value changed function: NstepEditField
+    function NstepEditFieldValueChanged(app, event)
+      value = app.NstepEditField.Value;
+      iknob=ismember(EnergyKnobNames,app.aobj.escandev) ;
+      app.aobj.nescan(iknob) = value ;
     end
   end
 
@@ -740,8 +870,8 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
 
       % Create UIAxes
       app.UIAxes = uiaxes(app.OrbitTab);
-      title(app.UIAxes, {''; ''})
-      xlabel(app.UIAxes, 'X')
+      title(app.UIAxes, '')
+      xlabel(app.UIAxes, '')
       ylabel(app.UIAxes, 'Y')
       app.UIAxes.FontSize = 14;
       app.UIAxes.Position = [134 264 712 290];
@@ -777,11 +907,11 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
 
       % Create UIAxes_2
       app.UIAxes_2 = uiaxes(app.OrbitTab);
-      title(app.UIAxes_2, {''; ''})
+      title(app.UIAxes_2, '')
       xlabel(app.UIAxes_2, 'X')
       ylabel(app.UIAxes_2, 'Y')
       app.UIAxes_2.FontSize = 14;
-      app.UIAxes_2.Position = [134 4 712 247];
+      app.UIAxes_2.Position = [134 4 712 254];
 
       % Create CorrectionSolverButtonGroup
       app.CorrectionSolverButtonGroup = uibuttongroup(app.OrbitTab);
@@ -1012,7 +1142,7 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
       app.ShowCors = uibutton(app.OrbitTab, 'state');
       app.ShowCors.ValueChangedFcn = createCallbackFcn(app, @ShowCorsValueChanged, true);
       app.ShowCors.Text = 'Show Corrector Locations';
-      app.ShowCors.Position = [868 10 156 28];
+      app.ShowCors.Position = [876 10 156 28];
 
       % Create CorrectorsTab
       app.CorrectorsTab = uitab(app.TabGroup);
@@ -1021,16 +1151,16 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
       % Create UIAxes2
       app.UIAxes2 = uiaxes(app.CorrectorsTab);
       title(app.UIAxes2, '')
-      xlabel(app.UIAxes2, 'X')
+      xlabel(app.UIAxes2, '')
       ylabel(app.UIAxes2, 'Y')
-      app.UIAxes2.Position = [9 282 1025 240];
+      app.UIAxes2.Position = [9 243 1025 290];
 
       % Create UIAxes3
       app.UIAxes3 = uiaxes(app.CorrectorsTab);
       title(app.UIAxes3, '')
       xlabel(app.UIAxes3, 'X')
       ylabel(app.UIAxes3, 'Y')
-      app.UIAxes3.Position = [8 21 1024 240];
+      app.UIAxes3.Position = [8 21 1024 217];
 
       % Create ShowMaxButton
       app.ShowMaxButton = uibutton(app.CorrectorsTab, 'state');
@@ -1045,10 +1175,10 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
       % Create UIAxes5
       app.UIAxes5 = uiaxes(app.DispersionTab);
       title(app.UIAxes5, '')
-      xlabel(app.UIAxes5, 'X')
+      xlabel(app.UIAxes5, '')
       ylabel(app.UIAxes5, 'Y')
       app.UIAxes5.FontSize = 14;
-      app.UIAxes5.Position = [3 227 897 220];
+      app.UIAxes5.Position = [4 263 854 295];
 
       % Create UIAxes5_2
       app.UIAxes5_2 = uiaxes(app.DispersionTab);
@@ -1056,49 +1186,168 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
       xlabel(app.UIAxes5_2, 'X')
       ylabel(app.UIAxes5_2, 'Y')
       app.UIAxes5_2.FontSize = 14;
-      app.UIAxes5_2.Position = [3 4 897 220];
+      app.UIAxes5_2.Position = [4 6 854 254];
 
-      % Create SumDispersionPanel
-      app.SumDispersionPanel = uipanel(app.DispersionTab);
-      app.SumDispersionPanel.Title = 'Sum Dispersion';
-      app.SumDispersionPanel.Position = [910 443 122 100];
+      % Create DispersionFitmmmradPanel
+      app.DispersionFitmmmradPanel = uipanel(app.DispersionTab);
+      app.DispersionFitmmmradPanel.AutoResizeChildren = 'off';
+      app.DispersionFitmmmradPanel.Title = 'Dispersion Fit [mm/mrad]';
+      app.DispersionFitmmmradPanel.Position = [865 307 172 247];
 
-      % Create EditField
-      app.EditField = uieditfield(app.SumDispersionPanel, 'numeric');
-      app.EditField.Editable = 'off';
-      app.EditField.Position = [18 43 87 22];
+      % Create EditField_14
+      app.EditField_14 = uieditfield(app.DispersionFitmmmradPanel, 'numeric');
+      app.EditField_14.Editable = 'off';
+      app.EditField_14.Position = [25 112 90 22];
+      app.EditField_14.Value = Inf;
 
-      % Create EditField_2
-      app.EditField_2 = uieditfield(app.SumDispersionPanel, 'numeric');
-      app.EditField_2.Editable = 'off';
-      app.EditField_2.Position = [18 12 87 22];
+      % Create EditField_16
+      app.EditField_16 = uieditfield(app.DispersionFitmmmradPanel, 'numeric');
+      app.EditField_16.Editable = 'off';
+      app.EditField_16.Position = [25 87 90 22];
+      app.EditField_16.Value = Inf;
 
-      % Create ShowModelFitButton_2
-      app.ShowModelFitButton_2 = uibutton(app.DispersionTab, 'state');
-      app.ShowModelFitButton_2.ValueChangedFcn = createCallbackFcn(app, @ShowModelFitButton_2ValueChanged, true);
-      app.ShowModelFitButton_2.Text = 'Show Model Fit';
-      app.ShowModelFitButton_2.Position = [912 388 118 43];
+      % Create EditField_18
+      app.EditField_18 = uieditfield(app.DispersionFitmmmradPanel, 'numeric');
+      app.EditField_18.Editable = 'off';
+      app.EditField_18.Position = [25 63 90 22];
+      app.EditField_18.Value = Inf;
 
-      % Create UIAxes5_3
-      app.UIAxes5_3 = uiaxes(app.DispersionTab);
-      title(app.UIAxes5_3, '')
-      xlabel(app.UIAxes5_3, 'X')
-      ylabel(app.UIAxes5_3, 'Y')
-      app.UIAxes5_3.FontSize = 14;
-      app.UIAxes5_3.Position = [47 454 854 104];
+      % Create EditField_20
+      app.EditField_20 = uieditfield(app.DispersionFitmmmradPanel, 'numeric');
+      app.EditField_20.Editable = 'off';
+      app.EditField_20.Position = [25 39 90 22];
+      app.EditField_20.Value = Inf;
 
-      % Create DL1_EFB_Jit
-      app.DL1_EFB_Jit = uibutton(app.DispersionTab, 'state');
-      app.DL1_EFB_Jit.Enable = 'off';
-      app.DL1_EFB_Jit.Text = 'DL1 Energy FB Jitter';
-      app.DL1_EFB_Jit.Position = [910 21 127 39];
+      % Create DXLabel
+      app.DXLabel = uilabel(app.DispersionFitmmmradPanel);
+      app.DXLabel.Position = [122 112 25 22];
+      app.DXLabel.Text = 'DX';
+
+      % Create EditField_23
+      app.EditField_23 = uieditfield(app.DispersionFitmmmradPanel, 'text');
+      app.EditField_23.Editable = 'off';
+      app.EditField_23.HorizontalAlignment = 'center';
+      app.EditField_23.Position = [11 172 142 22];
+      app.EditField_23.Value = '<FitLocation>';
+
+      % Create SelectFitLocationButton_2
+      app.SelectFitLocationButton_2 = uibutton(app.DispersionFitmmmradPanel, 'push');
+      app.SelectFitLocationButton_2.ButtonPushedFcn = createCallbackFcn(app, @SelectFitLocationButtonPushed, true);
+      app.SelectFitLocationButton_2.Position = [11 198 142 23];
+      app.SelectFitLocationButton_2.Text = 'Select Fit Location';
 
       % Create DropDown_6
-      app.DropDown_6 = uidropdown(app.DispersionTab);
+      app.DropDown_6 = uidropdown(app.DispersionFitmmmradPanel);
       app.DropDown_6.Items = {'lscov', 'backslash'};
       app.DropDown_6.ValueChangedFcn = createCallbackFcn(app, @DropDown_6ValueChanged, true);
-      app.DropDown_6.Position = [922 358 99 22];
+      app.DropDown_6.Position = [15 141 134 22];
       app.DropDown_6.Value = 'lscov';
+
+      % Create ShowFitButton
+      app.ShowFitButton = uibutton(app.DispersionFitmmmradPanel, 'state');
+      app.ShowFitButton.ValueChangedFcn = createCallbackFcn(app, @ShowFitButtonValueChanged, true);
+      app.ShowFitButton.Text = 'Show Fit';
+      app.ShowFitButton.Position = [12 8 150 23];
+      app.ShowFitButton.Value = true;
+
+      % Create DPXLabel
+      app.DPXLabel = uilabel(app.DispersionFitmmmradPanel);
+      app.DPXLabel.Position = [122 87 30 22];
+      app.DPXLabel.Text = 'DPX';
+
+      % Create DYLabel
+      app.DYLabel = uilabel(app.DispersionFitmmmradPanel);
+      app.DYLabel.Position = [122 63 25 22];
+      app.DYLabel.Text = 'DY';
+
+      % Create DPYLabel
+      app.DPYLabel = uilabel(app.DispersionFitmmmradPanel);
+      app.DPYLabel.Position = [122 39 30 22];
+      app.DPYLabel.Text = 'DPY';
+
+      % Create DispersionCorrectionPanel
+      app.DispersionCorrectionPanel = uipanel(app.DispersionTab);
+      app.DispersionCorrectionPanel.Title = 'Dispersion Correction';
+      app.DispersionCorrectionPanel.Position = [865 200 172 104];
+
+      % Create DoCorrectionButton_2
+      app.DoCorrectionButton_2 = uibutton(app.DispersionCorrectionPanel, 'push');
+      app.DoCorrectionButton_2.ButtonPushedFcn = createCallbackFcn(app, @DoCorrectionButton_2Pushed, true);
+      app.DoCorrectionButton_2.Position = [14 39 144 34];
+      app.DoCorrectionButton_2.Text = 'Do Correction';
+
+      % Create ShowDevicesButton
+      app.ShowDevicesButton = uibutton(app.DispersionCorrectionPanel, 'state');
+      app.ShowDevicesButton.ValueChangedFcn = createCallbackFcn(app, @ShowDevicesButtonValueChanged, true);
+      app.ShowDevicesButton.Text = 'Show Devices';
+      app.ShowDevicesButton.Position = [14 7 144 23];
+
+      % Create DispersionfromEnergyScanPanel
+      app.DispersionfromEnergyScanPanel = uipanel(app.DispersionTab);
+      app.DispersionfromEnergyScanPanel.Title = 'Dispersion from Energy Scan';
+      app.DispersionfromEnergyScanPanel.Position = [865 6 172 189];
+
+      % Create DoScanButton
+      app.DoScanButton = uibutton(app.DispersionfromEnergyScanPanel, 'push');
+      app.DoScanButton.ButtonPushedFcn = createCallbackFcn(app, @DoScanButtonPushed, true);
+      app.DoScanButton.Position = [16 12 144 29];
+      app.DoScanButton.Text = 'Do Scan';
+
+      % Create DropDown_7
+      app.DropDown_7 = uidropdown(app.DispersionfromEnergyScanPanel);
+      app.DropDown_7.Items = {'S20_ENERGY_3AND4', 'S20_ENERGY_4AND5', 'S20_ENERGY_4AND6', 'BC14_ENERGY_4AND5', 'BC14_ENERGY_5AND6', 'BC14_ENERGY_4AND6', 'BC11_ENERGY', 'DL10_ENERGY'};
+      app.DropDown_7.ValueChangedFcn = createCallbackFcn(app, @DropDown_7ValueChanged, true);
+      app.DropDown_7.FontSize = 10;
+      app.DropDown_7.Position = [5 139 162 22];
+      app.DropDown_7.Value = 'S20_ENERGY_3AND4';
+
+      % Create MinEditFieldLabel
+      app.MinEditFieldLabel = uilabel(app.DispersionfromEnergyScanPanel);
+      app.MinEditFieldLabel.HorizontalAlignment = 'right';
+      app.MinEditFieldLabel.Position = [16 105 25 22];
+      app.MinEditFieldLabel.Text = 'Min';
+
+      % Create MinEditField
+      app.MinEditField = uieditfield(app.DispersionfromEnergyScanPanel, 'numeric');
+      app.MinEditField.Limits = [-500 500];
+      app.MinEditField.ValueChangedFcn = createCallbackFcn(app, @MinEditFieldValueChanged, true);
+      app.MinEditField.Position = [55 106 59 22];
+      app.MinEditField.Value = -50;
+
+      % Create MaxEditFieldLabel
+      app.MaxEditFieldLabel = uilabel(app.DispersionfromEnergyScanPanel);
+      app.MaxEditFieldLabel.HorizontalAlignment = 'right';
+      app.MaxEditFieldLabel.Position = [14 77 28 22];
+      app.MaxEditFieldLabel.Text = 'Max';
+
+      % Create MaxEditField
+      app.MaxEditField = uieditfield(app.DispersionfromEnergyScanPanel, 'numeric');
+      app.MaxEditField.Limits = [-500 500];
+      app.MaxEditField.ValueChangedFcn = createCallbackFcn(app, @MaxEditFieldValueChanged, true);
+      app.MaxEditField.Position = [56 77 59 22];
+      app.MaxEditField.Value = 50;
+
+      % Create NstepEditFieldLabel
+      app.NstepEditFieldLabel = uilabel(app.DispersionfromEnergyScanPanel);
+      app.NstepEditFieldLabel.HorizontalAlignment = 'right';
+      app.NstepEditFieldLabel.Position = [5 49 37 22];
+      app.NstepEditFieldLabel.Text = 'Nstep';
+
+      % Create NstepEditField
+      app.NstepEditField = uieditfield(app.DispersionfromEnergyScanPanel, 'numeric');
+      app.NstepEditField.ValueChangedFcn = createCallbackFcn(app, @NstepEditFieldValueChanged, true);
+      app.NstepEditField.Position = [56 49 59 22];
+      app.NstepEditField.Value = 10;
+
+      % Create DispScan_minunit
+      app.DispScan_minunit = uilabel(app.DispersionfromEnergyScanPanel);
+      app.DispScan_minunit.Position = [123 105 37 22];
+      app.DispScan_minunit.Text = 'MeV';
+
+      % Create DispScan_maxunit
+      app.DispScan_maxunit = uilabel(app.DispersionfromEnergyScanPanel);
+      app.DispScan_maxunit.Position = [123 77 37 22];
+      app.DispScan_maxunit.Text = 'MeV';
 
       % Create MIATab
       app.MIATab = uitab(app.TabGroup);

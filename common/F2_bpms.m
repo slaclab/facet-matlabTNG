@@ -343,6 +343,32 @@ classdef F2_bpms < handle
       obj.modelID(nsel)=[];
       obj.epicsnames(nsel)=[];
     end
+    function LoadData(obj,xdat_new,ydat_new,tmit_new)
+      if exist('xdat_new','var') && ~isempty(xdat_new)
+        sz_n=size(xdat_new);
+        sz=size(obj.xdat);
+        if ~isequal(sz,sz_n)
+          error('Dimension mismatch between new and existing data, aborting laod');
+        end
+        obj.xdat=xdat_new;
+      end
+      if exist('ydat_new','var') && ~isempty(ydat_new)
+        sz_n=size(ydat_new);
+        sz=size(obj.ydat);
+        if ~isequal(sz,sz_n)
+          error('Dimension mismatch between new and existing data, aborting laod');
+        end
+        obj.ydat=ydat_new;
+      end
+      if exist('tmit_new','var') && ~isempty(tmit_new)
+        sz_n=size(tmit_new);
+        sz=size(obj.tmit);
+        if ~isequal(sz,sz_n)
+          error('Dimension mismatch between new and existing data, aborting laod');
+        end
+        obj.tmit=tmit_new;
+      end
+    end
   end
   methods(Access=private)
     function UpdateProc(obj) %#ok<MANU>

@@ -40,7 +40,7 @@ classdef SCP_MKB < handle
         
     end
     function mkval = get(obj)
-      %MKBGET Get SCP multiknob data
+      %GET Get SCP multiknob data
       aidapva;
       try
         dat = ML(obj.builder.get());
@@ -52,8 +52,8 @@ classdef SCP_MKB < handle
       end
     end
     function set(obj,val)
-      %MKBSET Set a SCP multiknob value
-      %MKBset(val)
+      %SET Set a SCP multiknob value
+      %set(val)
       aidapva;
       try
         dat = ML(obj.builder.set(double(val-obj.val)));

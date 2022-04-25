@@ -35,8 +35,8 @@ classdef F2_mags < handle & matlab.mixin.Copyable & F2_common
     BACT_cntrl % BACT values read from control system
     BMIN % BMAX from control system
     BMAX % BMIN from control system where available (else set based on BMAX)
-    BfudName string = ["QM11393" "Q11401" "Q11501" "Q11601" "Q11701" "Q11801" "Q11901"] % ModelNames corresponding to Bfud (fudge factor scalars)
-    Bfud = [1.0379 0.6997 -0.0905 0.1249 -0.3969 0.5169 0.6973] % Fudge factor scalars
+    BfudName string = ["CQ14738" "CQ14866"] % ModelNames corresponding to Bfud (fudge factor scalars)
+    Bfud = [-1 -1] % Fudge factor scalars
   end
   properties(Access=private)
     MonitorList string

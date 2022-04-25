@@ -32,6 +32,9 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
     CorrectionOffset(4,1) = [0; 0; 0; 0;] % Desired correction offset when using domodelfit
     npulse {mustBePositive} = 50 % default/GUI value for number of pulses of BPM data to take
     orbitfitmethod string {mustBeMember(orbitfitmethod,["lscov","backslash"])} = "lscov"
+    escandev string {mustBeMember(escandev,["S20_ENERGY_3AND4","S20_ENERGY_4AND5","S20_ENERGY_4AND6","BC14_ENERGY_4AND5","BC14_ENERGY_5AND6","BC14_ENERGY_4AND6","BC11_ENERGY","DL10_ENERGY"])} = "DL10_ENERGY"
+    escanrange(2,8) = [-50 -50 -50 -30 -30 -30 -30 -30; 50 50 50 30 30 30 30 30] % MeV
+    nescan(1,8) = ones(1,8).*10 % Number of energy scan steps to use
   end
   properties(Transient)
     BPMS % Storage for F2_bpms object
@@ -49,9 +52,11 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
     ebpms_disp(1,5) % dispersion at energy BPMS in mm
     DispData % Dispersion data calculated with svddisp method (mm)
     DispFit % Fitted [dispersion_x; dispersion_y] at each BPM in selected region calculated with plotdisp method
+    DispCorData % fitted dispersion correction device settings
     DispCorVals
     ConfigName string = "none"
     ConfigDate
+    escandata cell % Storage for energy scan data
   end
   properties(SetAccess=private,Hidden)
     bdesx_restore % bdes values store when written for undo function
@@ -79,8 +84,17 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
     klys_bsa = "KLYS:LI10:41:FB:FAST_AACT3" % L0B
     klys_cntrl = "KLYS:LI10:41:ADES" % L0B
     OrbitConfigDir string = F2_common.confdir + "/F2_Orbit" ;
-    DispDevices string = ["QB10731" "CQ11317" "CQ11352" "CQ14738" "CQ14866" "SQ1" "S1EL" "S2EL" "S2ER" "S1ER"]
-    DispDeviceType uint8 = [1         1         1         1         1        2      3       3     3     3    ] % 1=quad 2=skew quad 3=sext
+    DispDevices string = ["QB10731" "CQ11317" "CQ11352" "CQ14738" "CQ14866" "SQ1" "S1EL" "S2EL" "S2ER" "S1ER" "S1EL" "S2EL" "S2ER" "S1ER"]
+    DispDeviceType uint8 = [1         1         1         1         1        2      3       3     3     3       4       4     4     4    ] % 1=quad 2=skew quad 3=sext(x) 4=sext(y)
+    DispDeviceReadPV = ["QUAD:IN10:731:BDES" "QUAD:LI11:317:BDES" "QUAD:LI11:352:BDES" "QUAD:LI14:738:BDES" "QUAD:LI14:866:BDES" "LI20:QUAD:2086:BDES" ...
+      "SIOC:ML00:AO551" "SIOC:ML01:AO501" "SIOC:ML01:AO516" "SIOC:ML01:AO566" "SIOC:ML01:AO556" "SIOC:ML01:AO506" "SIOC:ML01:AO521" "SIOC:ML01:AO571"]
+    DispDeviceWritePV = ["QUAD:IN10:731:BCTRL" "QUAD:LI11:317:BCTRL" "QUAD:LI11:352:BCTRL" "QUAD:LI14:738:BCTRL" "QUAD:LI14:866:BCTRL" "QUAD:LI20:2086:BDES" ...
+      "SIOC:ML00:AO551" "SIOC:ML01:AO501" "SIOC:ML01:AO516" "SIOC:ML01:AO566" "SIOC:ML01:AO556" "SIOC:ML01:AO506" "SIOC:ML01:AO521" "SIOC:ML01:AO571"]
+    DispDeviceWriteProto = ["EPICS" "EPICS" "EPICS" "EPICS" "EPICS" "AIDA" "EPICS" "EPICS" "EPICS" "EPICS" "EPICS" "EPICS" "EPICS" "EPICS"]
+    EnergyKnobNames = ["S20_ENERGY_3AND4","S20_ENERGY_4AND5","S20_ENERGY_4AND6","BC14_ENERGY_4AND5","BC14_ENERGY_5AND6","BC14_ENERGY_4AND6","BC11_ENERGY","DL10_ENERGY"]
+    EnergyKnobs = {"MKB:S20_ENERGY_3AND4" "MKB:S20_ENERGY_4AND5" "MKB:S20_ENERGY_4AND6" "MKB:BC14_ENERGY_4AND5" "MKB:BC14_ENERGY_5AND6" "MKB:BC14_ENERGY_4AND6" ["KLYS:LI11:11:SSSB_ADES" "KLYS:LI11:21:SSSB_ADES"] "KLYS:LI10:41:SFB_ADES"}
+    EnergyKnobsKlys = {["19_3","19_4"] ["19_4","19_5"] ["19_4","19_6"] ["14_4","14_5"] ["14_5","14_6"] ["14_4","14_6"] ["11_1","11_2"] "10_4"} % Klystron stations for each knob
+    EnergyKnobsKlys11 = ["KLYS:LI11:11:SSSB_ADES" "KLYS:LI11:21:SSSB_ADES"; "KLYS:LI11:11:SSSB_PDES" "KLYS:LI11:21:SSSB_PDES"] % PVs for stations in 11 [Ampl;Phase]
   end
   methods
     function obj = F2_OrbitApp(appobj)
@@ -445,10 +459,11 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
       dispdat.yerr=dispy_err;
       obj.DispData = dispdat ;
     end
-    function DX_f = dispfit(obj)
+    function DX_f = dispfit(obj,dfitele)
       %DISPFIT Fit BPM dispersion measurements to betatron orbit
-      %[X0,X1] = dispfit
-      % DX_f : fitted dispersion values at fitele location: [Dx,D'x,Dy,D'y]
+      %DX_f = dispfit([fitele])
+      % fitele (optional) = element to quote fitted dispersion (default=obj.fitele)
+      % DX_f : fitted dispersion values at fitele location (d/s face): [Dx,D'x,Dy,D'y]
       if isempty(obj.DispData)
         return
       end
@@ -477,11 +492,16 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
       
       % Return dispersion fit at fitele location
       if nargout>0
-        if obj.fitele>=id(1)
-          [~,R] = RmatAtoB(double(id(1)),double(obj.fitele));
+        if ~exist('dfitele','var')
+          dfitele=double(obj.fitele);
+        else
+          dfitele=double(dfitele);
+        end
+        if dfitele>id(1)
+          [~,R] = RmatAtoB(double(id(1)),dfitele);
           DX_f = R(1:4,1:4) * disp0(:) ;
         else
-          [~,R] = RmatAtoB(double(obj.fitele),double(id(1)));
+          [~,R] = RmatAtoB(dfitele+1,double(id(1)));
           DX_f = R(1:4,1:4) \ disp0(:) ;
         end
       end
@@ -489,6 +509,10 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
     end
     function DX_cor = dispcor(obj,varargin)
       %DISPCOR Correct measured dispersion with any correction devices in range
+      %DX_cor = dispcor()
+      % DX_cor returns fitted dispersion at obj.fitele [Dx,D'x,Dy,D'y]
+      % Correction device settings stored in DispCorData property (but not applied)
+      %  NaN values in DispCorData property indicate that correction device not used
       global BEAMLINE PS
       
       % Get correction devices in range
@@ -497,18 +521,23 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
       if isempty(corsel)
         error('No dispersion correction devices within selected range');
       end
-      
-      % Get fitted dispersion at first device entrance
-      fitele_i = obj.fitele ; % Store current fit element
-      obj.fitele = obj.LM.ModelID(obj.LM.ModelNames==obj.DispDevices(corsel(1))) ;
-      DX_f = obj.dispfit() ;
+      corele = obj.LM.ModelID(ismember(obj.LM.ModelNames,obj.DispDevices(corsel))) ;
+      magID=ismember(obj.LiveModel.LEM.Mags.LM.ModelID,corele);
+      bmax=obj.LiveModel.LEM.Mags.BMAX(magID)./10;
       
       % Fit correction device changes to cancel dispersion
       if nargin==1 % Launch the minimization algorithm
+        % Get fitted dispersion at first device entrance
+        DX_f = obj.dispfit(corele(1)-1) ;
+        DX_f = DX_f.*1e-3 ;
+        
         % Turn any sextupoles into quads
         qref=zeros(1,length(obj.DispDevices));
+        n=0;
         for icor=corsel(:)'
-          if obj.DispDeviceType(icor)==3
+          n=n+1;
+          if obj.DispDeviceType(icor)>=3
+            bmax(n)=1; % max 1mm change for sextupole movers
             for iele=findcells(BEAMLINE,'Name',char(obj.DispDevices(icor)))
               qref(icor) = PS(BEAMLINE{iele}.PS).Ampl ;
               BEAMLINE{iele}.Class='QUAD';
@@ -519,38 +548,91 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
         psind = arrayfun(@(x) BEAMLINE{x}.PS,obj.LM.ModelID(ismember(obj.LM.ModelNames,obj.DispDevices))) ;
         ps_init = arrayfun(@(x) PS(x).Ampl,psind) ;
         try
-          xmin = fminsearch(@(x) obj.dispcor(x,psind,qref),zeros(1,sum(corsel)),optimset('Display','iter','MaxFunEvals',1000)) ;
+          xmin = lsqnonlin(@(x) obj.dispcor(x,psind,qref,DX_f),zeros(1,length(corsel)),-bmax,bmax,optimset('Display','iter','MaxFunEvals',1000)) ;
+%           xmin = fminsearch(@(x) obj.dispcor(x,psind,qref,DX_f),zeros(1,length(corsel)),optimset('Display','iter','MaxFunEvals',1000)) ;
+%           xmin = fmincon(@(x) obj.dispcor(x,psind,qref,DX_f),zeros(1,length(corsel)),[],[],[],[],-bmax,bmax,[],optimset('Display','iter','MaxFunEvals',1000)) ;
         catch ME
-          warning(ME.identifier,'Dispersion minimization failed: %s',ME.message);
+          error(ME.identifier,'Dispersion minimization failed: %s',ME.message);
         end
+        % Return corrected dispersion estimate at fit location and store correction device settings
+        [~,R]=RmatAtoB(corele(1),double(obj.fitele-1));
+        DX_cor = R(1:4,1:4) * DX_f.*1e3 ;
+        obj.DispCorData=nan(1,length(obj.DispDevices));
+        obj.DispCorData(corsel) = xmin ;
         % Turn Sextupoles back again
         for icor=corsel(:)'
-          if obj.DispDeviceType(icor)==3
+          if obj.DispDeviceType(icor)>=3
             for iele=findcells(BEAMLINE,'Name',char(obj.DispDevices(icor)))
               BEAMLINE{iele}.Class='SEXT';
+              BEAMLINE{iele}.Tilt=0;
             end
           end
         end
-        % Restore initial magnet settings
-        for icor=corsel(:)'
-          PS(psind(icor)).Ampl = ps_init(icor) ;
+        % Restore initial magnet settings in model
+        for n=1:length(psind)
+          PS(psind(n)).Ampl = ps_init(n) ;
         end
       else % Process one step of the minimization
         x=varargin{1};
         psind=varargin{2};
         qref=varargin{3};
+        DX_f=varargin{4};
         n=1;
         % Set magnets in model
+        do_y=false;
         for icor=corsel(:)'
           if obj.DispDeviceType(icor)<3
-            PS(psind(icor)).Ampl = x(n) ;
-          else
-            PS(psind(icor)).Ampl = x(n)*qref ;
+            PS(psind(n)).Ampl = x(n) ;
+          elseif obj.DispDeviceType(icor)==3 
+            do_y=true;
+            qn = x(n)*qref ; qs = x(n+1)*qref ; % Turn x/y sextupole moves into quad+skew-quad components
+            th = atan(-qs/qn)/2 ; C_2 = qn/cos(2*th) ; % Get quad amplitude and rotation angle to generate normal and skew components
+            PS(psind(n)).Ampl = C_2 ;
+            for iele=PS(psind(n)).Element
+              BEAMLINE{iele}.Tilt = th ;
+            end
           end
           n=n+1;
         end
         % Transport dispersion function to downstream of last correction element
-        
+        i1=corele(1);
+%         i2=PS(BEAMLINE{corele(end)}.PS).Element(end);
+        i2 = double(obj.fitele-1) ;
+        [~,R]=RmatAtoB(i1,i2);
+        DX = R(1:4,1:4) * DX_f ;
+        if do_y
+%           DX_cor = sum(abs(DX(:))) ; % minimize total dispersion
+          DX_cor = DX ;
+        else
+%           DX_cor = sum(abs(DX(1:2))) ; % minimize Dx / D'x
+          DX_cor = DX(1:2) ;
+        end
+      end
+    end
+    function SetDispcor(obj)
+      %SETDISPCOR Apply fitted dispersion correction device settings
+      if isempty(obj.DispCorData) || all(isnan(obj.DispCorData))
+        error('No valid dispersion correction fit data');
+      end
+      disp('Applying Dispersion Correction...');
+      for icor=1:length(obj.DispDevices)
+        if ~isnan(obj.DispCorData(icor))
+          val = lcaGet(char(obj.DispDeviceReadPV(icor))) ;
+          switch obj.DispDeviceType(icor)
+            case {1,2}
+              newval = double(val + obj.DispCorData(icor)*10) ; % Convert quad change into BDES units
+            case {3,4}
+              newval = double(val + obj.DispCorData(icor)*1000) ; % Convert sextupole position change into mm units
+          end
+          fprintf('%s : %g -> %g\n',char(obj.DispDeviceWritePV(icor)),val,newval);
+          if obj.DispDeviceWriteProto(icor) == "EPICS"
+            lcaPutNoWait(char(obj.DispDeviceWritePV(icor)),newval) ;
+          else
+            builder = pvaRequest(char(obj.DispDeviceWritePV(icor))) ;
+            builder.with('Trim') ;
+            builder.set(newval) ;
+          end
+        end
       end
     end
     function res = svdcorr(obj,corvec,nmode)
@@ -872,6 +954,121 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
       obj.aobj.EditField_23.Value = BEAMLINE{obj.aobj.aobj.fitele}.Name ;
       drawnow
     end
+    function DoEscan(obj,nbpm)
+      %DOESCAN Perform energy scan and extract dispersion function at BPMs
+      %DoEscan(Nbpm)
+      % Nbpm: number BPM readings to take per energy scan setting
+      
+      % Get energy knob to scan and desired range
+      id = find(ismember(obj.EnergyKnobNames,obj.escandev)) ;
+      evals = linspace(obj.escanrange(1,id),obj.escanrange(2,id),obj.nescan) ; % Delta-E (MeV)
+      knob = obj.EnergyKnobs{id} ;
+      
+      % Get starting knob value
+      % - MKB's adjust phase, EPICS adjusts amplitude
+      if startsWith(knob(1),"MKB:")
+        ismk=true;
+        MK = SCP_MKB(lower(regexprep(knob,"^MKB:",""))) ;
+        k0=0;
+      else
+        ismk=false;
+        k0=lcaGet(cellstr(knob(:)));
+      end
+      
+      % Get ENLD & phases
+      pha=zeros(1,length(obj.EnergyKnobsKlys{id})); enld=pha; e0=pha;
+      for iknob=1:length(obj.EnergyKnobsKlys{id})
+        t=regexp(obj.EnergyKnobsKlys{id}(iknob),"(\d+)_(\d)","tokens","once");
+        isec=double(t(1)); ikly=double(t(2));
+        if isec==11
+          pha(iknob)=lcaGet(char(obj.EnergyKnobsKlys11(2,iknob)));
+          enld(iknob)=lcaGet(char(obj.EnergyKnobsKlys11(1,iknob)));
+        elseif isec==10
+          pha(iknob)=0;
+          enld(iknob)=60;
+        else
+          pha(iknob)=lcaGet(char("LI"+isec+":KLYS:"+ikly+"1:PDES"));
+          enld(iknob)=lcaGet(char("LI"+isec+":KLYS:"+ikly+"1:ENLD"));
+        end
+        e0(iknob)=enld(iknob)*cosd(pha(iknob));
+      end
+      
+      % Scan the energy knob
+      obj.escandata=cell(length(evals),6);
+      disp("Starting energy scan...");
+      for ival=1:length(evals)
+        
+        % Set the knob
+        if ismk
+          % Get required phase change to adjust the energy as required
+          e_new = sum(e0) + evals(ival) ;
+          dth = acosd(e_new/sum(enld)) -mean(abs(pha)) ;
+          disp("Setting MKB:"+MK.Name+" dpha= "+ dth + " ...");
+          MK.set(dth);
+        else
+          esca = 1 + evals(ival) / sum(e0) ; % Scale energy knob by required amount
+          disp("Scaling " + knob(:) + " by " + esca + " ...");
+          lcaPut(cellstr(knob(:)),k0(:).*esca);
+        end
+        pause(1);
+        disp("Geting BPM data...");
+        % Get BPM data:
+        if obj.usebpmbuff
+          obj.BPMS.readbuffer(nbpm);
+        else
+          obj.BPMS.readnp(nbpm);
+        end
+        % Process and store data
+        [xm,ym,xstd,ystd,use,id] = obj.GetOrbit;
+        obj.escandata{ival,1}=xm;
+        obj.escandata{ival,2}=ym;
+        obj.escandata{ival,3}=xstd;
+        obj.escandata{ival,4}=ystd;
+        obj.escandata{ival,5}=use;
+        obj.escandata{ival,6}=id;
+      end
+      disp("Finished energy scan.");
+    end
+    function dispdat = ProcEscan(obj)
+      %PROCESCAN Process escan data to generate dispersion at BPMs
+      if isempty(obj.escandata)
+        error('No energy scan performed');
+      end
+      id = find(ismember(obj.EnergyKnobNames,obj.escandev)) ;
+      evals = linspace(obj.escanrange(1,id),obj.escanrange(2,id),obj.nescan) ; % Delta-E (MeV)
+      xvals=nan(length(evals),length(obj.BPMS.modelID)); yvals=xvals; dxvals=xvals; dyvals=xvals;
+      for idat=1:length(evals)
+        xvals(idat,obj.escandata{idat,5}) = obj.escandata{idat,1} ;
+        dxvals(idat,obj.escandata{idat,5}) = obj.escandata{idat,3} ;
+        yvals(idat,obj.escandata{idat,5}) = obj.escandata{idat,2} ;
+        dyvals(idat,obj.escandata{idat,5}) = obj.escandata{idat,4} ;
+      end
+      dispx=nan(1,length(obj.BPMS.modelID)); dispx_err=dispx; dispy=dispx; dispy_err=dispx;
+      for ibpm=1:length(obj.BPMS.modelID)
+        sel = ~isnan(xvals(:,ibpm)) ;
+        if sum(sel)>=3
+          x = evals(sel) ; y = xvals(sel) ; dy = dxvals(sel) ;
+          [q,dq] = noplot_polyfit(x,y,dy,2) ;
+          dispx(ibpm) = q(2); dispx_err = dq(2) ;
+        end
+        sel = ~isnan(yvals(:,ibpm)) ;
+        if sum(sel)>=3
+          x = evals(sel) ; y = yvals(sel) ; dy = dyvals(sel) ;
+          [q,dq] = noplot_polyfit(x,y,dy,2) ;
+          dispy(ibpm) = q(2); dispy_err = dq(2) ;
+        end
+      end
+      sel=~isnan(dispx) & ~isnan(dispy) ;
+      dispx=dispx(sel); dispx_err=dispx_err(sel);
+      dispy=dispy(sel); dispy_err=dispy_err(sel);
+      dispdat.ebpm=nan;
+      dispdat.usebpm=sel;
+      dispdat.x=dispx;
+      dispdat.xerr=dispx_err;
+      dispdat.y=dispy;
+      dispdat.yerr=dispy_err;
+      obj.DispData = dispdat ;
+    end
     % Plotting functions
     function plottol(obj)
       %PLOTTOL Show factorization data for response matrix to estimate tolerance to use in correction
@@ -908,7 +1105,7 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
           subplot(2,1,2), plot(1:nm,yc.*1e3), xlabel('N Mode'); ylabel('RMS Y Orbit (<y^2>^{1/2}) [mm]'); grid on;
       end
     end
-    function plotdisp(obj,ahan,showmodel)
+    function plotdisp(obj,ahan,showmodel,showcors)
       global BEAMLINE
       if isempty(obj.DispData)
         return
@@ -966,6 +1163,30 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
       end
       ahan(1).XLim=[min(z) max(z)];
       ahan(2).XLim=[min(z) max(z)];
+      % Show corrector device locations?
+      if showcors
+        % Get correction devices in range
+        obj.LM.ModelClasses=["QUAD" "SEXT"];
+        corsel = find(ismember(obj.DispDevices,obj.LM.ModelNames)) ;
+        if ~isempty(corsel)
+          corele = find(ismember(obj.LM.ModelNames,obj.DispDevices)) ;
+          hold(ahan(1),'on');
+          hold(ahan(2),'on');
+          for ic=1:length(corsel)
+            if obj.DispDeviceType(corsel(ic))==1 || obj.DispDeviceType(corsel(ic))>2
+              line(ahan(1),ones(1,2).*obj.LM.ModelZ(corele(ic)),ahan(1).YLim,'LineStyle','-','Color','black','LineWidth',2);
+            end
+            if obj.DispDeviceType(corsel(ic))==2 || obj.DispDeviceType(corsel(ic))>2
+              line(ahan(2),ones(1,2).*obj.LM.ModelZ(corele(ic)),ahan(2).YLim,'LineStyle','-','Color','black','LineWidth',2);
+            end
+          end
+          for icor=find(obj.useycor(:)')
+            line(yax,[obj.cordat_y.z(icor) obj.cordat_y.z(icor)],yax.YLim,'LineStyle','-','Color','black','LineWidth',2);
+          end
+          hold(xax,'off');
+          hold(yax,'off');
+        end
+      end
       % Plot magnet bar
       F2_common.AddMagnetPlotZ(obj.LM.istart,obj.LM.iend,ahan(1)) ;
     end
