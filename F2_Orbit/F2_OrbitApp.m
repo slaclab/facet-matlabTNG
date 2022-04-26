@@ -473,6 +473,12 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
       ddispy = obj.LiveModel.DesignTwiss.etay(id) ;
       dispx = dd.x - ddispx.*1000 ; dispy = dd.y - ddispy.*1000 ; % subtract design dispersion to show dispersion error
       dispx_err = dd.xerr; dispy_err = dd.yerr ;
+      ide = find(ismember(obj.BPMS.modelnames,obj.ebpms)&ismember(obj.BPMS.modelnames,obj.bpmnames(obj.usebpm))) ;
+      if isempty(ide)
+        error('BPM selection doesn''t include an energy BPM');
+      end
+      ide=ide(end);
+      ide_ind = double(obj.BPMS.modelID(ide)) ;
       
       % Fit model dispersion response from first BPM in the selection
       A = zeros(length(dispx)+length(dispy),4) ; A(1,:) = [1 0 0 0] ; A(length(dispx)+1,:) = [0 0 1 0] ;
@@ -486,6 +492,16 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
       else
         disp0 = A \ [dispx(:);dispy(:)] ;
       end
+      
+      % Get dispersion fit at energy BPM and adjust overall dispersion scaling
+      if ide>id(1)
+        [~,R] = RmatAtoB(double(id(1)),ide_ind);
+        DX = R(1:4,1:4) * disp0(:) ;
+      else
+        [~,R] = RmatAtoB(ide_ind+1,double(id(1)));
+        DX = R(1:4,1:4) \ disp0(:) ;
+      end
+      dispx(ide) = DX(1) ;
       
       % Store dispersion at each BPM location
       obj.DispFit = A * disp0(:) ;

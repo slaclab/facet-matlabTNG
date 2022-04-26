@@ -32,7 +32,7 @@ optsdef=struct( ...
 opts=util_parseOptions(varargin{:},optsdef);
 
 % Check print queue syntax.
-[sys,accel]=getSystem;
+[~,accel]=getSystem;
 isQueue=isempty(varargin) || ~all(ismember(accel,{'LCLS' 'FACET' 'ASTA'}));
 isQueue=isQueue || numel(varargin) == 2 && strcmp(varargin{1},'logType');
 isQueue=isQueue || numel(varargin) == 1 && all(strcmp(fieldnames(varargin{1}),'logType'));
@@ -58,7 +58,7 @@ if strcmp(opts.logType,'elog')
     end
 end
 
-if ~isQueue && ~all(ismember(accel,'ASTA'));
+if ~isQueue && ~all(ismember(accel,'ASTA'))
     util_printLog_wComments(fig,opts.author,opts.title,opts.text,[500 375],0);
     return
 end
@@ -67,7 +67,11 @@ for f=fig(:)'
     % Check if options used.
     %opts.fontName='Times';opts.fontSize=12;opts.lineWidth=1.5;
     %util_appFonts(f,opts);
-    print(f,'-dpsc2',['-P' queue],'-bestfit');
+    
+%     print(f,'-dpsc2',['-P' queue],'-bestfit');
+%     print(f,'-dpdf',['-P' queue]);
+    print(f,'-dpng',['-P' queue]);
+    
     %hAxes=findobj(f,'type','axes');
     %opts.title=get(get(hAxes(1),'Title'),'String');
     %opts.title='Matlab Figure';

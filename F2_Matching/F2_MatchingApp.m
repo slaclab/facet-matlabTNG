@@ -55,6 +55,8 @@ classdef F2_MatchingApp < handle & F2_common
     EmitDataProfs string = [] % profile devices for which there are NO emittance PVs
 %     EmitDataProfs = ["PROF:IN10:571" "PROF:LI11:375" "CAMR:LI20:103" "WIRE:IN10:561" "WIRE:LI11:444" "WIRE:LI19:144"] % profile devices for which there are NO emittance PVs
     InitMatchProf = ["WIRE:IN10:561","PROF:IN10:571"] % Profile devices to associate with initial match conditions
+    MWNames_L2 = ["WIRE:LI11:444","WIRE:LI11:614","WIRE:LI11:744","WIRE:LI12:214"]
+    MWNames_L3 = ["WIRE:LI18:944","WIRE:LI19:144","WIRE:LI19:244","WIRE:LI19:344"]
   end
  
   methods
@@ -459,15 +461,22 @@ classdef F2_MatchingApp < handle & F2_common
     end
     function WriteEmitData(obj)
       %WRITEENMITDATA Write twiss and emittance data to PVs
-%       if ~isempty(obj.QuadScanData) && ~ismember(obj.ProfName,obj.EmitDataProfs)
-        lcaPutNoWait(sprintf('%s:BETA_X',obj.ProfName),obj.TwissFit(1));
-        lcaPutNoWait(sprintf('%s:ALPHA_X',obj.ProfName),obj.TwissFit(3));
-        lcaPutNoWait(sprintf('%s:BMAG_X',obj.ProfName),obj.TwissFit(5));
-        lcaPutNoWait(sprintf('%s:EMITN_X',obj.ProfName),obj.TwissFit(7));
-        lcaPutNoWait(sprintf('%s:BETA_Y',obj.ProfName),obj.TwissFit(2));
-        lcaPutNoWait(sprintf('%s:ALPHA_Y',obj.ProfName),obj.TwissFit(4));
-        lcaPutNoWait(sprintf('%s:BMAG_Y',obj.ProfName),obj.TwissFit(6));
-        lcaPutNoWait(sprintf('%s:EMITN_Y',obj.ProfName),obj.TwissFit(8));
+      if ismember(obj.ProfName,obj.MWNames_L2)
+        pn = obj.MWNames_L2 ;
+      elseif ismember(obj.ProfName,obj.MWNames_L3)
+        pn = obj.MWNames_L3 ;
+      else
+        pn= obj.ProfName ;
+      end
+      for ipn=1:length(pn)
+        lcaPutNoWait(sprintf('%s:BETA_X',pn(ipn)),obj.TwissFit(1));
+        lcaPutNoWait(sprintf('%s:ALPHA_X',pn(ipn)),obj.TwissFit(3));
+        lcaPutNoWait(sprintf('%s:BMAG_X',pn(ipn)),obj.TwissFit(5));
+        lcaPutNoWait(sprintf('%s:EMITN_X',pn(ipn)),obj.TwissFit(7));
+        lcaPutNoWait(sprintf('%s:BETA_Y',pn(ipn)),obj.TwissFit(2));
+        lcaPutNoWait(sprintf('%s:ALPHA_Y',pn(ipn)),obj.TwissFit(4));
+        lcaPutNoWait(sprintf('%s:BMAG_Y',pn(ipn)),obj.TwissFit(6));
+        lcaPutNoWait(sprintf('%s:EMITN_Y',pn(ipn)),obj.TwissFit(8));
         % Write initial match conditions to PVs
 %         if ~isempty(obj.InitMatch) && ismember(obj.ProfName,obj.InitMatchProf) && obj.goodmatch
 %           lcaPutNoWait(char(obj.LiveModel.Initial_betaxPV),obj.InitMatch.x.Twiss.beta) ;
@@ -477,11 +486,11 @@ classdef F2_MatchingApp < handle & F2_common
 %           lcaPutNoWait(char(obj.LiveModel.Initial_betaxPV),obj.InitMatch.y.Twiss.alpha) ;
 %           lcaPutNoWait(char(obj.LiveModel.Initial_emityPV),obj.InitMatch.y.NEmit*1e6) ;
 %         end
-        obj.InitRestore = obj.LiveModel.Initial ;
-        if ~isempty(obj.InitMatch)
-          obj.LiveModel.Initial=obj.InitMatch ;
-        end
-%       end
+      end
+      obj.InitRestore = obj.LiveModel.Initial ;
+      if ~isempty(obj.InitMatch)
+        obj.LiveModel.Initial=obj.InitMatch ;
+      end
     end
     function ReadEmitData(obj)
       if ~ismember(obj.ProfName,obj.EmitDataProfs) && ~obj.LoadingScanData
@@ -1004,7 +1013,7 @@ classdef F2_MatchingApp < handle & F2_common
       
       txt_results{1} =  sprintf('%s emittance parameters at %s\n',dim,wname{1});
       txt_results{2} =  sprintf('----\n');
-      txt_results{3} =  sprintf('energy      = %10.4f           GeV\n',energy);
+      txt_results{3} =  sprintf('energy      = %10.4f               GeV\n',energy);
       txt_results{4} =  sprintf('nemit       = %10.4f   (%9.4f) mm-mrad\n',1e6*emitxn,1e6*emitData.nemit0);
       txt_results{5} =  sprintf('nemit*bmag  = %10.4f   (%9.4f) mm-mrad\n',1e6*emitxn*bmagx,1e6*emitData.nemit0);
       txt_results{6} =  sprintf('emit        = %10.4f   (%9.4f) nm-rad\n',1e9*emitx,1e9*emitData.nemit0/egamma);
