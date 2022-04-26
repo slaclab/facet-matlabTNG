@@ -459,8 +459,10 @@ classdef F2_MatchingApp < handle & F2_common
       end
       didload=1;
     end
-    function WriteEmitData(obj)
+    function WriteEmitData(obj,dim)
       %WRITEENMITDATA Write twiss and emittance data to PVs
+      %WriteEmitData([dim])
+      % dim = "x" | "y" | "xy" (default="xy")
       if ismember(obj.ProfName,obj.MWNames_L2)
         pn = obj.MWNames_L2 ;
       elseif ismember(obj.ProfName,obj.MWNames_L3)
@@ -468,15 +470,24 @@ classdef F2_MatchingApp < handle & F2_common
       else
         pn= obj.ProfName ;
       end
+      if ~exist('dim','var')
+        dim="xy";
+      else
+        dim=lower(string(dim));
+      end
       for ipn=1:length(pn)
-        lcaPutNoWait(sprintf('%s:BETA_X',pn(ipn)),obj.TwissFit(1));
-        lcaPutNoWait(sprintf('%s:ALPHA_X',pn(ipn)),obj.TwissFit(3));
-        lcaPutNoWait(sprintf('%s:BMAG_X',pn(ipn)),obj.TwissFit(5));
-        lcaPutNoWait(sprintf('%s:EMITN_X',pn(ipn)),obj.TwissFit(7));
-        lcaPutNoWait(sprintf('%s:BETA_Y',pn(ipn)),obj.TwissFit(2));
-        lcaPutNoWait(sprintf('%s:ALPHA_Y',pn(ipn)),obj.TwissFit(4));
-        lcaPutNoWait(sprintf('%s:BMAG_Y',pn(ipn)),obj.TwissFit(6));
-        lcaPutNoWait(sprintf('%s:EMITN_Y',pn(ipn)),obj.TwissFit(8));
+        if contains(dim,"x")
+          lcaPutNoWait(sprintf('%s:BETA_X',pn(ipn)),obj.TwissFit(1));
+          lcaPutNoWait(sprintf('%s:ALPHA_X',pn(ipn)),obj.TwissFit(3));
+          lcaPutNoWait(sprintf('%s:BMAG_X',pn(ipn)),obj.TwissFit(5));
+          lcaPutNoWait(sprintf('%s:EMITN_X',pn(ipn)),obj.TwissFit(7));
+        end
+        if contains(dim,"y")
+          lcaPutNoWait(sprintf('%s:BETA_Y',pn(ipn)),obj.TwissFit(2));
+          lcaPutNoWait(sprintf('%s:ALPHA_Y',pn(ipn)),obj.TwissFit(4));
+          lcaPutNoWait(sprintf('%s:BMAG_Y',pn(ipn)),obj.TwissFit(6));
+          lcaPutNoWait(sprintf('%s:EMITN_Y',pn(ipn)),obj.TwissFit(8));
+        end
         % Write initial match conditions to PVs
 %         if ~isempty(obj.InitMatch) && ismember(obj.ProfName,obj.InitMatchProf) && obj.goodmatch
 %           lcaPutNoWait(char(obj.LiveModel.Initial_betaxPV),obj.InitMatch.x.Twiss.beta) ;
@@ -1219,8 +1230,8 @@ classdef F2_MatchingApp < handle & F2_common
       end
     end
   end
-  methods(Static)
-     function emitMW_plot(emitData,writeToLog)
+  methods
+     function emitMW_plot(obj,emitData,writeToLog)
       %EMITMW_PLOT Plot data from multi-wire emittance data analysis
       %emitMW_plot(emitData)
       global BEAMLINE
@@ -1342,6 +1353,7 @@ classdef F2_MatchingApp < handle & F2_common
       
       if exist('writeToLog','var')
         util_printLog2020(fhan, 'title',sprintf('%s Multi-Wire Emittance Measurement (%c)',section,emitData.dim),'author','F2_Matching.m','text',writeToLog);
+        obj.WriteEmitData(emitData.dim);
         close(fhan);
       end
      end
