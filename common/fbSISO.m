@@ -262,11 +262,20 @@ classdef fbSISO < handle
       if isnan(obj.ControlVal) || isnan(cvalck)
         obj.ControlState = 3 ;
       end
-      if cvalck<obj.ControlLimits(1)
-        obj.ControlState = 1 ;
+      clower=nan; chigher=nan;
+      if cvalck<=obj.ControlLimits(1) % flag must be higher
+        if obj.state==0
+          chigher=obj.ControlLimits(1)-cvalck;
+        else % just flag control limit low if not going to process actuators anyway
+          obj.ControlState = 1 ;
+        end
       end
-      if cvalck>obj.ControlLimits(2)
-        obj.ControlState = 2 ;
+      if cvalck>=obj.ControlLimits(2) % flag must be lower
+        if obj.state==0
+          clower=obj.ControlLimits(2)-cvalck;
+        else % just flag control limit high if not going to process actuators anyway
+          obj.ControlState = 2 ;
+        end
       end
       % Read setpoint variable and check status
       obj.SetpointState = 0 ;
@@ -335,6 +344,18 @@ classdef fbSISO < handle
         if isempty(obj.lastwrite) || etime(clock,obj.lastwrite) > obj.WriteRateMax
           obj.lastwrite = clock ;
           if obj.WriteEnable && abs(dc)>0 && ~isnan(dc) && ~isnan(dc)
+            if ~isnan(clower) % Control val is above limits, if not trying to put it in range, set to upper limit instead
+              if dc>clower
+                dc=clower;
+                obj.ControlState = 2 ; % Activate upper limit error state
+              end
+            end
+            if ~isnan(chigher) % Control val is below limits, if not trying to put it in range, set to lower limit instead
+              if dc<chigher
+                dc=chigher;
+                obj.ControlState = 1 ; % Activate lower limit error state
+              end
+            end
             if obj.ControlVarType=="doublepm" || obj.ControlVarType=="double"
               v1 = obj.ControlVal+dc ;
               if obj.ControlVarType=="doublepm"
