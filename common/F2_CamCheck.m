@@ -95,7 +95,7 @@ classdef F2_CamCheck < handle
         function add_SIOCs(obj)
             
             obj.sioc_list = {'cpu-lr10-pm01',       'SIOC:LR10:PM01';
-                             'cpu-in10-pm01',       'SIOC:IN10:PM01';
+                             'cpu-in10-pm01',       'SIOC:IN10:PM02';
                              %'cpu-in10-ls01',       'SIOC:IN10:LS01';
                              'cpu-li10-pm01',       'SIOC:LI10:PM01';
                              'cpu-li14-pm01',       'SIOC:LI14:PM01';
