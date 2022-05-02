@@ -97,7 +97,7 @@ classdef F2_CamCheck < handle
             obj.sioc_list = {'cpu-lr10-pm01',       'SIOC:LR10:PM01';
                              'cpu-in10-pm01',       'SIOC:IN10:PM01';
                              %'cpu-in10-ls01',       'SIOC:IN10:LS01';
-                             'cpu-li10-pm01',       'SIOC:LI10:PM01';
+                             'cpu-li10-pm01',       'SIOC:LI10:PM02';
                              'cpu-li14-pm01',       'SIOC:LI14:PM01';
                              'cpu-li15-pm01',       'SIOC:LI15:PM01';
                              'cpu-li20-pm01',       'SIOC:LI20:PM01';
