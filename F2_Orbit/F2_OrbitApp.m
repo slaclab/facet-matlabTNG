@@ -99,6 +99,8 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
   methods
     function obj = F2_OrbitApp(appobj)
       global BEAMLINE
+      warning('off','MATLAB:lscov:RankDefDesignMat');
+      warning('off','MATLAB:singularMatrix');
       obj.LiveModel = F2_LiveModelApp ;
       obj.BPMS = F2_bpms(obj.LiveModel.LM) ;
       if exist('appobj','var')
@@ -166,6 +168,9 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
       %ACQUIRE Get bpm and corrector data
       %acquire(npulse)
       global BEAMLINE
+      % Clear data
+      obj.DispFit=[];
+      obj.DispData=[];
       % BPM data:
       if obj.usebpmbuff
         obj.BPMS.readbuffer(npulse);
@@ -451,6 +456,7 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
         dispy_err(ibpm) = dq(2) ;
       end
       dispdat.ebpm=ide;
+      dispdat.edisp=disp;
       dispdat.usebpm=obj.usebpm;
       dispdat.x=dispx;
       dispdat.xerr=dispx_err;
@@ -468,30 +474,41 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
       end
       dd=obj.DispData;
       id=obj.bpmid(dd.usebpm) ;
-      ddispx = obj.LiveModel.DesignTwiss.etax(id) ;
-      ddispy = obj.LiveModel.DesignTwiss.etay(id) ;
+      nbpm=find(ismember(obj.BPMS.modelnames,obj.bpmnames(obj.usebpm)));
+      ide=find(nbpm==dd.ebpm);
+      if isempty(ide)
+        error('Energy BPM not found in selection');
+      end
       dispx_err = dd.xerr; dispy_err = dd.yerr ;
       
       % Fit model dispersion response from first BPM in the selection
-      A = zeros(length(dd.x)+length(dd.y),4) ; A(1,:) = [1 0 0 0] ; A(length(dd.x)+1,:) = [0 0 1 0] ;
+      A = zeros(length(dd.x)+length(dd.y),5) ; A(1,:) = [1 0 0 0 0] ; A(length(dd.x)+1,:) = [0 0 1 0 0] ;
       for ibpm=2:length(id)
         [~,R]=RmatAtoB(double(id(1)),double(id(ibpm)));
-        A(ibpm,:) = [R(1,1) R(1,2) R(1,3) R(1,4)];
-        A(ibpm+length(dd.x),:) = [R(3,1) R(3,2) R(3,3) R(3,4)];
-      end
-      % - get scale factor that best fits all dispersion values
-      dispsca = fminsearch(@(x) dispscafit(obj,x,A,dd.x,dd.y,dispx_err,dispy_err,ddispx,ddispy),1,optimset('Display','iter')) ;
-      dd.x=dd.x.*dispsca; dd.y=dd.y.*dispsca; dispx_err=dispx_err.*dispsca; dispy_err=dispy_err.*dispsca;
-      dispx = dd.x - ddispx.*1000 ; dispy = dd.y - ddispy.*1000 ; % subtract design dispersion to show dispersion error
-      obj.DispData=obj.DispData.*dispsca;
-      if string(obj.orbitfitmethod)=="lscov"
-        disp0 = lscov(A,[dispx(:);dispy(:)],1./[dispx_err(:);dispy_err(:)].^2) ;
-      else
-        disp0 = A \ [dispx(:);dispy(:)] ;
+        A(ibpm,:) = [R(1,1) R(1,2) R(1,3) R(1,4) R(1,6)];
+        A(ibpm+length(dd.x),:) = [R(3,1) R(3,2) R(3,3) R(3,4) R(3,6)];
       end
       
-      % Store fitted dispersion at each BPM location
-      obj.DispFit = A * disp0(:) ;
+      % - get scale factor that best fits all dispersion values
+      dsca=0; ntry=0;
+      while abs(1-dsca)>0.01 && ntry<20
+        dispx=dd.x; dispy=dd.y;
+        if string(obj.orbitfitmethod)=="lscov"
+          disp0 = lscov(A,[dispx(:);dispy(:)],1./[dispx_err(:);dispy_err(:)].^2) ;
+        else
+          disp0 = A \ [dispx(:);dispy(:)] ;
+        end
+
+        % Store fitted dispersion at each BPM location
+        obj.DispFit = A * disp0(:) ;
+
+        % Scale dispersion until energy BPM matches fit
+        dsca = obj.DispFit(ide) / dd.edisp ;
+        dd.x = dd.x .* dsca ;
+        dd.edisp = obj.DispFit(ide) ;
+        ntry=ntry+1;
+      end
+      
       
       % Return dispersion fit at fitele location
       if nargout>0
@@ -502,31 +519,13 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
         end
         if dfitele>id(1)
           [~,R] = RmatAtoB(double(id(1)),dfitele);
-          DX_f = R(1:4,1:4) * disp0(:) ;
+          DX_f = R([1:4 6],[1:4 6]) * disp0(:) ;
         else
           [~,R] = RmatAtoB(dfitele+1,double(id(1)));
-          DX_f = R(1:4,1:4) \ disp0(:) ;
+          DX_f = R([1:4 6],[1:4 6]) \ disp0(:) ;
         end
       end
       
-    end
-    function fiterr = dispscafit(obj,dispsca,A,dispx,dispy,dispx_err,dispy_err,ddispx,ddispy)
-      %DISPSCAFIT Fitting function to scale dispersion measurements
-      
-      % Scale measured dispersion
-      dispx=dispx.*dispsca; dispy=dispy.*dispsca; dispx_err=dispx_err.*dispsca; dispy_err=dispy_err.*dispsca;
-      dispx = dispx - ddispx.*1000 ; dispy = dispy - ddispy.*1000 ; % subtract design dispersion to show dispersion error
-      
-      % Fit model dispersion response from first BPM in the selection
-      if string(obj.orbitfitmethod)=="lscov"
-        disp0 = lscov(A,[dispx(:);dispy(:)],1./[dispx_err(:);dispy_err(:)].^2) ;
-      else
-        disp0 = A \ [dispx(:);dispy(:)] ;
-      end
-      % fitted dispersion at each BPM location 
-      dfit = A * disp0(:) ;
-      % fit error
-      fiterr = sum(abs(dfit-[dispx(:);dispy(:)])) ;
     end
     function DX_cor = dispcor(obj,varargin)
       %DISPCOR Correct measured dispersion with any correction devices in range
@@ -1151,19 +1150,10 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
       dispx = dd.x - ddispx.*1000 ; dispy = dd.y - ddispy.*1000 ; % subtract design dispersion to show dispersion error
       dispx_err = dd.xerr; dispy_err = dd.yerr ;
       
-      % Fit model dispersion response from first BPM in the selection
-      A = zeros(length(dispx)+length(dispy),4) ; A(1,:) = [1 0 0 0] ; A(length(dispx)+1,:) = [0 0 1 0] ;
-      for ibpm=2:length(id)
-        [~,R]=RmatAtoB(double(id(1)),double(id(ibpm)));
-        A(ibpm,:) = [R(1,1) R(1,2) R(1,3) R(1,4)];
-        A(ibpm+length(dispx),:) = [R(3,1) R(3,2) R(3,3) R(3,4)];
+      % Check dispersion fit to bpms has happened
+      if isempty(obj.DispFit)
+        obj.dispfit();
       end
-      if string(obj.orbitfitmethod)=="lscov"
-        disp0 = lscov(A,[dispx(:);dispy(:)],1./[dispx_err(:);dispy_err(:)].^2) ;
-      else
-        disp0 = A \ [dispx(:);dispy(:)] ;
-      end
-      obj.DispFit = A * disp0(:) ;
       
       % Do plots
       pl=errorbar(ahan(1),z,dispx,dispx_err,'.'); grid(ahan(1),'on'); ylabel(ahan(1),'\eta_x [mm]');
@@ -1172,7 +1162,7 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
       pl.DataTipTemplate.DataTipRows(end+1) = dataTipTextRow('Name',names);
       if showmodel
         hold(ahan(1),'on');
-        plot(ahan(1),z,obj.DispFit(1:length(dispx)));
+        plot(ahan(1),z,obj.DispFit(1:length(dispx))-ddispx(:)'.*1000);
         hold(ahan(1),'off');
       end
       pl=errorbar(ahan(2),z,dispy,dispy_err,'.'); grid(ahan(2),'on'); xlabel(ahan(2),'Z [m]'); ylabel(ahan(2),'\eta_y [mm]');
@@ -1181,7 +1171,7 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
       pl.DataTipTemplate.DataTipRows(end+1) = dataTipTextRow('Name',names);
       if showmodel
         hold(ahan(2),'on');
-        plot(ahan(2),z,obj.DispFit(length(dispx)+1:end));
+        plot(ahan(2),z,obj.DispFit(length(dispx)+1:end)-ddispy(:)'.*1000);
         hold(ahan(2),'off');
       end
       ahan(1).XLim=[min(z) max(z)];
@@ -1295,12 +1285,33 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
           pl.DataTipTemplate.DataTipRows(end+1) = dataTipTextRow('Name',obj.BPMS.modelnames(id));
       end
     end
-    function plotcor(obj,ahan,showmax)
+    function plotcor(obj,ahan,showmax,unitsBDES)
       %PLOTCOR Plot corrector values and propose new corrector values
-      %plotcor([axisHandle_x axisHandle_y],showmax)
+      %plotcor([axisHandle_x axisHandle_y],showmax,unitsBDES)
+      global BEAMLINE
       
       if isempty(obj.cordat_x)
         return
+      end
+      
+      % Get scale factor for units (mrad or BDES)
+      id = obj.xcorid(obj.usexcor) ;
+      P = arrayfun(@(x) BEAMLINE{x}.P,id) ;
+      if unitsBDES
+        xsca = obj.LM.GEV2KGM.*P(:) ;
+        xuni='kGm';
+      else
+        xsca = ones(size(P)).*1e3;
+        xuni='mrad';
+      end
+      id = obj.ycorid(obj.useycor) ;
+      P = arrayfun(@(x) BEAMLINE{x}.P,id) ;
+      if unitsBDES
+        ysca = obj.LM.GEV2KGM.*P(:) ;
+        yuni='kGm';
+      else
+        ysca = ones(size(P)).*1e3;
+        yuni='mrad';
       end
       
       % Make new axes if not supplied
@@ -1312,18 +1323,18 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
       ahan(1).reset; ahan(2).reset; cla(ahan(1)); cla(ahan(2)); drawnow;
       
       % Plot extant corrector kick values
-      pl=plot(ahan(1),obj.cordat_x.z(obj.usexcor),obj.cordat_x.theta(obj.usexcor).*1e3,'.','Color',F2_common.ColorOrder(1,:),'MarkerSize',10);
+      pl=plot(ahan(1),obj.cordat_x.z(obj.usexcor),obj.cordat_x.theta(obj.usexcor).*xsca,'.','Color',F2_common.ColorOrder(1,:),'MarkerSize',10);
       pl.DataTipTemplate.DataTipRows(1).Label = 'Linac Z' ;
-      pl.DataTipTemplate.DataTipRows(2).Label = 'X Kick (rad)' ;
+      pl.DataTipTemplate.DataTipRows(2).Label = sprintf('X Kick (%s)',xuni) ;
       pl.DataTipTemplate.DataTipRows(end+1) = dataTipTextRow('Name',obj.xcornames(obj.usexcor));
-      pl=plot(ahan(2),obj.cordat_y.z(obj.useycor),obj.cordat_y.theta(obj.useycor).*1e3,'.','Color',F2_common.ColorOrder(1,:),'MarkerSize',10);
+      pl=plot(ahan(2),obj.cordat_y.z(obj.useycor),obj.cordat_y.theta(obj.useycor).*ysca,'.','Color',F2_common.ColorOrder(1,:),'MarkerSize',10);
       pl.DataTipTemplate.DataTipRows(1).Label = 'Linac Z' ;
-      pl.DataTipTemplate.DataTipRows(2).Label = 'Y Kick (rad)' ;
+      pl.DataTipTemplate.DataTipRows(2).Label = sprintf('Y Kick (%s)',yuni) ;
       pl.DataTipTemplate.DataTipRows(end+1) = dataTipTextRow('Name',obj.ycornames(obj.useycor));
       grid(ahan(1),'on');
       grid(ahan(2),'on');
-      ylabel(ahan(1),'XCOR \theta_x [mrad]');
-      xlabel(ahan(2),'Z [m]'); ylabel(ahan(2),'YCOR \theta_y [mrad]');
+      ylabel(ahan(1),sprintf('XCOR \theta_x [%s]',xuni));
+      xlabel(ahan(2),'Z [m]'); ylabel(ahan(2),sprintf('YCOR \theta_y [%s]',yuni));
       ahan(1).XLim=[min(obj.cordat_x.z(obj.usexcor)) max(obj.cordat_x.z(obj.usexcor))];
       ahan(2).XLim=[min(obj.cordat_y.z(obj.useycor)) max(obj.cordat_y.z(obj.useycor))];
       
@@ -1335,33 +1346,33 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
         hold(ahan(1),'on');
         i_p = obj.dtheta_x(obj.usexcor)>=0 ;
         i_m = obj.dtheta_x(obj.usexcor)<0 ;
-        pl_p=plot(ahan(1),zv_x(i_p),newtheta_x(i_p).*1e3,'^','Color',F2_common.ColorOrder(1,:),'MarkerSize',4);
-        pl_m=plot(ahan(1),zv_x(i_m),newtheta_x(i_m).*1e3,'v','Color',F2_common.ColorOrder(1,:),'MarkerSize',4);
+        pl_p=plot(ahan(1),zv_x(i_p),newtheta_x(i_p).*xsca,'^','Color',F2_common.ColorOrder(1,:),'MarkerSize',4);
+        pl_m=plot(ahan(1),zv_x(i_m),newtheta_x(i_m).*xsca,'v','Color',F2_common.ColorOrder(1,:),'MarkerSize',4);
         for icor=find(obj.usexcor)'
           y1 = obj.cordat_x.theta(icor) ; y2 = obj.cordat_x.theta(icor)+obj.dtheta_x(icor) ;
-          line(ahan(1),ones(1,2).*obj.cordat_x.z(icor),[y1 y2].*1e3,'Color',F2_common.ColorOrder(1,:));
+          line(ahan(1),ones(1,2).*obj.cordat_x.z(icor),[y1 y2].*xsca,'Color',F2_common.ColorOrder(1,:));
         end
         pl_p.DataTipTemplate.DataTipRows(1).Label = 'Linac Z' ;
-        pl_p.DataTipTemplate.DataTipRows(2).Label = 'X Kick (rad)' ;
+        pl_p.DataTipTemplate.DataTipRows(2).Label = sprintf('X Kick (%s)',xuni) ;
         pl_p.DataTipTemplate.DataTipRows(end+1) = dataTipTextRow('Name',obj.xcornames(i_p));
         pl_m.DataTipTemplate.DataTipRows(1).Label = 'Linac Z' ;
-        pl_m.DataTipTemplate.DataTipRows(2).Label = 'X Kick (rad)' ;
+        pl_m.DataTipTemplate.DataTipRows(2).Label = sprintf('X Kick (%s)',yuni) ;
         pl_m.DataTipTemplate.DataTipRows(end+1) = dataTipTextRow('Name',obj.xcornames(i_m));
         hold(ahan(1),'off');
         hold(ahan(2),'on');
         i_p = obj.dtheta_y(obj.useycor)'>=0 ;
         i_m = obj.dtheta_y(obj.useycor)'<0 ;
-        pl_p=plot(ahan(2),zv_y(i_p),newtheta_y(i_p).*1e3,'^','Color',F2_common.ColorOrder(1,:),'MarkerSize',4);
-        pl_m=plot(ahan(2),zv_y(i_m),newtheta_y(i_m).*1e3,'v','Color',F2_common.ColorOrder(1,:),'MarkerSize',4);
+        pl_p=plot(ahan(2),zv_y(i_p),newtheta_y(i_p).*ysca,'^','Color',F2_common.ColorOrder(1,:),'MarkerSize',4);
+        pl_m=plot(ahan(2),zv_y(i_m),newtheta_y(i_m).*ysca,'v','Color',F2_common.ColorOrder(1,:),'MarkerSize',4);
         for icor=find(obj.useycor)'
           y1 = obj.cordat_y.theta(icor) ; y2 = obj.cordat_y.theta(icor)+obj.dtheta_y(icor) ;
-          line(ahan(2),ones(1,2).*obj.cordat_y.z(icor),[y1 y2].*1e3,'Color',F2_common.ColorOrder(1,:));
+          line(ahan(2),ones(1,2).*obj.cordat_y.z(icor),[y1 y2].*ysca,'Color',F2_common.ColorOrder(1,:));
         end
         pl_p.DataTipTemplate.DataTipRows(1).Label = 'Linac Z' ;
-        pl_p.DataTipTemplate.DataTipRows(2).Label = 'Y Kick (rad)' ;
+        pl_p.DataTipTemplate.DataTipRows(2).Label = sprintf('Y Kick (%s)',xuni) ;
         pl_p.DataTipTemplate.DataTipRows(end+1) = dataTipTextRow('Name',obj.ycornames(i_p));
         pl_m.DataTipTemplate.DataTipRows(1).Label = 'Linac Z' ;
-        pl_m.DataTipTemplate.DataTipRows(2).Label = 'Y Kick (rad)' ;
+        pl_m.DataTipTemplate.DataTipRows(2).Label = sprintf('Y Kick (%s)',yuni) ;
         pl_m.DataTipTemplate.DataTipRows(end+1) = dataTipTextRow('Name',obj.ycornames(i_m));
         hold(ahan(2),'off');
       end
@@ -1369,12 +1380,12 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
       % Plot min/max values
       if showmax
         hold(ahan(1),'on');
-        plot(ahan(1),obj.cordat_x.z(obj.usexcor),obj.cordat_x.thetamax(obj.usexcor).*1e3,'k--');
-        plot(ahan(1),obj.cordat_x.z(obj.usexcor),-obj.cordat_x.thetamax(obj.usexcor).*1e3,'k--');
+        plot(ahan(1),obj.cordat_x.z(obj.usexcor),obj.cordat_x.thetamax(obj.usexcor).*xsca,'k--');
+        plot(ahan(1),obj.cordat_x.z(obj.usexcor),-obj.cordat_x.thetamax(obj.usexcor).*xsca,'k--');
         hold(ahan(1),'off');
         hold(ahan(2),'on');
-        plot(ahan(2),obj.cordat_y.z(obj.useycor),obj.cordat_y.thetamax(obj.useycor).*1e3,'k--');
-        plot(ahan(2),obj.cordat_y.z(obj.useycor),-obj.cordat_y.thetamax(obj.useycor).*1e3,'k--');
+        plot(ahan(2),obj.cordat_y.z(obj.useycor),obj.cordat_y.thetamax(obj.useycor).*ysca,'k--');
+        plot(ahan(2),obj.cordat_y.z(obj.useycor),-obj.cordat_y.thetamax(obj.useycor).*ysca,'k--');
         hold(ahan(2),'off');
       end
       

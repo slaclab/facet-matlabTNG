@@ -68,6 +68,7 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
     UIAxes2                        matlab.ui.control.UIAxes
     UIAxes3                        matlab.ui.control.UIAxes
     ShowMaxButton                  matlab.ui.control.StateButton
+    CorUnitsButton                 matlab.ui.control.StateButton
     DispersionTab                  matlab.ui.container.Tab
     UIAxes5                        matlab.ui.control.UIAxes
     UIAxes5_2                      matlab.ui.control.UIAxes
@@ -225,7 +226,7 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
             app.aobj.plotbpm([app.UIAxes app.UIAxes_2],app.ShowModelFitButton.Value,app.ShowCors.Value);
           end
         case app.CorrectorsTab
-          app.aobj.plotcor([app.UIAxes2 app.UIAxes3],app.ShowMaxButton.Value);
+          app.aobj.plotcor([app.UIAxes2 app.UIAxes3],app.ShowMaxButton.Value,app.CorUnitsButton.Value);
         case app.DispersionTab
           app.UIAxes5.reset; cla(app.UIAxes5);
           app.UIAxes5_2.reset; cla(app.UIAxes5_2);
@@ -241,8 +242,8 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
             app.EditField_18.Value = DX(3) ;
             app.EditField_20.Value = DX(4) ;
             app.aobj.plotdisp([app.UIAxes5 app.UIAxes5_2],app.ShowFitButton.Value,app.ShowDevicesButton.Value) ;
-          catch
-            warning('Dispersion calc error:\n%s',ME.message);
+          catch ME
+            warning(ME.identifier,'Dispersion calc error:\n%s',ME.message);
             app.EditField_14.Value = inf ;
             app.EditField_16.Value = inf ;
             app.EditField_18.Value = inf ;
@@ -256,6 +257,7 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
 
     % Button pushed function: AcquireButton
     function AcquireButtonPushed(app, event)
+      cla(app.UIAxes); cla(app.UIAxes_2); cla(app.UIAxes2); cla(app.UIAxes3); cla(app.UIAxes5); cla(app.UIAxes5_2); cla(app.UIAxes6); cla(app.UIAxes6_2);
       app.escandone=false;
       app.AcquireButton.Enable=false;
       app.NReadEditField.Value=0;
@@ -781,6 +783,17 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
       iknob=ismember(EnergyKnobNames,app.aobj.escandev) ;
       app.aobj.nescan(iknob) = value ;
     end
+
+    % Value changed function: CorUnitsButton
+    function CorUnitsButtonValueChanged(app, event)
+      value = app.CorUnitsButton.Value;
+      if value
+        app.CorUnitsButton.Text = "Units = BDES" ;
+      else
+        app.CorUnitsButton.Text = "Units = mrad" ;
+      end
+      app.TabGroupSelectionChanged;
+    end
   end
 
   % Component initialization
@@ -1165,8 +1178,14 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
       % Create ShowMaxButton
       app.ShowMaxButton = uibutton(app.CorrectorsTab, 'state');
       app.ShowMaxButton.ValueChangedFcn = createCallbackFcn(app, @ShowMaxButtonValueChanged, true);
-      app.ShowMaxButton.Text = 'Show Min.Max Envelope';
+      app.ShowMaxButton.Text = 'Show Min/Max Envelope';
       app.ShowMaxButton.Position = [889 534 150 23];
+
+      % Create CorUnitsButton
+      app.CorUnitsButton = uibutton(app.CorrectorsTab, 'state');
+      app.CorUnitsButton.ValueChangedFcn = createCallbackFcn(app, @CorUnitsButtonValueChanged, true);
+      app.CorUnitsButton.Text = 'Units = mrad';
+      app.CorUnitsButton.Position = [780 534 100 23];
 
       % Create DispersionTab
       app.DispersionTab = uitab(app.TabGroup);
