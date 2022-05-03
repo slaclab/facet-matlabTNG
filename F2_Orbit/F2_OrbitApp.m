@@ -218,14 +218,13 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
       
       % If using model fitting, find solution to correct fitted orbit at end of region
       if obj.domodelfit
-        iend=obj.LM.iend;
         [~,X1] = obj.orbitfit ; X=X1(1:4); X=obj.CorrectionOffset-X(:);
         ixc = double(obj.xcorid(obj.usexcor)) ; nxc=length(ixc);
         iyc = double(obj.ycorid(obj.useycor)) ;
         icor=[ixc(:); iyc(:)];
         R = zeros(4,length(icor));
         for ncor=1:length(icor)
-          [~,Rm]=RmatAtoB(icor(ncor),double(iend));
+          [~,Rm]=RmatAtoB(icor(ncor),double(obj.fitele-1));
           if ncor<=nxc
             R(1,ncor) = Rm(1,2) ;
             R(2,ncor) = Rm(2,2) ;
@@ -471,39 +470,27 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
       id=obj.bpmid(dd.usebpm) ;
       ddispx = obj.LiveModel.DesignTwiss.etax(id) ;
       ddispy = obj.LiveModel.DesignTwiss.etay(id) ;
-      dispx = dd.x - ddispx.*1000 ; dispy = dd.y - ddispy.*1000 ; % subtract design dispersion to show dispersion error
       dispx_err = dd.xerr; dispy_err = dd.yerr ;
-      ide = find(ismember(obj.BPMS.modelnames,obj.ebpms)&ismember(obj.BPMS.modelnames,obj.bpmnames(obj.usebpm))) ;
-      if isempty(ide)
-        error('BPM selection doesn''t include an energy BPM');
-      end
-      ide=ide(end);
-      ide_ind = double(obj.BPMS.modelID(ide)) ;
       
       % Fit model dispersion response from first BPM in the selection
-      A = zeros(length(dispx)+length(dispy),4) ; A(1,:) = [1 0 0 0] ; A(length(dispx)+1,:) = [0 0 1 0] ;
+      A = zeros(length(dd.x)+length(dd.y),4) ; A(1,:) = [1 0 0 0] ; A(length(dd.x)+1,:) = [0 0 1 0] ;
       for ibpm=2:length(id)
         [~,R]=RmatAtoB(double(id(1)),double(id(ibpm)));
         A(ibpm,:) = [R(1,1) R(1,2) R(1,3) R(1,4)];
-        A(ibpm+length(dispx),:) = [R(3,1) R(3,2) R(3,3) R(3,4)];
+        A(ibpm+length(dd.x),:) = [R(3,1) R(3,2) R(3,3) R(3,4)];
       end
+      % - get scale factor that best fits all dispersion values
+      dispsca = fminsearch(@(x) dispscafit(obj,x,A,dd.x,dd.y,dispx_err,dispy_err,ddispx,ddispy),1,optimset('Display','iter')) ;
+      dd.x=dd.x.*dispsca; dd.y=dd.y.*dispsca; dispx_err=dispx_err.*dispsca; dispy_err=dispy_err.*dispsca;
+      dispx = dd.x - ddispx.*1000 ; dispy = dd.y - ddispy.*1000 ; % subtract design dispersion to show dispersion error
+      obj.DispData=obj.DispData.*dispsca;
       if string(obj.orbitfitmethod)=="lscov"
         disp0 = lscov(A,[dispx(:);dispy(:)],1./[dispx_err(:);dispy_err(:)].^2) ;
       else
         disp0 = A \ [dispx(:);dispy(:)] ;
       end
       
-      % Get dispersion fit at energy BPM and adjust overall dispersion scaling
-      if ide>id(1)
-        [~,R] = RmatAtoB(double(id(1)),ide_ind);
-        DX = R(1:4,1:4) * disp0(:) ;
-      else
-        [~,R] = RmatAtoB(ide_ind+1,double(id(1)));
-        DX = R(1:4,1:4) \ disp0(:) ;
-      end
-      dispx(ide) = DX(1) ;
-      
-      % Store dispersion at each BPM location
+      % Store fitted dispersion at each BPM location
       obj.DispFit = A * disp0(:) ;
       
       % Return dispersion fit at fitele location
@@ -522,6 +509,24 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
         end
       end
       
+    end
+    function fiterr = dispscafit(obj,dispsca,A,dispx,dispy,dispx_err,dispy_err,ddispx,ddispy)
+      %DISPSCAFIT Fitting function to scale dispersion measurements
+      
+      % Scale measured dispersion
+      dispx=dispx.*dispsca; dispy=dispy.*dispsca; dispx_err=dispx_err.*dispsca; dispy_err=dispy_err.*dispsca;
+      dispx = dispx - ddispx.*1000 ; dispy = dispy - ddispy.*1000 ; % subtract design dispersion to show dispersion error
+      
+      % Fit model dispersion response from first BPM in the selection
+      if string(obj.orbitfitmethod)=="lscov"
+        disp0 = lscov(A,[dispx(:);dispy(:)],1./[dispx_err(:);dispy_err(:)].^2) ;
+      else
+        disp0 = A \ [dispx(:);dispy(:)] ;
+      end
+      % fitted dispersion at each BPM location 
+      dfit = A * disp0(:) ;
+      % fit error
+      fiterr = sum(abs(dfit-[dispx(:);dispy(:)])) ;
     end
     function DX_cor = dispcor(obj,varargin)
       %DISPCOR Correct measured dispersion with any correction devices in range
@@ -824,7 +829,9 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
     end
     function StoreRef(obj)
       %STOREREF Store new reference orbit from existing data
-      [xm,ym,~,~,~,id] = obj.GetOrbit ;
+      id = double(obj.BPMS.modelID) ;
+      xm = mean(obj.BPMS.xdat,2,'omitnan') ;
+      ym = mean(obj.BPMS.ydat,2,'omitnan') ;
       obj.RefOrbitLocal = {now id(:) xm(:) ym(:)} ;
     end
     function ConfigSave(obj,name)
@@ -1572,6 +1579,7 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
       obj.calcperformed=val;
     end
     function orb = get.RefOrbit(obj)
+      %orb = [ID,X,Y]
       switch obj.UseRefOrbit
         case "none"
           orb=[];
