@@ -677,6 +677,7 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
 
     % Value changed function: ShowMaxButton
     function ShowMaxButtonValueChanged(app, event)
+      drawnow;
       app.TabGroupSelectionChanged;
     end
 
@@ -792,6 +793,7 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
       else
         app.CorUnitsButton.Text = "Units = mrad" ;
       end
+      drawnow;
       app.TabGroupSelectionChanged;
     end
   end
