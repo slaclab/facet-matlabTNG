@@ -84,13 +84,13 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
     klys_bsa = "KLYS:LI10:41:FB:FAST_AACT3" % L0B
     klys_cntrl = "KLYS:LI10:41:ADES" % L0B
     OrbitConfigDir string = F2_common.confdir + "/F2_Orbit" ;
-    DispDevices string = ["QB10731" "CQ11317" "CQ11352" "CQ14738" "CQ14866" "SQ1" "S1EL" "S2EL" "S2ER" "S1ER" "S1EL" "S2EL" "S2ER" "S1ER"]
-    DispDeviceType uint8 = [1         1         1         1         1        2      3       3     3     3       4       4     4     4    ] % 1=quad 2=skew quad 3=sext(x) 4=sext(y)
-    DispDeviceReadPV = ["QUAD:IN10:731:BDES" "QUAD:LI11:317:BDES" "QUAD:LI11:352:BDES" "QUAD:LI14:738:BDES" "QUAD:LI14:866:BDES" "LI20:QUAD:2086:BDES" ...
+    DispDevices string = ["QB10731" "CQ11317" "SQ11340" "CQ11352" "CQ14738" "CQ14866" "SQ1" "S1EL" "S2EL" "S2ER" "S1ER" "S1EL" "S2EL" "S2ER" "S1ER"]
+    DispDeviceType uint8 = [1         1         2          1         1         1        2      3       3     3     3       4       4     4     4    ] % 1=quad 2=skew quad 3=sext(x) 4=sext(y)
+    DispDeviceReadPV = ["QUAD:IN10:731:BDES" "QUAD:LI11:317:BDES" "QUAD:LI11:340:BDES" "QUAD:LI11:352:BDES" "QUAD:LI14:738:BDES" "QUAD:LI14:866:BDES" "LI20:QUAD:2086:BDES" ...
       "SIOC:ML00:AO551" "SIOC:ML01:AO501" "SIOC:ML01:AO516" "SIOC:ML01:AO566" "SIOC:ML01:AO556" "SIOC:ML01:AO506" "SIOC:ML01:AO521" "SIOC:ML01:AO571"]
-    DispDeviceWritePV = ["QUAD:IN10:731:BCTRL" "QUAD:LI11:317:BCTRL" "QUAD:LI11:352:BCTRL" "QUAD:LI14:738:BCTRL" "QUAD:LI14:866:BCTRL" "QUAD:LI20:2086:BDES" ...
+    DispDeviceWritePV = ["QUAD:IN10:731:BCTRL" "QUAD:LI11:317:BCTRL" "QUAD:LI11:340:BCTRL" "QUAD:LI11:352:BCTRL" "QUAD:LI14:738:BCTRL" "QUAD:LI14:866:BCTRL" "QUAD:LI20:2086:BDES" ...
       "SIOC:ML00:AO551" "SIOC:ML01:AO501" "SIOC:ML01:AO516" "SIOC:ML01:AO566" "SIOC:ML01:AO556" "SIOC:ML01:AO506" "SIOC:ML01:AO521" "SIOC:ML01:AO571"]
-    DispDeviceWriteProto = ["EPICS" "EPICS" "EPICS" "EPICS" "EPICS" "AIDA" "EPICS" "EPICS" "EPICS" "EPICS" "EPICS" "EPICS" "EPICS" "EPICS"]
+    DispDeviceWriteProto = ["EPICS" "EPICS" "EPICS" "EPICS" "EPICS" "EPICS" "AIDA" "EPICS" "EPICS" "EPICS" "EPICS" "EPICS" "EPICS" "EPICS" "EPICS"]
     EnergyKnobNames = ["S20_ENERGY_3AND4","S20_ENERGY_4AND5","S20_ENERGY_4AND6","BC14_ENERGY_4AND5","BC14_ENERGY_5AND6","BC14_ENERGY_4AND6","BC11_ENERGY","DL10_ENERGY"]
     EnergyKnobs = {"MKB:S20_ENERGY_3AND4" "MKB:S20_ENERGY_4AND5" "MKB:S20_ENERGY_4AND6" "MKB:BC14_ENERGY_4AND5" "MKB:BC14_ENERGY_5AND6" "MKB:BC14_ENERGY_4AND6" ["KLYS:LI11:11:SSSB_ADES" "KLYS:LI11:21:SSSB_ADES"] "KLYS:LI10:41:SFB_ADES"}
     EnergyKnobsKlys = {["19_3","19_4"] ["19_4","19_5"] ["19_4","19_6"] ["14_4","14_5"] ["14_5","14_6"] ["14_4","14_6"] ["11_1","11_2"] "10_4"} % Klystron stations for each knob
@@ -229,7 +229,9 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
         icor=[ixc(:); iyc(:)];
         R = zeros(4,length(icor));
         for ncor=1:length(icor)
-          [~,Rm]=RmatAtoB(icor(ncor),double(obj.fitele-1));
+          if icor(ncor)<=double(obj.fitele-1)
+            [~,Rm]=RmatAtoB(icor(ncor),double(obj.fitele-1));
+          end
           if ncor<=nxc
             R(1,ncor) = Rm(1,2) ;
             R(2,ncor) = Rm(2,2) ;
@@ -1159,19 +1161,19 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
       pl=errorbar(ahan(1),z,dispx,dispx_err,'.'); grid(ahan(1),'on'); ylabel(ahan(1),'\eta_x [mm]');
       pl.DataTipTemplate.DataTipRows(1).Label = 'Linac Z (m)' ;
       pl.DataTipTemplate.DataTipRows(2).Label = '\eta_x (mm)' ;
-      pl.DataTipTemplate.DataTipRows(end+1) = dataTipTextRow('Name',names);
+      pl.DataTipTemplate.DataTipRows(end+1) = dataTipTextRow('Name',cellstr(names));
       if showmodel
         hold(ahan(1),'on');
-        plot(ahan(1),z,obj.DispFit(1:length(dispx))-ddispx(:)'.*1000);
+        plot(ahan(1),z,obj.DispFit(1:length(dispx))-ddispx(:).*1000);
         hold(ahan(1),'off');
       end
       pl=errorbar(ahan(2),z,dispy,dispy_err,'.'); grid(ahan(2),'on'); xlabel(ahan(2),'Z [m]'); ylabel(ahan(2),'\eta_y [mm]');
       pl.DataTipTemplate.DataTipRows(1).Label = 'Linac Z (m)' ;
       pl.DataTipTemplate.DataTipRows(2).Label = '\eta_y (mm)' ;
-      pl.DataTipTemplate.DataTipRows(end+1) = dataTipTextRow('Name',names);
+      pl.DataTipTemplate.DataTipRows(end+1) = dataTipTextRow('Name',cellstr(names));
       if showmodel
         hold(ahan(2),'on');
-        plot(ahan(2),z,obj.DispFit(length(dispx)+1:end)-ddispy(:)'.*1000);
+        plot(ahan(2),z,obj.DispFit(length(dispx)+1:end)-ddispy(:).*1000);
         hold(ahan(2),'off');
       end
       ahan(1).XLim=[min(z) max(z)];
@@ -1193,11 +1195,8 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
               line(ahan(2),ones(1,2).*obj.LM.ModelZ(corele(ic)),ahan(2).YLim,'LineStyle','-','Color','black','LineWidth',2);
             end
           end
-          for icor=find(obj.useycor(:)')
-            line(yax,[obj.cordat_y.z(icor) obj.cordat_y.z(icor)],yax.YLim,'LineStyle','-','Color','black','LineWidth',2);
-          end
-          hold(xax,'off');
-          hold(yax,'off');
+          hold(ahan(1),'off');
+          hold(ahan(2),'off');
         end
       end
       % Plot magnet bar
@@ -1346,34 +1345,54 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
         hold(ahan(1),'on');
         i_p = obj.dtheta_x(obj.usexcor)>=0 ;
         i_m = obj.dtheta_x(obj.usexcor)<0 ;
-        pl_p=plot(ahan(1),zv_x(i_p),newtheta_x(i_p).*xsca,'^','Color',F2_common.ColorOrder(1,:),'MarkerSize',4);
-        pl_m=plot(ahan(1),zv_x(i_m),newtheta_x(i_m).*xsca,'v','Color',F2_common.ColorOrder(1,:),'MarkerSize',4);
-        for icor=find(obj.usexcor)'
-          y1 = obj.cordat_x.theta(icor) ; y2 = obj.cordat_x.theta(icor)+obj.dtheta_x(icor) ;
-          line(ahan(1),ones(1,2).*obj.cordat_x.z(icor),[y1 y2].*xsca,'Color',F2_common.ColorOrder(1,:));
+        if any(i_p)
+          pl_p=plot(ahan(1),zv_x(i_p),newtheta_x(i_p).*xsca(i_p),'^','Color',F2_common.ColorOrder(1,:),'MarkerSize',4);
         end
-        pl_p.DataTipTemplate.DataTipRows(1).Label = 'Linac Z' ;
-        pl_p.DataTipTemplate.DataTipRows(2).Label = sprintf('X Kick (%s)',xuni) ;
-        pl_p.DataTipTemplate.DataTipRows(end+1) = dataTipTextRow('Name',obj.xcornames(i_p));
-        pl_m.DataTipTemplate.DataTipRows(1).Label = 'Linac Z' ;
-        pl_m.DataTipTemplate.DataTipRows(2).Label = sprintf('X Kick (%s)',yuni) ;
-        pl_m.DataTipTemplate.DataTipRows(end+1) = dataTipTextRow('Name',obj.xcornames(i_m));
+        if any(i_m)
+          pl_m=plot(ahan(1),zv_x(i_m),newtheta_x(i_m).*xsca(i_m),'v','Color',F2_common.ColorOrder(1,:),'MarkerSize',4);
+        end
+        n=0;
+        for icor=find(obj.usexcor)'
+          n=n+1;
+          y1 = obj.cordat_x.theta(icor).*xsca(n) ; y2 = newtheta_x(n).*xsca(n) ;
+          line(ahan(1),ones(1,2).*obj.cordat_x.z(icor),[y1 y2],'Color',F2_common.ColorOrder(1,:));
+        end
+        if any(i_p)
+          pl_p.DataTipTemplate.DataTipRows(1).Label = 'Linac Z' ;
+          pl_p.DataTipTemplate.DataTipRows(2).Label = sprintf('X Kick (%s)',xuni) ;
+          pl_p.DataTipTemplate.DataTipRows(end+1) = dataTipTextRow('Name',cellstr(obj.xcornames(i_p)));
+        end
+        if any(i_m)
+          pl_m.DataTipTemplate.DataTipRows(1).Label = 'Linac Z' ;
+          pl_m.DataTipTemplate.DataTipRows(2).Label = sprintf('X Kick (%s)',yuni) ;
+          pl_m.DataTipTemplate.DataTipRows(end+1) = dataTipTextRow('Name',cellstr(obj.xcornames(i_m)));
+        end
         hold(ahan(1),'off');
         hold(ahan(2),'on');
         i_p = obj.dtheta_y(obj.useycor)'>=0 ;
         i_m = obj.dtheta_y(obj.useycor)'<0 ;
-        pl_p=plot(ahan(2),zv_y(i_p),newtheta_y(i_p).*ysca,'^','Color',F2_common.ColorOrder(1,:),'MarkerSize',4);
-        pl_m=plot(ahan(2),zv_y(i_m),newtheta_y(i_m).*ysca,'v','Color',F2_common.ColorOrder(1,:),'MarkerSize',4);
-        for icor=find(obj.useycor)'
-          y1 = obj.cordat_y.theta(icor) ; y2 = obj.cordat_y.theta(icor)+obj.dtheta_y(icor) ;
-          line(ahan(2),ones(1,2).*obj.cordat_y.z(icor),[y1 y2].*ysca,'Color',F2_common.ColorOrder(1,:));
+        if any(i_p)
+          pl_p=plot(ahan(2),zv_y(i_p),newtheta_y(i_p).*ysca(i_p),'^','Color',F2_common.ColorOrder(1,:),'MarkerSize',4);
         end
-        pl_p.DataTipTemplate.DataTipRows(1).Label = 'Linac Z' ;
-        pl_p.DataTipTemplate.DataTipRows(2).Label = sprintf('Y Kick (%s)',xuni) ;
-        pl_p.DataTipTemplate.DataTipRows(end+1) = dataTipTextRow('Name',obj.ycornames(i_p));
-        pl_m.DataTipTemplate.DataTipRows(1).Label = 'Linac Z' ;
-        pl_m.DataTipTemplate.DataTipRows(2).Label = sprintf('Y Kick (%s)',yuni) ;
-        pl_m.DataTipTemplate.DataTipRows(end+1) = dataTipTextRow('Name',obj.ycornames(i_m));
+        if any(i_m)
+          pl_m=plot(ahan(2),zv_y(i_m),newtheta_y(i_m).*ysca(i_m),'v','Color',F2_common.ColorOrder(1,:),'MarkerSize',4);
+        end
+        n=0;
+        for icor=find(obj.useycor)'
+          n=n+1;
+          y1 = obj.cordat_y.theta(icor).*ysca(n) ; y2 = newtheta_y(n).*ysca(n) ;
+          line(ahan(2),ones(1,2).*obj.cordat_y.z(icor),[y1 y2],'Color',F2_common.ColorOrder(1,:));
+        end
+        if any(i_p)
+          pl_p.DataTipTemplate.DataTipRows(1).Label = 'Linac Z' ;
+          pl_p.DataTipTemplate.DataTipRows(2).Label = sprintf('Y Kick (%s)',xuni) ;
+          pl_p.DataTipTemplate.DataTipRows(end+1) = dataTipTextRow('Name',cellstr(obj.ycornames(i_p)));
+        end
+        if any(i_m)
+          pl_m.DataTipTemplate.DataTipRows(1).Label = 'Linac Z' ;
+          pl_m.DataTipTemplate.DataTipRows(2).Label = sprintf('Y Kick (%s)',yuni) ;
+          pl_m.DataTipTemplate.DataTipRows(end+1) = dataTipTextRow('Name',cellstr(obj.ycornames(i_m)));
+        end
         hold(ahan(2),'off');
       end
       
