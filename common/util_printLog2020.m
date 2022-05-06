@@ -70,7 +70,11 @@ for f=fig(:)'
     
 %     print(f,'-dpsc2',['-P' queue],'-bestfit');
 %     print(f,'-dpdf',['-P' queue]);
-    print(f,'-dpng',['-P' queue]);
+    if strcmp(accel,'FACET')
+      util_printLog_wComments(f,opts.author,opts.title,opts.text);
+    else
+      print(f,'-dpsc2',['-P' queue]);
+    end
     
     %hAxes=findobj(f,'type','axes');
     %opts.title=get(get(hAxes(1),'Title'),'String');
