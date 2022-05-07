@@ -1,15 +1,15 @@
 classdef scanFunc_XCOR_LI20_3276
     properties
-        pvlist PV
-        pvs
+%         pvlist PV
+%         pvs
         initial_control
         initial_readback
         daqhandle
         freerun = true
     end
     properties(Constant)
-        control_PV = "LI20:XCOR:3276:BDES"
-        readback_PV = "LI20:XCOR:3276:BDES"
+        control_PV = "LI20:XCOR:3276"
+        readback_PV = "LI20:XCOR:3276"
         tolerance = 0.0001;
     end
     
@@ -23,33 +23,33 @@ classdef scanFunc_XCOR_LI20_3276
                 obj.freerun = false;
             end
                     
-            context = PV.Initialize(PVtype.EPICS_labca);
-            obj.pvlist=[...
-                PV(context,'name',"control",'pvname',obj.control_PV,'mode',"rw",'monitor',true); % Control PV
-                PV(context,'name',"readback",'pvname',obj.readback_PV,'mode',"r",'monitor',true); % Readback PV
-                ];
-            pset(obj.pvlist,'debug',0);
-            obj.pvs = struct(obj.pvlist);
+%             context = PV.Initialize(PVtype.EPICS_labca);
+%             obj.pvlist=[...
+%                 PV(context,'name',"control",'pvname',obj.control_PV,'mode',"rw",'monitor',true); % Control PV
+%                 PV(context,'name',"readback",'pvname',obj.readback_PV,'mode',"r",'monitor',true); % Readback PV
+%                 ];
+%             pset(obj.pvlist,'debug',0);
+%             obj.pvs = struct(obj.pvlist);
             
-            obj.initial_control = caget(obj.pvs.control);
-            obj.initial_readback = caget(obj.pvs.readback);
+            obj.initial_control = control_magnetGet(obj.control_PV);
+            obj.initial_readback = control_magnetGet(obj.readback_PV);
             
-        end
+        end 
         
         function delta = set_value(obj,value)
             
-            caput(obj.pvs.control,value);
-            obj.daqhandle.dispMessage(sprintf('Setting %s to %0.2f', obj.pvs.control.name, value));
+            control_magnetSet(obj.control_PV,value);
+            obj.daqhandle.dispMessage(sprintf('Setting %s to %0.2f', obj.control_PV, value));
             
-            current_value = caget(obj.pvs.readback);
+            current_value = control_magnetGet(obj.readback_PV);
             
             while abs(current_value - value) > obj.tolerance
-                current_value = caget(obj.pvs.readback);
-                pause(0.1);
+                current_value = control_magnetGet(obj.readback_PV);
+                pause(0.4);
             end
             
             delta = current_value - value;
-            obj.daqhandle.dispMessage(sprintf('%s readback is %0.2f', obj.pvs.readback.name, current_value));
+            obj.daqhandle.dispMessage(sprintf('%s readback is %0.2f', obj.readback_PV, current_value));
             
         end
         
