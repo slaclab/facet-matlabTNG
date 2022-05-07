@@ -8,6 +8,9 @@ classdef scanFunc_Spect_Quad_Scan
         freerun = true
     end
     properties(Constant)
+        control_PV  = "SIOC:SYS1:ML00:AO959"
+        readback_PV = "SIOC:SYS1:ML00:AO959"
+        
         control_PV0  = "LGPS:LI20:3141"
         control_PV1  = "LGPS:LI20:3261"
         control_PV2  = "LGPS:LI20:3091"
@@ -29,6 +32,9 @@ classdef scanFunc_Spect_Quad_Scan
                     
             context = PV.Initialize(PVtype.EPICS_labca);
             obj.pvlist=[...
+                PV(context,'name',"control",'pvname',obj.control_PV,'mode',"rw",'monitor',true); % Control PV
+                PV(context,'name',"readback",'pvname',obj.readback_PV,'mode',"r",'monitor',true); % Readback PV
+               
                 PV(context,'name',"control0",'pvname',obj.control_PV0,'mode',"rw",'monitor',true); % Control PV
                 PV(context,'name',"control1",'pvname',obj.control_PV1,'mode',"rw",'monitor',true); % Control PV
                 PV(context,'name',"control2",'pvname',obj.control_PV2,'mode',"rw",'monitor',true); % Control PV
@@ -38,6 +44,9 @@ classdef scanFunc_Spect_Quad_Scan
                 ];
             pset(obj.pvlist,'debug',0);
             obj.pvs = struct(obj.pvlist);
+            
+            obj.initial_control = caget(obj.pvs.control);
+            obj.initial_readback = caget(obj.pvs.readback);
             
             obj.initial_control0 = control_magnetGet(obj.control_PV0);
             obj.initial_readback0 = control_magnetGet(obj.readback_PV0);
@@ -52,6 +61,9 @@ classdef scanFunc_Spect_Quad_Scan
         function delta = set_value(obj,value)
             
             [isok, BDES0, BDES1, BDES2] = calc_Spec_Quad_M12(value);  %z_ob, z_im, QS, m12_req, m34_req)
+            
+            caput(obj.pvs.control,value);
+            obj.daqhandle.dispMessage(sprintf('Setting %s to %0.2f', obj.pvs.control.name, value));
             
             if isok
                 [delta] = set_Spec_Quad(obj, BDES0, BDES1, BDES2);
