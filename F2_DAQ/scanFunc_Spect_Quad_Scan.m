@@ -51,7 +51,7 @@ classdef scanFunc_Spect_Quad_Scan
         
         function delta = set_value(obj,value)
             
-            [isok, BDES0, BDES1, BDES2] = calc_Spec_Quad_M12(M12_req);   %z_ob, z_im, QS, m12_req, m34_req)
+            [isok, BDES0, BDES1, BDES2] = calc_Spec_Quad_M12(value);  %z_ob, z_im, QS, m12_req, m34_req)
             
             if isok
                 [delta] = set_Spec_Quad(obj, BDES0, BDES1, BDES2);
