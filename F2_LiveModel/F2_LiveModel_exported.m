@@ -66,10 +66,9 @@ classdef F2_LiveModel_exported < matlab.apps.AppBase
       app.DataSourceDropDownValueChanged ;
     end
 
-    % Value changed function: BC11Button, BC14Button, 
-    % BC20Button, DL1Button, DataSourceDropDown, FFSButton, 
-    % INJButton, L0Button, L1Button, L2Button, L3Button, 
-    % SPECTButton
+    % Value changed function: BC11Button, BC14Button, BC20Button, 
+    % DL1Button, DataSourceDropDown, FFSButton, INJButton, 
+    % L0Button, L1Button, L2Button, L3Button, SPECTButton
     function DataSourceDropDownValueChanged(app, event)
       global BEAMLINE
       app.DataSourceDropDown.Enable = false ; app.DatePicker.Enable=false; app.EditField.Enable=false;  app.SaveModeltoFileButton.Enable=false; app.LoadModelFromFileButton.Enable=false; app.PLOTButton.Enable=false;
@@ -92,7 +91,7 @@ classdef F2_LiveModel_exported < matlab.apps.AppBase
           tdata{tind,4} = num2str([T.alphax(tind) T.alphay(tind)],4) ;
           tdata{tind,5} = num2str([T.etax(tind) T.etay(tind)],4) ;
           if isfield(BEAMLINE{iele},'B')
-            tdata{tind,6} = num2str(10*GetTrueStrength(iele),6) ;
+            tdata{tind,6} = num2str(10*GetTrueStrength(iele,1),6) ;
           else
             tdata{tind,6} = '---' ;
           end
