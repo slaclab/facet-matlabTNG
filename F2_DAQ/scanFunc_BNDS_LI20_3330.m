@@ -38,7 +38,14 @@ classdef scanFunc_BNDS_LI20_3330
         
         function delta = set_value(obj,value)
             
-            control_magnetSet(obj.control_PV,value);
+             
+            try
+                control_magnetSet(obj.control_PV,value);
+            catch
+                % try again:
+                control_magnetSet(obj.control_PV,value); 
+            end
+            
             obj.daqhandle.dispMessage(sprintf('Setting %s to %0.2f', obj.control_PV, value));
             
             current_value = control_magnetGet(obj.readback_PV);
