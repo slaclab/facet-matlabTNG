@@ -43,6 +43,7 @@ classdef scanFunc_BNDS_LI20_3330
                 control_magnetSet(obj.control_PV,value);
             catch
                 % try again:
+                obj.daqhandle.dispMessage(sprintf('First attempt setting %s failed, try once more', obj.control_PV));
                 control_magnetSet(obj.control_PV,value); 
             end
             
