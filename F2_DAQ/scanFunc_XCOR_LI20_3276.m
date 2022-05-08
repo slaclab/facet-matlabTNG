@@ -1,21 +1,21 @@
-classdef scanFunc_BNDS_LI20_3330
+classdef scanFunc_XCOR_LI20_3276
     properties
-        %pvlist PV
-        %pvs
+%         pvlist PV
+%         pvs
         initial_control
         initial_readback
         daqhandle
         freerun = true
     end
     properties(Constant)
-        control_PV = "BNDS:LI20:3330"
-        readback_PV = "BNDS:LI20:3330"
-        tolerance = 0.05;
+        control_PV = "LI20:XCOR:3276"
+        readback_PV = "LI20:XCOR:3276"
+        tolerance = 0.0001;
     end
     
     methods 
         
-        function obj = scanFunc_BNDS_LI20_3330(daqhandle)
+        function obj = scanFunc_XCOR_LI20_3276(daqhandle)
             
             % Check if scanfunc called by DAQ
             if exist('daqhandle','var')
@@ -34,19 +34,11 @@ classdef scanFunc_BNDS_LI20_3330
             obj.initial_control = control_magnetGet(obj.control_PV);
             obj.initial_readback = control_magnetGet(obj.readback_PV);
             
-        end
+        end 
         
         function delta = set_value(obj,value)
             
-             
-            try
-                control_magnetSet(obj.control_PV,value);
-            catch
-                % try again:
-                obj.daqhandle.dispMessage(sprintf('First attempt setting %s failed, try once more', obj.control_PV));
-                control_magnetSet(obj.control_PV,value); 
-            end
-            
+            control_magnetSet(obj.control_PV,value);
             obj.daqhandle.dispMessage(sprintf('Setting %s to %0.2f', obj.control_PV, value));
             
             current_value = control_magnetGet(obj.readback_PV);
