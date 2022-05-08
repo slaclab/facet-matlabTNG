@@ -23,11 +23,11 @@ function [delta] = set_Quad_BDES(obj, control_PV, readback_PV, value)
         current_value = control_magnetGet(readback_PV);
 
         while abs(current_value - value) > obj.tolerance
-            current_value = control_magnetGet(readback_PV0);
+            current_value = control_magnetGet(readback_PV);
             pause(0.4);
         end
 
         delta = current_value - value;
-        obj.daqhandle.dispMessage(sprintf('%s readback is %0.2f', readback_PV0, current_value));
+        obj.daqhandle.dispMessage(sprintf('%s readback is %0.2f', readback_PV, current_value));
             
 end
