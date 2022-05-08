@@ -22,7 +22,7 @@ classdef scanFunc_Spect_Quad_Scan
     
     methods 
         
-        function obj = scanFunc_Spect_Quad_Scan_M12(daqhandle)
+        function obj = scanFunc_Spect_Quad_Scan(daqhandle)
             
             % Check if scanfunc called by DAQ
             if exist('daqhandle','var')
