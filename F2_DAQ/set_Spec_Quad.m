@@ -1,13 +1,13 @@
-function [max_delta] = set_Spec_Quad(obj, BDES0, BDES1, BDES2)
+function [max_delta] = set_Spec_Quad(obj, quadPV, BDES0, BDES1, BDES2)
 
     %Sets the spectrometer quads to whatever BDES values you want
     
     
     
     
-    [delta0] = set_Quad_BDES(obj, obj.control_PV0, objreadback_PV0, BDES0);
-    [delta1] = set_Quad_BDES(obj, obj.control_PV1, objreadback_PV1, BDES1);
-    [delta2] = set_Quad_BDES(obj, obj.control_PV2, objreadback_PV2, BDES2);
+    [delta0] = set_Quad_BDES(obj, quadPV.control_PV0, quadPV.readback_PV0, BDES0);
+    [delta1] = set_Quad_BDES(obj, quadPV.control_PV1, quadPV.readback_PV1, BDES1);
+    [delta2] = set_Quad_BDES(obj, quadPV.control_PV2, quadPV.readback_PV2, BDES2);
 
      obj.daqhandle.dispMessage(sprintf('Q0D-Q1D set to within tolerance'));
 
