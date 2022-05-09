@@ -633,8 +633,9 @@ classdef PV < handle
               else
                 obj.channel{ipv}.putNoWait(putval(:)) ;
               end
-            catch
+            catch ME
               stat=1;
+              F2_common.LogMessage("PV: caput failed (java ca)",ME.message);
               fprintf(obj.STDERR,'caput failed: %s %s\n',obj.pvname,num2str(val));
             end
           else % labca CA client
@@ -650,8 +651,9 @@ classdef PV < handle
               else
                 lcaPutNoWait(pvstr,putval(:)');
               end
-            catch
+            catch ME
               stat=1;
+              F2_common.LogMessage("PV: caput failed (labCA)",ME.message);
               fprintf(obj.STDERR,'caput failed: %s %s\n',obj.pvname,num2str(val));
             end
           end

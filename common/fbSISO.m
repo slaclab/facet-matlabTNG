@@ -492,6 +492,7 @@ classdef fbSISO < handle
           builder.set(double(pval));
         end
       catch ME
+        F2_common.LogMessage("fbSISO: AIDA-PVA set failed for "+string(pv),ME.message);
         fprintf(2,'Error setting AIDA PV: %s\n',pv);
         fprintf(2,'%s',ME.message)
       end

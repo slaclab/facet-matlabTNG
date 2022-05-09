@@ -29,7 +29,8 @@ classdef SCP_MKB < handle
           obj.Name = mkname ;
           break
         catch ME
-          fprintf(2,"Failed to initialize SCP multiknob through AIDA-PVA\n");
+          F2_common.LogMessage("Failed to initialize SCP multiknob through AIDA-PVA",ME.message);
+          fprintf(2,"SCP_MKB: Failed to initialize SCP multiknob through AIDA-PVA\n");
           if itry==3
             throw(ME);
           else
@@ -48,6 +49,7 @@ classdef SCP_MKB < handle
         obj.DeviceVals = dat.values.value ;
         mkval = obj.val ;
       catch ME
+        F2_common.LogMessage("SCP_MKB: Error getting MKB "+obj.Name,ME.message);
         fprintf(2,'Error getting MKB %s:\n%s',obj.Name,ME.message);
       end
     end
@@ -61,6 +63,7 @@ classdef SCP_MKB < handle
         obj.DeviceVals = dat.values.value ;
         obj.val = val ;
       catch ME
+        F2_common.LogMessage("SCP_MKB: Error setting MKB "+obj.Name,ME.message);
         fprintf(2,'Error setting MKB %s:\n%s',obj.Name,ME.message);
       end
     end
