@@ -17,8 +17,8 @@ fi
 
 if [ "$#" -eq 2 ] && [ $1 == "-python" ]
   then
-    ssh facet-srv02 "cd /usr/local/facet/tools/matlabTNG; screen -dmS "$APPNAME" source $PACKAGE_TOP/anaconda/envs/python3.7env/bin/activate; ./runapp.sh $APPNAME"
+    ssh facet-srv02 "cd /usr/local/facet/tools/matlabTNG; screen -L -dmS "$APPNAME" source $PACKAGE_TOP/anaconda/envs/python3.7env/bin/activate; ./runapp.sh $APPNAME"
 else
-  ssh facet-srv02 "cd /usr/local/facet/tools/matlabTNG; screen -dmS "$APPNAME" ./runapp.sh $APPNAME"
+  ssh facet-srv02 "cd /usr/local/facet/tools/matlabTNG; screen -L -dmS "$APPNAME" ./runapp.sh $APPNAME"
 fi
 
