@@ -11,6 +11,9 @@ classdef SCP_MKB < handle
   properties(Access=protected)
     builder
   end
+  properties(Constant)
+    timeout=3 % AIDA-PVA EPICS RPC call timeout / s
+  end
   
   methods
     function obj = SCP_MKB(mkname)
@@ -25,6 +28,7 @@ classdef SCP_MKB < handle
           mkname=regexprep(lower(mkname),"\.mkb$","")+".mkb";
           obj.builder = pvaRequest('MKB:VAL');
           obj.builder.with('MKB', char(mkname));
+          obj.builder.timeout(obj.timeout);
           obj.set(0);
           obj.Name = mkname ;
           break
