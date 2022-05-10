@@ -63,6 +63,7 @@ classdef F2_LiveModelApp < handle & F2_common
         else
           obj.LEM=F2_LEMApp([],KlysZero); % Makes LEM object and reads in live model
         end
+        obj.LEM.UpdateModel;
         obj.LEM.Mags.ReadB(true); % sets extant magnet strengths into model
       end
     end
