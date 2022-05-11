@@ -64,8 +64,9 @@ classdef LucretiaModel < handle & matlab.mixin.Copyable
       dd=dir(LucretiaFile);
       obj.ModelDesignFile = string(regexprep(dd.name,'\.mat$','')) ;
       BEAMLINE = ld.BEAMLINE ;
+      WF = ld.WF ;
       obj.DesignBeamline = BEAMLINE;
-      KLYSTRON=[]; PS=[]; WF=[];
+      KLYSTRON=[]; PS=[];
       obj.Initial = ld.Initial ;
       SetElementSlices(1,length(BEAMLINE));
       SetElementBlocks(1,length(BEAMLINE));
