@@ -57,7 +57,7 @@ classdef LucretiaModel < handle & matlab.mixin.Copyable
         LucretiaFile = F2_common.LucretiaLattice ;
       end
       % Load Lucretia BEAMLINE database and configure
-      ld = load(LucretiaFile,'BEAMLINE','Initial') ;
+      ld = load(LucretiaFile,'BEAMLINE','Initial','WF') ;
       if ~isfield(ld,'BEAMLINE') || ~isfield(ld,'Initial')
         error('Beamline and/or Initial structures not found in provided Lucretia file');
       end
