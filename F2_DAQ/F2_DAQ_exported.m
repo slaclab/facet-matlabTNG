@@ -7,7 +7,7 @@ classdef F2_DAQ_exported < matlab.apps.AppBase
         ExperimentDropDownLabel        matlab.ui.control.Label
         ExperimentDropDown             matlab.ui.control.DropDown
         EventCodeButtonGroup           matlab.ui.container.ButtonGroup
-        Beam10HzButton                 matlab.ui.control.RadioButton
+        BeamButton                     matlab.ui.control.RadioButton
         TS510HzButton                  matlab.ui.control.RadioButton
         CommentTextArea                matlab.ui.control.TextArea
         ShotsperstepEditFieldLabel     matlab.ui.control.Label
@@ -319,7 +319,7 @@ classdef F2_DAQ_exported < matlab.apps.AppBase
         function ClearConfigButtonPushed(app, event)
             app.ExperimentDropDown.Value = 'TEST';
             app.CommentTextArea.Value = 'Comment . . .';
-            app.Beam10HzButton.Value = true;
+            app.BeamButton.Value = true;
             app.ShotsperstepEditField.Value = 20;
             app.SavebackgroundCheckBox.Value = true;
             app.BackgroundshotsEditField.Value = 1;
@@ -339,7 +339,7 @@ classdef F2_DAQ_exported < matlab.apps.AppBase
             
             switch gui_state.EventCode
                 case 223
-                    app.Beam10HzButton.Value = true;
+                    app.BeamButton.Value = true;
                 case 53
                     app.TS510HzButton.Value = true;
                 otherwise
@@ -384,7 +384,7 @@ classdef F2_DAQ_exported < matlab.apps.AppBase
 
             % Create ExperimentDropDown
             app.ExperimentDropDown = uidropdown(app.DAQSettingsPanel);
-            app.ExperimentDropDown.Items = {'TEST', 'E300', 'E305', 'E320', 'E325', 'E326', 'E327'};
+            app.ExperimentDropDown.Items = {'TEST', 'E300', 'E305', 'E320', 'E325', 'E326', 'E327', 'E332'};
             app.ExperimentDropDown.Position = [88 187 71 22];
             app.ExperimentDropDown.Value = 'TEST';
 
@@ -393,11 +393,11 @@ classdef F2_DAQ_exported < matlab.apps.AppBase
             app.EventCodeButtonGroup.Title = 'Event Code';
             app.EventCodeButtonGroup.Position = [9 109 152 73];
 
-            % Create Beam10HzButton
-            app.Beam10HzButton = uiradiobutton(app.EventCodeButtonGroup);
-            app.Beam10HzButton.Text = '223 Beam 10 Hz';
-            app.Beam10HzButton.Position = [11 27 113 22];
-            app.Beam10HzButton.Value = true;
+            % Create BeamButton
+            app.BeamButton = uiradiobutton(app.EventCodeButtonGroup);
+            app.BeamButton.Text = '223 Beam';
+            app.BeamButton.Position = [11 27 78 22];
+            app.BeamButton.Value = true;
 
             % Create TS510HzButton
             app.TS510HzButton = uiradiobutton(app.EventCodeButtonGroup);
