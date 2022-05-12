@@ -36,6 +36,7 @@ classdef F2_DAQApp < handle
                 PV(context,'name',"DAQ_Instance",'pvname',"SIOC:SYS1:ML02:AO400",'mode',"rw",'monitor',true); % Number of times DAQ is run
                 PV(context,'name',"Reset",'pvname',"SIOC:SYS1:ML02:AO352",'mode',"rw",'monitor',true); % DAQ Running
                 PV(context,'name',"Abort",'pvname',"SIOC:SYS1:ML02:AO353",'mode',"rw",'monitor',true); % DAQ Abort
+                PV(context,'name',"DAQ_DataOn",'pvname',"SIOC:SYS1:ML02:AO354",'mode',"rw",'monitor',true); % DAQ Data On
                 ] ;
             pset(obj.pvlist,'debug',0) ;
             obj.pvs = struct(obj.pvlist);
@@ -63,6 +64,8 @@ classdef F2_DAQApp < handle
         function resetDAQ(obj)
             
             caput(obj.pvs.Reset,0);
+            % this indicates data taking has ended
+            caput(obj.pvs.DAQ_DataOn,0);
             obj.addMessage('DAQ reset.');
             
         end

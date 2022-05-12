@@ -70,6 +70,7 @@ classdef F2_runDAQ < handle
                 PV(context,'name',"MPS_Shutter",'pvname',"IOC:SYS1:MP01:MSHUTCTL",'mode',"rw",'monitor',true); % MPS Shutter
                 PV(context,'name',"MPS_Shutter_RBV",'pvname',"SHUT:LT10:950:IN_MPS",'mode',"rw",'monitor',true); % MPS Shutter
                 PV(context,'name',"BSA_nRuns",'pvname',"SIOC:SYS1:ML02:AO500",'mode',"rw",'monitor',true); % BSA thing
+                PV(context,'name',"DAQ_DataOn",'pvname',"SIOC:SYS1:ML02:AO354",'mode',"rw",'monitor',true); % DAQ Data On
                 ] ;
             pset(obj.pvlist,'debug',0);
             obj.pvs = struct(obj.pvlist);
@@ -259,6 +260,9 @@ classdef F2_runDAQ < handle
             % setup BSA data
             obj.reserve_eDef();
             
+            % this indicates data taking has started
+            caput(obj.pvs.DAQ_DataOn,1);
+            
             % Turn on BSA
             eDefOn(obj.eDefNum);
             
@@ -277,6 +281,10 @@ classdef F2_runDAQ < handle
             end
             
             eDefOff(obj.eDefNum);
+            
+            % this indicates data taking has ended
+            caput(obj.pvs.DAQ_DataOn,0);
+            
             %obj.async_data.disable();
             obj.dispMessage('Acquisition complete. Cameras saving data.');
             
@@ -306,6 +314,8 @@ classdef F2_runDAQ < handle
                 obj.dispMessage('Ending failed/aborted scan.');
                 eDefOff(obj.eDefNum);
                 eDefRelease(obj.eDefNum);
+                % this indicates data taking has ended
+                caput(obj.pvs.DAQ_DataOn,0);
             end
             
             if obj.params.scanDim > 0
