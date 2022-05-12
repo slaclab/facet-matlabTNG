@@ -12,7 +12,7 @@ classdef SCP_MKB < handle
     builder
   end
   properties(Constant)
-    timeout=3 % AIDA-PVA EPICS RPC call timeout / s
+    timeout=10 % AIDA-PVA EPICS RPC call timeout / s
   end
   
   methods
