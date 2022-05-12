@@ -61,7 +61,7 @@ classdef LucretiaModel < handle & matlab.mixin.Copyable
       if ~isfield(ld,'BEAMLINE') || ~isfield(ld,'Initial')
         error('Beamline and/or Initial structures not found in provided Lucretia file');
       end
-      dd=dir(LucretiaFile);
+      dd=dir(LucretiaFile); 
       obj.ModelDesignFile = string(regexprep(dd.name,'\.mat$','')) ;
       BEAMLINE = ld.BEAMLINE ;
       WF = ld.WF ;
