@@ -357,10 +357,27 @@ classdef LucretiaModel < handle & matlab.mixin.Copyable
       end
       obj.RefTwiss = T ;
     end
-    function bmag = GetBMAG(obj,refmodel)
-      %GETBMAG Get BMAG optical mismatch parameter between current and design or reference model
-      %bmag(x,y) = GetBMAG("Design" | "Ref")
-      global BEAMLINE 
+    function bmag = GetBMAG(obj,Mags,idmag)
+      %GETBMAG Get BMAG optical mismatch parameter
+      %BMAG = GetBMAG(Mags [,idmag])
+      % This uses the design model and sets the magnet erros given by the F2_mags object
+      %  (Mags.BDES/Mags.BDES_cntrl) to provide the optical mismatch BMAG that would occur for
+      %  an otherwise (energy) matched lattice
+      global BEAMLINE
+      
+      % Set design model
+      obj.SetDesignModel;
+      % Apply magnet erros
+      [id1,id2]=ismember(obj.ModelID,Mags.LM.ModelID); id1=find(id1); id2=find(id2);
+      bdes = obj.ModelBDES ;
+      if ~exist('idmag','var')
+        idmag=true(size(bdes));
+      end
+      bdesrat = Mags.BDES(id2(idmag)) ./ Mags.BDES_cntrl(id2(idmag)) ; bdesrat(isnan(bdesrat))=1; bdesrat(bdesrat==0)=1;
+      bdes(id1(idmag)) = bdes(id1(idmag)) .* bdesrat(:) ;
+      obj.ModelBDES = bdes ;
+      
+      %LLM.LEM.Mags.BDES./obj.Mags.BDES_cntrl
       % get current Twiss parameters
       I=obj.Initial;
       reg1=find(obj.UseRegion,1);
@@ -377,24 +394,17 @@ classdef LucretiaModel < handle & matlab.mixin.Copyable
           T.(fn{ifn}) = [obj.DesignTwiss.(fn{ifn})(1:i1-2) T.fn{ifn}] ;
         end
       end
+      % Generate optical mismatch BMAG function
       idsel=1+find(ismember(i1:length(BEAMLINE),obj.ModelID));
-      switch refmodel
-        case "Design"
-          bref_x=obj.DesignTwiss.betax(idsel);
-          bref_y=obj.DesignTwiss.betay(idsel);
-          aref_x=obj.DesignTwiss.alphax(idsel);
-          aref_y=obj.DesignTwiss.alphay(idsel);
-        case "Ref"
-          bref_x=obj.RefTwiss.betax(idsel);
-          bref_y=obj.RefTwiss.betay(idsel);
-          aref_x=obj.RefTwiss.alphax(idsel);
-          aref_y=obj.RefTwiss.alphay(idsel);
-        otherwise
-          error('Choose "Design" or "Ref" for comparison');
-      end
+      bref_x=obj.DesignTwiss.betax(idsel);
+      bref_y=obj.DesignTwiss.betay(idsel);
+      aref_x=obj.DesignTwiss.alphax(idsel);
+      aref_y=obj.DesignTwiss.alphay(idsel);
       bx=obj.bmag(bref_x,aref_x,T.betax(idsel),T.alphax(idsel));
       by=obj.bmag(bref_y,aref_y,T.betay(idsel),T.alphay(idsel));
       bmag=[bx(:) by(:)];
+      % Restore extant (or whatever was set when calling this method) model
+      obj.SetExtantModel();
     end
   end
   methods
