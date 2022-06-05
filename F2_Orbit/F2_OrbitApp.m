@@ -33,8 +33,10 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
     npulse {mustBePositive} = 50 % default/GUI value for number of pulses of BPM data to take
     orbitfitmethod string {mustBeMember(orbitfitmethod,["lscov","backslash"])} = "lscov"
     escandev string {mustBeMember(escandev,["S20_ENERGY_3AND4","S20_ENERGY_4AND5","S20_ENERGY_4AND6","BC14_ENERGY_4AND5","BC14_ENERGY_5AND6","BC14_ENERGY_4AND6","BC11_ENERGY","DL10_ENERGY"])} = "DL10_ENERGY"
-    escanrange(2,8) = [-50 -50 -50 -30 -30 -30 -30 -30; 50 50 50 30 30 30 30 30] % MeV
+    escanrange(2,8) = [-50 -50 -50 -30 -30 -30 -30 -3.5; 50 50 50 30 30 30 30 3.5] % MeV
     nescan(1,8) = ones(1,8).*10 % Number of energy scan steps to use
+    escanfitorder uint8 = 2 % Order of polynomial fit to energy vs. BPM position
+    escanplotorder uint8 = 1 % Polynomial order to plot (1= linear dispersion, 2=second-order disperion)
     plotallbpm logical = false 
   end
   properties(Transient)
@@ -97,6 +99,7 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
       "SIOC:ML00:AO551" "SIOC:ML01:AO501" "SIOC:ML01:AO516" "SIOC:ML01:AO566" "SIOC:ML01:AO556" "SIOC:ML01:AO506" "SIOC:ML01:AO521" "SIOC:ML01:AO571"]
     DispDeviceWriteProto = ["EPICS" "EPICS" "EPICS" "EPICS" "EPICS" "EPICS" "AIDA" "EPICS" "EPICS" "EPICS" "EPICS" "EPICS" "EPICS" "EPICS" "EPICS"]
     EnergyKnobNames = ["S20_ENERGY_3AND4","S20_ENERGY_4AND5","S20_ENERGY_4AND6","BC14_ENERGY_4AND5","BC14_ENERGY_5AND6","BC14_ENERGY_4AND6","BC11_ENERGY","DL10_ENERGY"]
+    EnergyKnobSettleTime = ones(1,8).*10 % settle time (s) for each energy knob setting
     EnergyKnobs = {"MKB:S20_ENERGY_3AND4" "MKB:S20_ENERGY_4AND5" "MKB:S20_ENERGY_4AND6" "MKB:BC14_ENERGY_4AND5" "MKB:BC14_ENERGY_5AND6" "MKB:BC14_ENERGY_4AND6" ["KLYS:LI11:11:SSSB_ADES" "KLYS:LI11:21:SSSB_ADES"] "KLYS:LI10:41:SFB_ADES"}
     EnergyKnobsKlys = {["19_3","19_4"] ["19_4","19_5"] ["19_4","19_6"] ["14_4","14_5"] ["14_5","14_6"] ["14_4","14_6"] ["11_1","11_2"] "10_4"} % Klystron stations for each knob
     EnergyKnobsKlys11 = ["KLYS:LI11:11:SSSB_ADES" "KLYS:LI11:21:SSSB_ADES"; "KLYS:LI11:11:SSSB_PDES" "KLYS:LI11:21:SSSB_PDES"] % PVs for stations in 11 [Ampl;Phase]
@@ -892,7 +895,7 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
       obj.DispData = [] ;
       obj.DispFit = [] ;
       % Load everything else...
-      restorelist=["corsolv" "solvtol" "usex" "usey" "nmode" "domodelfit" "usebpmbuff" "dormsplot"  "fitele" "CorrectionOffset" "UseRefOrbit" "npulse" "orbitfitmethod" "plotallbpm"] ;
+      restorelist=["corsolv" "solvtol" "usex" "usey" "nmode" "domodelfit" "usebpmbuff" "dormsplot"  "fitele" "CorrectionOffset" "UseRefOrbit" "npulse" "orbitfitmethod" "plotallbpm" "escanrange" "escandev" "nescan"] ;
       for ilist=1:length(restorelist)
         try
           obj.(restorelist(ilist)) = ld.OrbitApp.(restorelist(ilist)) ;
@@ -985,6 +988,8 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
       % --- Dispersion Tab
       obj.aobj.DropDown_6.Value = obj.orbitfitmethod ;
       obj.aobj.EditField_23.Value = BEAMLINE{obj.aobj.aobj.fitele}.Name ;
+      %====================================================================
+      app.aobj.TabGroupSelectionChanged();
       drawnow
     end
     function DoEscan(obj,nbpm)
@@ -995,6 +1000,7 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
       % Get energy knob to scan and desired range
       id = find(ismember(obj.EnergyKnobNames,obj.escandev)) ;
       evals = linspace(obj.escanrange(1,id),obj.escanrange(2,id),obj.nescan(id)) ; % Delta-E (MeV)
+      evals=evals(randperm(length(evals))); % Randomize energy ordering
       knob = obj.EnergyKnobs{id} ;
       
       % Get starting knob value
@@ -1043,7 +1049,8 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
           disp("Scaling " + knob(:) + " by " + esca + " ...");
           lcaPut(cellstr(knob(:)),k0(:).*esca);
         end
-        pause(1);
+        fprintf('Pausing %d s for knob to settle...\n',obj.EnergyKnobobSettleTime(id));
+        pause(obj.EnergyKnobobSettleTime(id));
         disp("Geting BPM data...");
         % Get BPM data:
         if obj.usebpmbuff
@@ -1059,6 +1066,7 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
         obj.escandata{ival,4}=ystd;
         obj.escandata{ival,5}=use;
         obj.escandata{ival,6}=id;
+        obj.escandata{ival,7}=evals(ival);
       end
       disp("Finished energy scan.");
     end
@@ -1068,8 +1076,7 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
       if isempty(obj.escandata)
         error('No energy scan performed');
       end
-      id = find(ismember(obj.EnergyKnobNames,obj.escandev)) ;
-      evals = linspace(obj.escanrange(1,id),obj.escanrange(2,id),obj.nescan(id)) ; % Delta-E (MeV)
+      evals = cell2mat(obj.escandata{:,7}) ; % Delta-E (MeV)
       xvals=nan(length(evals),length(obj.BPMS.modelID)); yvals=xvals; dxvals=xvals; dyvals=xvals;
       use=obj.escandata{1,5};
       for idat=1:length(evals)
@@ -1086,14 +1093,14 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
         sel = ~isnan(xvals(:,ibpm)) ;
         if sum(sel)>=3
           x = evals(sel) / (BEAMLINE{bid(n)}.P.*1000) ; y = xvals(sel,ibpm) ; dy = dxvals(sel,ibpm) ;
-          [q,dq] = noplot_polyfit(x,y,dy,2) ;
-          dispx(ibpm) = q(2); dispx_err(ibpm) = dq(2) ;
+          [q,dq] = noplot_polyfit(x,y,dy,double(obj.escanfitorder)) ;
+          dispx(ibpm) = q(1+obj.escanplotorder); dispx_err(ibpm) = dq(1+obj.escanplotorder) ;
         end
         sel = ~isnan(yvals(:,ibpm)) ;
         if sum(sel)>=3
           x = evals(sel) / (BEAMLINE{bid(n)}.P.*1000) ; y = yvals(sel,ibpm) ; dy = dyvals(sel,ibpm) ;
-          [q,dq] = noplot_polyfit(x,y,dy,2) ;
-          dispy(ibpm) = q(2); dispy_err(ibpm) = dq(2) ;
+          [q,dq] = noplot_polyfit(x,y,dy,double(obj.escanfitorder)) ;
+          dispy(ibpm) = q(1+obj.escanplotorder); dispy_err(ibpm) = dq(1+obj.escanplotorder) ;
         end
         n=n+1;
       end
@@ -1284,6 +1291,7 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
       end
       % Plot magnet bar
       F2_common.AddMagnetPlotZ(obj.LM.istart,obj.LM.iend,ahan(1)) ;
+      F2_common.AddMagnetPlotZ(obj.LM.istart,obj.LM.iend,ahan(2)) ;
       
       % Logbook plot
       if ~isempty(obj.aobj) && obj.aobj.logplot
@@ -1495,6 +1503,9 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
           pl_m.DataTipTemplate.DataTipRows(end+1) = dataTipTextRow('Name',cellstr(obj.ycornames(i_m)));
         end
         hold(ahan(2),'off');
+        % Make it so data points are on top layer and data tips show
+        ahan(1).Children=flip(ahan(1).Children);
+        ahan(2).Children=flip(ahan(2).Children);
       end
       
       % Plot min/max values
@@ -1511,6 +1522,7 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
       
       % Magnet bar
       F2_common.AddMagnetPlotZ(obj.LM.istart,obj.LM.iend,ahan(1)) ;
+      F2_common.AddMagnetPlotZ(obj.LM.istart,obj.LM.iend,ahan(2)) ;
       
       % Logbook plot
       if ~isempty(obj.aobj) && obj.aobj.logplot
@@ -1720,6 +1732,7 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
       end
       % Plot magnet bar
       F2_common.AddMagnetPlotZ(obj.LM.istart,obj.LM.iend,ahan(1)) ;
+      F2_common.AddMagnetPlotZ(obj.LM.istart,obj.LM.iend,ahan(2)) ;
       ahan(1).XLim=[zmin zmax];
       ahan(2).XLim=[zmin zmax];
       
