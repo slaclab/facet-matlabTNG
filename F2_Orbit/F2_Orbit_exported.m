@@ -700,7 +700,7 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
 
     % Button pushed function: DoScanButton
     function DoScanButtonPushed(app, event)
-      app.escandone=false;
+      app.escandone=true;
       app.DoScanButton.Enable=false; drawnow;
       try
         app.aobj.DoEscan(app.NPulseEditField.Value) ;
@@ -710,7 +710,6 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
         app.DoScanButton.Enable=true; drawnow;
         return
       end
-      app.escandone=true;
       app.DoScanButton.Enable=true; drawnow;
     end
 

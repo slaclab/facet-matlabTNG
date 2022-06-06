@@ -3,7 +3,8 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
     bpmid uint16 % Master list of BPM IDs
     xcorid uint16 % Master list of x corrector IDs
     ycorid uint16 % Master list of y corrector IDs
-    usebpm logical % Selection (from master list) of BPMs to use
+    usebpm logical % Selection (from master list) of BPMs to use - includes user selection
+    useregbpm logical % Selection (from master list) of BPMs to use - excludes user selection
     usexcor logical % Selection (from master list) of XCORs to use
     useycor logical % Selection (from master list) of YCORs to use
     bpmnames string % master list of names
@@ -989,7 +990,7 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
       obj.aobj.DropDown_6.Value = obj.orbitfitmethod ;
       obj.aobj.EditField_23.Value = BEAMLINE{obj.aobj.aobj.fitele}.Name ;
       %====================================================================
-      app.aobj.TabGroupSelectionChanged();
+      app.aobj.updateplots();
       drawnow
     end
     function DoEscan(obj,nbpm)
@@ -1033,41 +1034,51 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
       end
       
       % Scan the energy knob
-      obj.escandata=cell(length(evals),6);
+      obj.escandata=cell(length(evals),7);
+      disp("Disabling Feedbacks...");
+      fb_init = lcaGet('SIOC:SYS1:ML00:AO856');
+      lcaPut('SIOC:SYS1:ML00:AO856',0);
       disp("Starting energy scan...");
-      for ival=1:length(evals)
-        
-        % Set the knob
-        if ismk
-          % Get required phase change to adjust the energy as required
-          e_new = sum(e0) + evals(ival) ;
-          dth = acosd(e_new/sum(enld)) -mean(abs(pha)) ;
-          disp("Setting MKB:"+MK.Name+" dpha= "+ dth + " ...");
-          MK.set(dth);
-        else
-          esca = 1 + evals(ival) / sum(e0) ; % Scale energy knob by required amount
-          disp("Scaling " + knob(:) + " by " + esca + " ...");
-          lcaPut(cellstr(knob(:)),k0(:).*esca);
+      try
+        for ival=1:length(evals)
+          drawnow;
+          % Set the knob
+          if ismk
+            % Get required phase change to adjust the energy as required
+            e_new = sum(e0) + evals(ival) ;
+            dth = acosd(e_new/sum(enld)) -mean(abs(pha)) ;
+            disp("Setting MKB:"+MK.Name+" dpha= "+ dth + " ...");
+            MK.set(dth);
+          else
+            esca = 1 + evals(ival) / sum(e0) ; % Scale energy knob by required amount
+            disp("Scaling " + knob(:) + " by " + esca + " ...");
+            lcaPut(cellstr(knob(:)),k0(:).*esca);
+          end
+          fprintf('Pausing %d s for knob to settle...\n',obj.EnergyKnobSettleTime(id));
+          pause(obj.EnergyKnobSettleTime(id));
+          disp("Geting BPM data...");
+          % Get BPM data:
+          if obj.usebpmbuff
+            obj.BPMS.readbuffer(nbpm);
+          else
+            obj.BPMS.readnp(nbpm);
+          end
+          % Process and store data
+          [xm,ym,xstd,ystd,use,orbid] = obj.GetOrbit("all");
+          obj.escandata{ival,1}=xm;
+          obj.escandata{ival,2}=ym;
+          obj.escandata{ival,3}=xstd;
+          obj.escandata{ival,4}=ystd;
+          obj.escandata{ival,5}=use;
+          obj.escandata{ival,6}=orbid;
+          obj.escandata{ival,7}=evals(ival);
         end
-        fprintf('Pausing %d s for knob to settle...\n',obj.EnergyKnobobSettleTime(id));
-        pause(obj.EnergyKnobobSettleTime(id));
-        disp("Geting BPM data...");
-        % Get BPM data:
-        if obj.usebpmbuff
-          obj.BPMS.readbuffer(nbpm);
-        else
-          obj.BPMS.readnp(nbpm);
-        end
-        % Process and store data
-        [xm,ym,xstd,ystd,use,id] = obj.GetOrbit("all");
-        obj.escandata{ival,1}=xm;
-        obj.escandata{ival,2}=ym;
-        obj.escandata{ival,3}=xstd;
-        obj.escandata{ival,4}=ystd;
-        obj.escandata{ival,5}=use;
-        obj.escandata{ival,6}=id;
-        obj.escandata{ival,7}=evals(ival);
+      catch ME
+        lcaPut('SIOC:SYS1:ML00:AO856',fb_init);
+        throw(ME);
       end
+      disp("Re-Enable Feedbacks...");
+      lcaPut('SIOC:SYS1:ML00:AO856',fb_init);
       disp("Finished energy scan.");
     end
     function dispdat = ProcEscan(obj)
@@ -1076,8 +1087,8 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
       if isempty(obj.escandata)
         error('No energy scan performed');
       end
-      evals = cell2mat(obj.escandata{:,7}) ; % Delta-E (MeV)
-      xvals=nan(length(evals),length(obj.BPMS.modelID)); yvals=xvals; dxvals=xvals; dyvals=xvals;
+      evals = [obj.escandata{:,7}] ; % Delta-E (MeV)
+      xvals=nan(length(evals),sum(obj.useregbpm)); yvals=xvals; dxvals=xvals; dyvals=xvals;
       use=obj.escandata{1,5};
       for idat=1:length(evals)
         use=use & obj.escandata{idat,5};
@@ -1087,7 +1098,7 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
         dyvals(idat,obj.escandata{idat,5}) = obj.escandata{idat,4} ;
       end
       bid=obj.BPMS.modelID(use);
-      dispx=nan(1,length(obj.BPMS.modelID)); dispx_err=dispx; dispy=dispx; dispy_err=dispx;
+      dispx=nan(1,sum(obj.useregbpm)); dispx_err=dispx; dispy=dispx; dispy_err=dispx;
       n=1;
       for ibpm=find(use(:))'
         sel = ~isnan(xvals(:,ibpm)) ;
@@ -1757,7 +1768,7 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
       %[xm,ym,xstd,ystd,use,id] = GetOrbit()
       %[xm,ym,xstd,ystd,use,id] = GetOrbit("all")
       if nargin>1 && varargin{1}=="all"
-        use=obj.BPMS.modelID >= obj.regid(1) & obj.BPMS.modelID <= obj.regid(2) ;
+        use=obj.useregbpm ;
       else
         use=ismember(obj.BPMS.modelID,obj.bpmid(obj.usebpm));
       end
@@ -1812,6 +1823,7 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
       obj.usebpm=false(size(obj.usebpm));
       obj.usebpm(~obj.badbpms & ismember(obj.bpmid,obj.LM.ModelID)) = true ;
       obj.usebpm(~ismember(obj.bpmid,obj.BPMS.modelID))=false;
+      obj.useregbpm = obj.usebpm ;
       obj.LM.ModelClasses="XCOR";
       obj.usexcor(~obj.badxcors & ismember(obj.xcorid,obj.LM.ModelID)) = true ;
       obj.LM.ModelClasses="YCOR";
