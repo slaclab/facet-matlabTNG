@@ -101,7 +101,7 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
       "SIOC:ML00:AO551" "SIOC:ML01:AO501" "SIOC:ML01:AO516" "SIOC:ML01:AO566" "SIOC:ML01:AO556" "SIOC:ML01:AO506" "SIOC:ML01:AO521" "SIOC:ML01:AO571"]
     DispDeviceWriteProto = ["EPICS" "EPICS" "EPICS" "EPICS" "EPICS" "EPICS" "AIDA" "EPICS" "EPICS" "EPICS" "EPICS" "EPICS" "EPICS" "EPICS" "EPICS"]
     EnergyKnobNames = ["S20_ENERGY_3AND4","S20_ENERGY_4AND5","S20_ENERGY_4AND6","BC14_ENERGY_4AND5","BC14_ENERGY_5AND6","BC14_ENERGY_4AND6","BC11_ENERGY","DL10_ENERGY"]
-    EnergyKnobSettleTime = ones(1,8).*10 % settle time (s) for each energy knob setting
+    EnergyKnobSettleTime = [10 10 10 10 10 10 2 10] % settle time (s) for each energy knob setting
     EnergyKnobs = {"MKB:S20_ENERGY_3AND4" "MKB:S20_ENERGY_4AND5" "MKB:S20_ENERGY_4AND6" "MKB:BC14_ENERGY_4AND5" "MKB:BC14_ENERGY_5AND6" "MKB:BC14_ENERGY_4AND6" ["KLYS:LI11:11:SSSB_ADES" "KLYS:LI11:21:SSSB_ADES"] "KLYS:LI10:41:SFB_ADES"}
     EnergyKnobsKlys = {["19_3","19_4"] ["19_4","19_5"] ["19_4","19_6"] ["14_4","14_5"] ["14_5","14_6"] ["14_4","14_6"] ["11_1","11_2"] "10_4"} % Klystron stations for each knob
     EnergyKnobsKlys11 = ["KLYS:LI11:11:SSSB_ADES" "KLYS:LI11:21:SSSB_ADES"; "KLYS:LI11:11:SSSB_PDES" "KLYS:LI11:21:SSSB_PDES"] % PVs for stations in 11 [Ampl;Phase]
