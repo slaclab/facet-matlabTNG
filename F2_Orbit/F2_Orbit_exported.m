@@ -101,6 +101,7 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
     FitOrderSpinner                matlab.ui.control.Spinner
     PlotOrderSpinnerLabel          matlab.ui.control.Label
     PlotOrderSpinner               matlab.ui.control.Spinner
+    ViewPlotsButton                matlab.ui.control.Button
     MIATab                         matlab.ui.container.Tab
     UIAxes6                        matlab.ui.control.UIAxes
     PlotOptionPanel                matlab.ui.container.Panel
@@ -146,6 +147,7 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
   properties (Access = public)
     aobj % F2_OrbitApp object
     logplot logical = false % Description
+    bapp % BPM viewer app
   end
   
   properties (Access = private)
@@ -701,7 +703,7 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
     % Button pushed function: DoScanButton
     function DoScanButtonPushed(app, event)
       app.escandone=true;
-      app.DoScanButton.Enable=false; drawnow;
+      app.DoScanButton.Enable=false; app.ViewPlotsButton.Enable=false; drawnow;
       try
         app.aobj.DoEscan(app.NPulseEditField.Value) ;
         app.aobj.ProcEscan();
@@ -710,7 +712,8 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
         app.DoScanButton.Enable=true; drawnow;
         return
       end
-      app.DoScanButton.Enable=true; drawnow;
+      app.DoScanButton.Enable=true; app.ViewPlotsButton.Enable=true; drawnow;
+      app.TabGroupSelectionChanged;
     end
 
     % Value changed function: ShowFitButton
@@ -834,6 +837,14 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
       value = app.PlotOrderSpinner.Value;
       app.aobj.escanplotorder = value ;
       app.TabGroupSelectionChanged;
+    end
+
+    % Button pushed function: ViewPlotsButton
+    function ViewPlotsButtonPushed(app, event)
+      if isempty(app.bapp) || ~isprop(app.bapp,'ibpm')
+        app.bapp = Escan_bpmViewer ;
+      end
+      app.bapp.LoadData(app.aobj.bpmnames,app.aobj.bpmcnames,app.aobj.escandata) ;
     end
   end
 
@@ -1339,7 +1350,7 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
       % Create DoScanButton
       app.DoScanButton = uibutton(app.DispersionfromEnergyScanPanel, 'push');
       app.DoScanButton.ButtonPushedFcn = createCallbackFcn(app, @DoScanButtonPushed, true);
-      app.DoScanButton.Position = [15 18 144 36];
+      app.DoScanButton.Position = [15 40 144 36];
       app.DoScanButton.Text = 'Do Scan';
 
       % Create DropDown_7
@@ -1353,77 +1364,84 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
       % Create MinEditFieldLabel
       app.MinEditFieldLabel = uilabel(app.DispersionfromEnergyScanPanel);
       app.MinEditFieldLabel.HorizontalAlignment = 'right';
-      app.MinEditFieldLabel.Position = [16 199 25 22];
+      app.MinEditFieldLabel.Position = [16 206 25 22];
       app.MinEditFieldLabel.Text = 'Min';
 
       % Create MinEditField
       app.MinEditField = uieditfield(app.DispersionfromEnergyScanPanel, 'numeric');
       app.MinEditField.Limits = [-500 500];
       app.MinEditField.ValueChangedFcn = createCallbackFcn(app, @MinEditFieldValueChanged, true);
-      app.MinEditField.Position = [55 200 59 22];
+      app.MinEditField.Position = [55 207 59 22];
       app.MinEditField.Value = -50;
 
       % Create MaxEditFieldLabel
       app.MaxEditFieldLabel = uilabel(app.DispersionfromEnergyScanPanel);
       app.MaxEditFieldLabel.HorizontalAlignment = 'right';
-      app.MaxEditFieldLabel.Position = [13 168 28 22];
+      app.MaxEditFieldLabel.Position = [13 175 28 22];
       app.MaxEditFieldLabel.Text = 'Max';
 
       % Create MaxEditField
       app.MaxEditField = uieditfield(app.DispersionfromEnergyScanPanel, 'numeric');
       app.MaxEditField.Limits = [-500 500];
       app.MaxEditField.ValueChangedFcn = createCallbackFcn(app, @MaxEditFieldValueChanged, true);
-      app.MaxEditField.Position = [55 168 59 22];
+      app.MaxEditField.Position = [55 175 59 22];
       app.MaxEditField.Value = 50;
 
       % Create NstepEditFieldLabel
       app.NstepEditFieldLabel = uilabel(app.DispersionfromEnergyScanPanel);
       app.NstepEditFieldLabel.HorizontalAlignment = 'right';
-      app.NstepEditFieldLabel.Position = [4 138 37 22];
+      app.NstepEditFieldLabel.Position = [4 145 37 22];
       app.NstepEditFieldLabel.Text = 'Nstep';
 
       % Create NstepEditField
       app.NstepEditField = uieditfield(app.DispersionfromEnergyScanPanel, 'numeric');
       app.NstepEditField.Limits = [1 1000];
       app.NstepEditField.ValueChangedFcn = createCallbackFcn(app, @NstepEditFieldValueChanged, true);
-      app.NstepEditField.Position = [55 138 59 22];
+      app.NstepEditField.Position = [55 145 59 22];
       app.NstepEditField.Value = 10;
 
       % Create DispScan_minunit
       app.DispScan_minunit = uilabel(app.DispersionfromEnergyScanPanel);
-      app.DispScan_minunit.Position = [123 201 37 22];
+      app.DispScan_minunit.Position = [123 208 37 22];
       app.DispScan_minunit.Text = 'MeV';
 
       % Create DispScan_maxunit
       app.DispScan_maxunit = uilabel(app.DispersionfromEnergyScanPanel);
-      app.DispScan_maxunit.Position = [123 167 37 22];
+      app.DispScan_maxunit.Position = [123 174 37 22];
       app.DispScan_maxunit.Text = 'MeV';
 
       % Create FitOrderSpinnerLabel
       app.FitOrderSpinnerLabel = uilabel(app.DispersionfromEnergyScanPanel);
       app.FitOrderSpinnerLabel.HorizontalAlignment = 'right';
-      app.FitOrderSpinnerLabel.Position = [26 103 52 22];
+      app.FitOrderSpinnerLabel.Position = [26 115 52 22];
       app.FitOrderSpinnerLabel.Text = 'Fit Order';
 
       % Create FitOrderSpinner
       app.FitOrderSpinner = uispinner(app.DispersionfromEnergyScanPanel);
       app.FitOrderSpinner.Limits = [1 3];
       app.FitOrderSpinner.ValueChangedFcn = createCallbackFcn(app, @FitOrderSpinnerValueChanged, true);
-      app.FitOrderSpinner.Position = [92 103 47 22];
+      app.FitOrderSpinner.Position = [92 115 47 22];
       app.FitOrderSpinner.Value = 2;
 
       % Create PlotOrderSpinnerLabel
       app.PlotOrderSpinnerLabel = uilabel(app.DispersionfromEnergyScanPanel);
       app.PlotOrderSpinnerLabel.HorizontalAlignment = 'right';
-      app.PlotOrderSpinnerLabel.Position = [19 72 60 22];
+      app.PlotOrderSpinnerLabel.Position = [19 86 60 22];
       app.PlotOrderSpinnerLabel.Text = 'Plot Order';
 
       % Create PlotOrderSpinner
       app.PlotOrderSpinner = uispinner(app.DispersionfromEnergyScanPanel);
       app.PlotOrderSpinner.Limits = [1 3];
       app.PlotOrderSpinner.ValueChangedFcn = createCallbackFcn(app, @PlotOrderSpinnerValueChanged, true);
-      app.PlotOrderSpinner.Position = [93 72 47 22];
+      app.PlotOrderSpinner.Position = [93 86 47 22];
       app.PlotOrderSpinner.Value = 1;
+
+      % Create ViewPlotsButton
+      app.ViewPlotsButton = uibutton(app.DispersionfromEnergyScanPanel, 'push');
+      app.ViewPlotsButton.ButtonPushedFcn = createCallbackFcn(app, @ViewPlotsButtonPushed, true);
+      app.ViewPlotsButton.Enable = 'off';
+      app.ViewPlotsButton.Position = [15 12 144 24];
+      app.ViewPlotsButton.Text = 'View Plots';
 
       % Create MIATab
       app.MIATab = uitab(app.TabGroup);

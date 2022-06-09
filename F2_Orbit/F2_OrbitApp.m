@@ -65,6 +65,7 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
     escandata cell % Storage for energy scan data
     OrbitFit(1,5) = [nan nan nan nan nan] % Orbit fitted at fitele location [mm/mrad/(dE/E)]
     regid % first and last BEAMLINE element of selected region
+    disp0 % dispersion fit at regid(1)
   end
   properties(SetAccess=private,Hidden)
     bdesx_restore % bdes values store when written for undo function
@@ -500,9 +501,10 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
       dispx_err = dd.xerr(dopl); dispy_err = dd.yerr(dopl) ;
       
       % Fit model dispersion response from first BPM in the selection
+      i0=obj.regid(1);
       A = zeros(length(dd.x(dopl))+length(dd.y(dopl)),5) ; A(1,:) = [1 0 0 0 0] ; A(length(dd.x(dopl))+1,:) = [0 0 1 0 0] ;
       for ibpm=2:length(id)
-        [~,R]=RmatAtoB(double(id(1)),double(id(ibpm)));
+        [~,R]=RmatAtoB(double(i0),double(id(ibpm)));
         A(ibpm,:) = [R(1,1) R(1,2) R(1,3) R(1,4) R(1,6)];
         A(ibpm+length(dd.x(dopl)),:) = [R(3,1) R(3,2) R(3,3) R(3,4) R(3,6)];
       end
@@ -510,13 +512,13 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
       % - get scale factor that best fits all dispersion values
       dispx=dd.x(dopl); dispy=dd.y(dopl);
       if string(obj.orbitfitmethod)=="lscov"
-        disp0 = lscov(A,[dispx(:);dispy(:)],1./[dispx_err(:);dispy_err(:)].^2) ;
+        obj.disp0 = lscov(A,[dispx(:);dispy(:)],1./[dispx_err(:);dispy_err(:)].^2) ;
       else
-        disp0 = A \ [dispx(:);dispy(:)] ;
+        obj.disp0 = A \ [dispx(:);dispy(:)] ;
       end
       
       % Store fitted dispersion at each BPM location
-      obj.DispFit = A * disp0(:) ;
+      obj.DispFit = A * obj.disp0(:) ;
       
       % Return dispersion fit at fitele location
       if ~exist('dfitele','var')
@@ -524,17 +526,12 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
       else
         dfitele=double(dfitele);
       end
-      if dfitele>=id(1)
-        if dfitele==id(1)
-          R=eye(6);
-        else
-          [~,R] = RmatAtoB(double(id(1)),dfitele);
-        end
-        DX_f = R([1:4 6],[1:4 6]) * disp0(:) ;
+      if dfitele==id(1)
+        R=eye(6);
       else
-        [~,R] = RmatAtoB(dfitele+1,double(id(1)));
-        DX_f = R([1:4 6],[1:4 6]) \ disp0(:) ;
+        [~,R] = RmatAtoB(double(i0),dfitele);
       end
+      DX_f = R([1:4 6],[1:4 6]) * obj.disp0(:) ;
       obj.DispFitEle = DX_f ;
       
     end
@@ -827,11 +824,11 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
       [~,R] = RmatAtoB(double(i0),double(id(1))); R=R([1:4 6],[1:4 6]);
       X0 = R \ xf ;
       i1=obj.fitele;
-      if id(1)>=i1
-        error('First available BPM after desired fit location!');
+      if i0>i1
+        error('Desired fit location before start of selected region, aborting.');
       end
-      [~,R]=RmatAtoB(double(id(1)),double(i1)); R=R([1:4 6],[1:4 6]);
-      X1 = R * xf ;
+      [~,R]=RmatAtoB(double(i0),double(i1)); R=R([1:4 6],[1:4 6]);
+      X1 = R * X0 ;
       X1(1:4)=X1(1:4).*1e3; 
       obj.OrbitFit = X1 ;        
       X0(1:4)=X0(1:4).*1e3; 
@@ -1235,17 +1232,16 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
           i1=id(1)+1;
           i2=id(end);
         end
-        DX_i = dispfit(obj,i1) ; obj.dispfit(); % replace default dispersion fit parameters
         n=0;
         dfit_x=zeros(1,i2-i1+1); dfit_y=dfit_x; dfit_z=dfit_x;
         for ind=i1:i2
           n=n+1;
           if ind>i1
-            [~,R] = RmatAtoB(double(i1),double(ind));
+            [~,R] = RmatAtoB(double(obj.regid(1)),double(ind));
           else
             R=eye(6);
           end
-          D = R([1:4 6],[1:4 6]) * DX_i(:) ;
+          D = R([1:4 6],[1:4 6]) * obj.disp0(:) ;
           dfit_x(n) = D(1) ; 
           dfit_y(n) = D(3) ; 
           dfit_z(n) = BEAMLINE{ind}.Coordf(3) ;
@@ -1781,11 +1777,10 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
       xstd = std(obj.BPMS.xdat,[],2,'omitnan') ; xstd=xstd(use);
       ystd = std(obj.BPMS.ydat,[],2,'omitnan') ; ystd=ystd(use);
       if ~isempty(obj.RefOrbit)
-        rid = ismember(id,obj.RefOrbit(:,1)) ;
+        [rid,idd] = ismember(id,obj.RefOrbit(:,1)) ;
         xm = xm(rid) ; xstd=xstd(rid); ym = ym(rid); ystd=ystd(rid);
-        xm = xm - obj.RefOrbit(:,2) ; ym = ym - obj.RefOrbit(:,3) ;
+        xm = xm - obj.RefOrbit(idd,2) ; ym = ym - obj.RefOrbit(idd,3) ;
         id=id(rid);
-        use = use & ismember(obj.BPMS.modelID,id);
       end
     end
     function WriteGuiListBox(obj)
