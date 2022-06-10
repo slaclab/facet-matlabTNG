@@ -548,6 +548,10 @@ classdef F2_S20ConfigApp < handle & F2_common
       if ~obj.MatchOK
         error('No successful match performed');
       end
+      % Store initial TD11 state
+      td11 = lcaGet('DUMP:LI11:390:PNEUMATIC') ;
+      % Put TD11 IN before trimming quads
+      lcaPut('DUMP:LI11:390:PNEUMATIC','IN');
       try
         try
           obj.mags.ReadB;
@@ -557,9 +561,11 @@ classdef F2_S20ConfigApp < handle & F2_common
           obj.mags.WriteBDES;
         end
       catch ME
+        lcaPut('DUMP:LI11:390:PNEUMATIC',td11); % Restore original TD11 state
         fprintf(2,'Error reported from AIDA whilst trimming quads:\n');
         throw(ME);
       end
+      lcaPut('DUMP:LI11:390:PNEUMATIC',td11); % Restore original TD11 state
     end
     function Twiss=TwissCalc(obj,dL)
       %TWISSCALC segment BEAMLINE according to dL spacing and propogate Twiss parameters
