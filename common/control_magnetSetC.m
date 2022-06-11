@@ -233,6 +233,7 @@ try
   builder = pvaRequest(sprintf('MAGNETSET:%s',secn));
   builder.with('MAGFUNC', func);
   builder.with('LIMITCHECK','SOME');
+  builder.timeout(30);
   jstruct = AidaPvaStruct();
   if ~iscell(name); name=cellstr(name); end
   if ~iscell(val); val=num2cell(val); end
