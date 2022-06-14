@@ -4,7 +4,7 @@ event_info = struct();
 event_info.EC = EC;
 
 switch EC
-    case 223
+    case 222
         event_info.DGRP = 'LASER10HZ';
         [incmSet,incmReset,excmSet,excmReset,beamcode] = getINCMEXCM(event_info.DGRP);
         event_info.incmSet = incmSet;
@@ -13,7 +13,7 @@ switch EC
         % event_info.excmReset = excmReset;
         event_info.excmReset = {'NO_GUN_PERM'}; % change this in future
         event_info.beamcode = beamcode;
-        event_info.ratePV = 'EVNT:SYS1:1:TS5_TE_RATE';
+        event_info.ratePV = 'EVNT:SYS1:1:GigE_BEAMRATE';
         event_info.liveRate = lcaGet(event_info.ratePV);
     case 201
         event_info.DGRP = 'FACET-II';
