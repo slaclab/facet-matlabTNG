@@ -4,10 +4,12 @@ classdef F2_klys < handle
     PVUpdated
   end
   properties
+    UseDesignPhases logical = true % Use design L1,L2,L3 phases to override sub-booster live values, else use sub-booster live vals
+    DesignPhases(1,3) = [-16.5 -31.7 0] % L1,L2,L3
     KlysPhaseOverride(8,10) single = nan(8,10) % override live values for ~nan values
     KlysAmplOverride(8,10) single = nan(8,10) % override live values for ~nan values
   end
-  properties(SetObservable)
+  properties(SetObservable,AbortSet)
     KlysForceZeroPhase logical = false
     KlysUseSector(1,4) logical = true(1,4) % L0, L1, L2, L3 (local setting to this object)
     KlysInUse(8,10) logical % Klystron in use? (flags which klystrons are physically present)
@@ -249,7 +251,17 @@ classdef F2_klys < handle
           else
             obj.KlysPhase(ikly,isec) = obj.pvs.(sprintf("phase_%d_1%d",ikly,isec-1)).val{1} ;
             if isec>1
-              obj.KlysPhase(ikly,isec) = obj.KlysPhase(ikly,isec) + obj.pvs.(sprintf("sbst_1%d_phase",isec-1)).val{1}  ;
+              if obj.UseDesignPhases && isec>1
+                if isec==2 && ikly<3
+                  obj.KlysPhase(ikly,isec) = obj.KlysPhase(ikly,isec) + obj.DesignPhases(1) ;
+                elseif isec<6
+                  obj.KlysPhase(ikly,isec) = obj.KlysPhase(ikly,isec) + obj.DesignPhases(2) ;
+                else
+                  obj.KlysPhase(ikly,isec) = obj.KlysPhase(ikly,isec) + obj.DesignPhases(3) ;
+                end
+              else
+                obj.KlysPhase(ikly,isec) = obj.KlysPhase(ikly,isec) + obj.pvs.(sprintf("sbst_1%d_phase",isec-1)).val{1}  ;
+              end
             end
           end
         end

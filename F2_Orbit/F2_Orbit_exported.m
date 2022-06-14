@@ -469,15 +469,8 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
       subplot(2,1,2); plot(cvec,dat.sdat_y,'.'); xlabel('Correlation Variable'); ylabel('Y Mode Amplitude'); grid on
     end
 
-    % Callback function
-    function ShowModelFitButton_2ValueChanged(app, event)
-      app.aobj.domodelfit=app.ShowModelFitButton_2.Value;
-      app.TabGroupSelectionChanged;
-    end
-
     % Value changed function: ShowModelFitButton
     function ShowModelFitButtonValueChanged(app, event)
-      app.aobj.domodelfit = app.ShowModelFitButton.Value ;
       app.TabGroupSelectionChanged ;
     end
 
