@@ -45,4 +45,11 @@ S20_nonBSA_List = {...
 'XPS:LI20:MC05:M6'; % PB18 Focus Imaging Vertical
 'XPS:LI20:MC05:M7'; % E13 Ionizer Imaging
 'XPS:LI20:MC05:M8'; % E9 Ionizer Delay
+
+'RADM:LI20:1:CH01:MEAS'; % Rad monitor IP
+'RADM:LI20:2:CH01:MEAS'; % Rad monitor Dump table
+'LION:LI20:3120:VACT'; % LI19-LION-3N
+'LION:LI20:3121:VACT'; % LI19-LION-3S
+'PICS:LI20:3485:VACT'; % LI19-FDMP-IC1
+'PICS:LI20:3486:VACT'; % LI19-FDMP-IC2
 };
