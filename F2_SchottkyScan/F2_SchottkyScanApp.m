@@ -52,7 +52,7 @@ classdef F2_SchottkyScanApp < handle
                 PV(context,'name',"fcupStats",'pvname',"FARC:IN10:241:TGT_STS",'monitor',true,'mode',"rw"); % Faraday cup in/out status
                 PV(context,'name',"pmonInOut",'pvname',"PROF:IN10:241:PNEUMATIC",'monitor',true,'mode',"rw"); % PR10241 in/out state
                 PV(context,'name',"pmonStats",'pvname',"PROF:IN10:241:TGT_STS",'monitor',true,'mode',"rw"); % PR10241 in/out status
-                PV(context,'name',"chargeFB",'pvname',"F2:WATCHER:CHARGEFEEDBACK_STAT",'monitor',true,'mode',"rw"); % Charge Feedback
+                PV(context,'name',"chargeFB",'pvname',"SIOC:SYS1:ML03:AO502",'monitor',true,'mode',"rw"); % Charge Feedback
                 ] ;
             pset(obj.pvlist,'debug',0) ;
             obj.pvs = struct(obj.pvlist);
@@ -221,7 +221,7 @@ classdef F2_SchottkyScanApp < handle
                                         
                                         if strcmp(obj.machine_state.init_charge_fb_state,'RUNNING')
                                             obj.addMessage('Re-enabling charge feedback.');
-                                            caput(obj.pvs.chargeFB,0);
+                                            caput(obj.pvs.chargeFB,1);
                                         end
                                     else
                                         obj.restoreInitPhas();
@@ -232,7 +232,7 @@ classdef F2_SchottkyScanApp < handle
                                         
                                         if strcmp(obj.machine_state.init_charge_fb_state,'RUNNING')
                                             obj.addMessage('Re-enabling charge feedback.');
-                                            caput(obj.pvs.chargeFB,0);
+                                            caput(obj.pvs.chargeFB,1);
                                         end
                                     end
                                 end
@@ -270,7 +270,7 @@ classdef F2_SchottkyScanApp < handle
             end
             if strcmp(obj.machine_state.init_charge_fb_state,'RUNNING') && ~obj.dummy_mode
                 obj.addMessage('Re-enabling charge feedback.');
-                caput(obj.pvs.chargeFB,0);
+                caput(obj.pvs.chargeFB,1);
             end
         end
         
@@ -398,7 +398,7 @@ classdef F2_SchottkyScanApp < handle
             
             if strcmp(obj.machine_state.init_charge_fb_state,'RUNNING') && ~obj.dummy_mode
                 obj.addMessage('Disabling charge feedback.');
-                caput(obj.pvs.chargeFB,1);
+                caput(obj.pvs.chargeFB,0);
             end
             
             if strcmp(obj.machine_state.init_fb_state,'Enabled') && ~obj.dummy_mode

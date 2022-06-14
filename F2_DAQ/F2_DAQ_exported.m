@@ -395,7 +395,7 @@ classdef F2_DAQ_exported < matlab.apps.AppBase
 
             % Create BeamButton
             app.BeamButton = uiradiobutton(app.EventCodeButtonGroup);
-            app.BeamButton.Text = '223 Beam';
+            app.BeamButton.Text = '222 Beam';
             app.BeamButton.Position = [11 27 78 22];
             app.BeamButton.Value = true;
 

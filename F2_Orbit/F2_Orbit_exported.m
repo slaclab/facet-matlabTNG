@@ -86,9 +86,6 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
     DPXLabel                       matlab.ui.control.Label
     DYLabel                        matlab.ui.control.Label
     DPYLabel                       matlab.ui.control.Label
-    DispersionCorrectionPanel      matlab.ui.container.Panel
-    DoCorrectionButton_2           matlab.ui.control.Button
-    ShowDevicesButton              matlab.ui.control.StateButton
     DispersionfromEnergyScanPanel  matlab.ui.container.Panel
     DoScanButton                   matlab.ui.control.Button
     DropDown_7                     matlab.ui.control.DropDown
@@ -100,6 +97,11 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
     NstepEditField                 matlab.ui.control.NumericEditField
     DispScan_minunit               matlab.ui.control.Label
     DispScan_maxunit               matlab.ui.control.Label
+    FitOrderSpinnerLabel           matlab.ui.control.Label
+    FitOrderSpinner                matlab.ui.control.Spinner
+    PlotOrderSpinnerLabel          matlab.ui.control.Label
+    PlotOrderSpinner               matlab.ui.control.Spinner
+    ViewPlotsButton                matlab.ui.control.Button
     MIATab                         matlab.ui.container.Tab
     UIAxes6                        matlab.ui.control.UIAxes
     PlotOptionPanel                matlab.ui.container.Panel
@@ -145,6 +147,7 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
   properties (Access = public)
     aobj % F2_OrbitApp object
     logplot logical = false % Description
+    bapp % BPM viewer app
   end
   
   properties (Access = private)
@@ -231,11 +234,15 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
         case app.CorrectorsTab
           app.aobj.plotcor([app.UIAxes2 app.UIAxes3],app.ShowMaxButton.Value,app.CorUnitsButton.Value);
         case app.DispersionTab
+          iknob=ismember(app.aobj.EnergyKnobNames,app.aobj.escandev);
+          app.DropDown_7.Value = app.aobj.escandev ;
+          app.MinEditField.Value=app.aobj.escanrange(1,iknob);
+          app.MaxEditField.Value=app.aobj.escanrange(2,iknob);
+          app.NstepEditField.Value = app.aobj.nescan(iknob) ;
+          app.FitOrderSpinner.Value = double(app.aobj.escanfitorder) ;
+          app.PlotOrderSpinner.Value = double(app.aobj.escanplotorder) ;
           try
             if ~app.escandone
-              if app.PlotallCheckBox.Value
-                app.aobj.svddisp("all");
-              end
               app.aobj.svddisp;
             else
               app.aobj.ProcEscan;
@@ -245,9 +252,9 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
             app.EditField_16.Value = DX(2) ;
             app.EditField_18.Value = DX(3) ;
             app.EditField_20.Value = DX(4) ;
-            app.aobj.plotdisp([app.UIAxes5 app.UIAxes5_2],app.ShowFitButton.Value,app.ShowDevicesButton.Value,app.PlotallCheckBox.Value) ;
+            app.aobj.plotdisp([app.UIAxes5 app.UIAxes5_2],app.ShowFitButton.Value,0,app.PlotallCheckBox.Value) ;
           catch ME
-            warning(ME.identifier,'Dispersion calc error:\n%s',ME.message);
+            warning('Dispersion calc error:\n%s',ME.message); %#ok<MEXCEP> 
             app.EditField_14.Value = inf ;
             app.EditField_16.Value = inf ;
             app.EditField_18.Value = inf ;
@@ -462,15 +469,8 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
       subplot(2,1,2); plot(cvec,dat.sdat_y,'.'); xlabel('Correlation Variable'); ylabel('Y Mode Amplitude'); grid on
     end
 
-    % Callback function
-    function ShowModelFitButton_2ValueChanged(app, event)
-      app.aobj.domodelfit=app.ShowModelFitButton_2.Value;
-      app.TabGroupSelectionChanged;
-    end
-
     % Value changed function: ShowModelFitButton
     function ShowModelFitButtonValueChanged(app, event)
-      app.aobj.domodelfit = app.ShowModelFitButton.Value ;
       app.TabGroupSelectionChanged ;
     end
 
@@ -695,17 +695,18 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
 
     % Button pushed function: DoScanButton
     function DoScanButtonPushed(app, event)
-      app.escandone=false;
-      app.DoScanButton.Enable=false; drawnow;
+      app.escandone=true;
+      app.DoScanButton.Enable=false; app.ViewPlotsButton.Enable=false; drawnow;
       try
         app.aobj.DoEscan(app.NPulseEditField.Value) ;
+        app.aobj.ProcEscan();
       catch ME
-        errordlg('E Scan Error',ME.message);
-        app.DoScanButton.Enabletrue; drawnow;
+        errordlg(ME.message,'E Scan Error');
+        app.DoScanButton.Enable=true; drawnow;
         return
       end
-      app.escandone=true;
-      app.DoScanButton.Enabletrue; drawnow;
+      app.DoScanButton.Enable=true; app.ViewPlotsButton.Enable=true; drawnow;
+      app.TabGroupSelectionChanged;
     end
 
     % Value changed function: ShowFitButton
@@ -713,12 +714,12 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
       app.TabGroupSelectionChanged;
     end
 
-    % Value changed function: ShowDevicesButton
+    % Callback function
     function ShowDevicesButtonValueChanged(app, event)
       app.TabGroupSelectionChanged;
     end
 
-    % Button pushed function: DoCorrectionButton_2
+    % Callback function
     function DoCorrectionButton_2Pushed(app, event)
       D_init = [app.EditField_14.Value app.EditField_16.Value app.EditField_18.Value app.EditField_20.Value] ;
       try
@@ -761,31 +762,31 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
     function DropDown_7ValueChanged(app, event)
       value = string(app.DropDown_7.Value);
       app.aobj.escandev = value ;
-      iknob=ismember(EnergyKnobNames,value) ;
+      iknob=ismember(app.aobj.EnergyKnobNames,value) ;
       range=app.aobj.escanrange;
       app.MinEditField.Value = range(1,iknob) ;
-      app.MaxEditFIeld.Value = range(2,iknob) ;
+      app.MaxEditField.Value = range(2,iknob) ;
       app.NstepEditField.Value = app.aobj.nescan(iknob) ;
     end
 
     % Value changed function: MinEditField
     function MinEditFieldValueChanged(app, event)
       value = app.MinEditField.Value;
-      iknob=ismember(EnergyKnobNames,app.aobj.escandev) ;
+      iknob=ismember(app.aobj.EnergyKnobNames,app.aobj.escandev) ;
       app.aobj.escanrange(1,iknob) = value ;
     end
 
     % Value changed function: MaxEditField
     function MaxEditFieldValueChanged(app, event)
       value = app.MaxEditField.Value;
-      iknob=ismember(EnergyKnobNames,app.aobj.escandev) ;
+      iknob=ismember(app.aobj.EnergyKnobNames,app.aobj.escandev) ;
       app.aobj.escanrange(2,iknob) = value ;
     end
 
     % Value changed function: NstepEditField
     function NstepEditFieldValueChanged(app, event)
       value = app.NstepEditField.Value;
-      iknob=ismember(EnergyKnobNames,app.aobj.escandev) ;
+      iknob=ismember(app.aobj.EnergyKnobNames,app.aobj.escandev) ;
       app.aobj.nescan(iknob) = value ;
     end
 
@@ -815,6 +816,28 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
     % Value changed function: PlotallCheckBox
     function PlotallCheckBoxValueChanged(app, event)
       app.TabGroupSelectionChanged;
+    end
+
+    % Value changed function: FitOrderSpinner
+    function FitOrderSpinnerValueChanged(app, event)
+      value = app.FitOrderSpinner.Value;
+      app.aobj.escanfitorder = value ;
+      app.TabGroupSelectionChanged;
+    end
+
+    % Value changed function: PlotOrderSpinner
+    function PlotOrderSpinnerValueChanged(app, event)
+      value = app.PlotOrderSpinner.Value;
+      app.aobj.escanplotorder = value ;
+      app.TabGroupSelectionChanged;
+    end
+
+    % Button pushed function: ViewPlotsButton
+    function ViewPlotsButtonPushed(app, event)
+      if isempty(app.bapp) || ~isprop(app.bapp,'ibpm')
+        app.bapp = Escan_bpmViewer ;
+      end
+      app.bapp.LoadData(app.aobj.bpmnames,app.aobj.bpmcnames,app.aobj.escandata) ;
     end
   end
 
@@ -915,7 +938,7 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
       xlabel(app.UIAxes, '')
       ylabel(app.UIAxes, 'Y')
       app.UIAxes.FontSize = 14;
-      app.UIAxes.Position = [134 264 712 290];
+      app.UIAxes.Position = [134 283 712 275];
 
       % Create CalcCorrectionButton
       app.CalcCorrectionButton = uibutton(app.OrbitTab, 'push');
@@ -952,7 +975,7 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
       xlabel(app.UIAxes_2, 'X')
       ylabel(app.UIAxes_2, 'Y')
       app.UIAxes_2.FontSize = 14;
-      app.UIAxes_2.Position = [134 4 712 254];
+      app.UIAxes_2.Position = [134 3 712 275];
 
       % Create CorrectionSolverButtonGroup
       app.CorrectionSolverButtonGroup = uibuttongroup(app.OrbitTab);
@@ -1194,14 +1217,14 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
       title(app.UIAxes2, '')
       xlabel(app.UIAxes2, '')
       ylabel(app.UIAxes2, 'Y')
-      app.UIAxes2.Position = [9 243 1025 290];
+      app.UIAxes2.Position = [9 272 1025 260];
 
       % Create UIAxes3
       app.UIAxes3 = uiaxes(app.CorrectorsTab);
       title(app.UIAxes3, '')
       xlabel(app.UIAxes3, 'X')
       ylabel(app.UIAxes3, 'Y')
-      app.UIAxes3.Position = [8 21 1024 217];
+      app.UIAxes3.Position = [8 3 1024 260];
 
       % Create ShowMaxButton
       app.ShowMaxButton = uibutton(app.CorrectorsTab, 'state');
@@ -1225,7 +1248,7 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
       xlabel(app.UIAxes5, '')
       ylabel(app.UIAxes5, 'Y')
       app.UIAxes5.FontSize = 14;
-      app.UIAxes5.Position = [4 263 854 295];
+      app.UIAxes5.Position = [4 283 854 275];
 
       % Create UIAxes5_2
       app.UIAxes5_2 = uiaxes(app.DispersionTab);
@@ -1233,7 +1256,7 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
       xlabel(app.UIAxes5_2, 'X')
       ylabel(app.UIAxes5_2, 'Y')
       app.UIAxes5_2.FontSize = 14;
-      app.UIAxes5_2.Position = [4 6 854 254];
+      app.UIAxes5_2.Position = [4 4 854 275];
 
       % Create DispersionFitmmmradPanel
       app.DispersionFitmmmradPanel = uipanel(app.DispersionTab);
@@ -1312,32 +1335,15 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
       app.DPYLabel.Position = [122 39 30 22];
       app.DPYLabel.Text = 'DPY';
 
-      % Create DispersionCorrectionPanel
-      app.DispersionCorrectionPanel = uipanel(app.DispersionTab);
-      app.DispersionCorrectionPanel.Title = 'Dispersion Correction';
-      app.DispersionCorrectionPanel.Position = [865 200 172 104];
-
-      % Create DoCorrectionButton_2
-      app.DoCorrectionButton_2 = uibutton(app.DispersionCorrectionPanel, 'push');
-      app.DoCorrectionButton_2.ButtonPushedFcn = createCallbackFcn(app, @DoCorrectionButton_2Pushed, true);
-      app.DoCorrectionButton_2.Position = [14 39 144 34];
-      app.DoCorrectionButton_2.Text = 'Do Correction';
-
-      % Create ShowDevicesButton
-      app.ShowDevicesButton = uibutton(app.DispersionCorrectionPanel, 'state');
-      app.ShowDevicesButton.ValueChangedFcn = createCallbackFcn(app, @ShowDevicesButtonValueChanged, true);
-      app.ShowDevicesButton.Text = 'Show Devices';
-      app.ShowDevicesButton.Position = [14 7 144 23];
-
       % Create DispersionfromEnergyScanPanel
       app.DispersionfromEnergyScanPanel = uipanel(app.DispersionTab);
       app.DispersionfromEnergyScanPanel.Title = 'Dispersion from Energy Scan';
-      app.DispersionfromEnergyScanPanel.Position = [865 6 172 189];
+      app.DispersionfromEnergyScanPanel.Position = [865 6 172 290];
 
       % Create DoScanButton
       app.DoScanButton = uibutton(app.DispersionfromEnergyScanPanel, 'push');
       app.DoScanButton.ButtonPushedFcn = createCallbackFcn(app, @DoScanButtonPushed, true);
-      app.DoScanButton.Position = [16 12 144 29];
+      app.DoScanButton.Position = [15 40 144 36];
       app.DoScanButton.Text = 'Do Scan';
 
       % Create DropDown_7
@@ -1345,56 +1351,90 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
       app.DropDown_7.Items = {'S20_ENERGY_3AND4', 'S20_ENERGY_4AND5', 'S20_ENERGY_4AND6', 'BC14_ENERGY_4AND5', 'BC14_ENERGY_5AND6', 'BC14_ENERGY_4AND6', 'BC11_ENERGY', 'DL10_ENERGY'};
       app.DropDown_7.ValueChangedFcn = createCallbackFcn(app, @DropDown_7ValueChanged, true);
       app.DropDown_7.FontSize = 10;
-      app.DropDown_7.Position = [5 139 162 22];
+      app.DropDown_7.Position = [5 236 162 26];
       app.DropDown_7.Value = 'S20_ENERGY_3AND4';
 
       % Create MinEditFieldLabel
       app.MinEditFieldLabel = uilabel(app.DispersionfromEnergyScanPanel);
       app.MinEditFieldLabel.HorizontalAlignment = 'right';
-      app.MinEditFieldLabel.Position = [16 105 25 22];
+      app.MinEditFieldLabel.Position = [16 206 25 22];
       app.MinEditFieldLabel.Text = 'Min';
 
       % Create MinEditField
       app.MinEditField = uieditfield(app.DispersionfromEnergyScanPanel, 'numeric');
       app.MinEditField.Limits = [-500 500];
       app.MinEditField.ValueChangedFcn = createCallbackFcn(app, @MinEditFieldValueChanged, true);
-      app.MinEditField.Position = [55 106 59 22];
+      app.MinEditField.Position = [55 207 59 22];
       app.MinEditField.Value = -50;
 
       % Create MaxEditFieldLabel
       app.MaxEditFieldLabel = uilabel(app.DispersionfromEnergyScanPanel);
       app.MaxEditFieldLabel.HorizontalAlignment = 'right';
-      app.MaxEditFieldLabel.Position = [14 77 28 22];
+      app.MaxEditFieldLabel.Position = [13 175 28 22];
       app.MaxEditFieldLabel.Text = 'Max';
 
       % Create MaxEditField
       app.MaxEditField = uieditfield(app.DispersionfromEnergyScanPanel, 'numeric');
       app.MaxEditField.Limits = [-500 500];
       app.MaxEditField.ValueChangedFcn = createCallbackFcn(app, @MaxEditFieldValueChanged, true);
-      app.MaxEditField.Position = [56 77 59 22];
+      app.MaxEditField.Position = [55 175 59 22];
       app.MaxEditField.Value = 50;
 
       % Create NstepEditFieldLabel
       app.NstepEditFieldLabel = uilabel(app.DispersionfromEnergyScanPanel);
       app.NstepEditFieldLabel.HorizontalAlignment = 'right';
-      app.NstepEditFieldLabel.Position = [5 49 37 22];
+      app.NstepEditFieldLabel.Position = [4 145 37 22];
       app.NstepEditFieldLabel.Text = 'Nstep';
 
       % Create NstepEditField
       app.NstepEditField = uieditfield(app.DispersionfromEnergyScanPanel, 'numeric');
+      app.NstepEditField.Limits = [1 1000];
       app.NstepEditField.ValueChangedFcn = createCallbackFcn(app, @NstepEditFieldValueChanged, true);
-      app.NstepEditField.Position = [56 49 59 22];
+      app.NstepEditField.Position = [55 145 59 22];
       app.NstepEditField.Value = 10;
 
       % Create DispScan_minunit
       app.DispScan_minunit = uilabel(app.DispersionfromEnergyScanPanel);
-      app.DispScan_minunit.Position = [123 105 37 22];
+      app.DispScan_minunit.Position = [123 208 37 22];
       app.DispScan_minunit.Text = 'MeV';
 
       % Create DispScan_maxunit
       app.DispScan_maxunit = uilabel(app.DispersionfromEnergyScanPanel);
-      app.DispScan_maxunit.Position = [123 77 37 22];
+      app.DispScan_maxunit.Position = [123 174 37 22];
       app.DispScan_maxunit.Text = 'MeV';
+
+      % Create FitOrderSpinnerLabel
+      app.FitOrderSpinnerLabel = uilabel(app.DispersionfromEnergyScanPanel);
+      app.FitOrderSpinnerLabel.HorizontalAlignment = 'right';
+      app.FitOrderSpinnerLabel.Position = [26 115 52 22];
+      app.FitOrderSpinnerLabel.Text = 'Fit Order';
+
+      % Create FitOrderSpinner
+      app.FitOrderSpinner = uispinner(app.DispersionfromEnergyScanPanel);
+      app.FitOrderSpinner.Limits = [1 3];
+      app.FitOrderSpinner.ValueChangedFcn = createCallbackFcn(app, @FitOrderSpinnerValueChanged, true);
+      app.FitOrderSpinner.Position = [92 115 47 22];
+      app.FitOrderSpinner.Value = 2;
+
+      % Create PlotOrderSpinnerLabel
+      app.PlotOrderSpinnerLabel = uilabel(app.DispersionfromEnergyScanPanel);
+      app.PlotOrderSpinnerLabel.HorizontalAlignment = 'right';
+      app.PlotOrderSpinnerLabel.Position = [19 86 60 22];
+      app.PlotOrderSpinnerLabel.Text = 'Plot Order';
+
+      % Create PlotOrderSpinner
+      app.PlotOrderSpinner = uispinner(app.DispersionfromEnergyScanPanel);
+      app.PlotOrderSpinner.Limits = [1 3];
+      app.PlotOrderSpinner.ValueChangedFcn = createCallbackFcn(app, @PlotOrderSpinnerValueChanged, true);
+      app.PlotOrderSpinner.Position = [93 86 47 22];
+      app.PlotOrderSpinner.Value = 1;
+
+      % Create ViewPlotsButton
+      app.ViewPlotsButton = uibutton(app.DispersionfromEnergyScanPanel, 'push');
+      app.ViewPlotsButton.ButtonPushedFcn = createCallbackFcn(app, @ViewPlotsButtonPushed, true);
+      app.ViewPlotsButton.Enable = 'off';
+      app.ViewPlotsButton.Position = [15 12 144 24];
+      app.ViewPlotsButton.Text = 'View Plots';
 
       % Create MIATab
       app.MIATab = uitab(app.TabGroup);

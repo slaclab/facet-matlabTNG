@@ -18,6 +18,7 @@ classdef fbSISO < handle
     SetpointLimits(1,2) = [-inf,inf] % Limits to setpoint (saturates on limits)
     QualLimits(1,2) = [-inf,inf] % Limits to place on Setpoint quality control PV
     SetpointDeadband(1,2) = [-eps,eps] % Deadband- only update feeddback when move out of this range of setpoint
+    SetpointInDeadbandPV string % If set, write 0/1 to this PV to indicate whether setpoint is within deadband or not (only if WriteEnable=true)
     SetpointDES = 0 % desired setpoint value
     ControlVar % control variable (PV object)
     ControlReadVar % if set, use this PV to read control variavble, whilst setting with ControlVar
@@ -456,6 +457,13 @@ classdef fbSISO < handle
             dDES = (obj.SetpointVal-obj.SetpointDES) ;
             if dDES < obj.SetpointDeadband(1) || dDES > obj.SetpointDeadband(2)
               dc = dDES * obj.Kp ;
+              if ~isempty(obj.SetpointInDeadbandPV) && obj.WriteEnable % Indicate setpoint within deadband if cntrl writing enabled
+                lcaPutNoWait(char(obj.SetpointInDeadbandPV),0);
+              end
+            else
+              if ~isempty(obj.SetpointInDeadbandPV) && obj.WriteEnable % Indicate setpoint within deadband if cntrl writing enabled
+                lcaPutNoWait(char(obj.SetpointInDeadbandPV),1);
+              end
             end
           otherwise
             error('This feedback method not yet implemented');

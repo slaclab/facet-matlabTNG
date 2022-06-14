@@ -239,6 +239,7 @@ try
   if ~iscell(val); val=num2cell(val); end
   jstruct.put('names', name) ;
   jstruct.put('values', val );
+  builder.timeout(30);
   mstruct= ML(builder.set(jstruct)) ;
   mstruct.values.status(1);
   val=mstruct.values.bact_vact(1);

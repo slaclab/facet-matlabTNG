@@ -3,7 +3,8 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
     bpmid uint16 % Master list of BPM IDs
     xcorid uint16 % Master list of x corrector IDs
     ycorid uint16 % Master list of y corrector IDs
-    usebpm logical % Selection (from master list) of BPMs to use
+    usebpm logical % Selection (from master list) of BPMs to use - includes user selection
+    useregbpm logical % Selection (from master list) of BPMs to use - excludes user selection
     usexcor logical % Selection (from master list) of XCORs to use
     useycor logical % Selection (from master list) of YCORs to use
     bpmnames string % master list of names
@@ -33,8 +34,10 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
     npulse {mustBePositive} = 50 % default/GUI value for number of pulses of BPM data to take
     orbitfitmethod string {mustBeMember(orbitfitmethod,["lscov","backslash"])} = "lscov"
     escandev string {mustBeMember(escandev,["S20_ENERGY_3AND4","S20_ENERGY_4AND5","S20_ENERGY_4AND6","BC14_ENERGY_4AND5","BC14_ENERGY_5AND6","BC14_ENERGY_4AND6","BC11_ENERGY","DL10_ENERGY"])} = "DL10_ENERGY"
-    escanrange(2,8) = [-50 -50 -50 -30 -30 -30 -30 -30; 50 50 50 30 30 30 30 30] % MeV
+    escanrange(2,8) = [-50 -50 -50 -30 -30 -30 -30 -3.5; 50 50 50 30 30 30 30 3.5] % MeV
     nescan(1,8) = ones(1,8).*10 % Number of energy scan steps to use
+    escanfitorder uint8 = 2 % Order of polynomial fit to energy vs. BPM position
+    escanplotorder uint8 = 1 % Polynomial order to plot (1= linear dispersion, 2=second-order disperion)
     plotallbpm logical = false 
   end
   properties(Transient)
@@ -62,6 +65,7 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
     escandata cell % Storage for energy scan data
     OrbitFit(1,5) = [nan nan nan nan nan] % Orbit fitted at fitele location [mm/mrad/(dE/E)]
     regid % first and last BEAMLINE element of selected region
+    disp0 % dispersion fit at regid(1)
   end
   properties(SetAccess=private,Hidden)
     bdesx_restore % bdes values store when written for undo function
@@ -97,6 +101,7 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
       "SIOC:ML00:AO551" "SIOC:ML01:AO501" "SIOC:ML01:AO516" "SIOC:ML01:AO566" "SIOC:ML01:AO556" "SIOC:ML01:AO506" "SIOC:ML01:AO521" "SIOC:ML01:AO571"]
     DispDeviceWriteProto = ["EPICS" "EPICS" "EPICS" "EPICS" "EPICS" "EPICS" "AIDA" "EPICS" "EPICS" "EPICS" "EPICS" "EPICS" "EPICS" "EPICS" "EPICS"]
     EnergyKnobNames = ["S20_ENERGY_3AND4","S20_ENERGY_4AND5","S20_ENERGY_4AND6","BC14_ENERGY_4AND5","BC14_ENERGY_5AND6","BC14_ENERGY_4AND6","BC11_ENERGY","DL10_ENERGY"]
+    EnergyKnobSettleTime = [10 10 10 10 10 10 2 10] % settle time (s) for each energy knob setting
     EnergyKnobs = {"MKB:S20_ENERGY_3AND4" "MKB:S20_ENERGY_4AND5" "MKB:S20_ENERGY_4AND6" "MKB:BC14_ENERGY_4AND5" "MKB:BC14_ENERGY_5AND6" "MKB:BC14_ENERGY_4AND6" ["KLYS:LI11:11:SSSB_ADES" "KLYS:LI11:21:SSSB_ADES"] "KLYS:LI10:41:SFB_ADES"}
     EnergyKnobsKlys = {["19_3","19_4"] ["19_4","19_5"] ["19_4","19_6"] ["14_4","14_5"] ["14_5","14_6"] ["14_4","14_6"] ["11_1","11_2"] "10_4"} % Klystron stations for each knob
     EnergyKnobsKlys11 = ["KLYS:LI11:11:SSSB_ADES" "KLYS:LI11:21:SSSB_ADES"; "KLYS:LI11:11:SSSB_PDES" "KLYS:LI11:21:SSSB_PDES"] % PVs for stations in 11 [Ampl;Phase]
@@ -106,6 +111,7 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
       global BEAMLINE
       warning('off','MATLAB:lscov:RankDefDesignMat');
       warning('off','MATLAB:singularMatrix');
+      warning('off','MATLAB:rankDeficientMatrix')
       obj.LiveModel = F2_LiveModelApp ;
       obj.BPMS = F2_bpms(obj.LiveModel.LM) ;
       if exist('appobj','var')
@@ -439,36 +445,35 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
     end
     function dispdat = svddisp(obj,varargin)
       %dispdat = svddisp()
-      %dispdat = svddisp("all")
       global BEAMLINE
       % Get energy
       id = find(ismember(obj.BPMS.modelnames,obj.ebpms)&ismember(obj.BPMS.modelnames,obj.bpmnames(obj.usebpm))) ;
-      if isempty(id)
-        error('BPM selection doesn''t include an energy BPM');
+      use_init=obj.usebpm;
+      if isempty(id) % Temporarily add last energy bpm in selected region if none among selected BPMs
+        usetemp=obj.BPMS.modelID >= obj.regid(1) & obj.BPMS.modelID <= obj.regid(2) ;
+        id = find(ismember(obj.BPMS.modelnames,obj.ebpms)&ismember(obj.BPMS.modelnames,obj.bpmnames(usetemp))) ;
+        obj.usebpm(id)=true;
       end
       ide = id(end) ;
-      dispx=nan(1,sum(obj.usebpm)); dispy=dispx; dispx_err=dispx; dispy_err=dispx;
+      nbpm = find(obj.BPMS.modelID >= obj.regid(1) & obj.BPMS.modelID <= obj.regid(2)) ;
+      dispx=nan(1,length(obj.bpmid)); dispy=dispx; dispx_err=dispx; dispy_err=dispx;
+      dispdat.usebpm=ismember(obj.bpmid,obj.BPMS.modelID(nbpm));
+      obj.usebpm=dispdat.usebpm;
       dat = obj.svdresponse(1,ide,10) ; % reconstituted BPM readings using mode most responsive to energy BPM
       xe = dat.xdat(ide,:) ;
       disp = obj.ebpms_disp(ismember(obj.ebpms,obj.BPMS.modelnames(ide)))' ;
       dp =  xe./disp  ; % dP/P @ energy BPMS
-      if nargin>1 && varargin{1}=="all"
-        nbpm = find(obj.BPMS.modelID >= obj.regid(1) & obj.BPMS.modelID <= obj.regid(2)) ;
-        dispdat.usebpm=obj.BPMS.modelID >= obj.regid(1) & obj.BPMS.modelID <= obj.regid(2) ;
-      else
-        nbpm=find(ismember(obj.BPMS.modelnames,obj.bpmnames(obj.usebpm)));
-        dispdat.usebpm=obj.usebpm;
-      end
+      masterID = find(dispdat.usebpm) ;
       for ibpm=1:length(nbpm)
         dp0=dp .* BEAMLINE{obj.BPMS.modelID(ide)}.P / BEAMLINE{obj.BPMS.modelID(nbpm(ibpm))}.P; % assumed dP/P @ BPM location
         gid = ~isnan(obj.BPMS.xdat(nbpm(ibpm),:)) ;
         [q,dq] = noplot_polyfit(dp0(gid),dat.xdat(nbpm(ibpm),gid),1,1) ;
-        dispx(ibpm) = q(2) ;
-        dispx_err(ibpm) = dq(2) ;
+        dispx(masterID(ibpm)) = q(2) ;
+        dispx_err(masterID(ibpm)) = dq(2) ;
         gid = ~isnan(obj.BPMS.ydat(nbpm(ibpm),:)) ;
         [q,dq] = noplot_polyfit(dp0(gid),dat.ydat(nbpm(ibpm),gid),1,1) ;
-        dispy(ibpm) = q(2) ;
-        dispy_err(ibpm) = dq(2) ;
+        dispy(masterID(ibpm)) = q(2) ;
+        dispy_err(masterID(ibpm)) = dq(2) ;
       end
       dispdat.ebpm=ide;
       dispdat.edisp=disp;
@@ -481,6 +486,7 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
       else
         obj.DispData = dispdat ;
       end
+      obj.usebpm=use_init;
     end
     function DX_f = dispfit(obj,dfitele)
       %DISPFIT Fit BPM dispersion measurements to betatron orbit
@@ -491,42 +497,29 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
         return
       end
       dd=obj.DispData;
-      id=obj.bpmid(dd.usebpm) ;
-      nbpm=find(ismember(obj.BPMS.modelnames,obj.bpmnames(obj.usebpm)));
-      ide=find(nbpm==dd.ebpm);
-      if isempty(ide)
-        error('Energy BPM not found in selection');
-      end
-      dispx_err = dd.xerr; dispy_err = dd.yerr ;
+      use=dd.usebpm & obj.usebpm ;
+      id=obj.bpmid(use);
+      dispx_err = dd.xerr(use); dispy_err = dd.yerr(use) ;
       
       % Fit model dispersion response from first BPM in the selection
-      A = zeros(length(dd.x)+length(dd.y),5) ; A(1,:) = [1 0 0 0 0] ; A(length(dd.x)+1,:) = [0 0 1 0 0] ;
+      i0=obj.regid(1);
+      A = zeros(length(dd.x(use))+length(dd.y(use)),5) ; A(1,:) = [1 0 0 0 0] ; A(length(dd.x(use))+1,:) = [0 0 1 0 0] ;
       for ibpm=2:length(id)
-        [~,R]=RmatAtoB(double(id(1)),double(id(ibpm)));
+        [~,R]=RmatAtoB(double(i0),double(id(ibpm)));
         A(ibpm,:) = [R(1,1) R(1,2) R(1,3) R(1,4) R(1,6)];
-        A(ibpm+length(dd.x),:) = [R(3,1) R(3,2) R(3,3) R(3,4) R(3,6)];
+        A(ibpm+length(dd.x(use)),:) = [R(3,1) R(3,2) R(3,3) R(3,4) R(3,6)];
       end
       
       % - get scale factor that best fits all dispersion values
-      dsca=0; ntry=0;
-      while abs(1-dsca)>0.01 && ntry<20
-        dispx=dd.x; dispy=dd.y;
-        if string(obj.orbitfitmethod)=="lscov"
-          disp0 = lscov(A,[dispx(:);dispy(:)],1./[dispx_err(:);dispy_err(:)].^2) ;
-        else
-          disp0 = A \ [dispx(:);dispy(:)] ;
-        end
-
-        % Store fitted dispersion at each BPM location
-        obj.DispFit = A * disp0(:) ;
-
-        % Scale dispersion until energy BPM matches fit
-        dsca = obj.DispFit(ide) / dd.edisp ;
-        dd.x = dd.x .* dsca ;
-        dd.edisp = obj.DispFit(ide) ;
-        ntry=ntry+1;
+      dispx=dd.x(use); dispy=dd.y(use);
+      if string(obj.orbitfitmethod)=="lscov"
+        obj.disp0 = lscov(A,[dispx(:);dispy(:)],1./[dispx_err(:);dispy_err(:)].^2) ;
+      else
+        obj.disp0 = A \ [dispx(:);dispy(:)] ;
       end
       
+      % Store fitted dispersion at each BPM location
+      obj.DispFit = A * obj.disp0(:) ;
       
       % Return dispersion fit at fitele location
       if ~exist('dfitele','var')
@@ -534,13 +527,12 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
       else
         dfitele=double(dfitele);
       end
-      if dfitele>id(1)
-        [~,R] = RmatAtoB(double(id(1)),dfitele);
-        DX_f = R([1:4 6],[1:4 6]) * disp0(:) ;
+      if dfitele==id(1)
+        R=eye(6);
       else
-        [~,R] = RmatAtoB(dfitele+1,double(id(1)));
-        DX_f = R([1:4 6],[1:4 6]) \ disp0(:) ;
+        [~,R] = RmatAtoB(double(i0),dfitele);
       end
+      DX_f = R([1:4 6],[1:4 6]) * obj.disp0(:) ;
       obj.DispFitEle = DX_f ;
       
     end
@@ -833,11 +825,11 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
       [~,R] = RmatAtoB(double(i0),double(id(1))); R=R([1:4 6],[1:4 6]);
       X0 = R \ xf ;
       i1=obj.fitele;
-      if id(1)>=i1
-        error('First available BPM after desired fit location!');
+      if i0>i1
+        error('Desired fit location before start of selected region, aborting.');
       end
-      [~,R]=RmatAtoB(double(id(1)),double(i1)); R=R([1:4 6],[1:4 6]);
-      X1 = R * xf ;
+      [~,R]=RmatAtoB(double(i0),double(i1)); R=R([1:4 6],[1:4 6]);
+      X1 = R * X0 ;
       X1(1:4)=X1(1:4).*1e3; 
       obj.OrbitFit = X1 ;        
       X0(1:4)=X0(1:4).*1e3; 
@@ -902,7 +894,7 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
       obj.DispData = [] ;
       obj.DispFit = [] ;
       % Load everything else...
-      restorelist=["corsolv" "solvtol" "usex" "usey" "nmode" "domodelfit" "usebpmbuff" "dormsplot"  "fitele" "CorrectionOffset" "UseRefOrbit" "npulse" "orbitfitmethod" "plotallbpm"] ;
+      restorelist=["corsolv" "solvtol" "usex" "usey" "nmode" "domodelfit" "usebpmbuff" "dormsplot"  "fitele" "CorrectionOffset" "npulse" "orbitfitmethod" "plotallbpm" "escanrange" "escandev" "nescan"] ;
       for ilist=1:length(restorelist)
         try
           obj.(restorelist(ilist)) = ld.OrbitApp.(restorelist(ilist)) ;
@@ -995,6 +987,8 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
       % --- Dispersion Tab
       obj.aobj.DropDown_6.Value = obj.orbitfitmethod ;
       obj.aobj.EditField_23.Value = BEAMLINE{obj.aobj.aobj.fitele}.Name ;
+      %====================================================================
+      obj.aobj.updateplots;
       drawnow
     end
     function DoEscan(obj,nbpm)
@@ -1004,7 +998,8 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
       
       % Get energy knob to scan and desired range
       id = find(ismember(obj.EnergyKnobNames,obj.escandev)) ;
-      evals = linspace(obj.escanrange(1,id),obj.escanrange(2,id),obj.nescan) ; % Delta-E (MeV)
+      evals = linspace(obj.escanrange(1,id),obj.escanrange(2,id),obj.nescan(id)) ; % Delta-E (MeV)
+      evals=evals(randperm(length(evals))); % Randomize energy ordering
       knob = obj.EnergyKnobs{id} ;
       
       % Get starting knob value
@@ -1037,75 +1032,89 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
       end
       
       % Scan the energy knob
-      obj.escandata=cell(length(evals),6);
+      obj.escandata=cell(length(evals),7);
+      disp("Disabling Feedbacks...");
+      fb_init = lcaGet('SIOC:SYS1:ML00:AO856');
+      lcaPut('SIOC:SYS1:ML00:AO856',0);
       disp("Starting energy scan...");
-      for ival=1:length(evals)
-        
-        % Set the knob
-        if ismk
-          % Get required phase change to adjust the energy as required
-          e_new = sum(e0) + evals(ival) ;
-          dth = acosd(e_new/sum(enld)) -mean(abs(pha)) ;
-          disp("Setting MKB:"+MK.Name+" dpha= "+ dth + " ...");
-          MK.set(dth);
-        else
-          esca = 1 + evals(ival) / sum(e0) ; % Scale energy knob by required amount
-          disp("Scaling " + knob(:) + " by " + esca + " ...");
-          lcaPut(cellstr(knob(:)),k0(:).*esca);
+      try
+        for ival=1:length(evals)
+          drawnow;
+          % Set the knob
+          if ismk
+            % Get required phase change to adjust the energy as required
+            e_new = sum(e0) + evals(ival) ;
+            dth = acosd(e_new/sum(enld)) -mean(abs(pha)) ;
+            disp("Setting MKB:"+MK.Name+" dpha= "+ dth + " ...");
+            MK.set(dth);
+          else
+            esca = 1 + evals(ival) / sum(e0) ; % Scale energy knob by required amount
+            disp("Scaling " + knob(:) + " by " + esca + " ...");
+            lcaPut(cellstr(knob(:)),k0(:).*esca);
+          end
+          fprintf('Pausing %d s for knob to settle...\n',obj.EnergyKnobSettleTime(id));
+          pause(obj.EnergyKnobSettleTime(id));
+          disp("Geting BPM data...");
+          % Get BPM data:
+          if obj.usebpmbuff
+            obj.BPMS.readbuffer(nbpm);
+          else
+            obj.BPMS.readnp(nbpm);
+          end
+          % Process and store data
+          [xm,ym,xstd,ystd,use,orbid] = obj.GetOrbit("all");
+          obj.escandata{ival,1}=xm;
+          obj.escandata{ival,2}=ym;
+          obj.escandata{ival,3}=xstd;
+          obj.escandata{ival,4}=ystd;
+          obj.escandata{ival,5}=use;
+          obj.escandata{ival,6}=orbid;
+          obj.escandata{ival,7}=evals(ival);
         end
-        pause(1);
-        disp("Geting BPM data...");
-        % Get BPM data:
-        if obj.usebpmbuff
-          obj.BPMS.readbuffer(nbpm);
-        else
-          obj.BPMS.readnp(nbpm);
-        end
-        % Process and store data
-        [xm,ym,xstd,ystd,use,id] = obj.GetOrbit;
-        obj.escandata{ival,1}=xm;
-        obj.escandata{ival,2}=ym;
-        obj.escandata{ival,3}=xstd;
-        obj.escandata{ival,4}=ystd;
-        obj.escandata{ival,5}=use;
-        obj.escandata{ival,6}=id;
+      catch ME
+        lcaPut('SIOC:SYS1:ML00:AO856',fb_init);
+        throw(ME);
       end
+      disp("Re-Enable Feedbacks...");
+      lcaPut('SIOC:SYS1:ML00:AO856',fb_init);
       disp("Finished energy scan.");
     end
     function dispdat = ProcEscan(obj)
       %PROCESCAN Process escan data to generate dispersion at BPMs
+      global BEAMLINE
       if isempty(obj.escandata)
         error('No energy scan performed');
       end
-      id = find(ismember(obj.EnergyKnobNames,obj.escandev)) ;
-      evals = linspace(obj.escanrange(1,id),obj.escanrange(2,id),obj.nescan) ; % Delta-E (MeV)
-      xvals=nan(length(evals),length(obj.BPMS.modelID)); yvals=xvals; dxvals=xvals; dyvals=xvals;
+      evals = [obj.escandata{:,7}] ; % Delta-E (MeV)
+      xvals=nan(length(evals),sum(obj.useregbpm)); yvals=xvals; dxvals=xvals; dyvals=xvals;
+      use=obj.escandata{1,5};
       for idat=1:length(evals)
+        use=use & obj.escandata{idat,5};
         xvals(idat,obj.escandata{idat,5}) = obj.escandata{idat,1} ;
         dxvals(idat,obj.escandata{idat,5}) = obj.escandata{idat,3} ;
         yvals(idat,obj.escandata{idat,5}) = obj.escandata{idat,2} ;
         dyvals(idat,obj.escandata{idat,5}) = obj.escandata{idat,4} ;
       end
-      dispx=nan(1,length(obj.BPMS.modelID)); dispx_err=dispx; dispy=dispx; dispy_err=dispx;
-      for ibpm=1:length(obj.BPMS.modelID)
+      bid=obj.bpmid(use);
+      dispx=nan(1,length(obj.bpmid)); dispx_err=dispx; dispy=dispx; dispy_err=dispx;
+      n=1;
+      for ibpm=find(use(:))'
         sel = ~isnan(xvals(:,ibpm)) ;
         if sum(sel)>=3
-          x = evals(sel) ; y = xvals(sel) ; dy = dxvals(sel) ;
-          [q,dq] = noplot_polyfit(x,y,dy,2) ;
-          dispx(ibpm) = q(2); dispx_err = dq(2) ;
+          x = evals(sel) / (BEAMLINE{bid(n)}.P.*1000) ; y = xvals(sel,ibpm) ; dy = dxvals(sel,ibpm) ;
+          [q,dq] = noplot_polyfit(x,y,dy,double(obj.escanfitorder)) ;
+          dispx(ibpm) = q(1+obj.escanplotorder); dispx_err(ibpm) = dq(1+obj.escanplotorder) ;
         end
         sel = ~isnan(yvals(:,ibpm)) ;
         if sum(sel)>=3
-          x = evals(sel) ; y = yvals(sel) ; dy = dyvals(sel) ;
-          [q,dq] = noplot_polyfit(x,y,dy,2) ;
-          dispy(ibpm) = q(2); dispy_err = dq(2) ;
+          x = evals(sel) / (BEAMLINE{bid(n)}.P.*1000) ; y = yvals(sel,ibpm) ; dy = dyvals(sel,ibpm) ;
+          [q,dq] = noplot_polyfit(x,y,dy,double(obj.escanfitorder)) ;
+          dispy(ibpm) = q(1+obj.escanplotorder); dispy_err(ibpm) = dq(1+obj.escanplotorder) ;
         end
+        n=n+1;
       end
-      sel=~isnan(dispx) & ~isnan(dispy) ;
-      dispx=dispx(sel); dispx_err=dispx_err(sel);
-      dispy=dispy(sel); dispy_err=dispy_err(sel);
       dispdat.ebpm=nan;
-      dispdat.usebpm=sel;
+      dispdat.usebpm=use;
       dispdat.x=dispx;
       dispdat.xerr=dispx_err;
       dispdat.y=dispy;
@@ -1148,15 +1157,11 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
           subplot(2,1,2), plot(1:nm,yc.*1e3), xlabel('N Mode'); ylabel('RMS Y Orbit (<y^2>^{1/2}) [mm]'); grid on;
       end
     end
-    function plotdisp(obj,ahan,showmodel,showcors,plotall) %#ok<INUSD>
+    function plotdisp(obj,ahan,showmodel,showcors,plotall)
       global BEAMLINE
       if isempty(obj.DispData)
         return
       end
-      
-      %%%%%%%%%%%%%%%%%%%%%%%%
-      plotall=false;
-      %%%%%%%%%%%%%%%%%%%%%%%%
       
       % Make new axes if generating plot for logbook
       if ~exist('ahan','var') || isempty(ahan) || obj.aobj.logplot
@@ -1177,22 +1182,23 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
       end
       ahan(1).reset; ahan(2).reset;
       dd=obj.DispData;
-      id=obj.bpmid(dd.usebpm) ;
+      use = dd.usebpm&obj.usebpm ;
+      id=obj.bpmid(use) ;
       z = arrayfun(@(x) BEAMLINE{x}.Coordi(3),id) ;
       ddispx = obj.LiveModel.DesignTwiss.etax(id) ;
       ddispy = obj.LiveModel.DesignTwiss.etay(id) ;
-      names = obj.bpmnames(dd.usebpm);
-      dispx = dd.x - ddispx.*1000 ; dispy = dd.y - ddispy.*1000 ; % subtract design dispersion to show dispersion error
-      dispx_err = dd.xerr; dispy_err = dd.yerr ;
+      names = obj.bpmnames(dd.usebpm&obj.usebpm);
+      dispx = dd.x(use) - ddispx.*1000 ; dispy = dd.y(use) - ddispy.*1000 ; % subtract design dispersion to show dispersion error
+      dispx_err = dd.xerr(use); dispy_err = dd.yerr(use) ;
       if plotall
-        dd_all=obj.DispData_all;
-        id_all=obj.bpmid(dd_all.usebpm) ;
+        id_all=obj.bpmid(dd.usebpm&~obj.usebpm) ;
         z_all = arrayfun(@(x) BEAMLINE{x}.Coordi(3),id_all) ;
+        use_all=dd.usebpm&~obj.usebpm;
         ddispx_all = obj.LiveModel.DesignTwiss.etax(id_all) ;
         ddispy_all = obj.LiveModel.DesignTwiss.etay(id_all) ;
-        names_all = obj.bpmnames(dd_all.usebpm);
-        dispx_all = dd_all.x - ddispx_all.*1000 ; dispy_all = dd_all.y - ddispy_all.*1000 ; % subtract design dispersion to show dispersion error
-        dispx_err_all = dd_all.xerr; dispy_err_all = dd_all.yerr ;
+        names_all = obj.bpmnames(dd.usebpm&~obj.usebpm);
+        dispx_all = dd.x(use_all) - ddispx_all.*1000 ; dispy_all = dd.y(use_all) - ddispy_all.*1000 ; % subtract design dispersion to show dispersion error
+        dispx_err_all = dd.xerr(use_all); dispy_err_all = dd.yerr(use_all) ;
       end
       
       % Check dispersion fit to bpms has happened
@@ -1209,48 +1215,67 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
       end
       pl=errorbar(ahan(1),z,dispx,dispx_err,'.','Color',F2_common.ColorOrder(2,:));
       grid(ahan(1),'on');
-      ylabel(ahan(1),'\eta_x [mm]');
+      ylabel(ahan(1),'\Delta\eta_x [mm]');
       pl.DataTipTemplate.DataTipRows(1).Label = 'Linac Z (m)' ;
-      pl.DataTipTemplate.DataTipRows(2).Label = '\eta_x (mm)' ;
+      pl.DataTipTemplate.DataTipRows(2).Label = '\Delta\eta_x (mm)' ;
       pl.DataTipTemplate.DataTipRows(end+1) = dataTipTextRow('Name',cellstr(names));
       if plotall
         pl_all.DataTipTemplate.DataTipRows(1).Label = 'Linac Z (m)' ;
-        pl_all.DataTipTemplate.DataTipRows(2).Label = '\eta_x (mm)' ;
+        pl_all.DataTipTemplate.DataTipRows(2).Label = '\Delta\eta_x (mm)' ;
         pl_all.DataTipTemplate.DataTipRows(end+1) = dataTipTextRow('Name',cellstr(names_all));
       end
       if showmodel
         hold(ahan(1),'on');
-%         if plotall
-%           plot(ahan(1),z_all,obj.DispFit(1:length(dispx_all))-ddispx_all(:).*1000,'Color','k');
-%         end
-        plot(ahan(1),z,obj.DispFit(1:length(dispx))-ddispx(:).*1000,'Color',F2_common.ColorOrder(2,:));
+        if plotall
+          i1=min([id(1) id_all(1)])+1;
+          i2=max([id(end) id_all(end)]);
+        else
+          i1=id(1)+1;
+          i2=id(end);
+        end
+        n=0;
+        dfit_x=zeros(1,i2-i1+1); dfit_y=dfit_x; dfit_z=dfit_x;
+        for ind=i1:i2
+          n=n+1;
+          if ind>i1
+            [~,R] = RmatAtoB(double(obj.regid(1)),double(ind));
+          else
+            R=eye(6);
+          end
+          D = R([1:4 6],[1:4 6]) * obj.disp0(:) ;
+          dfit_x(n) = D(1) ; 
+          dfit_y(n) = D(3) ; 
+          dfit_z(n) = BEAMLINE{ind}.Coordf(3) ;
+        end
+        ylim_x=ahan(1).YLim; 
+        plot(ahan(1),dfit_z,dfit_x,'Color',F2_common.ColorOrder(2,:));
         hold(ahan(1),'off');
+        ahan(1).YLim=ylim_x;
       end
       if plotall
         pl_all=errorbar(ahan(2),z_all,dispy_all,dispy_err_all,'k.');
         hold(ahan(2),'on');
       end
       pl=errorbar(ahan(2),z,dispy,dispy_err,'.','Color',F2_common.ColorOrder(2,:));
-      grid(ahan(2),'on'); xlabel(ahan(2),'Z [m]'); ylabel(ahan(2),'\eta_y [mm]');
+      grid(ahan(2),'on'); xlabel(ahan(2),'Z [m]'); ylabel(ahan(2),'\Delta\eta_y [mm]');
       pl.DataTipTemplate.DataTipRows(1).Label = 'Linac Z (m)' ;
-      pl.DataTipTemplate.DataTipRows(2).Label = '\eta_y (mm)' ;
+      pl.DataTipTemplate.DataTipRows(2).Label = '\Delta\eta_y (mm)' ;
       pl.DataTipTemplate.DataTipRows(end+1) = dataTipTextRow('Name',cellstr(names));
       if plotall
         pl_all.DataTipTemplate.DataTipRows(1).Label = 'Linac Z (m)' ;
-        pl_all.DataTipTemplate.DataTipRows(2).Label = '\eta_y (mm)' ;
+        pl_all.DataTipTemplate.DataTipRows(2).Label = '\Delta\eta_y (mm)' ;
         pl_all.DataTipTemplate.DataTipRows(end+1) = dataTipTextRow('Name',cellstr(names_all));
       end
       if showmodel
+        ylim_y=ahan(2).YLim;
         hold(ahan(2),'on');
-%         if plotall
-%           plot(ahan(2),z_all,obj.DispFit(length(dispx_all)+1:end)-ddispy_all(:).*1000,'Color','k');
-%         end
-        plot(ahan(2),z,obj.DispFit(length(dispx)+1:end)-ddispy(:).*1000,'Color',F2_common.ColorOrder(2,:));
+        plot(ahan(2),dfit_z,dfit_y,'Color',F2_common.ColorOrder(2,:));
         hold(ahan(2),'off');
+        ahan(2).YLim=ylim_y;
       end
       if plotall
-        ahan(1).XLim=[min(z_all) max(z_all)];
-        ahan(2).XLim=[min(z_all) max(z_all)];
+        ahan(1).XLim=[min([z(:); z_all(:)]) max([z(:); z_all(:)])];
+        ahan(2).XLim=[min([z(:); z_all(:)]) max([z(:); z_all(:)])];
       else
         ahan(1).XLim=[min(z) max(z)];
         ahan(2).XLim=[min(z) max(z)];
@@ -1278,6 +1303,7 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
       end
       % Plot magnet bar
       F2_common.AddMagnetPlotZ(obj.LM.istart,obj.LM.iend,ahan(1)) ;
+      F2_common.AddMagnetPlotZ(obj.LM.istart,obj.LM.iend,ahan(2)) ;
       
       % Logbook plot
       if ~isempty(obj.aobj) && obj.aobj.logplot
@@ -1489,6 +1515,9 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
           pl_m.DataTipTemplate.DataTipRows(end+1) = dataTipTextRow('Name',cellstr(obj.ycornames(i_m)));
         end
         hold(ahan(2),'off');
+        % Make it so data points are on top layer and data tips show
+        ahan(1).Children=flip(ahan(1).Children);
+        ahan(2).Children=flip(ahan(2).Children);
       end
       
       % Plot min/max values
@@ -1505,6 +1534,7 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
       
       % Magnet bar
       F2_common.AddMagnetPlotZ(obj.LM.istart,obj.LM.iend,ahan(1)) ;
+      F2_common.AddMagnetPlotZ(obj.LM.istart,obj.LM.iend,ahan(2)) ;
       
       % Logbook plot
       if ~isempty(obj.aobj) && obj.aobj.logplot
@@ -1583,12 +1613,12 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
       pl.DataTipTemplate.DataTipRows(1).Label = 'Linac Z' ;
       pl.DataTipTemplate.DataTipRows(2).Label = '<X>' ;
       pl.DataTipTemplate.DataTipRows(end+1) = dataTipTextRow('RMS_X',xstd);
-      pl.DataTipTemplate.DataTipRows(end+1) = dataTipTextRow('Name',obj.BPMS.modelnames(use));
+      pl.DataTipTemplate.DataTipRows(end+1) = dataTipTextRow('Name',obj.bpmnames(use));
       if plotall
         pl_all.DataTipTemplate.DataTipRows(1).Label = 'Linac Z' ;
         pl_all.DataTipTemplate.DataTipRows(2).Label = '<X>' ;
         pl_all.DataTipTemplate.DataTipRows(end+1) = dataTipTextRow('RMS_X',xstd_all);
-        pl_all.DataTipTemplate.DataTipRows(end+1) = dataTipTextRow('Name',obj.BPMS.modelnames(use_all));
+        pl_all.DataTipTemplate.DataTipRows(end+1) = dataTipTextRow('Name',obj.bpmnames(use_all));
       end
       grid(xax,'on');
       if obj.BPMS.plotscale>0
@@ -1618,12 +1648,12 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
       pl.DataTipTemplate.DataTipRows(1).Label = 'Linac Z' ;
       pl.DataTipTemplate.DataTipRows(2).Label = '<Y>' ;
       pl.DataTipTemplate.DataTipRows(end+1) = dataTipTextRow('RMS_Y',ystd);
-      pl.DataTipTemplate.DataTipRows(end+1) = dataTipTextRow('Name',obj.BPMS.modelnames(use));
+      pl.DataTipTemplate.DataTipRows(end+1) = dataTipTextRow('Name',obj.bpmnames(use));
       if plotall
         pl_all.DataTipTemplate.DataTipRows(1).Label = 'Linac Z' ;
         pl_all.DataTipTemplate.DataTipRows(2).Label = '<Y>' ;
         pl_all.DataTipTemplate.DataTipRows(end+1) = dataTipTextRow('RMS_Y',ystd_all);
-        pl_all.DataTipTemplate.DataTipRows(end+1) = dataTipTextRow('Name',obj.BPMS.modelnames(use_all));
+        pl_all.DataTipTemplate.DataTipRows(end+1) = dataTipTextRow('Name',obj.bpmnames(use_all));
       end
       grid(yax,'on');
       if obj.BPMS.plotscale>0
@@ -1665,6 +1695,7 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
       end
       % Superimpose model fit if requested
       if showmodel
+        ylim_x=xax.YLim; ylim_y=yax.YLim;
         if plotall
           idf=obj.regid(1):obj.regid(2);
           X0 = obj.orbitfit(); % X0 is orbit at region start
@@ -1688,6 +1719,7 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
           hold(yax,'on');
           plot(yax,zi,y_fit,'Color','k');
           hold(yax,'off');
+          xax.YLim=ylim_x; yax.YLim=ylim_y;
         end
         idf=id(1):id(end);
         X0 = obj.orbitfit(); % X0 is orbit at region start
@@ -1714,6 +1746,7 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
       end
       % Plot magnet bar
       F2_common.AddMagnetPlotZ(obj.LM.istart,obj.LM.iend,ahan(1)) ;
+      F2_common.AddMagnetPlotZ(obj.LM.istart,obj.LM.iend,ahan(2)) ;
       ahan(1).XLim=[zmin zmax];
       ahan(2).XLim=[zmin zmax];
       
@@ -1736,26 +1769,30 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
     function [xm,ym,xstd,ystd,use,id] = GetOrbit(obj,varargin)
       %GETORBIT Return mean and rms orbit from raw data
       %[xm,ym,xstd,ystd,use,id] = GetOrbit()
-      %[xm,ym,xstd,ystd,use,id] = GetOrbit("all")
+      %[xm,ym,xstd,ystd,use,id] = GetOrbit("all") % Include locally un-selected BPMs
+      % use and id reference obj.bpmid
+      
       if nargin>1 && varargin{1}=="all"
-        use=obj.BPMS.modelID >= obj.regid(1) & obj.BPMS.modelID <= obj.regid(2) ;
+        id=obj.bpmid(obj.useregbpm) ;
       else
-        use=ismember(obj.BPMS.modelID,obj.bpmid(obj.usebpm));
+        id=obj.bpmid(obj.usebpm);
       end
+      id=double(id(ismember(id,obj.BPMS.modelID)));
+      use=ismember(obj.bpmid,id);
+      use_local=ismember(obj.BPMS.modelID,id);
       if ~any(use)
         error('No BPM Data to use');
       end
-      id = double(obj.BPMS.modelID(use)) ;
-      xm = mean(obj.BPMS.xdat,2,'omitnan') ; xm=xm(use);
-      ym = mean(obj.BPMS.ydat,2,'omitnan') ; ym=ym(use);
-      xstd = std(obj.BPMS.xdat,[],2,'omitnan') ; xstd=xstd(use);
-      ystd = std(obj.BPMS.ydat,[],2,'omitnan') ; ystd=ystd(use);
+      xm = mean(obj.BPMS.xdat,2,'omitnan') ; xm=xm(use_local);
+      ym = mean(obj.BPMS.ydat,2,'omitnan') ; ym=ym(use_local);
+      xstd = std(obj.BPMS.xdat,[],2,'omitnan') ; xstd=xstd(use_local);
+      ystd = std(obj.BPMS.ydat,[],2,'omitnan') ; ystd=ystd(use_local);
       if ~isempty(obj.RefOrbit)
-        rid = ismember(id,obj.RefOrbit(:,1)) ;
+        [rid,idd] = ismember(id,obj.RefOrbit(:,1)) ;
         xm = xm(rid) ; xstd=xstd(rid); ym = ym(rid); ystd=ystd(rid);
-        xm = xm - obj.RefOrbit(:,2) ; ym = ym - obj.RefOrbit(:,3) ;
+        xm = xm - obj.RefOrbit(idd,2) ; ym = ym - obj.RefOrbit(idd,3) ;
         id=id(rid);
-        use = use & ismember(obj.BPMS.modelID,id);
+        use=ismember(obj.bpmid,id);
       end
     end
     function WriteGuiListBox(obj)
@@ -1793,6 +1830,7 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
       obj.usebpm=false(size(obj.usebpm));
       obj.usebpm(~obj.badbpms & ismember(obj.bpmid,obj.LM.ModelID)) = true ;
       obj.usebpm(~ismember(obj.bpmid,obj.BPMS.modelID))=false;
+      obj.useregbpm = obj.usebpm ;
       obj.LM.ModelClasses="XCOR";
       obj.usexcor(~obj.badxcors & ismember(obj.xcorid,obj.LM.ModelID)) = true ;
       obj.LM.ModelClasses="YCOR";

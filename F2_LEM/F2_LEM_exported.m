@@ -65,8 +65,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
     L1Label_2                  matlab.ui.control.Label
     L2Label                    matlab.ui.control.Label
     L3Label_5                  matlab.ui.control.Label
-    phasedegLabel              matlab.ui.control.Label
-    EGAINGeVLabel              matlab.ui.control.Label
+    PhasedegLabel              matlab.ui.control.Label
+    EGAINMeVLabel              matlab.ui.control.Label
     EditField_169              matlab.ui.control.EditField
     EditField_170              matlab.ui.control.EditField
     EditField_171              matlab.ui.control.EditField
@@ -547,7 +547,8 @@ classdef F2_LEM_exported < matlab.apps.AppBase
       app.aobj.UpdateGUI;
     end
 
-    % Selection changed function: MagnetReferenceSourceButtonGroup
+    % Selection changed function: 
+    % MagnetReferenceSourceButtonGroup
     function MagnetReferenceSourceButtonGroupSelectionChanged(app, event)
       selectedButton = app.MagnetReferenceSourceButtonGroup.SelectedObject;
       app.aobj.RescaleWithModel = selectedButton == app.UseModelStrengthsButton ;
@@ -776,23 +777,28 @@ classdef F2_LEM_exported < matlab.apps.AppBase
     end
 
     % Value changed function: EditField_100, EditField_101, 
-    % EditField_102, EditField_103, EditField_104, EditField_105, 
-    % EditField_106, EditField_107, EditField_108, EditField_109, 
-    % EditField_111, EditField_112, EditField_113, EditField_114, 
-    % EditField_115, EditField_116, EditField_117, EditField_118, 
-    % EditField_119, EditField_120, EditField_121, EditField_122, 
-    % EditField_123, EditField_124, EditField_125, EditField_126, 
-    % EditField_127, EditField_128, EditField_130, EditField_131, 
-    % EditField_132, EditField_133, EditField_134, EditField_135, 
-    % EditField_136, EditField_137, EditField_138, EditField_140, 
-    % EditField_141, EditField_142, EditField_143, EditField_144, 
-    % EditField_145, EditField_146, EditField_147, EditField_148, 
-    % EditField_150, EditField_151, EditField_152, EditField_154, 
-    % EditField_155, EditField_156, EditField_157, EditField_160, 
-    % EditField_161, EditField_162, EditField_164, EditField_165, 
-    % EditField_166, EditField_167, EditField_90, EditField_91, 
-    % EditField_92, EditField_93, EditField_94, EditField_95, 
-    % EditField_96, EditField_97, EditField_98
+    % EditField_102, EditField_103, EditField_104, 
+    % EditField_105, EditField_106, EditField_107, 
+    % EditField_108, EditField_109, EditField_111, 
+    % EditField_112, EditField_113, EditField_114, 
+    % EditField_115, EditField_116, EditField_117, 
+    % EditField_118, EditField_119, EditField_120, 
+    % EditField_121, EditField_122, EditField_123, 
+    % EditField_124, EditField_125, EditField_126, 
+    % EditField_127, EditField_128, EditField_130, 
+    % EditField_131, EditField_132, EditField_133, 
+    % EditField_134, EditField_135, EditField_136, 
+    % EditField_137, EditField_138, EditField_140, 
+    % EditField_141, EditField_142, EditField_143, 
+    % EditField_144, EditField_145, EditField_146, 
+    % EditField_147, EditField_148, EditField_150, 
+    % EditField_151, EditField_152, EditField_154, 
+    % EditField_155, EditField_156, EditField_157, 
+    % EditField_160, EditField_161, EditField_162, 
+    % EditField_164, EditField_165, EditField_166, 
+    % EditField_167, EditField_90, EditField_91, EditField_92, 
+    % EditField_93, EditField_94, EditField_95, EditField_96, 
+    % EditField_97, EditField_98
     function EditField_109ValueChanged(app, event)
        % Setting overrides phase values
        t=regexp(event.Source.Tag,'(\d+)_(\d+)','tokens','once');
@@ -831,6 +837,30 @@ classdef F2_LEM_exported < matlab.apps.AppBase
     function BDESBCONMenuSelected(app, event)
       app.aobj.WriteDest = "BDESCON" ;
       app.BDESMenu.Checked = false; app.BCONMenu.Checked = false; app.BDESBCONMenu.Checked = true ;
+    end
+
+    % Value changed function: EditField_169
+    function EditField_169ValueChanged(app, event)
+      value = str2double(app.EditField_169.Value);
+      if ~isnan(value)
+        app.aobj.DesignPhases(1)=value;
+      end
+    end
+
+    % Value changed function: EditField_170
+    function EditField_170ValueChanged(app, event)
+      value = str2double(app.EditField_170.Value);
+      if ~isnan(value)
+        app.aobj.DesignPhases(2)=value;
+      end
+    end
+
+    % Value changed function: EditField_171
+    function EditField_171ValueChanged(app, event)
+      value = str2double(app.EditField_171.Value);
+      if ~isnan(value)
+        app.aobj.DesignPhases(3)=value;
+      end
     end
   end
 
@@ -1237,39 +1267,39 @@ classdef F2_LEM_exported < matlab.apps.AppBase
       app.L3Label_5.Position = [231 274 70 24];
       app.L3Label_5.Text = 'L3';
 
-      % Create phasedegLabel
-      app.phasedegLabel = uilabel(app.RFTab);
-      app.phasedegLabel.HorizontalAlignment = 'center';
-      app.phasedegLabel.FontSize = 16;
-      app.phasedegLabel.FontWeight = 'bold';
-      app.phasedegLabel.Position = [9 237 71 38];
-      app.phasedegLabel.Text = {'<phase>'; '(deg)'};
+      % Create PhasedegLabel
+      app.PhasedegLabel = uilabel(app.RFTab);
+      app.PhasedegLabel.HorizontalAlignment = 'center';
+      app.PhasedegLabel.FontSize = 16;
+      app.PhasedegLabel.FontWeight = 'bold';
+      app.PhasedegLabel.Position = [8 234 72 41];
+      app.PhasedegLabel.Text = {'Phase'; '(deg)'};
 
-      % Create EGAINGeVLabel
-      app.EGAINGeVLabel = uilabel(app.RFTab);
-      app.EGAINGeVLabel.HorizontalAlignment = 'center';
-      app.EGAINGeVLabel.FontSize = 16;
-      app.EGAINGeVLabel.FontWeight = 'bold';
-      app.EGAINGeVLabel.Position = [9 193 71 38];
-      app.EGAINGeVLabel.Text = {'EGAIN'; '(GeV)'};
+      % Create EGAINMeVLabel
+      app.EGAINMeVLabel = uilabel(app.RFTab);
+      app.EGAINMeVLabel.HorizontalAlignment = 'center';
+      app.EGAINMeVLabel.FontSize = 16;
+      app.EGAINMeVLabel.FontWeight = 'bold';
+      app.EGAINMeVLabel.Position = [9 191 71 40];
+      app.EGAINMeVLabel.Text = {'EGAIN'; '(MeV)'};
 
       % Create EditField_169
       app.EditField_169 = uieditfield(app.RFTab, 'text');
-      app.EditField_169.Editable = 'off';
+      app.EditField_169.ValueChangedFcn = createCallbackFcn(app, @EditField_169ValueChanged, true);
       app.EditField_169.HorizontalAlignment = 'center';
       app.EditField_169.Position = [83 241 68 29];
-      app.EditField_169.Value = '0.000';
+      app.EditField_169.Value = '0';
 
       % Create EditField_170
       app.EditField_170 = uieditfield(app.RFTab, 'text');
-      app.EditField_170.Editable = 'off';
+      app.EditField_170.ValueChangedFcn = createCallbackFcn(app, @EditField_170ValueChanged, true);
       app.EditField_170.HorizontalAlignment = 'center';
       app.EditField_170.Position = [156 241 68 29];
       app.EditField_170.Value = '0.000';
 
       % Create EditField_171
       app.EditField_171 = uieditfield(app.RFTab, 'text');
-      app.EditField_171.Editable = 'off';
+      app.EditField_171.ValueChangedFcn = createCallbackFcn(app, @EditField_171ValueChanged, true);
       app.EditField_171.HorizontalAlignment = 'center';
       app.EditField_171.Position = [229 241 68 29];
       app.EditField_171.Value = '0.000';
