@@ -1241,8 +1241,8 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
             R=eye(6);
           end
           D = R([1:4 6],[1:4 6]) * obj.disp0(:) ;
-          dfit_x(n) = D(1) - obj.LiveModel.DesignTwiss.etax(ind)*1000 ; 
-          dfit_y(n) = D(3) - obj.LiveModel.DesignTwiss.etay(ind)*1000 ; 
+          dfit_x(n) = D(1) - obj.LiveModel.DesignTwiss.etax(ind+1)*1000 ; 
+          dfit_y(n) = D(3) - obj.LiveModel.DesignTwiss.etay(ind+1)*1000 ; 
           dfit_z(n) = BEAMLINE{ind}.Coordf(3) ;
         end
         ylim_x=ahan(1).YLim; 
