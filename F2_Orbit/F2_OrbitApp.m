@@ -1186,6 +1186,7 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
       ddispy = obj.LiveModel.DesignTwiss.etay(id) ;
       names = obj.bpmnames(dd.usebpm&obj.usebpm);
       dispx = dd.x(use) - ddispx.*1000 ; dispy = dd.y(use) - ddispy.*1000 ; % subtract design dispersion to show dispersion error
+%       dispx = dd.x(use) ; dispy = dd.y(use) ; % subtract design dispersion to show dispersion error
       dispx_err = dd.xerr(use); dispy_err = dd.yerr(use) ;
       if plotall
         id_all=obj.bpmid(dd.usebpm&~obj.usebpm) ;
@@ -1240,8 +1241,8 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
             R=eye(6);
           end
           D = R([1:4 6],[1:4 6]) * obj.disp0(:) ;
-          dfit_x(n) = D(1) - obj.LiveModel.DesignTwiss.etax(ind) ; 
-          dfit_y(n) = D(3) - obj.LiveModel.DesignTwiss.etay(ind) ; 
+          dfit_x(n) = D(1) - obj.LiveModel.DesignTwiss.etax(ind)*1000 ; 
+          dfit_y(n) = D(3) - obj.LiveModel.DesignTwiss.etay(ind)*1000 ; 
           dfit_z(n) = BEAMLINE{ind}.Coordf(3) ;
         end
         ylim_x=ahan(1).YLim; 
