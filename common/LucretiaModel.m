@@ -19,6 +19,7 @@ classdef LucretiaModel < handle & matlab.mixin.Copyable
     ModelRegionID(11,2) uint32 % Mapping from regions boundaries to BEAMLINE array
     ModelRegionE(11,2) single % Region boundary  energy (GeV)
     ControlNames string % Names used by control system
+    LGPSMap cell % Map of Model/Control names to LGPS units if multiple units
     ModelNames string % MAD (Lucretia) model names (unique magnets)
     ModelID_all uint16 % BEAMLINE indices of all elements wihin range of UseRegion selection
     ModelID uint16 % BEAMLINE indices of all elements wihin range of UseRegion selection, for only 1 of each split element
@@ -202,16 +203,36 @@ classdef LucretiaModel < handle & matlab.mixin.Copyable
       names(names=="LI20:SXTS:2305") = "LI20:LGPS:2275" ;
       names(names=="LI20:SXTS:2335") = "LI20:LGPS:2335" ;
       names(names=="LI20:SXTS:2365") = "LI20:LGPS:2365" ;
-      
-%       names(obj.ModelNames=="Q5FF") = "LI20:LGPS:3011" ;
-%       names(obj.ModelNames=="Q4FF") = "LI20:LGPS:3311" ;
-%       names(obj.ModelNames=="Q3FF") = "LI20:LGPS:3151" ;
-%       names(obj.ModelNames=="Q2FF") = "LI20:LGPS:1910" ;
-%       names(obj.ModelNames=="Q1FF") = "LI20:LGPS:3204" ;
-%       names(obj.ModelNames=="Q0FF") = "LI20:LGPS:3031" ;
-%       names(obj.ModelNames=="Q0D") = "LI20:LGPS:3141" ;
-%       names(obj.ModelNames=="Q1D") = "LI20:LGPS:3261" ;
-%       names(obj.ModelNames=="Q2D") = "LI20:LGPS:3091" ;
+      names(names=="BX10661A") = "BEND:IN10:661" ;
+      names(names=="BX10751A") = "BEND:IN10:751" ;
+      names(names=="BCX11314A") = "BEND:LI11:314" ;
+      names(names=="BCX11331A") = "BEND:LI11:331" ;
+      names(names=="BCX11338A") = "BEND:LI11:338" ;
+      names(names=="BCX11355A") = "BEND:LI11:355" ;
+      names(names=="BCX14720A") = "BEND:LI14:720" ;
+      names(names=="BCX14796A") = "BEND:LI14:796" ;
+      names(names=="BCX14808A") = "BEND:LI14:808" ;
+      names(names=="BCX14883A") = "BEND:LI14:883" ;
+      names(names=="B1LE1") = "LI20:LGPS:1990" ;
+      names(names=="B2LE1") = "LI20:LGPS:2110" ;
+      names(names=="B3LE1") = "LI20:LGPS:2240" ;
+      names(names=="B1RE1") = "LI20:LGPS:1990" ;
+      names(names=="B2RE1") = "LI20:LGPS:2110" ;
+      names(names=="B3RE1") = "LI20:LGPS:2240" ;
+      names(names=="WIGE11") = "LI20:LGPS:2420" ;
+      names(names=="WIGE21") = "LI20:LGPS:2420" ;
+      names(names=="WIGE31") = "LI20:LGPS:2420" ;
+      names(names=="B5D361") = "LI20:LGPS:3330" ;
+    end
+    function map = get.LGPSMap(obj)
+      names=obj.ControlNames;
+      % Generate LGPS list for QUAS's
+      quas=find(~ismissing(regexp(names,'QUAS','once','match')));
+      map=cell(length(names),1);
+      for imag=quas(:)'
+        [~,par]=control_magnetLGPSMap(char(names(imag)),1);
+        map{imag}=string(par.nameL);
+      end
     end
     function id = get.ModelID_all(obj)
       global BEAMLINE

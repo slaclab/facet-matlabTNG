@@ -72,6 +72,7 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
     bdesy_restore % bdes values store when written for undo function
     RefOrbitConfig % {date,id,xref,yref}
     RefOrbitLocal % {date,id,xref,yref}
+    EnergyKnobsKlysID % Lucretia KLYSTRON indices for energy knobs
   end
   properties(SetObservable)
     UseRegion(1,11) logical = true(1,11) % ["INJ";"L0";"DL1";"L1";"BC11";"L2";"BC14";"L3";"BC20";"FFS";"SPECTDUMP"]
@@ -104,7 +105,6 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
     EnergyKnobSettleTime = [10 10 10 10 10 10 2 10] % settle time (s) for each energy knob setting
     EnergyKnobs = {"MKB:S20_ENERGY_3AND4" "MKB:S20_ENERGY_4AND5" "MKB:S20_ENERGY_4AND6" "MKB:BC14_ENERGY_4AND5" "MKB:BC14_ENERGY_5AND6" "MKB:BC14_ENERGY_4AND6" ["KLYS:LI11:11:SSSB_ADES" "KLYS:LI11:21:SSSB_ADES"] "KLYS:LI10:41:SFB_ADES"}
     EnergyKnobsKlys = {["19_3","19_4"] ["19_4","19_5"] ["19_4","19_6"] ["14_4","14_5"] ["14_5","14_6"] ["14_4","14_6"] ["11_1","11_2"] "10_4"} % Klystron stations for each knob
-    EnergyKnobsKlys11 = ["KLYS:LI11:11:SSSB_ADES" "KLYS:LI11:21:SSSB_ADES"; "KLYS:LI11:11:SSSB_PDES" "KLYS:LI11:21:SSSB_PDES"] % PVs for stations in 11 [Ampl;Phase]
   end
   methods
     function obj = F2_OrbitApp(appobj)
@@ -172,6 +172,17 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
         dates=string(datestr(obj.ConfigsDate));
         for iconf=1:length(confs)
           uimenu(obj.aobj.SelectMenu,'Text',confs(iconf)+"  ("+dates(iconf)+")",'Tag',confs(iconf),'MenuSelectedFcn',@(source,event) obj.GuiConfigLoad(event));
+        end
+      end
+      % Store Lucretia KLYSTRON IDs for energy knobs
+      for iknob=1:length(obj.EnergyKnobsKlys)
+        for iklys=1:length(obj.EnergyKnobsKlys{iknob})
+          if ~isempty(regexp(obj.EnergyKnobsKlys{iknob}(iklys),'^10_','once'))
+            ele=findcells(BEAMLINE,'Name','L0BF_*');
+          else
+            ele=findcells(BEAMLINE,'Name',sprintf('K%s*',obj.EnergyKnobsKlys{iknob}(iklys)));
+          end
+          obj.EnergyKnobsKlysID{iknob}(iklys) = BEAMLINE{ele(1)}.Klystron ;
         end
       end
     end
@@ -995,6 +1006,7 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
       %DOESCAN Perform energy scan and extract dispersion function at BPMs
       %DoEscan(Nbpm)
       % Nbpm: number BPM readings to take per energy scan setting
+      global KLYSTRON
       
       % Get energy knob to scan and desired range
       id = find(ismember(obj.EnergyKnobNames,obj.escandev)) ;
@@ -1013,23 +1025,9 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
         k0=lcaGet(cellstr(knob(:)));
       end
       
-      % Get ENLD & phases
-      pha=zeros(1,length(obj.EnergyKnobsKlys{id})); enld=pha; e0=pha;
-      for iknob=1:length(obj.EnergyKnobsKlys{id})
-        t=regexp(obj.EnergyKnobsKlys{id}(iknob),"(\d+)_(\d)","tokens","once");
-        isec=double(t(1)); ikly=double(t(2));
-        if isec==11
-          pha(iknob)=lcaGet(char(obj.EnergyKnobsKlys11(2,iknob)));
-          enld(iknob)=lcaGet(char(obj.EnergyKnobsKlys11(1,iknob)));
-        elseif isec==10
-          pha(iknob)=0;
-          enld(iknob)=60;
-        else
-          pha(iknob)=lcaGet(char("LI"+isec+":KLYS:"+ikly+"1:PDES"));
-          enld(iknob)=lcaGet(char("LI"+isec+":KLYS:"+ikly+"1:ENLD"));
-        end
-        e0(iknob)=enld(iknob)*cosd(pha(iknob));
-      end
+      % Get currently provided energy & phase for this energy knob
+      V0=sum(arrayfun(@(x) KLYSTRON(obj.EnergyKnobsKlysID{id}(x)).Ampl, 1 : length(obj.EnergyKnobsKlysID{id}) ) );
+      pha=KLYSTRON(obj.EnergyKnobsKlysID{id}(1)).Phase;
       
       % Scan the energy knob
       obj.escandata=cell(length(evals),7);
@@ -1043,12 +1041,11 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
           % Set the knob
           if ismk
             % Get required phase change to adjust the energy as required
-            e_new = sum(e0) + evals(ival) ;
-            dth = acosd(e_new/sum(enld)) -mean(abs(pha)) ;
+            dth = acosd(evals(ival)/V0+cosd(pha)) - pha ;
             disp("Setting MKB:"+MK.Name+" dpha= "+ dth + " ...");
             MK.set(dth);
           else
-            esca = 1 + evals(ival) / sum(e0) ; % Scale energy knob by required amount
+            esca = 1 + evals(ival) / V0 ; % Scale energy knob by required amount
             disp("Scaling " + knob(:) + " by " + esca + " ...");
             lcaPut(cellstr(knob(:)),k0(:).*esca);
           end
@@ -1243,8 +1240,8 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
             R=eye(6);
           end
           D = R([1:4 6],[1:4 6]) * obj.disp0(:) ;
-          dfit_x(n) = D(1) ; 
-          dfit_y(n) = D(3) ; 
+          dfit_x(n) = D(1) - obj.LiveModel.DesignTwiss.etax(ind) ; 
+          dfit_y(n) = D(3) - obj.LiveModel.DesignTwiss.etay(ind) ; 
           dfit_z(n) = BEAMLINE{ind}.Coordf(3) ;
         end
         ylim_x=ahan(1).YLim; 

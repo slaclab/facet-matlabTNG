@@ -63,19 +63,7 @@ classdef F2_mags < handle & matlab.mixin.Copyable & F2_common
       %READB Get magnet strengths from control system or achiver if UseArchive property = true
       %ReadB([SetModel])
       % SetModel (Optional) : also set read B fields into Lucretia model
-      if obj.autoupdate>0
-        monipv = [obj.LM.ControlNames+":BDES"; obj.LM.ControlNames+":BACT"];
-        ud = lcaNewMonitorValue(cellstr(monipv)) ; ud_des=ud(1:length(monipv)/2); ud_act=ud(1+length(monipv)/2:end); ud=ud_des | ud_act;
-        if length(obj.BDES_cntrl) == length(ud)
-          bdes = obj.BDES_cntrl; bact = obj.BACT_cntrl;
-          [bact_ud,bdes_ud] = obj.MagnetGet(cellstr(obj.LM.ControlNames(ud))) ;
-          bdes(ud) = bdes_ud; bact(ud) = bact_ud ;
-        else
-          [bact,bdes] = obj.MagnetGet(cellstr(obj.LM.ControlNames)) ;
-        end
-      else
-        [bact,bdes] = obj.MagnetGet(cellstr(obj.LM.ControlNames)) ; 
-      end
+      [bact,bdes] = obj.MagnetGet(cellstr(obj.LM.ControlNames)) ; 
       bdes=bdes(:)'; bact=bact(:)';
       obj.BDES_err = false(size(bdes)) ;
       obj.BACT_err = obj.BDES_err ;
@@ -324,6 +312,7 @@ classdef F2_mags < handle & matlab.mixin.Copyable & F2_common
       % Check for updated PVs and process as requeted
       ud = lcaNewMonitorValue(cellstr(obj.MonitorList)) ;
       if any(ud)
+        lcaGet(cellstr(obj.MonitorList(logical(ud))));
         notify(obj,"PVUpdated");
         switch obj.autoupdate
           case 1
@@ -335,8 +324,9 @@ classdef F2_mags < handle & matlab.mixin.Copyable & F2_common
     end
     function StopProc(obj)
       if obj.autoupdate
-        fprintf(2,'Update timer erroneously stopped, restarting...');
-        start(obj.UpdateTimer);
+        fprintf(2,'Update timer stopped.\n');
+        obj.autoupdate=0;
+%         start(obj.UpdateTimer);
       end
     end
   end
@@ -349,10 +339,24 @@ classdef F2_mags < handle & matlab.mixin.Copyable & F2_common
         return
       end
       % Add any new PVs to monitor list
-      monipv = [obj.LM.ControlNames+":BDES"; obj.LM.ControlNames+":BACT"];
+      cn = obj.LM.ControlNames ;
+      map= obj.LM.LGPSMap ;
+      monipv=string([]);
+      for iname=1:length(cn)
+        if ~isempty(map{iname})
+          for ilp=1:length(map{iname})
+            monipv(end+1) = map{iname}(ilp) + ":BDES" ;
+          end
+        else
+          monipv(end+1) = cn{iname} + ":BDES" ;
+        end
+      end
+      monipv=monipv(:);
       newmoni=monipv(~ismember(monipv,obj.MonitorList));
-      obj.MonitorList = [obj.MonitorList; newmoni] ;
-      lcaSetMonitor(cellstr(newmoni));
+      if ~isempty(newmoni)
+        obj.MonitorList = [obj.MonitorList; newmoni] ;
+        lcaSetMonitor(cellstr(newmoni));
+      end
       % (Re)Launch update timer
       if ~isempty(obj.UpdateTimer)
         stop(obj.UpdateTimer);

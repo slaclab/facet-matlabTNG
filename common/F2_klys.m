@@ -5,11 +5,11 @@ classdef F2_klys < handle
   end
   properties
     UseDesignPhases logical = true % Use design L1,L2,L3 phases to override sub-booster live values, else use sub-booster live vals
-    DesignPhases(1,3) = [-16.5 -31.7 0] % L1,L2,L3
     KlysPhaseOverride(8,10) single = nan(8,10) % override live values for ~nan values
     KlysAmplOverride(8,10) single = nan(8,10) % override live values for ~nan values
   end
   properties(SetObservable,AbortSet)
+    DesignPhases(1,3) = [-16.5 -31.7 0] % L1,L2,L3
     KlysForceZeroPhase logical = false
     KlysUseSector(1,4) logical = true(1,4) % L0, L1, L2, L3 (local setting to this object)
     KlysInUse(8,10) logical % Klystron in use? (flags which klystrons are physically present)
@@ -34,6 +34,7 @@ classdef F2_klys < handle
     listeners
   end
   properties(Constant)
+    DesignPhasesPV string = ["SIOC:SYS1:ML00:AO907" "SIOC:SYS1:ML00:AO908" "SIOC:SYS1:ML00:AO909"] % L1/L2/L3 design phases
     KlysBeamcode uint8 = 10
     version single = 1.0
   end
@@ -125,6 +126,12 @@ classdef F2_klys < handle
       tab=table(phase(:),ampl(:),stat(:),'RowNames',names(:));
       tab.Properties.VariableNames={'Phase [deg]' 'ENLD [MeV]' 'STAT'};
     end
+    function set.DesignPhases(obj,pha)
+      obj.DesignPhases=pha;
+      caput(obj.pvs.L1DesignPhase,pha(1));
+      caput(obj.pvs.L2DesignPhase,pha(2));
+      caput(obj.pvs.L3DesignPhase,pha(3));
+    end
     function set.KlysForceZeroPhase(obj,val)
       obj.KlysForceZeroPhase=logical(val);
       if ~isempty(obj.pvs)
@@ -194,6 +201,9 @@ classdef F2_klys < handle
           end
           obj.pvlist(end+1) = PV(context,'name',sprintf("sbst_1%d_phase",isec-1),'pvname',sprintf("LI1%d:SBST:1:PDES",isec-1),'monitor',true) ;
         end
+        obj.pvlist(end+1) = PV(context,'name',"L1DesignPhase",'pvname',obj.DesignPhasesPV(1),'monitor',true,'mode',"rw") ;
+        obj.pvlist(end+1) = PV(context,'name',"L2DesignPhase",'pvname',obj.DesignPhasesPV(2),'monitor',true,'mode',"rw") ;
+        obj.pvlist(end+1) = PV(context,'name',"L3DesignPhase",'pvname',obj.DesignPhasesPV(3),'monitor',true,'mode',"rw") ;
         pset(obj.pvlist,'debug',0) ;
         obj.pvs = struct(obj.pvlist) ;
       end
@@ -216,6 +226,7 @@ classdef F2_klys < handle
       if obj.UpdateRate==0
         caget(obj.pvlist([obj.pvlist.monitor]));
       end
+      obj.DesignPhases=[obj.pvs.L1DesignPhase.val{1} obj.pvs.L2DesignPhase.val{1} obj.pvs.L3DesignPhase.val{1}];
       obj.GetAmpl;
       obj.GetPhase;
       obj.GetStat;
