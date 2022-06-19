@@ -49,7 +49,7 @@ classdef scanFunc_M12_Spect_Quad_Scan_FILS
             m12_req=value;
             m34_req=0;
             z_ob=1993.2737; % gas jet position
-            z_im=2015.63; % DTOTR1 position
+            z_im=2015.2599; % DTOTR1 position
             QS=lcaGet('SIOC:SYS1:ML00:CALCOUT051'); % read imaged energy written by scanFunc_E_Spect_Quad_Scan_FILS
             [isok, BDES0, BDES1, BDES2] = E300_calc_QS_3(z_ob, z_im, QS-10, m12_req, m34_req) % Note that the 3rd parameter (energy) is entered with repect to 10 GeV.
             
