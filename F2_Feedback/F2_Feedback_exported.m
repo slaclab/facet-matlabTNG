@@ -992,7 +992,7 @@ classdef F2_Feedback_exported < matlab.apps.AppBase
 
       % Create DropDown
       app.DropDown = uidropdown(app.BC20EnergyFeedbackPanel);
-      app.DropDown.Items = {'S20_ENERGY_3AND4', 'S20_ENERGY_3AND5', 'S20_ENERGY_4AND5'};
+      app.DropDown.Items = {'S20_ENERGY_3AND4', 'S20_ENERGY_3AND5', 'S20_ENERGY_4AND5', 'S20_ENERGY_4AND6'};
       app.DropDown.ValueChangedFcn = createCallbackFcn(app, @DropDownValueChanged, true);
       app.DropDown.Position = [262 207 189 22];
       app.DropDown.Value = 'S20_ENERGY_3AND4';
