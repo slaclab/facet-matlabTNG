@@ -1595,17 +1595,17 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
       
       if obj.dormsplot
         if plotall
-          pl_all=plot(xax,z_all,(xstd_all(:).*1e-3)./sqrt(emit_all(:).*betades_xall(:)),'k*');
+          pl_all=plot(xax,z_all,(xstd_all(:).*1e-3)./sqrt(emit_all(:).*betades_xall(:)),'k.');
           hold(xax,'on');
         end
         pl=plot(xax,z,(xstd(:).*1e-3)./sqrt(emit(:).*betades_x(:)),'*','Color',F2_common.ColorOrder(2,:));
         ylabel(xax,'<X^2>^{1/2}/\sigma_x');
       else
         if plotall
-          pl_all=errorbar(xax,z_all,xm_all,xstd_all,'.','Color','k*');
+          pl_all=errorbar(xax,z_all,xm_all,xstd_all,'k.');
           hold(xax,'on');
         end
-        pl=errorbar(xax,z,xm,xstd,'.','Color',F2_common.ColorOrder(2,:));
+        pl=errorbar(xax,z,xm,xstd,'.','MarkerFaceColor',F2_common.ColorOrder(2,:));
         ylabel(xax,'X [mm]');
       end
       if plotall
@@ -1639,10 +1639,10 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
         ylabel(yax,'<Y^2>^{1/2}/\sigma_y');
       else
         if plotall
-          pl_all=errorbar(yax,z_all,ym_all,ystd_all,'.','Color','k');
+          pl_all=errorbar(yax,z_all,ym_all,ystd_all,'k.');
           hold(yax,'on');
         end
-        pl=errorbar(yax,z,ym,ystd,'.','Color',F2_common.ColorOrder(2,:));
+        pl=errorbar(yax,z,ym,ystd,'.','MarkerFaceColor',F2_common.ColorOrder(2,:));
         xlabel(yax,'Z [m]'); ylabel(yax,'Y [mm]');
         ylabel(yax,'Y [mm]');
       end
