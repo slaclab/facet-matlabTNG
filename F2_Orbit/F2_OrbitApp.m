@@ -1632,7 +1632,7 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
       end
       if obj.dormsplot
         if plotall
-          pl_all=plot(yax,z_all,(ystd_all(:).*1e-3)./sqrt(emit_all(:).*betades_yall(:)),'Color','k*');
+          pl_all=plot(yax,z_all,(ystd_all(:).*1e-3)./sqrt(emit_all(:).*betades_yall(:)),'k*');
           hold(yax,'on');
         end
         pl=plot(yax,z,(ystd(:).*1e-3)./sqrt(emit(:).*betades_y(:)),'*','Color',F2_common.ColorOrder(2,:));
