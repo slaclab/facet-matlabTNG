@@ -519,22 +519,29 @@ classdef F2_S20ConfigApp < handle & F2_common
       BetaX=Tl.betax(1:end-1);
       BetaY=Tl.betay(1:end-1);
       DispY=Tl.etay(1:end-1);
+      NuX=Tl.nux(1:end-1);
+      NuY=Tl.nuy(1:end-1);
       gamma=obj.E0/0.511e-3;
       emit=[obj.Initial.x.NEmit/gamma obj.Initial.y.NEmit/gamma];
       SigmaX=sqrt(BetaX.*emit(1)); SigmaY=sqrt(BetaY.*emit(2)+DispY.^2*(obj.dE./100).^2);
       if obj.MatchOK && length(Tm.betax)==length(Tl.betax)
         BetaX_match=Tm.betax(1:end-1);
         BetaY_match=Tm.betay(1:end-1);
+        NuX_match=Tm.nux(1:end-1);
+        NuY_match=Tm.nuy(1:end-1);
         SigmaX_match=sqrt(BetaX_match.*emit(1)); SigmaY_match=sqrt(BetaY_match.*emit(2)+DispY.^2*(obj.dE./100).^2);
       else
         BetaX_match=nan(size(BetaX));
         BetaY_match=BetaX_match;
         SigmaX_match=BetaX_match;
         SigmaY_match=BetaX_match;
+        NuX_match=BetaX_match;
+        NuY_match=BetaX_match;
       end
       ModelName=ModelName(:); LinacZ=string(LinacZ(:)); BetaX=BetaX(:);BetaY=BetaY(:); BetaX_match=BetaX_match(:); BetaY_match=BetaY_match(:);
+      NuX=NuX(:)-NuX(1); NuX_match=NuX_match(:)-NuX_match(1); NuY=NuY(:)-NuY(1); NuY_match=NuY_match(:)-NuY_match(1);
       SigmaX=SigmaX(:); SigmaY=SigmaY(:); SigmaX_match=SigmaX_match(:); SigmaY_match=SigmaY_match(:); DispY=DispY(:);
-      tab=table(ModelName,LinacZ,BetaX,BetaY,BetaX_match,BetaY_match,SigmaX,SigmaY,SigmaX_match,SigmaY_match,DispY);
+      tab=table(ModelName,LinacZ,BetaX,BetaY,NuX,NuY,BetaX_match,BetaY_match,SigmaX,SigmaY,SigmaX_match,SigmaY_match,NuX_match,NuY_match,DispY);
       if ~ishandle(obj.tabhan)
         fig = uifigure;
         obj.tabhan=uitable(fig,'Data',tab);
