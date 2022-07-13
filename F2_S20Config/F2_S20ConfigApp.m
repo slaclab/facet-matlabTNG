@@ -262,9 +262,9 @@ classdef F2_S20ConfigApp < handle & F2_common
       % - If SFQED, then only use central quad of triplet
       if obj.isSFQED
         B0=obj.Q_BDES; B0(4:6)=0; obj.LM.ModelBDES=B0;
-        qno=[1:3 5];
+        qno=[1:4 5];
         obj.WaistDesName="PENT";
-        B0(qno)=[-20.7 -151.7 176.7 -28.2];
+%         B0(qno)=[-20.7 -151.7 176.7 -28.2];
       elseif obj.isKracken
         qno=1:3;
         obj.WaistDesName="KRK";
@@ -335,6 +335,11 @@ classdef F2_S20ConfigApp < handle & F2_common
           end
         end
         obj.Plot();
+      end
+      
+      % Warn if magnets need to be DAC zero'd
+      if any(obj.Q_Match==0)
+        warndlg('One or more quadrupoles need to be set to zero: please set DAC ZERO in SCP for corresponding magnets after pushing "TRIM QUADS" button','DAC Zero Quads');
       end
       
     end
