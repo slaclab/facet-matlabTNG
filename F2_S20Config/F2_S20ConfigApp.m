@@ -199,6 +199,9 @@ classdef F2_S20ConfigApp < handle & F2_common
       % Get Twiss parameters at desired location
       if mode==5 || mode==6
         [stat,R] = RmatAtoB(ele(1),ele(2)) ; % response matrix IP -> meas screen
+        if mode==5
+          [stat,T] = GetTwiss(double(obj.EleRange(1)),ele(2),I.x.Twiss,I.y.Twiss) ;
+        end
       else
         [stat,T] = GetTwiss(double(obj.EleRange(1)),ele,I.x.Twiss,I.y.Twiss) ;
       end
@@ -221,8 +224,8 @@ classdef F2_S20ConfigApp < handle & F2_common
           oval = [T.betax(end) T.betay(end) T.alphax(end) T.alphay(end)] ;
         case 4 % re-match KRK waist to dump
           oval = T.betax(end) + T.betay(end) ;
-        case 5 % R11/33 = 0
-          oval = abs(R(1,1)) + abs(R(3,3)) ;
+        case 5 % R11 = 0, min beta_y
+          oval = abs(R(1,1)) + T.betay(end) ;
         case 6 % R12/34 = 0
           oval = abs(R(1,2)) + abs(R(3,4)) ;
         case 7 % just match waist at desired z position offset from ip location
@@ -254,13 +257,14 @@ classdef F2_S20ConfigApp < handle & F2_common
       % Match IP
       qno=1:5;
       B0=obj.LM.ModelBDES ;
-      lval=10*obj.Q_BMAX.*qsign; lval(lval>0)=0;
-      uval=10*obj.Q_BMAX.*qsign; uval(uval<0)=0;
+      lval=obj.Q_BMAX.*qsign; lval(lval>0)=0;
+      uval=obj.Q_BMAX.*qsign; uval(uval<0)=0;
       % - If SFQED, then only use central quad of triplet
       if obj.isSFQED
         B0=obj.Q_BDES; B0(4:6)=0; obj.LM.ModelBDES=B0;
         qno=[1:3 5];
         obj.WaistDesName="PENT";
+        B0(qno)=[-20.7 -151.7 176.7 -28.2];
       elseif obj.isKracken
         qno=1:3;
         obj.WaistDesName="KRK";
@@ -273,7 +277,7 @@ classdef F2_S20ConfigApp < handle & F2_common
 
       ipele=double(obj.WaistDesEle);
       disp('Run matching algorithm...')
-      if any(obj.BetaDES>1) || obj.isKracken % use fminsearch
+      if ~obj.isSFQED && ( any(obj.BetaDES>1) || obj.isKracken ) % use fminsearch
         xmin=fminsearch(@(x) obj.MatchFun(x,obj.Initial,obj.BetaDES,qno,ipele,1),B0(qno),optimset('Display','iter','MaxFunEval',2000));
       else % use lsqnonlin
         xmin=lsqnonlin(@(x) obj.MatchFun(x,obj.Initial,obj.BetaDES,qno,ipele,2),B0(qno),[],[],optimset('Display','iter','MaxFunEval',2000,'Algorithm','levenberg-marquardt'));
@@ -310,7 +314,7 @@ classdef F2_S20ConfigApp < handle & F2_common
           bdes=obj.LM.ModelBDES;
           bdes(7:9)=0;
           obj.LM.ModelBDES=bdes;
-          fminsearch(@(x) obj.MatchFun(x,obj.Initial,[0 0],[8 9],[ipele iscr],5),[0 0],optimset('Display','iter','MaxFunEval',2000)); % R11/33 = 0 with Q1D & Q2D
+          fminsearch(@(x) obj.MatchFun(x,obj.Initial,[0 0],[8 9],[ipele iscr],5),[200 -150],optimset('Display','iter','MaxFunEval',2000)); % R11 = 0, min beta_y(dump) with Q1D & Q2D
         else
           fminsearch(@(x) obj.MatchFun(x,obj.Initial,[0 0],[7 8],[ipele iscr],6),[0 0],optimset('Display','iter','MaxFunEval',2000)); % R12/34 = 0 with final triplet
         end
@@ -319,7 +323,7 @@ classdef F2_S20ConfigApp < handle & F2_common
       % Store matched quad BDES values &
       % Enable quad trim function if successful match
       obj.Q_Match = obj.LM.ModelBDES ; % Sets GUI edit boxes
-      Bgood = obj.Q_Match>=lval.*10 & obj.Q_Match<=uval.*10 & sign(obj.Q_Match)==sign(obj.Q_BDES) ;
+      Bgood = obj.Q_Match==0 | ( obj.Q_Match>=lval & obj.Q_Match<=uval & sign(obj.Q_Match)==sign(obj.Q_BDES) ) ;
       obj.MatchOK=all(Bgood); % Sets Trim Quads button on GUI to enabled/disabled as required
       % Flag BDES values outside allowable range by changing font color to red
       if ~isempty(obj.guihan)
