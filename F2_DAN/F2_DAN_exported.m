@@ -223,7 +223,7 @@ classdef F2_DAN_exported < matlab.apps.AppBase
             dataSetID = app.dataSetID.Value;
             
             try  
-                app.DANobject = DataSetDAN(dataSetID,app,exp);
+                app.DANobject = DataSetDAN(dataSetID,exp,app);
             catch errm
                 app.addMsg('Could not find data set')
                 return
@@ -776,7 +776,6 @@ classdef F2_DAN_exported < matlab.apps.AppBase
             title(app.ImageAxes, 'Title')
             xlabel(app.ImageAxes, 'X')
             ylabel(app.ImageAxes, 'Y')
-            app.ImageAxes.FontSize = 14;
             app.ImageAxes.Position = [363 409 803 509];
 
             % Create WaterfallplotPanel

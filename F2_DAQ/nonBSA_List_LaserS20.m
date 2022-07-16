@@ -7,6 +7,7 @@ LaserS20_nonBSA_List = {...
 'XPS:LA20:LS24:M2'; % waveplate too
 'XPS:LA20:LS24:M8'; % oscillator motor
 'OSC:LA20:10:FS_TGT_TIME'; % vitara target time
+'OSC:LA20:10:FS_CTR_TIME'; % counter target time
 'TRIG:LA20:LS25:TCTL'; % sdg gate enable (pulse
 'TRIG:LA20:LS28:TDES'; % saga timing
 

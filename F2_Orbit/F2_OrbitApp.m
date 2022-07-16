@@ -1567,9 +1567,13 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
       
       % Get orbit data
       [xm,ym,xstd,ystd,use,id] = obj.GetOrbit ;
+      betades_x = obj.LM.DesignTwiss.betax(id); betades_y = obj.LM.DesignTwiss.betay(id);
+      P = obj.LM.DesignTwiss.P(id); gamma = P./0.511e-3; emit = 5e-6 ./ gamma ;
       if plotall
         [xm_all,ym_all,xstd_all,ystd_all,use_all,id_all] = obj.GetOrbit("all") ;
+        P = obj.LM.DesignTwiss.P(id_all); gamma = P./0.511e-3; emit_all = 5e-6 ./ gamma ;
         z_all = arrayfun(@(x) BEAMLINE{x}.Coordi(3),id_all) ;
+        betades_xall = obj.LM.DesignTwiss.betax(id_all); betades_yall = obj.LM.DesignTwiss.betay(id_all);
       end
       
       if ~any(use)
@@ -1591,31 +1595,33 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
       
       if obj.dormsplot
         if plotall
-          pl_all=stem(xax,z_all,xstd_all,'filled','Color','k');
+          pl_all=plot(xax,z_all,(xstd_all(:).*1e-3)./sqrt(emit_all(:).*betades_xall(:)),'k.');
           hold(xax,'on');
         end
-        pl=stem(xax,z,xstd,'filled','Color',F2_common.ColorOrder(2,:));
+        pl=plot(xax,z,(xstd(:).*1e-3)./sqrt(emit(:).*betades_x(:)),'*','Color',F2_common.ColorOrder(2,:));
+        ylabel(xax,'<X^2>^{1/2}/\sigma_x');
       else
         if plotall
-          pl_all=errorbar(xax,z_all,xm_all,xstd_all,'.','Color','k');
+          pl_all=errorbar(xax,z_all,xm_all,xstd_all,'k.');
           hold(xax,'on');
         end
-        pl=errorbar(xax,z,xm,xstd,'.','Color',F2_common.ColorOrder(2,:));
+        pl=errorbar(xax,z,xm,xstd,'.','MarkerFaceColor',F2_common.ColorOrder(2,:));
+        ylabel(xax,'X [mm]');
       end
       if plotall
         zmin=z_all(1); zmax=z_all(end);
       else
         zmin=z(1); zmax=z(end);
       end
-      ylabel(xax,'X [mm]');
+      
       pl.DataTipTemplate.DataTipRows(1).Label = 'Linac Z' ;
       pl.DataTipTemplate.DataTipRows(2).Label = '<X>' ;
-      pl.DataTipTemplate.DataTipRows(end+1) = dataTipTextRow('RMS_X',xstd);
+      pl.DataTipTemplate.DataTipRows(end+1) = dataTipTextRow('RMS-X',xstd);
       pl.DataTipTemplate.DataTipRows(end+1) = dataTipTextRow('Name',obj.bpmnames(use));
       if plotall
         pl_all.DataTipTemplate.DataTipRows(1).Label = 'Linac Z' ;
         pl_all.DataTipTemplate.DataTipRows(2).Label = '<X>' ;
-        pl_all.DataTipTemplate.DataTipRows(end+1) = dataTipTextRow('RMS_X',xstd_all);
+        pl_all.DataTipTemplate.DataTipRows(end+1) = dataTipTextRow('RMS-X',xstd_all);
         pl_all.DataTipTemplate.DataTipRows(end+1) = dataTipTextRow('Name',obj.bpmnames(use_all));
       end
       grid(xax,'on');
@@ -1626,17 +1632,19 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
       end
       if obj.dormsplot
         if plotall
-          pl_all=stem(yax,z_all,ystd_all,'filled','Color','k');
+          pl_all=plot(yax,z_all,(ystd_all(:).*1e-3)./sqrt(emit_all(:).*betades_yall(:)),'k*');
           hold(yax,'on');
         end
-        pl=stem(yax,z,ystd,'filled','Color',F2_common.ColorOrder(2,:));
+        pl=plot(yax,z,(ystd(:).*1e-3)./sqrt(emit(:).*betades_y(:)),'*','Color',F2_common.ColorOrder(2,:));
+        ylabel(yax,'<Y^2>^{1/2}/\sigma_y');
       else
         if plotall
-          pl_all=errorbar(yax,z_all,ym_all,ystd_all,'.','Color','k');
+          pl_all=errorbar(yax,z_all,ym_all,ystd_all,'k.');
           hold(yax,'on');
         end
-        pl=errorbar(yax,z,ym,ystd,'.','Color',F2_common.ColorOrder(2,:));
+        pl=errorbar(yax,z,ym,ystd,'.','MarkerFaceColor',F2_common.ColorOrder(2,:));
         xlabel(yax,'Z [m]'); ylabel(yax,'Y [mm]');
+        ylabel(yax,'Y [mm]');
       end
       if plotall
         zmin=min([zmin z_all(1)]); zmax=max([zmax z_all(end)]);
@@ -1645,12 +1653,12 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
       end
       pl.DataTipTemplate.DataTipRows(1).Label = 'Linac Z' ;
       pl.DataTipTemplate.DataTipRows(2).Label = '<Y>' ;
-      pl.DataTipTemplate.DataTipRows(end+1) = dataTipTextRow('RMS_Y',ystd);
+      pl.DataTipTemplate.DataTipRows(end+1) = dataTipTextRow('RMS-Y',ystd);
       pl.DataTipTemplate.DataTipRows(end+1) = dataTipTextRow('Name',obj.bpmnames(use));
       if plotall
         pl_all.DataTipTemplate.DataTipRows(1).Label = 'Linac Z' ;
         pl_all.DataTipTemplate.DataTipRows(2).Label = '<Y>' ;
-        pl_all.DataTipTemplate.DataTipRows(end+1) = dataTipTextRow('RMS_Y',ystd_all);
+        pl_all.DataTipTemplate.DataTipRows(end+1) = dataTipTextRow('RMS-Y',ystd_all);
         pl_all.DataTipTemplate.DataTipRows(end+1) = dataTipTextRow('Name',obj.bpmnames(use_all));
       end
       grid(yax,'on');

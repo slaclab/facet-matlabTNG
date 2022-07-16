@@ -593,7 +593,7 @@ classdef F2_S20Config_exported < matlab.apps.AppBase
 
       % Create BetaX_DES
       app.BetaX_DES = uieditfield(app.GridLayout2, 'numeric');
-      app.BetaX_DES.Limits = [2 500];
+      app.BetaX_DES.Limits = [2 20000];
       app.BetaX_DES.ValueDisplayFormat = '%.2f';
       app.BetaX_DES.ValueChangedFcn = createCallbackFcn(app, @BetaX_DESValueChanged, true);
       app.BetaX_DES.Interruptible = 'off';
@@ -604,7 +604,7 @@ classdef F2_S20Config_exported < matlab.apps.AppBase
 
       % Create BetaY_DES
       app.BetaY_DES = uieditfield(app.GridLayout2, 'numeric');
-      app.BetaY_DES.Limits = [2 500];
+      app.BetaY_DES.Limits = [2 20000];
       app.BetaY_DES.ValueDisplayFormat = '%.2f';
       app.BetaY_DES.ValueChangedFcn = createCallbackFcn(app, @BetaY_DESValueChanged, true);
       app.BetaY_DES.Interruptible = 'off';

@@ -76,28 +76,28 @@ classdef DataSetDAN < handle
     
     % Constructor
     methods 
-        function s = DataSetDAN(dSID,apph,exp)
+        function s = DataSetDAN(dSID,exp,apph)
             %DATASETDAN Construct an instance of this class
             %   Detailed explanation goes here
             
             s.dataSetID = dSID;
-            s.hlpDispMsg('Looking for directory...')
-            if nargin == 3
-                tic
+            s.hlpDispMsg('Looking for directory...\n')
+            if nargin >= 2
+                %tic
                 [s.dataSet,s.hdr] = getDataSet(dSID,exp);
-                toc
-            else
-                tic
+                %toc
+            else 
+                %tic
                 [s.dataSet,s.hdr] = getDataSet(dSID);
-                toc
+                %toc
             end
-            s.hlpDispMsg('Done looking for directory')
+            s.hlpDispMsg('Done looking for directory\n')
             s.maxShotNbr = length(s.dataSet.pulseID.common_scalar_index);
             
             s.hlpFindScalarGroups();
             s.hlpGetListOfCameras();
             
-            if nargin >= 2
+            if nargin > 2
                 s.GUIHandle = apph;
                 s.plotToGUI = 1;
             end

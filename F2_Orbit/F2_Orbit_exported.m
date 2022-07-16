@@ -171,9 +171,9 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
       app.INJButtonValueChanged(); % Populates BPM and corrector list boxes
     end
 
-    % Value changed function: BC11Button, BC14Button, 
-    % BC20Button, DL1Button, FFSButton, INJButton, L0Button, 
-    % L1Button, L2Button, L3Button, SPECTButton
+    % Value changed function: BC11Button, BC14Button, BC20Button, 
+    % DL1Button, FFSButton, INJButton, L0Button, L1Button, 
+    % L2Button, L3Button, SPECTButton
     function INJButtonValueChanged(app, event)
       global BEAMLINE
       value = [app.INJButton.Value app.L0Button.Value app.DL1Button.Value app.L1Button.Value ...
@@ -525,9 +525,9 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
 
     % Value changed function: rmsChoose
     function rmsChooseValueChanged(app, event)
-      value = app.rmsChoose.Value;
-      app.aobj.dormsplot=value;
-      app.TabGroupSelectionChanged;
+      value = app.rmsChoose.Value ;
+      app.aobj.dormsplot = value ;
+      app.TabGroupSelectionChanged ;
     end
 
     % Callback function
@@ -1049,7 +1049,7 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
       % Create rmsChoose
       app.rmsChoose = uibutton(app.OrbitTab, 'state');
       app.rmsChoose.ValueChangedFcn = createCallbackFcn(app, @rmsChooseValueChanged, true);
-      app.rmsChoose.Text = 'Show RMS';
+      app.rmsChoose.Text = 'Jitter / Beamsize';
       app.rmsChoose.Position = [9 247 115 27];
 
       % Create OrbitFitPanel
@@ -1705,7 +1705,9 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
       app.LogbookButton = uibutton(app.FACETIIOrbitToolconfignoneUIFigure, 'push');
       app.LogbookButton.ButtonPushedFcn = createCallbackFcn(app, @LogbookButtonPushed, true);
       app.LogbookButton.Icon = 'logbook.gif';
-      app.LogbookButton.Position = [1175 8 53 50];
+      app.LogbookButton.IconAlignment = 'center';
+      app.LogbookButton.FontColor = [1 1 1];
+      app.LogbookButton.Position = [1168.5 8 68 50];
       app.LogbookButton.Text = '';
 
       % Show the figure after all components are created
