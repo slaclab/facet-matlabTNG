@@ -118,10 +118,10 @@ classdef F2_DAQApp < handle
             obj.DAQ_params.camPVs   = obj.camCheck.DAQ_Cams.camPVs;
             obj.DAQ_params.camSIOCs = obj.camCheck.DAQ_Cams.siocs;
             obj.DAQ_params.camTrigs = obj.camCheck.DAQ_Cams.camTrigs;
+            obj.DAQ_params.num_CAM  = numel(obj.DAQ_params.camNames);
             obj.checkTrigStat();
             
             
-            obj.DAQ_params.num_CAM  = numel(obj.camCheck.DAQ_Cams.camNames);
             
             % Scalar data lists
             obj.DAQ_params.BSA_list = obj.guihan.ListBoxBSA.Items;
