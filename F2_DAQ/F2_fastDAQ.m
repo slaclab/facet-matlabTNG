@@ -598,6 +598,8 @@ classdef F2_fastDAQ < handle
             lcaPut(obj.daq_pvs.TIFF_AutoSave,1);
             lcaPut(obj.daq_pvs.TIFF_SetPort,2);
             
+            lcaPut(obj.daq_pvs.TIFF_NumCapture,obj.params.n_shot);
+            
             obj.set_trig_event(obj.params.EC);
             
         end
