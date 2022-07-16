@@ -7,6 +7,7 @@ classdef acq_nonBSA_data < handle
         nPV
         interpData
         daq_handle
+        PID
         freerun = true
         
     end
@@ -27,6 +28,7 @@ classdef acq_nonBSA_data < handle
             lcaSetRetryCount(3);
             
             obj.initGet();
+            obj.PID = 0;
             
         end
         
@@ -58,6 +60,15 @@ classdef acq_nonBSA_data < handle
             new_data = lcaGetSmart(obj.nonBSA_list,0,'DBF_ENUM');
             obj.data = [obj.data new_data];
             
+        end
+        
+        function obj = addDataFR(obj,PID)
+            
+            if obj.PID ~= PID
+                new_data = lcaGetSmart(obj.nonBSA_list,0,'DBF_ENUM');
+                obj.data = [obj.data new_data];
+                obj.PID = PID;
+            end
         end
         
         function interpolate(obj,time)

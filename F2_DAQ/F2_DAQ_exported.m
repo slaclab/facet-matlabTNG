@@ -6,9 +6,6 @@ classdef F2_DAQ_exported < matlab.apps.AppBase
         DAQSettingsPanel               matlab.ui.container.Panel
         ExperimentDropDownLabel        matlab.ui.control.Label
         ExperimentDropDown             matlab.ui.control.DropDown
-        EventCodeButtonGroup           matlab.ui.container.ButtonGroup
-        BeamButton                     matlab.ui.control.RadioButton
-        TS510HzButton                  matlab.ui.control.RadioButton
         CommentTextArea                matlab.ui.control.TextArea
         ShotsperstepEditFieldLabel     matlab.ui.control.Label
         ShotsperstepEditField          matlab.ui.control.NumericEditField
@@ -19,6 +16,9 @@ classdef F2_DAQ_exported < matlab.apps.AppBase
         LoadConfigButton               matlab.ui.control.Button
         ClearConfigButton              matlab.ui.control.Button
         SaveConfigButton               matlab.ui.control.Button
+        FastDAQCheckBox                matlab.ui.control.CheckBox
+        RateDropDownLabel              matlab.ui.control.Label
+        RateDropDown                   matlab.ui.control.DropDown
         CameraConfigPanel              matlab.ui.container.Panel
         Tree                           matlab.ui.container.Tree
         AddButton                      matlab.ui.control.Button
@@ -58,6 +58,8 @@ classdef F2_DAQ_exported < matlab.apps.AppBase
         ScanValuesTextArea             matlab.ui.control.TextArea
         ToleranceEditFieldLabel        matlab.ui.control.Label
         ToleranceEditField             matlab.ui.control.NumericEditField
+        RBVEditFieldLabel              matlab.ui.control.Label
+        RBVEditField                   matlab.ui.control.EditField
         SecondDimensionPanel           matlab.ui.container.Panel
         ScanfunctionDropDown_2Label    matlab.ui.control.Label
         ScanfunctionDropDown_2         matlab.ui.control.DropDown
@@ -73,6 +75,8 @@ classdef F2_DAQ_exported < matlab.apps.AppBase
         ScanValuesTextArea_2           matlab.ui.control.TextArea
         ToleranceEditField_2Label      matlab.ui.control.Label
         ToleranceEditField_2           matlab.ui.control.NumericEditField
+        RBVEditField_2Label            matlab.ui.control.Label
+        RBVEditField_2                 matlab.ui.control.EditField
         RunPanel                       matlab.ui.container.Panel
         RunButton                      matlab.ui.control.StateButton
         AbortButton                    matlab.ui.control.StateButton
@@ -388,23 +392,6 @@ classdef F2_DAQ_exported < matlab.apps.AppBase
             app.ExperimentDropDown.Position = [88 187 71 22];
             app.ExperimentDropDown.Value = 'TEST';
 
-            % Create EventCodeButtonGroup
-            app.EventCodeButtonGroup = uibuttongroup(app.DAQSettingsPanel);
-            app.EventCodeButtonGroup.Title = 'Event Code';
-            app.EventCodeButtonGroup.Position = [9 109 152 73];
-
-            % Create BeamButton
-            app.BeamButton = uiradiobutton(app.EventCodeButtonGroup);
-            app.BeamButton.Text = '222 Beam';
-            app.BeamButton.Position = [11 27 78 22];
-            app.BeamButton.Value = true;
-
-            % Create TS510HzButton
-            app.TS510HzButton = uiradiobutton(app.EventCodeButtonGroup);
-            app.TS510HzButton.Enable = 'off';
-            app.TS510HzButton.Text = '53 TS5 10 Hz';
-            app.TS510HzButton.Position = [11 5 96 22];
-
             % Create CommentTextArea
             app.CommentTextArea = uitextarea(app.DAQSettingsPanel);
             app.CommentTextArea.Position = [175 109 218 97];
@@ -463,6 +450,24 @@ classdef F2_DAQ_exported < matlab.apps.AppBase
             app.SaveConfigButton.ButtonPushedFcn = createCallbackFcn(app, @SaveConfigButtonPushed, true);
             app.SaveConfigButton.Position = [293 45 100 23];
             app.SaveConfigButton.Text = 'Save Config';
+
+            % Create FastDAQCheckBox
+            app.FastDAQCheckBox = uicheckbox(app.DAQSettingsPanel);
+            app.FastDAQCheckBox.Text = 'Fast DAQ';
+            app.FastDAQCheckBox.Position = [176 21 74 22];
+
+            % Create RateDropDownLabel
+            app.RateDropDownLabel = uilabel(app.DAQSettingsPanel);
+            app.RateDropDownLabel.HorizontalAlignment = 'right';
+            app.RateDropDownLabel.Position = [42 157 31 22];
+            app.RateDropDownLabel.Text = 'Rate';
+
+            % Create RateDropDown
+            app.RateDropDown = uidropdown(app.DAQSettingsPanel);
+            app.RateDropDown.Items = {'Beam', '10 Hz', '5 Hz', '1 Hz', '0.5 Hz', '0.2 Hz'};
+            app.RateDropDown.Tooltip = {'Beam rate may be any value. Select a different rate to limit the rate of the DAQ.'};
+            app.RateDropDown.Position = [88 157 71 22];
+            app.RateDropDown.Value = 'Beam';
 
             % Create CameraConfigPanel
             app.CameraConfigPanel = uipanel(app.FACETIIDAQUIFigure);
@@ -602,7 +607,7 @@ classdef F2_DAQ_exported < matlab.apps.AppBase
             % Create ScanTypeDropDownLabel
             app.ScanTypeDropDownLabel = uilabel(app.ScanPanel);
             app.ScanTypeDropDownLabel.HorizontalAlignment = 'right';
-            app.ScanTypeDropDownLabel.Position = [10 367 63 22];
+            app.ScanTypeDropDownLabel.Position = [8 372 63 22];
             app.ScanTypeDropDownLabel.Text = 'Scan Type';
 
             % Create ScanTypeDropDown
@@ -610,20 +615,20 @@ classdef F2_DAQ_exported < matlab.apps.AppBase
             app.ScanTypeDropDown.Items = {'Single Step', '1D Scan', '2D Scan'};
             app.ScanTypeDropDown.ValueChangedFcn = createCallbackFcn(app, @ScanTypeDropDownValueChanged, true);
             app.ScanTypeDropDown.Tooltip = {'It is possible to run N-dimensional scans but not from GUI.'};
-            app.ScanTypeDropDown.Position = [10 341 100 22];
+            app.ScanTypeDropDown.Position = [79 372 100 22];
             app.ScanTypeDropDown.Value = 'Single Step';
 
             % Create FirstDimensionPanel
             app.FirstDimensionPanel = uipanel(app.ScanPanel);
             app.FirstDimensionPanel.Tooltip = {''};
             app.FirstDimensionPanel.Title = 'First Dimension';
-            app.FirstDimensionPanel.Position = [12 7 190 323];
+            app.FirstDimensionPanel.Position = [12 7 190 359];
 
             % Create ScanfunctionDropDownLabel
             app.ScanfunctionDropDownLabel = uilabel(app.FirstDimensionPanel);
             app.ScanfunctionDropDownLabel.HorizontalAlignment = 'right';
             app.ScanfunctionDropDownLabel.Enable = 'off';
-            app.ScanfunctionDropDownLabel.Position = [9 272 79 22];
+            app.ScanfunctionDropDownLabel.Position = [9 308 79 22];
             app.ScanfunctionDropDownLabel.Text = 'Scan function';
 
             % Create ScanfunctionDropDown
@@ -632,95 +637,107 @@ classdef F2_DAQ_exported < matlab.apps.AppBase
             app.ScanfunctionDropDown.ValueChangedFcn = createCallbackFcn(app, @ScanfunctionDropDownValueChanged, true);
             app.ScanfunctionDropDown.Enable = 'off';
             app.ScanfunctionDropDown.Tooltip = {'Fast scan param'};
-            app.ScanfunctionDropDown.Position = [9 246 169 22];
+            app.ScanfunctionDropDown.Position = [9 282 169 22];
             app.ScanfunctionDropDown.Value = 'Use PV';
 
             % Create PVEditFieldLabel
             app.PVEditFieldLabel = uilabel(app.FirstDimensionPanel);
             app.PVEditFieldLabel.HorizontalAlignment = 'right';
             app.PVEditFieldLabel.Enable = 'off';
-            app.PVEditFieldLabel.Position = [9 215 25 22];
+            app.PVEditFieldLabel.Position = [9 251 25 22];
             app.PVEditFieldLabel.Text = 'PV';
 
             % Create PVEditField
             app.PVEditField = uieditfield(app.FirstDimensionPanel, 'text');
             app.PVEditField.Enable = 'off';
-            app.PVEditField.Position = [49 215 127 22];
+            app.PVEditField.Position = [49 251 127 22];
 
             % Create StartEditFieldLabel
             app.StartEditFieldLabel = uilabel(app.FirstDimensionPanel);
             app.StartEditFieldLabel.HorizontalAlignment = 'right';
             app.StartEditFieldLabel.Enable = 'off';
-            app.StartEditFieldLabel.Position = [89 156 30 22];
+            app.StartEditFieldLabel.Position = [89 151 30 22];
             app.StartEditFieldLabel.Text = 'Start';
 
             % Create StartEditField
             app.StartEditField = uieditfield(app.FirstDimensionPanel, 'numeric');
             app.StartEditField.ValueChangedFcn = createCallbackFcn(app, @StartEditFieldValueChanged, true);
             app.StartEditField.Enable = 'off';
-            app.StartEditField.Position = [134 158 42 22];
+            app.StartEditField.Position = [134 153 42 22];
 
             % Create StopEditFieldLabel
             app.StopEditFieldLabel = uilabel(app.FirstDimensionPanel);
             app.StopEditFieldLabel.HorizontalAlignment = 'right';
             app.StopEditFieldLabel.Enable = 'off';
-            app.StopEditFieldLabel.Position = [89 121 30 22];
+            app.StopEditFieldLabel.Position = [89 119 30 22];
             app.StopEditFieldLabel.Text = 'Stop';
 
             % Create StopEditField
             app.StopEditField = uieditfield(app.FirstDimensionPanel, 'numeric');
             app.StopEditField.ValueChangedFcn = createCallbackFcn(app, @StartEditFieldValueChanged, true);
             app.StopEditField.Enable = 'off';
-            app.StopEditField.Position = [134 123 42 22];
+            app.StopEditField.Position = [134 121 42 22];
 
             % Create StepsEditFieldLabel
             app.StepsEditFieldLabel = uilabel(app.FirstDimensionPanel);
             app.StepsEditFieldLabel.HorizontalAlignment = 'right';
             app.StepsEditFieldLabel.Enable = 'off';
-            app.StepsEditFieldLabel.Position = [83 84 36 22];
+            app.StepsEditFieldLabel.Position = [83 87 36 22];
             app.StepsEditFieldLabel.Text = 'Steps';
 
             % Create StepsEditField
             app.StepsEditField = uieditfield(app.FirstDimensionPanel, 'numeric');
             app.StepsEditField.ValueChangedFcn = createCallbackFcn(app, @StartEditFieldValueChanged, true);
             app.StepsEditField.Enable = 'off';
-            app.StepsEditField.Position = [134 86 42 22];
+            app.StepsEditField.Position = [134 89 42 22];
 
             % Create ScanValuesTextAreaLabel
             app.ScanValuesTextAreaLabel = uilabel(app.FirstDimensionPanel);
             app.ScanValuesTextAreaLabel.HorizontalAlignment = 'right';
             app.ScanValuesTextAreaLabel.Enable = 'off';
-            app.ScanValuesTextAreaLabel.Position = [1 62 74 22];
+            app.ScanValuesTextAreaLabel.Position = [1 66 74 22];
             app.ScanValuesTextAreaLabel.Text = 'Scan Values';
 
             % Create ScanValuesTextArea
             app.ScanValuesTextArea = uitextarea(app.FirstDimensionPanel);
             app.ScanValuesTextArea.Enable = 'off';
-            app.ScanValuesTextArea.Position = [10 5 166 53];
+            app.ScanValuesTextArea.Position = [10 9 166 53];
 
             % Create ToleranceEditFieldLabel
             app.ToleranceEditFieldLabel = uilabel(app.FirstDimensionPanel);
             app.ToleranceEditFieldLabel.HorizontalAlignment = 'right';
             app.ToleranceEditFieldLabel.Enable = 'off';
-            app.ToleranceEditFieldLabel.Position = [9 191 59 22];
+            app.ToleranceEditFieldLabel.Position = [9 183 59 22];
             app.ToleranceEditFieldLabel.Text = 'Tolerance';
 
             % Create ToleranceEditField
             app.ToleranceEditField = uieditfield(app.FirstDimensionPanel, 'numeric');
             app.ToleranceEditField.Limits = [0 Inf];
             app.ToleranceEditField.Enable = 'off';
-            app.ToleranceEditField.Position = [115 191 61 22];
+            app.ToleranceEditField.Position = [115 183 61 22];
+
+            % Create RBVEditFieldLabel
+            app.RBVEditFieldLabel = uilabel(app.FirstDimensionPanel);
+            app.RBVEditFieldLabel.HorizontalAlignment = 'right';
+            app.RBVEditFieldLabel.Enable = 'off';
+            app.RBVEditFieldLabel.Position = [4 223 30 22];
+            app.RBVEditFieldLabel.Text = 'RBV';
+
+            % Create RBVEditField
+            app.RBVEditField = uieditfield(app.FirstDimensionPanel, 'text');
+            app.RBVEditField.Enable = 'off';
+            app.RBVEditField.Position = [49 223 127 22];
 
             % Create SecondDimensionPanel
             app.SecondDimensionPanel = uipanel(app.ScanPanel);
             app.SecondDimensionPanel.Title = 'Second Dimension';
-            app.SecondDimensionPanel.Position = [214 7 190 323];
+            app.SecondDimensionPanel.Position = [214 7 190 359];
 
             % Create ScanfunctionDropDown_2Label
             app.ScanfunctionDropDown_2Label = uilabel(app.SecondDimensionPanel);
             app.ScanfunctionDropDown_2Label.HorizontalAlignment = 'right';
             app.ScanfunctionDropDown_2Label.Enable = 'off';
-            app.ScanfunctionDropDown_2Label.Position = [9 272 79 22];
+            app.ScanfunctionDropDown_2Label.Position = [9 308 79 22];
             app.ScanfunctionDropDown_2Label.Text = 'Scan function';
 
             % Create ScanfunctionDropDown_2
@@ -729,84 +746,96 @@ classdef F2_DAQ_exported < matlab.apps.AppBase
             app.ScanfunctionDropDown_2.ValueChangedFcn = createCallbackFcn(app, @ScanfunctionDropDown_2ValueChanged, true);
             app.ScanfunctionDropDown_2.Enable = 'off';
             app.ScanfunctionDropDown_2.Tooltip = {'Slow scan param'};
-            app.ScanfunctionDropDown_2.Position = [9 246 169 22];
+            app.ScanfunctionDropDown_2.Position = [9 282 169 22];
             app.ScanfunctionDropDown_2.Value = 'Use PV';
 
             % Create PVEditField_2Label
             app.PVEditField_2Label = uilabel(app.SecondDimensionPanel);
             app.PVEditField_2Label.HorizontalAlignment = 'right';
             app.PVEditField_2Label.Enable = 'off';
-            app.PVEditField_2Label.Position = [9 215 25 22];
+            app.PVEditField_2Label.Position = [9 251 25 22];
             app.PVEditField_2Label.Text = 'PV';
 
             % Create PVEditField_2
             app.PVEditField_2 = uieditfield(app.SecondDimensionPanel, 'text');
             app.PVEditField_2.Enable = 'off';
-            app.PVEditField_2.Position = [49 215 127 22];
+            app.PVEditField_2.Position = [49 251 127 22];
 
             % Create StartEditField_2Label
             app.StartEditField_2Label = uilabel(app.SecondDimensionPanel);
             app.StartEditField_2Label.HorizontalAlignment = 'right';
             app.StartEditField_2Label.Enable = 'off';
-            app.StartEditField_2Label.Position = [89 158 30 22];
+            app.StartEditField_2Label.Position = [90 151 30 22];
             app.StartEditField_2Label.Text = 'Start';
 
             % Create StartEditField_2
             app.StartEditField_2 = uieditfield(app.SecondDimensionPanel, 'numeric');
             app.StartEditField_2.ValueChangedFcn = createCallbackFcn(app, @StartEditField_2ValueChanged, true);
             app.StartEditField_2.Enable = 'off';
-            app.StartEditField_2.Position = [134 158 42 22];
+            app.StartEditField_2.Position = [135 151 42 22];
 
             % Create StopEditField_2Label
             app.StopEditField_2Label = uilabel(app.SecondDimensionPanel);
             app.StopEditField_2Label.HorizontalAlignment = 'right';
             app.StopEditField_2Label.Enable = 'off';
-            app.StopEditField_2Label.Position = [89 123 30 22];
+            app.StopEditField_2Label.Position = [90 120 30 22];
             app.StopEditField_2Label.Text = 'Stop';
 
             % Create StopEditField_2
             app.StopEditField_2 = uieditfield(app.SecondDimensionPanel, 'numeric');
             app.StopEditField_2.ValueChangedFcn = createCallbackFcn(app, @StartEditField_2ValueChanged, true);
             app.StopEditField_2.Enable = 'off';
-            app.StopEditField_2.Position = [134 123 42 22];
+            app.StopEditField_2.Position = [135 120 42 22];
 
             % Create StepsEditField_2Label
             app.StepsEditField_2Label = uilabel(app.SecondDimensionPanel);
             app.StepsEditField_2Label.HorizontalAlignment = 'right';
             app.StepsEditField_2Label.Enable = 'off';
-            app.StepsEditField_2Label.Position = [83 86 36 22];
+            app.StepsEditField_2Label.Position = [84 86 36 22];
             app.StepsEditField_2Label.Text = 'Steps';
 
             % Create StepsEditField_2
             app.StepsEditField_2 = uieditfield(app.SecondDimensionPanel, 'numeric');
             app.StepsEditField_2.ValueChangedFcn = createCallbackFcn(app, @StartEditField_2ValueChanged, true);
             app.StepsEditField_2.Enable = 'off';
-            app.StepsEditField_2.Position = [134 86 42 22];
+            app.StepsEditField_2.Position = [134 89 42 22];
 
             % Create ScanValuesTextArea_2Label
             app.ScanValuesTextArea_2Label = uilabel(app.SecondDimensionPanel);
             app.ScanValuesTextArea_2Label.HorizontalAlignment = 'right';
             app.ScanValuesTextArea_2Label.Enable = 'off';
-            app.ScanValuesTextArea_2Label.Position = [1 62 74 22];
+            app.ScanValuesTextArea_2Label.Position = [1 65 74 22];
             app.ScanValuesTextArea_2Label.Text = 'Scan Values';
 
             % Create ScanValuesTextArea_2
             app.ScanValuesTextArea_2 = uitextarea(app.SecondDimensionPanel);
             app.ScanValuesTextArea_2.Enable = 'off';
-            app.ScanValuesTextArea_2.Position = [10 5 166 53];
+            app.ScanValuesTextArea_2.Position = [10 9 166 53];
 
             % Create ToleranceEditField_2Label
             app.ToleranceEditField_2Label = uilabel(app.SecondDimensionPanel);
             app.ToleranceEditField_2Label.HorizontalAlignment = 'right';
             app.ToleranceEditField_2Label.Enable = 'off';
-            app.ToleranceEditField_2Label.Position = [9 191 59 22];
+            app.ToleranceEditField_2Label.Position = [10 191 59 22];
             app.ToleranceEditField_2Label.Text = 'Tolerance';
 
             % Create ToleranceEditField_2
             app.ToleranceEditField_2 = uieditfield(app.SecondDimensionPanel, 'numeric');
             app.ToleranceEditField_2.Limits = [0 Inf];
             app.ToleranceEditField_2.Enable = 'off';
-            app.ToleranceEditField_2.Position = [115 191 61 22];
+            app.ToleranceEditField_2.Position = [116 183 61 22];
+
+            % Create RBVEditField_2Label
+            app.RBVEditField_2Label = uilabel(app.SecondDimensionPanel);
+            app.RBVEditField_2Label.HorizontalAlignment = 'right';
+            app.RBVEditField_2Label.Enable = 'off';
+            app.RBVEditField_2Label.Position = [4 223 30 22];
+            app.RBVEditField_2Label.Text = 'RBV';
+
+            % Create RBVEditField_2
+            app.RBVEditField_2 = uieditfield(app.SecondDimensionPanel, 'text');
+            app.RBVEditField_2.Enable = 'off';
+            app.RBVEditField_2.Position = [49 223 127 22];
 
             % Create RunPanel
             app.RunPanel = uipanel(app.FACETIIDAQUIFigure);

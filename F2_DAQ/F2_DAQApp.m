@@ -17,6 +17,10 @@ classdef F2_DAQApp < handle
     end
     properties(Constant)
         maxbeat=1e7 % max heartbeat count, wrap to zero
+        rates = {'BEAM','TEN_HERTZ','FIVE_HERTZ','ONE_HERTZ','HALF_HERTZ','ASSET'}
+        rate_names = {'Beam','10 Hz','5 Hz','1 Hz','0.5 Hz','0.2 Hz'}
+        ecs = [201,203,213,214,222,223,224,225,226,131,53,54,55,56]
+        n_ecs = 14
     end
     
     methods
@@ -88,8 +92,15 @@ classdef F2_DAQApp < handle
             
             obj.DAQ_params.experiment = obj.guihan.ExperimentDropDown.Value;
             
-            EC = split(obj.guihan.EventCodeButtonGroup.SelectedObject.Text);
-            obj.DAQ_params.EC = str2num(EC{1});
+            rv = obj.guihan.RateDropDown.Value;
+            
+            obj.DAQ_params.rate = obj.rates{strcmp(rv,obj.rate_names)};
+            obj.DAQ_params.rate_name = rv;
+            if obj.guihan.FastDAQCheckBox.Value
+                obj.DAQ_params.EC = 214;
+            else
+                obj.DAQ_params.EC = 222;
+            end
             
             obj.DAQ_params.comment    = obj.guihan.CommentTextArea.Value;
             obj.DAQ_params.n_shot     = obj.guihan.ShotsperstepEditField.Value;
@@ -107,6 +118,9 @@ classdef F2_DAQApp < handle
             obj.DAQ_params.camPVs   = obj.camCheck.DAQ_Cams.camPVs;
             obj.DAQ_params.camSIOCs = obj.camCheck.DAQ_Cams.siocs;
             obj.DAQ_params.camTrigs = obj.camCheck.DAQ_Cams.camTrigs;
+            obj.checkTrigStat();
+            
+            
             obj.DAQ_params.num_CAM  = numel(obj.camCheck.DAQ_Cams.camNames);
             
             % Scalar data lists
@@ -154,6 +168,11 @@ classdef F2_DAQApp < handle
                 
                 obj.DAQ_params.totalSteps = obj.DAQ_params.nSteps(1);
                 obj.DAQ_params.stepsAll = (1:obj.DAQ_params.nSteps(1))';
+                
+                if obj.DAQ_params.totalSteps == 0
+                    obj.addMessage('Cannot run scan with zero steps.');
+                    return
+                end
             end
             
             if obj.DAQ_params.scanDim > 1
@@ -168,11 +187,19 @@ classdef F2_DAQApp < handle
                 obj.DAQ_params.stepsAll = zeros(obj.DAQ_params.totalSteps,2);
                 obj.DAQ_params.stepsAll(:,1) = repelem((1:obj.DAQ_params.nSteps(1))',obj.DAQ_params.nSteps(2));
                 obj.DAQ_params.stepsAll(:,2) = repmat((1:obj.DAQ_params.nSteps(2))',obj.DAQ_params.nSteps(1),1);
-                
+                if obj.DAQ_params.totalSteps == 0
+                    obj.addMessage('Cannot run scan with zero steps.');
+                    return
+                end
             end
             
             obj.addMessage('DAQ parameters set.');
-            obj.DAQ_obj = F2_runDAQ(obj.DAQ_params,obj);
+            if obj.guihan.FastDAQCheckBox.Value
+                obj.DAQ_obj = F2_fastDAQ(obj.DAQ_params,obj);
+            else
+                obj.DAQ_obj = F2_runDAQ(obj.DAQ_params,obj);
+            end
+            
             
         end
         
@@ -282,9 +309,46 @@ classdef F2_DAQApp < handle
             uit = uitable(fig,'Data',t);
             uit.Position = [20 20 520 380];
         end
-            
-            
         
+        function checkTrigStat(obj)
+            
+            cam_trigs = obj.DAQ_params.camTrigs;
+            
+            evrSettings = zeros(obj.DAQ_params.num_CAM,1);
+            evrRoots  = cell(obj.DAQ_params.num_CAM,1);
+            evrChans  = cell(obj.DAQ_params.num_CAM,1);
+            
+            for i = 1:numel(cam_trigs)
+                
+                comps = strsplit(cam_trigs{i},':');
+                chan_str = comps{4};
+                %chan_num = str2num(comps{4});
+                
+                evr_str = ['EVR:' comps{2} ':' comps{3}];
+                evrRoots{i} = evr_str;
+                evrChans{i} = chan_str;
+                
+                evr_state = zeros(1,obj.n_ecs);
+                for j = 1:obj.n_ecs
+                    
+                    evr_state(j) = lcaGet([evr_str ':EVENT' num2str(j) 'CTRL.OUT' chan_str],0,'float');
+                    
+                end
+                
+                if sum(evr_state) ~= 1
+                    obj.addMessage(sprintf('Cannot determine EVR/Trigger state of camera %s. Aborting',obj.DAQ_params.camNames{i}));
+                    error('Cannot determine EVR/Trigger state of camera %s. Aborting',obj.DAQ_params.camNames{i});
+                end
+                
+                evrSettings(i) = obj.ecs(logical(evr_state));
+                
+            end
+            
+            obj.DAQ_params.evrSettings = evrSettings;
+            obj.DAQ_params.evrRoots = evrRoots;
+            obj.DAQ_params.evrChans = evrChans;
+        end
+
         function addMessage(obj,message)
             
             obj.nMsg = obj.nMsg+1;
