@@ -225,21 +225,13 @@ classdef F2_WirescanApp < handle
         pidpv=sprintf('PATT:SYS1:1:PULSEIDHST%d',obj.edef);
         obj.data.pid=lcaGet(pidpv,scanWireBufferNum);
         obj.data.pos=lcaGet(char(obj.wirename+":POSNHST"+obj.edef),scanWireBufferNum).*1e-6;
-        obj.data.pmt=lcaGet(char(obj.pmtname+":QDCRAWHST"+obj.edef),scanWireBufferNum) ;
-        bad = isnan(obj.data.pmt) | isinf(obj.data.pmt) | obj.data.pmt==0 | obj.data.pos==0 | obj.data.pos<obj.motor_range(1) | obj.data.pos>obj.motor_range(2) | isnan(obj.data.pos) | isnan(obj.data.pmt) ;
-        if all(bad)
-          error('Bad data');
-        end
-        obj.data.pid=obj.data.pid(~bad); obj.data.pos=obj.data.pos(~bad); obj.data.pmt=obj.data.pmt(~bad);
-        obj.data.toro = lcaGet(char(obj.toroname+":0:TMITHST"+obj.edef),scanWireBufferNum) ;
-        obj.data.toro = obj.data.toro(~bad) ;
+        obj.data.pmt=lcaGet(cellstr("PMT:"+obj.pmts(:)+":QDCRAWHST"+obj.edef),scanWireBufferNum) ;
+        obj.data.toro = lcaGet(cellstr("TORO:"+obj.tors(:)+":0:TMITHST"+obj.edef),scanWireBufferNum) ;
         if ~isempty(obj.bpms)
           obj.data.xbpm1 = lcaGet(char(obj.bpms(obj.bpmsel(1))+":XHST"+obj.edef),scanWireBufferNum).*1e-3 ;
           obj.data.xbpm2 = lcaGet(char(obj.bpms(obj.bpmsel(2))+":XHST"+obj.edef),scanWireBufferNum).*1e-3 ;
           obj.data.ybpm1 = lcaGet(char(obj.bpms(obj.bpmsel(1))+":YHST"+obj.edef),scanWireBufferNum).*1e-3 ;
           obj.data.ybpm2 = lcaGet(char(obj.bpms(obj.bpmsel(2))+":YHST"+obj.edef),scanWireBufferNum).*1e-3 ;
-          obj.data.xbpm1=obj.data.xbpm1(~bad);obj.data.xbpm2=obj.data.xbpm2(~bad);
-          obj.data.ybpm1=obj.data.ybpm1(~bad);obj.data.ybpm2=obj.data.ybpm2(~bad);
           % Convert to position at wire
           obj.LLM.UpdateModel ;
           mname=obj.modelbpms;
@@ -328,15 +320,22 @@ classdef F2_WirescanApp < handle
           pos = obj.data.pos ;
       end
       
-      % Apply BPM measured position correction?
-      if obj.jittercor && ~any(isnan(obj.data.bpmpos))
-        pos = pos + (obj.data.bpmpos-mean(obj.data.bpmpos)) ;
-      end
+      ydat = obj.data.pmt(obj.pmtsel,:) ;
+      qdat = obj.data.toro(obj.torsel,:) ;
+      bad = isnan(ydat) | isinf(ydat) | ydat==0 | pos==0 | pos<obj.pos_range(1) | obj.data.pos>obj.pos_range(2) | isnan(pos) ;
       
-      ydat = obj.data.pmt ;
-      Q=mean(obj.data.toro)*physConsts.eQ;
+      % Apply BPM measured position correction?
+      if obj.jittercor
+        bad = bad | isnan(obj.data.bpmpos) | obj.data.bpmpos==0 | isinf(obj.data.bpmpos) ;
+        pos = pos(~bad) + (obj.data.bpmpos(~bad)-mean(obj.data.bpmpos(~bad))) ;
+      else
+        pos = pos(~bad) ;
+      end
+      ydat=ydat(~bad); qdat=qdat(~bad);
+      
+      Q=mean(qdat)*physConsts.eQ;
       if obj.chargenorm
-        ydat=ydat.*obj.data.toro ;
+        ydat=ydat.*qdat ;
       end
       ydat=ydat./sum(ydat).*Q.*1e9;
       dy=ones(size(ydat)).*max(ydat)./100;
@@ -354,7 +353,7 @@ classdef F2_WirescanApp < handle
       
       if ~isempty(ahan)
         if string(obj.guihan.UnitsDropDown.Value)=="Motor"
-          pos=obj.data.pos;
+          pos=obj.data.pos(~bad);
         end
         plot(ahan,pos.*1e6,ydat,'*');
         xx = linspace(min(pos),max(pos),1000);

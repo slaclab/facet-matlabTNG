@@ -467,9 +467,8 @@ classdef F2_S20ConfigApp < handle & F2_common
         sprintf('WAIST Location: %s (Z=%.3f)',obj.WaistDesName,obj.WaistDesZ);
         sprintf('Image location: %s',obj.WaistDesNameDS);
         sprintf('Q5FF=%.2f Q4FF=%.2f Q3FF=%.2f Q2FF=%.2f \n Q1FF=%.2f Q0FF= %.2f QD0= %.2f \n QD1=%.2f QD2= %.2f',obj.Q_Match)};
-      text(axhan,0.05,0.75,txt,'Units','normalized');
       drawnow
-      util_printLog(fhan,'title','Sector 20 Config Change');
+      util_printLog2020(fhan, 'title','Sector 20 Config Change','author','F2_S20Config.m','text',txt);
       close(fhan);
     end
     function PVwatchdog(obj,~,~)

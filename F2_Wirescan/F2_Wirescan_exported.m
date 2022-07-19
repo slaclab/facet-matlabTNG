@@ -184,11 +184,10 @@ classdef F2_Wirescan_exported < matlab.apps.AppBase
 
     % Value changed function: PMTDropDown
     function PMTDropDownValueChanged(app, event)
-      app.aobj.ResetData;
-      cla(app.UIAxes); reset(app.UIAxes);
       value = app.PMTDropDown.Value;
       app.aobj.pmtname = value ;
       app.aobj.guiupdate;
+      app.aobj.ProcData;
     end
 
     % Button pushed function: StartScanButton
@@ -244,11 +243,10 @@ classdef F2_Wirescan_exported < matlab.apps.AppBase
 
     % Value changed function: TORODropDown
     function TORODropDownValueChanged(app, event)
-      app.aobj.ResetData;
-      cla(app.UIAxes); reset(app.UIAxes);
       value = app.TORODropDown.Value;
       app.aobj.toroname = value ;
       app.aobj.guiupdate;
+      app.aobj.ProcData;
     end
 
     % Value changed function: BunchLengthWindowingCheckBox

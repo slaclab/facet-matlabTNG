@@ -267,7 +267,7 @@ classdef F2_S20Config_exported < matlab.apps.AppBase
     function WaistX_dzDESValueChanged(app, event)
       value = app.WaistX_dzDES.Value;
       if ~app.XYSelect
-        app.WaistY_dzACT.Value = value ;
+        app.WaistY_dzDES.Value = value ;
         app.XYSelect=false;
       else
         app.XYSelect=true;
@@ -279,7 +279,7 @@ classdef F2_S20Config_exported < matlab.apps.AppBase
     function WaistY_dzDESValueChanged(app, event)
       value = app.WaistY_dzDES.Value;
       if ~app.XYSelect
-        app.WaistX_dzACT.Value = value ;
+        app.WaistX_dzDES.Value = value ;
         app.XYSelect=false;
       else
         app.XYSelect=true;

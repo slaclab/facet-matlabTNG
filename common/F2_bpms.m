@@ -97,10 +97,10 @@ classdef F2_bpms < handle
       ele =obj.modelID ;
       xax=subplot(2,1,1,'Parent',ahan);
       yax=subplot(2,1,2,'Parent',ahan);
-      errorbar(xax,z,xm.*1e3,xerr.*1e3,'.'), xlabel(xax,'Z [m]'); ylabel(xax,'X [mm]');
+      errorbar(xax,z,xm,xerr,'.'), xlabel(xax,'Z [m]'); ylabel(xax,'X [mm]');
       grid(xax,'on');
       if exist('ahan2','var')
-        errorbar(ahan2,z,xm.*1e3,xerr.*1e3,'.');
+        errorbar(ahan2,z,xm,xerr,'.');
         try
           AddMagnetPlotZ(ele(1),ele(end),ahan2,'replace');
         catch
@@ -114,7 +114,7 @@ classdef F2_bpms < handle
       if obj.plotscale>0
         ax=axis(xax); ax(3)=double(-obj.plotscale); ax(4)=double(obj.plotscale); axis(xax,ax);
       end
-      errorbar(yax,z,ym.*1e3,yerr.*1e3,'.'), xlabel(yax,'Z [m]'); ylabel(yax,'Y [mm]');
+      errorbar(yax,z,ym,yerr,'.'), xlabel(yax,'Z [m]'); ylabel(yax,'Y [mm]');
       grid(yax,'on');
       if ~exist('ahan2','var')
         try
@@ -269,7 +269,7 @@ classdef F2_bpms < handle
         builder = pvaRequest('FACET-II:BUFFACQ');
         builder.with('BPMD', 57);
         builder.with('NRPOS', npulse);
-        builder.timeout(40);
+        builder.timeout(180);
         abpmnames={};
         for ibpm=find(selaida)'
           name = regexp(obj.bpmnames(ibpm),"(\S+):(\S+):(\d+)",'tokens','once') ;
