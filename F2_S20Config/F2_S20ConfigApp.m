@@ -462,11 +462,14 @@ classdef F2_S20ConfigApp < handle & F2_common
       axis(axhan,ax);
       xlabel(axhan,'Z [m]'); ylabel(axhan,'\beta_x (blue) \beta_y (red) [m], \eta_y [mm]');
       AddMagnetPlotZ(double(obj.EleRange(1)),length(BEAMLINE));
-      txt={sprintf('BETA_X = %.3f',obj.BetaMatch(1));
-        sprintf('BETA_Y = %.3f',obj.BetaMatch(2));
-        sprintf('WAIST Location: %s (Z=%.3f)',obj.WaistDesName,obj.WaistDesZ);
-        sprintf('Image location: %s',obj.WaistDesNameDS);
-        sprintf('Q5FF=%.2f Q4FF=%.2f Q3FF=%.2f Q2FF=%.2f \n Q1FF=%.2f Q0FF= %.2f QD0= %.2f \n QD1=%.2f QD2= %.2f',obj.Q_Match)};
+      txt=[sprintf('BETA_X = %.3f\n',obj.BetaMatch(1)) ...
+        sprintf('BETA_Y = %.3f\n',obj.BetaMatch(2)) ...
+        sprintf('WAIST Location: %s (Z=%.3f)\n',obj.WaistDesName,obj.WaistDesZ) ...
+        sprintf('Image location: %s\n',obj.WaistDesNameDS) ...
+        sprintf('Q5FF=%.2f Q4FF=%.2f Q3FF=%.2f Q2FF=%.2f\nQ1FF=%.2f Q0FF= %.2f QD0= %.2f QD1=%.2f QD2= %.2f',obj.Q_Match)];
+      if any(abs(obj.WaistShiftDES)>0)
+        txt=[txt sprintf('\nDesired Waist Z shift: %g / %g cm\n',obj.WaistShiftDES.*100)];
+      end
       drawnow
       util_printLog2020(fhan, 'title','Sector 20 Config Change','author','F2_S20Config.m','text',txt);
       close(fhan);

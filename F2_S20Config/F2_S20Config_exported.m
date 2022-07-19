@@ -272,7 +272,7 @@ classdef F2_S20Config_exported < matlab.apps.AppBase
       else
         app.XYSelect=true;
       end
-      app.aobj.WaistShiftDES=[app.WaistX_dzDES.Value app.WaistY_dzDES.Value];
+      app.aobj.WaistShiftDES=[app.WaistX_dzDES.Value app.WaistY_dzDES.Value].*1e-2;
     end
 
     % Value changed function: WaistY_dzDES
@@ -284,7 +284,7 @@ classdef F2_S20Config_exported < matlab.apps.AppBase
       else
         app.XYSelect=true;
       end
-      app.aobj.WaistShiftDES=[app.WaistX_dzDES.Value app.WaistY_dzDES.Value];
+      app.aobj.WaistShiftDES=[app.WaistX_dzDES.Value app.WaistY_dzDES.Value].*1e-2;
     end
 
     % Button pushed function: TRIMQUADSButton
