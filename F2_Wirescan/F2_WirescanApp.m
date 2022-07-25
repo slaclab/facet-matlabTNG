@@ -364,6 +364,13 @@ classdef F2_WirescanApp < handle
       
       switch obj.fitmethod
         case "gauss"
+          [~,q,dq,chi2]=gauss_fit(pos,ydat,dy); q(5)=0;
+        case "agauss"
+          [~,q,dq,chi2]=agauss_fit(pos,ydat,dy);
+      end
+      dy=dy.*sqrt(chi2);
+      switch obj.fitmethod
+        case "gauss"
           [~,q,dq]=gauss_fit(pos,ydat,dy); q(5)=0;
         case "agauss"
           [~,q,dq]=agauss_fit(pos,ydat,dy);

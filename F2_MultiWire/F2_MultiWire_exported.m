@@ -39,6 +39,8 @@ classdef F2_MultiWire_exported < matlab.apps.AppBase
     WS F2_WirescanApp
     WSApp
     plane string = "x"
+    Sigma(1,4)
+    SigmaErr(1,4)
   end
   
   properties (Access = private)
@@ -46,6 +48,14 @@ classdef F2_MultiWire_exported < matlab.apps.AppBase
   end
   
   methods (Access = public)
+    
+    function RemoteScan(app)
+      app.ScanAllButtonPushed();
+    end
+    
+    function RemoteSet(app)
+      app.LinacDropDownValueChanged();
+    end
     
     function PlotData(app,iwire)
       if ~exist('iwire','var')
@@ -62,8 +72,12 @@ classdef F2_MultiWire_exported < matlab.apps.AppBase
         if ~isempty(app.WS(iws).fitdata)
           if ~isempty(app.WS(iws).fitdata)
             app.(sprintf('WS%dSigma',iws)).Value = app.WS(iws).fitdata.sigma ;
+            app.Sigma(iws) = app.WS(iws).fitdata.sigma ;
+            app.SigmaErr(iws) = app.WS(iws).fitdata.sigmaErr ;
           else
             app.(sprintf('WS%dSigma',iws)).Value = 0 ;
+            app.Sigma(iws) = 0 ;
+            app.SigmaErr(iws) = 0 ;
           end
         end
       end
@@ -79,6 +93,7 @@ classdef F2_MultiWire_exported < matlab.apps.AppBase
           app.WS3Axes.Title.String = 'WIRE:LI19:244' ;
           app.WS4Axes.Title.String = 'WIRE:LI19:344' ;
       end
+      app.UpdateObj.(app.UpdateMethod) ;
     end
     
     function ScanWire(app,iwire)
@@ -122,7 +137,7 @@ classdef F2_MultiWire_exported < matlab.apps.AppBase
   methods (Access = private)
 
     % Code that executes after component creation
-    function startupFcn(app, linac, dim, LLM)
+    function startupFcn(app, LLM, linac, dim)
       if exist('linac','var')
         app.LinacDropDown.Value = linac ;
         app.plane=dim;
