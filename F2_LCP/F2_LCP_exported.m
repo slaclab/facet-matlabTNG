@@ -295,6 +295,13 @@ classdef F2_LCP_exported < matlab.apps.AppBase
             app.LCP.blockList.Comp.flip();
             app.updateGUI();
         end
+
+        % Close request function: UIFigure
+        function UIFigureCloseRequest(app, event)
+            delete(app)
+            disp('Remember to uncomment the exit command')
+            exit;
+        end
     end
 
     % Component initialization
@@ -307,6 +314,7 @@ classdef F2_LCP_exported < matlab.apps.AppBase
             app.UIFigure = uifigure('Visible', 'off');
             app.UIFigure.Position = [100 100 1101 730];
             app.UIFigure.Name = 'MATLAB App';
+            app.UIFigure.CloseRequestFcn = createCallbackFcn(app, @UIFigureCloseRequest, true);
 
             % Create ProbeflippersPanel
             app.ProbeflippersPanel = uipanel(app.UIFigure);
