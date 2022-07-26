@@ -102,7 +102,7 @@ classdef DataSetDAN < handle
                 s.plotToGUI = 1;
             end
             
-            s.hlpDispMsg('dataSet succefully loaded');
+            s.hlpDispMsg('dataSet succefully loaded\n');
             
             
         end
@@ -242,6 +242,7 @@ classdef DataSetDAN < handle
                 s.hlpDispMsg('Done with sorting vector')
             end
             
+            %Label for applied function
             fcnS = func2str(fcn);
 
             % Create an allowed field name for the struct that is kind of unique 
@@ -254,13 +255,13 @@ classdef DataSetDAN < handle
                isfield(s.tempScalars.(diag).waterfall,fcnSN)       
                     waterfall = s.tempScalars.(diag).waterfall.(fcnSN);
             else
-                s.hlpDispMsg('Starting to make waterfall plot...')
+                s.hlpDispMsg('Starting to make waterfall plot...\n')
                 for k = 1:len
                     diagData = s.hlpGetImage(diag, data.common_index(k));
                     wFData = fcn(diagData);
                     waterfall(:,k) = wFData;
                 end
-                s.hlpDispMsg('Finished making waterfall plot')
+                s.hlpDispMsg('Finished making waterfall plot\n')
                 s.tempScalars.(diag).waterfall.(fcnSN) = waterfall;
             end
 
@@ -379,18 +380,92 @@ classdef DataSetDAN < handle
             end
         end
         
-        function RV = processImgsRV(s, diag, fcn)
-            % Returns a vector where fcn is a 1D vector of length N such 
-            % that the return RV is an n x N matrix.
+        function N = nbrOfSyncedDataPoints(s)
+            N = length(s.dataSet.scalars.common_index);
+        end
+            
+        function RVstruct = processImgsRV(s, diag, fcn)
+            % Returns a struct with a matrix RV defined by fcn and the 
+            % number of datapoints n in the diagnsotic diag and the length
+            % N of the 1D vector  
             
             [data,diagData] = s.hlpCheckImage(diag);
             l = length(fcn(diagData));
-            RV = zeros(length(data.common_index),l);
+            RVstruct.RV = zeros(l,length(data.common_index));
+            
             
             for k = 1:length(data.common_index)
                 img = s.hlpGetImage(diag, k);
-                RV(k,:) = fcn(img);
+                RVstruct.RV(:,k) = fcn(img);
             end
+            
+            %fill meta data
+            RVstruct.diag = diag;
+            RVstruct.fcn = fcn;
+            RVstruct.fcnS = func2str(fcn);
+            RVstruct.idx = data.common_index;
+            
+        end
+        
+        function [scalarArray, scalarLabel] = getFacetScalar(s, ...
+            FACETscalar)
+        %% hlpGetScalarArray extracts a 1D array of values from FACET data
+        %  currently supports scalar diagnostics (type 1) and image
+        %  diagnostics combined with a function that maps 2D - > scalar
+        %  (type 2).
+        
+            if ischar(FACETscalar)
+                FACETscalar = {FACETscalar};
+            end
+            
+            type = hlpIsFSArray( FACETscalar, 'Input is not an FACET Scalar Array');
+
+            if type == 1
+                if isfield(s.dataSet.scalars,(FACETscalar{1}))
+                    scalarArray = s.dataSet.scalars.(FACETscalar{1})(s.dataSet.pulseID.common_scalar_index);
+                    scalarLabel = FACETscalar{1};
+                    return
+                else
+                    for k = 1:numel(s.scalarGroups)
+                        if isfield(s.dataSet.scalars.(s.scalarGroups{k}),(FACETscalar{1}) )
+                            scalarArray = s.dataSet.scalars.(s.scalarGroups{k}).(FACETscalar{1})(s.dataSet.pulseID.common_scalar_index);
+                            scalarLabel = FACETscalar{1};
+                            return
+                        end
+                    end
+                end
+            elseif type == 2
+                % Check if already calculated
+                fcn = FACETscalar{2};
+                fcnS = func2str(fcn);
+                
+                %Create an allowed field name for the struct that is kind of unique 
+                fcnSN = s.fcn2fieldName(fcnS);
+                
+                %Check if this has been calculated before to speed up the
+                %plotting
+                if isfield(s.tempScalars, FACETscalar{1}) && ...
+                        isfield(s.tempScalars.(FACETscalar{1}),fcnSN)
+                    scalarArray = s.tempScalars.(FACETscalar{1}).(fcnSN);
+                else
+                    dS = getfield(s.dataSet.images,FACETscalar{1});
+                    nbrOfShots = length(dS.common_index);
+                    scalarArray = zeros(1,nbrOfShots);
+
+
+                    for k = 1:nbrOfShots
+                        diagData = s.hlpGetImage(FACETscalar{1},dS.common_index(k));
+                        scalarData = fcn(diagData);
+                        scalarArray(:,k) = scalarData;
+                    end
+                end
+                
+                %Save if used request to plot this again
+                s.tempScalars.(FACETscalar{1}).(fcnSN) = scalarArray;
+                
+                scalarLabel = sprintf('%s|%s',FACETscalar{1},fcnS);
+            end
+
         end
     end
     
@@ -528,12 +603,12 @@ classdef DataSetDAN < handle
                     end
                 end
 
-
+                img = s.hlpGetImage(inputArg{1},1);
                 % Type 2 check
                 if length(inputArg) == 2 && ischar(inputArg{1}) && ...
                         isfield(s.dataSet.images, inputArg{1}) && ...
                         isa(inputArg{2},'function_handle') && ...
-                        isscalar(inputArg{2}([1,2;3,4]))
+                        isscalar(inputArg{2}(img))
 
                     type = 2;
                     return
@@ -550,6 +625,7 @@ classdef DataSetDAN < handle
                 
             end
             
+            type = 0;
             
         end
         

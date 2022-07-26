@@ -6,6 +6,7 @@ if ~nargin || ~exist(appname,'dir')
 end
 addpath common
 addpath web
+addpath F2_Wirescan
 cd(appname);
 appobj=eval([appname 'App']);
 
