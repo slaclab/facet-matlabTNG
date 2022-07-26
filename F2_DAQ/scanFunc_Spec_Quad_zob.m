@@ -45,7 +45,7 @@ classdef scanFunc_Spec_Quad_zob
             z_im=lcaGet('SIOC:SYS1:ML00:CALCOUT053');
             m12_req=lcaGet('SIOC:SYS1:ML00:CALCOUT054');
             m34_req=lcaGet('SIOC:SYS1:ML00:CALCOUT055');
-            [isok, BDES0, BDES1, BDES2] = E300_calc_QS_3(z_ob, z_im, E-10, m12_req, m34_req) % Note that the 3rd parameter (energy) is entered with repect to 10 GeV.
+            [isok, BDES0, BDES1, BDES2] = E300_calc_QS_3(z_ob, z_im, E-10, m12_req, m34_req); % Note that the 3rd parameter (energy) is entered with repect to 10 GeV.
             
             caput(obj.pvs.control,value);
             obj.daqhandle.dispMessage(sprintf('Setting %s to %0.2f', obj.pvs.control.name, value));
@@ -58,7 +58,7 @@ classdef scanFunc_Spec_Quad_zob
             quadPV.readback_PV2 = "LGPS:LI20:3091";
             
             if isok
-                [delta] = set_Spec_Quad_new(obj, quadPV, [BDES0, BDES1, BDES2]);
+                [delta] = set_Spec_Quad_new(obj, quadPV, [BDES0, BDES1, BDES2]');
             else
                 obj.daqhandle.dispMessage('BDES out of range: Q0D = %.2f, Q1D = %.2f, Q2D = %.2f', BDES0, BDES1, BDES2);
                 delta = 100; % How do I stop a DAQ with an error?

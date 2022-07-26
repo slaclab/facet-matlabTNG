@@ -344,7 +344,7 @@ classdef F2_WirescanApp < handle
         ydat = obj.data.pmt ;
         qdat = obj.data.toro ;
       end
-      bad = isnan(ydat) | isinf(ydat) | ydat==0 | pos==0 | pos<obj.pos_range(1) | obj.data.pos>obj.pos_range(2) | isnan(pos) ;
+      bad = isnan(ydat) | isinf(ydat) | ydat==0 | pos==0 | pos<obj.pos_range(1) | pos>obj.pos_range(2) | isnan(pos) ;
       
       % Apply BPM measured position correction?
       if obj.jittercor
