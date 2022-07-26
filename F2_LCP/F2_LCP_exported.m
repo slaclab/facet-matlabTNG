@@ -2,80 +2,81 @@ classdef F2_LCP_exported < matlab.apps.AppBase
 
     % Properties that correspond to app components
     properties (Access = public)
-        UIFigure                      matlab.ui.Figure
-        ProbeflippersPanel            matlab.ui.container.Panel
-        Probeline0HeNeSwitchLabel     matlab.ui.control.Label
-        Probeline0HeNeSwitch          matlab.ui.control.Switch
-        ProbelineSwitchLabel          matlab.ui.control.Label
-        ProbelineSwitch               matlab.ui.control.Switch
-        MainflippersPanel             matlab.ui.container.Panel
-        CompressorNFFFSwitchLabel     matlab.ui.control.Label
-        CompressorNFFFSwitch          matlab.ui.control.Switch
-        PBNFFFSwitchLabel             matlab.ui.control.Label
-        PBNFFFSwitch                  matlab.ui.control.Switch
-        DelayLinesPanel               matlab.ui.container.Panel
-        EOSMainEditFieldLabel         matlab.ui.control.Label
-        EOSMainEditField              matlab.ui.control.NumericEditField
-        MainbeamsyncLimitsLabel       matlab.ui.control.Label
-        EOSMainEditFieldLabel_2       matlab.ui.control.Label
-        EOSMainEditField_2            matlab.ui.control.NumericEditField
-        MainbeamsyncLimitsLabel_2     matlab.ui.control.Label
-        EOSMainEditFieldLabel_3       matlab.ui.control.Label
-        EOSMainEditField_3            matlab.ui.control.NumericEditField
-        MainbeamsyncLimitsLabel_3     matlab.ui.control.Label
-        EOSMainEditFieldLabel_4       matlab.ui.control.Label
-        EOSMainEditField_4            matlab.ui.control.NumericEditField
-        MainbeamsyncLimitsLabel_4     matlab.ui.control.Label
-        EOSPanel                      matlab.ui.container.Panel
-        EOSND2SwitchLabel             matlab.ui.control.Label
-        EOSND2Switch                  matlab.ui.control.Switch
-        E324Panel                     matlab.ui.container.Panel
-        IonizerPanel                  matlab.ui.container.Panel
-        IonizerblockSwitch_2Label     matlab.ui.control.Label
-        IonizerblockSwitch_2          matlab.ui.control.Switch
-        IonizerND2SwitchLabel         matlab.ui.control.Label
-        IonizerND2Switch              matlab.ui.control.Switch
-        ShadowgraphyPanel             matlab.ui.container.Panel
-        ShadowgraphyblockSwitchLabel  matlab.ui.control.Label
-        ShadowgraphyblockSwitch       matlab.ui.control.Switch
-        Shadowgraphy1NDSwitchLabel    matlab.ui.control.Label
-        Shadowgraphy1NDSwitch         matlab.ui.control.Switch
-        Shadowgraphy2NDSwitchLabel    matlab.ui.control.Label
-        Shadowgraphy2NDSwitch         matlab.ui.control.Switch
-        UpdateGUIButton               matlab.ui.control.Button
-        LasershuttersPanel            matlab.ui.container.Panel
-        HeNeflipperSwitchLabel        matlab.ui.control.Label
-        HeNeflipperSwitch             matlab.ui.control.Switch
-        CWlaserSwitchLabel            matlab.ui.control.Label
-        CWlaserSwitch                 matlab.ui.control.Switch
-        EPSShutterSwitchLabel         matlab.ui.control.Label
-        EPSShutterSwitch              matlab.ui.control.Switch
-        IPOTR1Panel                   matlab.ui.container.Panel
-        IPOTR1OvensideSwitchLabel     matlab.ui.control.Label
-        IPOTR1OvensideSwitch          matlab.ui.control.Switch
-        IPOTR1ND9SwitchLabel          matlab.ui.control.Label
-        IPOTR1ND9Switch               matlab.ui.control.Switch
-        IPOTR2Panel                   matlab.ui.container.Panel
-        IPOTR2ND9SwitchLabel          matlab.ui.control.Label
-        IPOTR2ND9Switch               matlab.ui.control.Switch
-        IPOTR2ND2SwitchLabel          matlab.ui.control.Label
-        IPOTR2ND2Switch               matlab.ui.control.Switch
-        IPOTR2BlueSwitchLabel         matlab.ui.control.Label
-        IPOTR2BlueSwitch              matlab.ui.control.Switch
-        LaserattenuatorPanel          matlab.ui.container.Panel
-        SetEditFieldLabel             matlab.ui.control.Label
-        SetLaserEditField             matlab.ui.control.NumericEditField
-        Max119Label                   matlab.ui.control.Label
-        Min74Label                    matlab.ui.control.Label
-        LaserRBVLabel                 matlab.ui.control.Label
-        ofenergyLabel                 matlab.ui.control.Label
-        ProbeattenuatorPanel          matlab.ui.container.Panel
-        SetEditField_2Label           matlab.ui.control.Label
-        SetProbeEditField             matlab.ui.control.NumericEditField
-        Max82Label                    matlab.ui.control.Label
-        Min37Label                    matlab.ui.control.Label
-        ProbeRBVLabel                 matlab.ui.control.Label
-        ofenergyLabel_2               matlab.ui.control.Label
+        UIFigure                        matlab.ui.Figure
+        ProbeflippersPanel              matlab.ui.container.Panel
+        Probeline0HeNeSwitchLabel       matlab.ui.control.Label
+        Probeline0HeNeSwitch            matlab.ui.control.Switch
+        ProbelineSwitchLabel            matlab.ui.control.Label
+        ProbelineSwitch                 matlab.ui.control.Switch
+        MainflippersPanel               matlab.ui.container.Panel
+        CompressorNFFFSwitchLabel       matlab.ui.control.Label
+        CompressorNFFFSwitch            matlab.ui.control.Switch
+        PBNFFFSwitchLabel               matlab.ui.control.Label
+        PBNFFFSwitch                    matlab.ui.control.Switch
+        CompressorBeamBlockSwitchLabel  matlab.ui.control.Label
+        CompressorBeamBlockSwitch       matlab.ui.control.Switch
+        DelayLinesPanel                 matlab.ui.container.Panel
+        EOSMainEditFieldLabel           matlab.ui.control.Label
+        EOSMainEditField                matlab.ui.control.NumericEditField
+        MainbeamsyncLimitsLabel         matlab.ui.control.Label
+        EOSMainEditFieldLabel_2         matlab.ui.control.Label
+        EOSMainEditField_2              matlab.ui.control.NumericEditField
+        MainbeamsyncLimitsLabel_2       matlab.ui.control.Label
+        EOSMainEditFieldLabel_3         matlab.ui.control.Label
+        EOSMainEditField_3              matlab.ui.control.NumericEditField
+        MainbeamsyncLimitsLabel_3       matlab.ui.control.Label
+        EOSMainEditFieldLabel_4         matlab.ui.control.Label
+        EOSMainEditField_4              matlab.ui.control.NumericEditField
+        MainbeamsyncLimitsLabel_4       matlab.ui.control.Label
+        EOSPanel                        matlab.ui.container.Panel
+        EOSND2SwitchLabel               matlab.ui.control.Label
+        EOSND2Switch                    matlab.ui.control.Switch
+        IonizerPanel                    matlab.ui.container.Panel
+        IonizerblockSwitch_2Label       matlab.ui.control.Label
+        IonizerblockSwitch_2            matlab.ui.control.Switch
+        IonizerND2SwitchLabel           matlab.ui.control.Label
+        IonizerND2Switch                matlab.ui.control.Switch
+        ShadowgraphyPanel               matlab.ui.container.Panel
+        ShadowgraphyblockSwitchLabel    matlab.ui.control.Label
+        ShadowgraphyblockSwitch         matlab.ui.control.Switch
+        Shadowgraphy1NDSwitchLabel      matlab.ui.control.Label
+        Shadowgraphy1NDSwitch           matlab.ui.control.Switch
+        Shadowgraphy2NDSwitchLabel      matlab.ui.control.Label
+        Shadowgraphy2NDSwitch           matlab.ui.control.Switch
+        UpdateGUIButton                 matlab.ui.control.Button
+        LasershuttersPanel              matlab.ui.container.Panel
+        HeNeflipperSwitchLabel          matlab.ui.control.Label
+        HeNeflipperSwitch               matlab.ui.control.Switch
+        CWlaserSwitchLabel              matlab.ui.control.Label
+        CWlaserSwitch                   matlab.ui.control.Switch
+        EPSShutterSwitchLabel           matlab.ui.control.Label
+        EPSShutterSwitch                matlab.ui.control.Switch
+        IPOTR1Panel                     matlab.ui.container.Panel
+        IPOTR1OvensideSwitchLabel       matlab.ui.control.Label
+        IPOTR1OvensideSwitch            matlab.ui.control.Switch
+        IPOTR1ND9SwitchLabel            matlab.ui.control.Label
+        IPOTR1ND9Switch                 matlab.ui.control.Switch
+        IPOTR2Panel                     matlab.ui.container.Panel
+        IPOTR2ND9SwitchLabel            matlab.ui.control.Label
+        IPOTR2ND9Switch                 matlab.ui.control.Switch
+        IPOTR2ND2SwitchLabel            matlab.ui.control.Label
+        IPOTR2ND2Switch                 matlab.ui.control.Switch
+        IPOTR2BlueSwitchLabel           matlab.ui.control.Label
+        IPOTR2BlueSwitch                matlab.ui.control.Switch
+        LaserattenuatorPanel            matlab.ui.container.Panel
+        SetEditFieldLabel               matlab.ui.control.Label
+        SetLaserEditField               matlab.ui.control.NumericEditField
+        Max119Label                     matlab.ui.control.Label
+        Min74Label                      matlab.ui.control.Label
+        LaserRBVLabel                   matlab.ui.control.Label
+        ofenergyLabel                   matlab.ui.control.Label
+        ProbeattenuatorPanel            matlab.ui.container.Panel
+        SetEditField_2Label             matlab.ui.control.Label
+        SetProbeEditField               matlab.ui.control.NumericEditField
+        Max82Label                      matlab.ui.control.Label
+        Min37Label                      matlab.ui.control.Label
+        ProbeRBVLabel                   matlab.ui.control.Label
+        ofenergyLabel_2                 matlab.ui.control.Label
     end
 
     
@@ -112,14 +113,17 @@ classdef F2_LCP_exported < matlab.apps.AppBase
             %HeNe Shutter
             app.EPSShutterSwitch.Value = app.LCP.blockList.HeNe.getState();
             
+            %Compressor block
+            app.CompressorBeamBlockSwitch.Value = app.LCP.blockList.Comp.getState();
+            
             %EPSShutter 
             app.EPSShutterSwitch.Value = app.LCP.blockList.EPSShutter.getState();
             
             %Probeline0
             app.Probeline0HeNeSwitch.Value = app.LCP.filterList.Probeline0HeNe.getState();
             
-            %E324
-            app.ProbelineSwitch.Value = app.LCP.blockList.E324block.getState();
+            %Probe block
+            app.ProbelineSwitch.Value = app.LCP.blockList.probeBlock.getState();
             
             %EOS
             app.EOSND2Switch.Value = app.LCP.filterList.EOSND2.getState();
@@ -161,7 +165,7 @@ classdef F2_LCP_exported < matlab.apps.AppBase
 
         % Value changed function: ProbelineSwitch
         function ProbelineSwitchValueChanged(app, event)
-            app.LCP.blockList.E324block.flip();
+            app.LCP.blockList.probeBlock.flip();
             app.updateGUI();
         end
 
@@ -285,6 +289,12 @@ classdef F2_LCP_exported < matlab.apps.AppBase
             app.LCP.filterList.IPOTR1P.flip();
             app.updateGUI();
         end
+
+        % Value changed function: CompressorBeamBlockSwitch
+        function CompressorBeamBlockSwitchValueChanged(app, event)
+            app.LCP.blockList.Comp.flip();
+            app.updateGUI();
+        end
     end
 
     % Component initialization
@@ -295,13 +305,13 @@ classdef F2_LCP_exported < matlab.apps.AppBase
 
             % Create UIFigure and hide until all components are created
             app.UIFigure = uifigure('Visible', 'off');
-            app.UIFigure.Position = [100 100 851 735];
+            app.UIFigure.Position = [100 100 1101 730];
             app.UIFigure.Name = 'MATLAB App';
 
             % Create ProbeflippersPanel
             app.ProbeflippersPanel = uipanel(app.UIFigure);
             app.ProbeflippersPanel.Title = 'Probe flippers';
-            app.ProbeflippersPanel.Position = [37 521 140 192];
+            app.ProbeflippersPanel.Position = [662 512 140 192];
 
             % Create Probeline0HeNeSwitchLabel
             app.Probeline0HeNeSwitchLabel = uilabel(app.ProbeflippersPanel);
@@ -332,39 +342,52 @@ classdef F2_LCP_exported < matlab.apps.AppBase
             % Create MainflippersPanel
             app.MainflippersPanel = uipanel(app.UIFigure);
             app.MainflippersPanel.Title = 'Main flippers';
-            app.MainflippersPanel.Position = [702 413 125 300];
+            app.MainflippersPanel.Position = [181 453 125 251];
 
             % Create CompressorNFFFSwitchLabel
             app.CompressorNFFFSwitchLabel = uilabel(app.MainflippersPanel);
             app.CompressorNFFFSwitchLabel.HorizontalAlignment = 'center';
-            app.CompressorNFFFSwitchLabel.Position = [22 234 75 30];
+            app.CompressorNFFFSwitchLabel.Position = [21 113 75 30];
             app.CompressorNFFFSwitchLabel.Text = {'Compressor '; 'NF FF'};
 
             % Create CompressorNFFFSwitch
             app.CompressorNFFFSwitch = uiswitch(app.MainflippersPanel, 'slider');
             app.CompressorNFFFSwitch.Items = {'In', 'Out'};
             app.CompressorNFFFSwitch.ValueChangedFcn = createCallbackFcn(app, @CompressorNFFFSwitchValueChanged, true);
-            app.CompressorNFFFSwitch.Position = [36 211 45 20];
+            app.CompressorNFFFSwitch.Position = [35 90 45 20];
             app.CompressorNFFFSwitch.Value = 'In';
 
             % Create PBNFFFSwitchLabel
             app.PBNFFFSwitchLabel = uilabel(app.MainflippersPanel);
             app.PBNFFFSwitchLabel.HorizontalAlignment = 'center';
-            app.PBNFFFSwitchLabel.Position = [41 166 38 30];
+            app.PBNFFFSwitchLabel.Position = [40 45 38 30];
             app.PBNFFFSwitchLabel.Text = {'PB'; 'NF FF'};
 
             % Create PBNFFFSwitch
             app.PBNFFFSwitch = uiswitch(app.MainflippersPanel, 'slider');
             app.PBNFFFSwitch.Items = {'In', 'Out'};
             app.PBNFFFSwitch.ValueChangedFcn = createCallbackFcn(app, @PBNFFFSwitchValueChanged, true);
-            app.PBNFFFSwitch.Position = [36 143 45 20];
+            app.PBNFFFSwitch.Position = [35 22 45 20];
             app.PBNFFFSwitch.Value = 'In';
+
+            % Create CompressorBeamBlockSwitchLabel
+            app.CompressorBeamBlockSwitchLabel = uilabel(app.MainflippersPanel);
+            app.CompressorBeamBlockSwitchLabel.HorizontalAlignment = 'center';
+            app.CompressorBeamBlockSwitchLabel.Position = [22 184 75 30];
+            app.CompressorBeamBlockSwitchLabel.Text = {'Compressor '; 'Beam Block'};
+
+            % Create CompressorBeamBlockSwitch
+            app.CompressorBeamBlockSwitch = uiswitch(app.MainflippersPanel, 'slider');
+            app.CompressorBeamBlockSwitch.Items = {'In', 'Out'};
+            app.CompressorBeamBlockSwitch.ValueChangedFcn = createCallbackFcn(app, @CompressorBeamBlockSwitchValueChanged, true);
+            app.CompressorBeamBlockSwitch.Position = [35 161 45 20];
+            app.CompressorBeamBlockSwitch.Value = 'In';
 
             % Create DelayLinesPanel
             app.DelayLinesPanel = uipanel(app.UIFigure);
             app.DelayLinesPanel.Title = 'Delay Lines';
             app.DelayLinesPanel.Visible = 'off';
-            app.DelayLinesPanel.Position = [581 21 246 364];
+            app.DelayLinesPanel.Position = [581 16 246 364];
 
             % Create EOSMainEditFieldLabel
             app.EOSMainEditFieldLabel = uilabel(app.DelayLinesPanel);
@@ -437,7 +460,7 @@ classdef F2_LCP_exported < matlab.apps.AppBase
             % Create EOSPanel
             app.EOSPanel = uipanel(app.UIFigure);
             app.EOSPanel.Title = 'EOS';
-            app.EOSPanel.Position = [191 617 107 96];
+            app.EOSPanel.Position = [689 405 107 96];
 
             % Create EOSND2SwitchLabel
             app.EOSND2SwitchLabel = uilabel(app.EOSPanel);
@@ -452,15 +475,10 @@ classdef F2_LCP_exported < matlab.apps.AppBase
             app.EOSND2Switch.Position = [27 15 45 20];
             app.EOSND2Switch.Value = 'In';
 
-            % Create E324Panel
-            app.E324Panel = uipanel(app.UIFigure);
-            app.E324Panel.Title = 'E324';
-            app.E324Panel.Position = [312 616 107 97];
-
             % Create IonizerPanel
             app.IonizerPanel = uipanel(app.UIFigure);
             app.IonizerPanel.Title = 'Ionizer';
-            app.IonizerPanel.Position = [433 534 107 179];
+            app.IonizerPanel.Position = [957 525 107 179];
 
             % Create IonizerblockSwitch_2Label
             app.IonizerblockSwitch_2Label = uilabel(app.IonizerPanel);
@@ -491,7 +509,7 @@ classdef F2_LCP_exported < matlab.apps.AppBase
             % Create ShadowgraphyPanel
             app.ShadowgraphyPanel = uipanel(app.UIFigure);
             app.ShadowgraphyPanel.Title = 'Shadowgraphy';
-            app.ShadowgraphyPanel.Position = [553 463 136 250];
+            app.ShadowgraphyPanel.Position = [807 455 136 250];
 
             % Create ShadowgraphyblockSwitchLabel
             app.ShadowgraphyblockSwitchLabel = uilabel(app.ShadowgraphyPanel);
@@ -535,57 +553,57 @@ classdef F2_LCP_exported < matlab.apps.AppBase
             % Create UpdateGUIButton
             app.UpdateGUIButton = uibutton(app.UIFigure, 'push');
             app.UpdateGUIButton.ButtonPushedFcn = createCallbackFcn(app, @UpdateGUIButtonPushed, true);
-            app.UpdateGUIButton.Position = [37 21 100 23];
+            app.UpdateGUIButton.Position = [37 16 100 23];
             app.UpdateGUIButton.Text = 'Update GUI';
 
             % Create LasershuttersPanel
             app.LasershuttersPanel = uipanel(app.UIFigure);
             app.LasershuttersPanel.Title = 'Laser shutters';
-            app.LasershuttersPanel.Position = [185 339 139 256];
+            app.LasershuttersPanel.Position = [30 451 139 254];
 
             % Create HeNeflipperSwitchLabel
             app.HeNeflipperSwitchLabel = uilabel(app.LasershuttersPanel);
             app.HeNeflipperSwitchLabel.HorizontalAlignment = 'center';
-            app.HeNeflipperSwitchLabel.Position = [33 198 74 22];
+            app.HeNeflipperSwitchLabel.Position = [33 196 74 22];
             app.HeNeflipperSwitchLabel.Text = 'HeNe flipper';
 
             % Create HeNeflipperSwitch
             app.HeNeflipperSwitch = uiswitch(app.LasershuttersPanel, 'slider');
             app.HeNeflipperSwitch.Items = {'In', 'Out'};
             app.HeNeflipperSwitch.ValueChangedFcn = createCallbackFcn(app, @HeNeflipperSwitchValueChanged, true);
-            app.HeNeflipperSwitch.Position = [45 167 45 20];
+            app.HeNeflipperSwitch.Position = [45 165 45 20];
             app.HeNeflipperSwitch.Value = 'In';
 
             % Create CWlaserSwitchLabel
             app.CWlaserSwitchLabel = uilabel(app.LasershuttersPanel);
             app.CWlaserSwitchLabel.HorizontalAlignment = 'center';
-            app.CWlaserSwitchLabel.Position = [43 127 55 22];
+            app.CWlaserSwitchLabel.Position = [43 125 55 22];
             app.CWlaserSwitchLabel.Text = 'CW laser';
 
             % Create CWlaserSwitch
             app.CWlaserSwitch = uiswitch(app.LasershuttersPanel, 'slider');
             app.CWlaserSwitch.Items = {'In', 'Out'};
             app.CWlaserSwitch.ValueChangedFcn = createCallbackFcn(app, @CWlaserSwitchValueChanged, true);
-            app.CWlaserSwitch.Position = [45 96 45 20];
+            app.CWlaserSwitch.Position = [45 94 45 20];
             app.CWlaserSwitch.Value = 'In';
 
             % Create EPSShutterSwitchLabel
             app.EPSShutterSwitchLabel = uilabel(app.LasershuttersPanel);
             app.EPSShutterSwitchLabel.HorizontalAlignment = 'center';
-            app.EPSShutterSwitchLabel.Position = [33 57 71 22];
+            app.EPSShutterSwitchLabel.Position = [33 55 71 22];
             app.EPSShutterSwitchLabel.Text = 'EPS Shutter';
 
             % Create EPSShutterSwitch
             app.EPSShutterSwitch = uiswitch(app.LasershuttersPanel, 'slider');
             app.EPSShutterSwitch.Items = {'In', 'Out'};
             app.EPSShutterSwitch.ValueChangedFcn = createCallbackFcn(app, @EPSShutterSwitchValueChanged, true);
-            app.EPSShutterSwitch.Position = [45 26 45 20];
+            app.EPSShutterSwitch.Position = [45 24 45 20];
             app.EPSShutterSwitch.Value = 'In';
 
             % Create IPOTR1Panel
             app.IPOTR1Panel = uipanel(app.UIFigure);
             app.IPOTR1Panel.Title = 'IPOTR1';
-            app.IPOTR1Panel.Position = [408 187 133 188];
+            app.IPOTR1Panel.Position = [351 514 133 188];
 
             % Create IPOTR1OvensideSwitchLabel
             app.IPOTR1OvensideSwitchLabel = uilabel(app.IPOTR1Panel);
@@ -616,7 +634,7 @@ classdef F2_LCP_exported < matlab.apps.AppBase
             % Create IPOTR2Panel
             app.IPOTR2Panel = uipanel(app.UIFigure);
             app.IPOTR2Panel.Title = 'IPOTR2';
-            app.IPOTR2Panel.Position = [553 123 118 254];
+            app.IPOTR2Panel.Position = [493 447 118 254];
 
             % Create IPOTR2ND9SwitchLabel
             app.IPOTR2ND9SwitchLabel = uilabel(app.IPOTR2Panel);
@@ -660,7 +678,7 @@ classdef F2_LCP_exported < matlab.apps.AppBase
             % Create LaserattenuatorPanel
             app.LaserattenuatorPanel = uipanel(app.UIFigure);
             app.LaserattenuatorPanel.Title = 'Laser attenuator';
-            app.LaserattenuatorPanel.Position = [37 87 124 207];
+            app.LaserattenuatorPanel.Position = [37 82 124 207];
 
             % Create SetEditFieldLabel
             app.SetEditFieldLabel = uilabel(app.LaserattenuatorPanel);
@@ -697,7 +715,7 @@ classdef F2_LCP_exported < matlab.apps.AppBase
             % Create ProbeattenuatorPanel
             app.ProbeattenuatorPanel = uipanel(app.UIFigure);
             app.ProbeattenuatorPanel.Title = 'Probe attenuator';
-            app.ProbeattenuatorPanel.Position = [174 86 124 207];
+            app.ProbeattenuatorPanel.Position = [174 81 124 207];
 
             % Create SetEditField_2Label
             app.SetEditField_2Label = uilabel(app.ProbeattenuatorPanel);

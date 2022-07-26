@@ -24,11 +24,12 @@ classdef cLCP  < handle
             % blocks
             s.blockList.shadowgraphy = cFlipper('APC:LI20:EX02:24VOUT_2',1);
             s.blockList.ionizer = cFlipper('APC:LI20:EX02:24VOUT_3',1);
-            s.blockList.E324block = cFlipper('APC:LI20:EX02:24VOUT_4',1);
+            s.blockList.probeBlock = cFlipper('APC:LI20:EX02:24VOUT_4',1);
             s.blockList.EPSShutter = cFlipper('DO:LA20:10:Bo1',-1);
             
             s.blockList.CWIR = cStepperFlipper('XPS:LA20:LS24:M5',0,25);
             s.blockList.HeNe = cStepperFlipper('XPS:LA20:LS24:M3',10,8);
+            s.blockList.Comp = cStepperFlipper('XPS:LI20:MC03:M3',299,199);
             
             % filters
             s.filterList.EOSND2 = cFlipper('APC:LI20:EX02:24VOUT_19',1);
