@@ -72,6 +72,7 @@ classdef F2_Matching_exported < matlab.apps.AppBase
     TextArea_2                      matlab.ui.control.TextArea
     FitEmittanceButton              matlab.ui.control.Button
     ShowPlotsButton                 matlab.ui.control.Button
+    SCANButton                      matlab.ui.control.Button
     MessagesPanel                   matlab.ui.container.Panel
     TextArea                        matlab.ui.control.TextArea
     ProfileMeasurementDevicePanel   matlab.ui.container.Panel
@@ -99,6 +100,7 @@ classdef F2_Matching_exported < matlab.apps.AppBase
   
   properties (Access = public)
     aobj % Accompanying application object F2_MatchingApp
+    WSApp % Holder for MultiWire App
   end
   
   properties (Access = private)
@@ -107,6 +109,18 @@ classdef F2_Matching_exported < matlab.apps.AppBase
   end
   
   methods (Access = public)
+    
+    function UpdateMWDataFromApp(app)
+      app.Wire1_Sigma.Value = app.WSApp.Sigma(1);
+      app.Wire2_Sigma.Value = app.WSApp.Sigma(2);
+      app.Wire3_Sigma.Value = app.WSApp.Sigma(3);
+      app.Wire4_Sigma.Value = app.WSApp.Sigma(4);
+      app.Wire1_SigmaErr.Value = app.WSApp.SigmaErr(1);
+      app.Wire2_SigmaErr.Value = app.WSApp.SigmaErr(2);
+      app.Wire3_SigmaErr.Value = app.WSApp.SigmaErr(3);
+      app.Wire4_SigmaErr.Value = app.WSApp.SigmaErr(4);
+      app.FitEmittanceButtonPushed();
+    end
     
     function message(app,txt,iserr)
       app.TextArea.Value = txt ;
@@ -123,14 +137,18 @@ classdef F2_Matching_exported < matlab.apps.AppBase
   methods (Access = private)
 
     % Code that executes after component creation
-    function startupFcn(app)
+    function startupFcn(app, LLM)
       app.message("Loading and initializing model...");
       app.DropDown.Enable=false;
       app.GetDatafromCorrPlotorEmitGUIButton.Enable=false;
       app.DoMatchingButton.Enable=false;
       drawnow
       try
-        app.aobj = F2_MatchingApp(app) ;
+        if exist('LLM','var') && ~isempty(LLM)
+          app.aobj = F2_MatchingApp(app,LLM) ;
+        else
+          app.aobj = F2_MatchingApp(app) ;
+        end
       catch ME
         app.message(["Error initializing model...";string(ME.message)],true);
         return
@@ -448,9 +466,12 @@ classdef F2_Matching_exported < matlab.apps.AppBase
           app.Wire3Label.Text = "WS19244" ;
           app.Wire4Label.Text = "WS19344" ;
       end
+      app.Wire1_Sigma.Value=0; app.Wire1_SigmaErr.Value=0;
+      app.Wire2_Sigma.Value=0; app.Wire2_SigmaErr.Value=0;
+      app.Wire3_Sigma.Value=0; app.Wire3_SigmaErr.Value=0;
+      app.Wire4_Sigma.Value=0; app.Wire4_SigmaErr.Value=0;
       drawnow
       app.DropDownValueChanged;
-      app.FetchDatafromPVsButtonPushed;
     end
 
     % Button pushed function: FetchDatafromPVsButton
@@ -474,6 +495,8 @@ classdef F2_Matching_exported < matlab.apps.AppBase
       end
       app.Wire1_Sigma.Value=data(1); app.Wire2_Sigma.Value=data(2); app.Wire3_Sigma.Value=data(3); app.Wire4_Sigma.Value=data(4);
       app.Wire1_SigmaErr.Value=0; app.Wire2_SigmaErr.Value=0; app.Wire3_SigmaErr.Value=0; app.Wire4_SigmaErr.Value=0;
+      drawnow;
+      app.FitEmittanceButtonPushed();
     end
 
     % Button pushed function: FitEmittanceButton
@@ -510,7 +533,7 @@ classdef F2_Matching_exported < matlab.apps.AppBase
 
     % Value changed function: MeasurementPlaneDropDown
     function MeasurementPlaneDropDownValueChanged(app, event)
-      app.FetchDatafromPVsButtonPushed;
+      app.LinacDropDownValueChanged();
       app.TextArea_2.Value="";
     end
 
@@ -558,6 +581,35 @@ classdef F2_Matching_exported < matlab.apps.AppBase
       value = app.ApplyFudgeFactorsCheckBox.Value;
       app.aobj.UseFudge = value ;
       app.DropDownValueChanged ; % populates tables
+    end
+
+    % Button pushed function: SCANButton
+    function SCANButtonPushed(app, event)
+      app.SCANButton.Enable=false;
+      drawnow;
+      try
+        if string(app.MeasurementPlaneDropDown.Value)=="Horizontal"
+          plane="x";
+        else
+          plane="y";
+        end
+        if isempty(app.WSApp) || ~isprop(app.WSApp,'UpdateObj')
+          addpath ../F2_MultiWire
+          app.WSApp = F2_MultiWire(app.aobj.LiveModel,app.LinacDropDown.Value,plane) ;
+          app.WSApp.UpdateObj = app ;
+          app.WSApp.UpdateMethod = "UpdateMWDataFromApp" ;
+        else
+          app.WSApp.(upper(plane)+"Button").Value=true;
+          app.WSApp.LinacDropDown.Value = app.LinacDropDown.Value ;
+          app.WSApp.RemoteSet() ;
+        end
+        app.WSApp.RemoteScan() ;
+      catch ME
+        app.SCANButton.Enable=true;
+        drawnow;
+        throw(ME);
+      end
+      app.SCANButton.Enable=true;
     end
   end
 
@@ -984,6 +1036,12 @@ classdef F2_Matching_exported < matlab.apps.AppBase
       app.ShowPlotsButton.Position = [610 103 108 31];
       app.ShowPlotsButton.Text = 'Show Plots';
 
+      % Create SCANButton
+      app.SCANButton = uibutton(app.MultiWireEmittanceTab, 'push');
+      app.SCANButton.ButtonPushedFcn = createCallbackFcn(app, @SCANButtonPushed, true);
+      app.SCANButton.Position = [610 188 108 31];
+      app.SCANButton.Text = 'SCAN';
+
       % Create MessagesPanel
       app.MessagesPanel = uipanel(app.FACETIIOpticsMatchingUIFigure);
       app.MessagesPanel.Title = 'Messages';
@@ -1132,7 +1190,7 @@ classdef F2_Matching_exported < matlab.apps.AppBase
   methods (Access = public)
 
     % Construct app
-    function app = F2_Matching_exported
+    function app = F2_Matching_exported(varargin)
 
       % Create UIFigure and components
       createComponents(app)
@@ -1141,7 +1199,7 @@ classdef F2_Matching_exported < matlab.apps.AppBase
       registerApp(app, app.FACETIIOpticsMatchingUIFigure)
 
       % Execute the startup function
-      runStartupFcn(app, @startupFcn)
+      runStartupFcn(app, @(app)startupFcn(app, varargin{:}))
 
       if nargout == 0
         clear app

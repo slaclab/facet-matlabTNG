@@ -15,7 +15,7 @@ classdef F2_Wirescan_exported < matlab.apps.AppBase
     WIREDropDown                  matlab.ui.control.DropDown
     StartScanButton               matlab.ui.control.Button
     AbortScanButton               matlab.ui.control.Button
-    MeasurementPlaneButtonGroup   matlab.ui.container.ButtonGroup
+    ButtonGroup                   matlab.ui.container.ButtonGroup
     XButton                       matlab.ui.control.RadioButton
     YButton                       matlab.ui.control.RadioButton
     UButton                       matlab.ui.control.RadioButton
@@ -71,6 +71,16 @@ classdef F2_Wirescan_exported < matlab.apps.AppBase
   
   properties (Access = public)
     aobj % F2_WirescanApp object
+    UpdateObj % Object to notify of updated data
+    UpdateMethod % Method to call when data is updated
+    plane string
+  end
+  
+  methods (Access = public)
+    
+    function RemoteStartScan(app)
+      app.StartScanButtonPushed();
+    end
   end
   
 
@@ -157,18 +167,21 @@ classdef F2_Wirescan_exported < matlab.apps.AppBase
       app.aobj.confsave(fullfile(pn,fn));
     end
 
-    % Selection changed function: MeasurementPlaneButtonGroup
-    function MeasurementPlaneButtonGroupSelectionChanged(app, event)
+    % Selection changed function: ButtonGroup
+    function ButtonGroupSelectionChanged(app, event)
       app.aobj.ResetData;
       cla(app.UIAxes); reset(app.UIAxes);
-      selectedButton = app.MeasurementPlaneButtonGroup.SelectedObject;
+      selectedButton = app.ButtonGroup.SelectedObject;
       switch selectedButton
         case app.XButton
           app.aobj.plane="x";
+          app.plane="x";
         case app.YButton
           app.aobj.plane="y";
+          app.plane="y";
         case app.UButton
           app.aobj.plane="u";
+          app.plane="u";
       end
       app.aobj.guiupdate;
     end
@@ -351,6 +364,12 @@ classdef F2_Wirescan_exported < matlab.apps.AppBase
       end
       app.aobj.guiupdate;
     end
+
+    % Close request function: F2_WirescanUIFigure
+    function F2_WirescanUIFigureCloseRequest(app, event)
+      delete(app)
+      
+    end
   end
 
   % Component initialization
@@ -364,6 +383,7 @@ classdef F2_Wirescan_exported < matlab.apps.AppBase
       app.F2_WirescanUIFigure.AutoResizeChildren = 'off';
       app.F2_WirescanUIFigure.Position = [100 100 996 595];
       app.F2_WirescanUIFigure.Name = 'F2_Wirescan';
+      app.F2_WirescanUIFigure.CloseRequestFcn = createCallbackFcn(app, @F2_WirescanUIFigureCloseRequest, true);
       app.F2_WirescanUIFigure.SizeChangedFcn = createCallbackFcn(app, @updateAppLayout, true);
 
       % Create DataMenu
@@ -411,14 +431,14 @@ classdef F2_Wirescan_exported < matlab.apps.AppBase
       % Create WIREDropDownLabel
       app.WIREDropDownLabel = uilabel(app.MeasurementPanel);
       app.WIREDropDownLabel.HorizontalAlignment = 'right';
-      app.WIREDropDownLabel.Position = [13 106 39 22];
+      app.WIREDropDownLabel.Position = [13 115 39 22];
       app.WIREDropDownLabel.Text = 'WIRE:';
 
       % Create WIREDropDown
       app.WIREDropDown = uidropdown(app.MeasurementPanel);
       app.WIREDropDown.Items = {'IN10:561', 'LI11:444', 'LI11:614', 'LI11:744', 'LI12:214', 'LI18:944', 'LI19:144', 'LI19:244', 'LI19:344'};
       app.WIREDropDown.ValueChangedFcn = createCallbackFcn(app, @WIREDropDownValueChanged, true);
-      app.WIREDropDown.Position = [67 106 144 22];
+      app.WIREDropDown.Position = [67 115 144 22];
       app.WIREDropDown.Value = 'IN10:561';
 
       % Create StartScanButton
@@ -437,39 +457,38 @@ classdef F2_Wirescan_exported < matlab.apps.AppBase
       app.AbortScanButton.Position = [14 7 229 30];
       app.AbortScanButton.Text = 'Abort Scan';
 
-      % Create MeasurementPlaneButtonGroup
-      app.MeasurementPlaneButtonGroup = uibuttongroup(app.MeasurementPanel);
-      app.MeasurementPlaneButtonGroup.SelectionChangedFcn = createCallbackFcn(app, @MeasurementPlaneButtonGroupSelectionChanged, true);
-      app.MeasurementPlaneButtonGroup.Title = 'Measurement Plane';
-      app.MeasurementPlaneButtonGroup.Position = [10 138 241 48];
+      % Create ButtonGroup
+      app.ButtonGroup = uibuttongroup(app.MeasurementPanel);
+      app.ButtonGroup.SelectionChangedFcn = createCallbackFcn(app, @ButtonGroupSelectionChanged, true);
+      app.ButtonGroup.Position = [8 149 241 30];
 
       % Create XButton
-      app.XButton = uiradiobutton(app.MeasurementPlaneButtonGroup);
+      app.XButton = uiradiobutton(app.ButtonGroup);
       app.XButton.Text = 'X';
-      app.XButton.Position = [11 2 58 22];
+      app.XButton.Position = [11 4 58 22];
       app.XButton.Value = true;
 
       % Create YButton
-      app.YButton = uiradiobutton(app.MeasurementPlaneButtonGroup);
+      app.YButton = uiradiobutton(app.ButtonGroup);
       app.YButton.Text = 'Y';
-      app.YButton.Position = [88 2 65 22];
+      app.YButton.Position = [88 4 65 22];
 
       % Create UButton
-      app.UButton = uiradiobutton(app.MeasurementPlaneButtonGroup);
+      app.UButton = uiradiobutton(app.ButtonGroup);
       app.UButton.Text = 'U';
-      app.UButton.Position = [172 2 65 22];
+      app.UButton.Position = [172 4 65 22];
 
       % Create PMTDropDownLabel
       app.PMTDropDownLabel = uilabel(app.MeasurementPanel);
       app.PMTDropDownLabel.HorizontalAlignment = 'right';
-      app.PMTDropDownLabel.Position = [12 78 32 22];
+      app.PMTDropDownLabel.Position = [12 83 32 22];
       app.PMTDropDownLabel.Text = 'PMT:';
 
       % Create PMTDropDown
       app.PMTDropDown = uidropdown(app.MeasurementPanel);
       app.PMTDropDown.Items = {'LI19:144'};
       app.PMTDropDown.ValueChangedFcn = createCallbackFcn(app, @PMTDropDownValueChanged, true);
-      app.PMTDropDown.Position = [59 78 152 22];
+      app.PMTDropDown.Position = [59 83 152 22];
       app.PMTDropDown.Value = 'LI19:144';
 
       % Create ProcessingPanel
