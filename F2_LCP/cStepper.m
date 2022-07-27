@@ -39,6 +39,18 @@ classdef cStepper < handle
             motorVal = lcaGetSmart([s.PV,'.RBV']);
         end
         
+        function desc = getDesc(s)
+            desc = lcaGetSmart([s.PV,'.DESC']);
+            desc = desc{1};
+        end
+        
+        function printstr = print(s)
+            RBV = s.getRBV();
+            motordesc = s.getDesc();
+            motorname = s.PV();
+            printstr = sprintf('| %s | %s | %.2f', motordesc, motorname, RBV);
+        end
+        
     end
 end
 

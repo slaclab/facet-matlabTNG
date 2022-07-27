@@ -83,5 +83,17 @@ classdef cStepperFlipper < handle & acFlipper
             motorVal = lcaGetSmart([s.PV,'.RBV']);
         end
         
+        function desc = getDesc(s)
+            desc = lcaGetSmart([s.PV,'.DESC']);
+            desc = desc{1};
+        end
+        
+        function pstr = print(s)
+            status = s.getState();
+            name = s.getDesc();
+            PV = s.PV;
+            pstr = sprintf('| %s | %s | %s ', name, PV, status);
+        end
+        
     end
 end

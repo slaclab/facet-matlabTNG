@@ -60,8 +60,32 @@ classdef cLCP  < handle
             %delayStages
             %s.SMotorList.EOSDelay = 
             s.SMotorList.LaserAttenuator = cStepper('XPS:LA20:LS24:M1');
+            s.SMotorList.LPol = cStepper('XPS:LA20:LS24:M2');
+            s.SMotorList.LIris = cStepper('XPS:LA20:LS24:M4');
             s.SMotorList.ProbeAttenuator = cStepper('XPS:LI20:MC01:M2');
+            s.SMotorList.MDL = cStepper('XPS:LI20:MC02:M5');
             
+        end
+        
+        function filterListStr = printFilterList(s)
+            filterListStr = s.printList(s.filterList);
+        end
+        
+        function blockListStr = printBlockList(s)
+            blockListStr = s.printList(s.blockList);
+        end
+        
+        function SMotorListStr = printSMotorList(s)
+            SMotorListStr = s.printList(s.SMotorList);
+        end
+        
+        function listStr = printList(s, structList)
+            listStr = '';
+            names = fieldnames(structList);
+            for k = 1:length(names)
+                listStr = strcat(listStr, structList.(names{k}).print());
+                listStr = strcat(listStr, ' \n ');
+            end
         end
     end
         
