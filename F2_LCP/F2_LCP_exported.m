@@ -69,14 +69,33 @@ classdef F2_LCP_exported < matlab.apps.AppBase
         Max119Label                     matlab.ui.control.Label
         Min74Label                      matlab.ui.control.Label
         LaserRBVLabel                   matlab.ui.control.Label
-        ofenergyLabel                   matlab.ui.control.Label
         ProbeattenuatorPanel            matlab.ui.container.Panel
         SetEditField_2Label             matlab.ui.control.Label
         SetProbeEditField               matlab.ui.control.NumericEditField
         Max82Label                      matlab.ui.control.Label
         Min37Label                      matlab.ui.control.Label
         ProbeRBVLabel                   matlab.ui.control.Label
-        ofenergyLabel_2                 matlab.ui.control.Label
+        LaserpolarizationPanel          matlab.ui.container.Panel
+        SetEditField_2Label_2           matlab.ui.control.Label
+        SetLPolEditField                matlab.ui.control.NumericEditField
+        SpolPulsed50Label               matlab.ui.control.Label
+        PpolCW95Label                   matlab.ui.control.Label
+        LPolRBVLabel                    matlab.ui.control.Label
+        LaseraperturePanel              matlab.ui.container.Panel
+        SetEditField_2Label_3           matlab.ui.control.Label
+        SetLIrisEditField               matlab.ui.control.NumericEditField
+        mmmin5Label                     matlab.ui.control.Label
+        mm40Label                       matlab.ui.control.Label
+        LIrisRBVLabel                   matlab.ui.control.Label
+        mmmax60Label                    matlab.ui.control.Label
+        PrintmotorpositionsButton       matlab.ui.control.Button
+        PrintflipperstatusButton        matlab.ui.control.Button
+        MasterdelaylinePanel            matlab.ui.container.Panel
+        SetEditField_2Label_4           matlab.ui.control.Label
+        SetMDLEditField                 matlab.ui.control.NumericEditField
+        Minlongestpath74Label           matlab.ui.control.Label
+        Maxshortestpath76Label          matlab.ui.control.Label
+        MDLRBVLabel                     matlab.ui.control.Label
     end
 
     
@@ -103,7 +122,20 @@ classdef F2_LCP_exported < matlab.apps.AppBase
             app.ProbeRBVLabel.Text = sprintf('RBV: %.2f', RBV );
             app.SetProbeEditField.Value = RBV;
             
+            % Laser polarization
+            RBV = app.LCP.SMotorList.LPol.getRBV();
+            app.LPolRBVLabel.Text = sprintf('RBV: %.2f', RBV );
+            app.SetLPolEditField.Value = RBV;
             
+            % Laser iris
+            RBV = app.LCP.SMotorList.LIris.getRBV();
+            app.LIrisRBVLabel.Text = sprintf('RBV: %.2f', RBV );
+            app.SetLIrisEditField.Value = RBV;
+            
+            % Master Delay Line
+            RBV = app.LCP.SMotorList.MDL.getRBV();
+            app.MDLRBVLabel.Text = sprintf('RBV: %.2f', RBV );
+            app.SetMDLEditField.Value = RBV;
         end
         
         function setFlipperStatus(app)
@@ -262,14 +294,14 @@ classdef F2_LCP_exported < matlab.apps.AppBase
         function SetLaserEditFieldValueChanged(app, event)
             value = app.SetLaserEditField.Value;
             app.LCP.SMotorList.LaserAttenuator.move(value);
-            app.setMotorStatus();
+            app.updateGUI();
         end
 
         % Value changed function: SetProbeEditField
         function SetProbeEditFieldValueChanged(app, event)
             value = app.SetProbeEditField.Value;
             app.LCP.SMotorList.ProbeAttenuator.move(value);
-            app.setMotorStatus();
+            app.updateGUI();
         end
 
         % Value changed function: IPOTR2ND2Switch
@@ -301,6 +333,68 @@ classdef F2_LCP_exported < matlab.apps.AppBase
             delete(app)
             disp('Remember to uncomment the exit command')
             exit;
+        end
+
+        % Value changed function: SetLPolEditField
+        function SetLPolEditFieldValueChanged(app, event)
+            value = app.SetLPolEditField.Value;
+            app.LCP.SMotorList.LPol.move(value);
+            app.updateGUI();
+        end
+
+        % Value changed function: SetLIrisEditField
+        function SetLIrisEditFieldValueChanged(app, event)
+            value = app.SetLIrisEditField.Value;
+            app.LCP.SMotorList.LIris.move(value);
+            app.updateGUI();
+        end
+
+        % Button pushed function: PrintmotorpositionsButton
+        function PrintmotorpositionsButtonPushed(app, event)
+            addpath('/usr/local/facet/tools/matlabTNG/common/')
+            
+            info_str = sprintf(['| Motor Name | Motor PV | RBV \n']);
+            mat_line = app.LCP.printSMotorList();
+            
+            info_str = [info_str mat_line];
+            
+            info_str = sprintf([info_str '\n' '\n']);
+            
+            figure(99);
+            ax = axes();
+            set(ax, 'Visible', 'off');
+            set(gcf,'Position',[10 10 10 10]);
+            util_printLog2020(99,'title','Laser Control Panel Motor Values',...
+            'author','Laser Control Panel','text',info_str);
+            clf(99), close(99);
+        end
+
+        % Button pushed function: PrintflipperstatusButton
+        function PrintflipperstatusButtonPushed(app, event)
+            addpath('/usr/local/facet/tools/matlabTNG/common/')
+            
+            info_str = sprintf(['| Flipper Name | Flipper PV | Status \n']);
+            mat_line = app.LCP.printFilterList();
+            mat_line2 =  app.LCP.printBlockList();
+            
+            info_str = [info_str mat_line, mat_line2];
+            
+            info_str = sprintf([info_str '\n' '\n']);
+            
+            figure(99);
+            ax = axes();
+            set(ax, 'Visible', 'off');
+            set(gcf,'Position',[10 10 10 10]);
+            util_printLog2020(99,'title','Laser Control Panel flipper status',...
+            'author','Laser Control Panel','text',info_str);
+            clf(99), close(99);
+        end
+
+        % Value changed function: SetMDLEditField
+        function SetMDLEditFieldValueChanged(app, event)
+            value = app.SetMDLEditField.Value;
+            app.LCP.SMotorList.MDL.move(value);
+            app.updateGUI();
         end
     end
 
@@ -395,7 +489,7 @@ classdef F2_LCP_exported < matlab.apps.AppBase
             app.DelayLinesPanel = uipanel(app.UIFigure);
             app.DelayLinesPanel.Title = 'Delay Lines';
             app.DelayLinesPanel.Visible = 'off';
-            app.DelayLinesPanel.Position = [581 16 246 364];
+            app.DelayLinesPanel.Position = [798 16 246 364];
 
             % Create EOSMainEditFieldLabel
             app.EOSMainEditFieldLabel = uilabel(app.DelayLinesPanel);
@@ -715,11 +809,6 @@ classdef F2_LCP_exported < matlab.apps.AppBase
             app.LaserRBVLabel.Position = [21 117 85 22];
             app.LaserRBVLabel.Text = 'RBV: ';
 
-            % Create ofenergyLabel
-            app.ofenergyLabel = uilabel(app.LaserattenuatorPanel);
-            app.ofenergyLabel.Position = [19 21 76 22];
-            app.ofenergyLabel.Text = '% of energy: ';
-
             % Create ProbeattenuatorPanel
             app.ProbeattenuatorPanel = uipanel(app.UIFigure);
             app.ProbeattenuatorPanel.Title = 'Probe attenuator';
@@ -752,10 +841,118 @@ classdef F2_LCP_exported < matlab.apps.AppBase
             app.ProbeRBVLabel.Position = [21 117 85 22];
             app.ProbeRBVLabel.Text = 'RBV: ';
 
-            % Create ofenergyLabel_2
-            app.ofenergyLabel_2 = uilabel(app.ProbeattenuatorPanel);
-            app.ofenergyLabel_2.Position = [19 21 76 22];
-            app.ofenergyLabel_2.Text = '% of energy: ';
+            % Create LaserpolarizationPanel
+            app.LaserpolarizationPanel = uipanel(app.UIFigure);
+            app.LaserpolarizationPanel.Title = 'Laser polarization';
+            app.LaserpolarizationPanel.Position = [447 81 124 207];
+
+            % Create SetEditField_2Label_2
+            app.SetEditField_2Label_2 = uilabel(app.LaserpolarizationPanel);
+            app.SetEditField_2Label_2.HorizontalAlignment = 'right';
+            app.SetEditField_2Label_2.Position = [23 147 25 22];
+            app.SetEditField_2Label_2.Text = 'Set';
+
+            % Create SetLPolEditField
+            app.SetLPolEditField = uieditfield(app.LaserpolarizationPanel, 'numeric');
+            app.SetLPolEditField.ValueChangedFcn = createCallbackFcn(app, @SetLPolEditFieldValueChanged, true);
+            app.SetLPolEditField.Position = [62 147 52 22];
+            app.SetLPolEditField.Value = 37;
+
+            % Create SpolPulsed50Label
+            app.SpolPulsed50Label = uilabel(app.LaserpolarizationPanel);
+            app.SpolPulsed50Label.Position = [14 80 109 22];
+            app.SpolPulsed50Label.Text = 'S-pol (Pulsed) : 50 ';
+
+            % Create PpolCW95Label
+            app.PpolCW95Label = uilabel(app.LaserpolarizationPanel);
+            app.PpolCW95Label.Position = [20 59 85 22];
+            app.PpolCW95Label.Text = 'P-pol (CW): 95';
+
+            % Create LPolRBVLabel
+            app.LPolRBVLabel = uilabel(app.LaserpolarizationPanel);
+            app.LPolRBVLabel.Position = [21 117 85 22];
+            app.LPolRBVLabel.Text = 'RBV: ';
+
+            % Create LaseraperturePanel
+            app.LaseraperturePanel = uipanel(app.UIFigure);
+            app.LaseraperturePanel.Title = 'Laser aperture';
+            app.LaseraperturePanel.Position = [305 81 124 207];
+
+            % Create SetEditField_2Label_3
+            app.SetEditField_2Label_3 = uilabel(app.LaseraperturePanel);
+            app.SetEditField_2Label_3.HorizontalAlignment = 'right';
+            app.SetEditField_2Label_3.Position = [23 147 25 22];
+            app.SetEditField_2Label_3.Text = 'Set';
+
+            % Create SetLIrisEditField
+            app.SetLIrisEditField = uieditfield(app.LaseraperturePanel, 'numeric');
+            app.SetLIrisEditField.ValueChangedFcn = createCallbackFcn(app, @SetLIrisEditFieldValueChanged, true);
+            app.SetLIrisEditField.Position = [62 147 52 22];
+            app.SetLIrisEditField.Value = 37;
+
+            % Create mmmin5Label
+            app.mmmin5Label = uilabel(app.LaseraperturePanel);
+            app.mmmin5Label.Position = [14 80 89 22];
+            app.mmmin5Label.Text = '5 mm (min) : -5 ';
+
+            % Create mm40Label
+            app.mm40Label = uilabel(app.LaseraperturePanel);
+            app.mm40Label.Position = [14 59 66 22];
+            app.mm40Label.Text = '40 mm: -40';
+
+            % Create LIrisRBVLabel
+            app.LIrisRBVLabel = uilabel(app.LaseraperturePanel);
+            app.LIrisRBVLabel.Position = [21 117 85 22];
+            app.LIrisRBVLabel.Text = 'RBV: ';
+
+            % Create mmmax60Label
+            app.mmmax60Label = uilabel(app.LaseraperturePanel);
+            app.mmmax60Label.Position = [14 37 100 22];
+            app.mmmax60Label.Text = '60 mm (max): -60';
+
+            % Create PrintmotorpositionsButton
+            app.PrintmotorpositionsButton = uibutton(app.UIFigure, 'push');
+            app.PrintmotorpositionsButton.ButtonPushedFcn = createCallbackFcn(app, @PrintmotorpositionsButtonPushed, true);
+            app.PrintmotorpositionsButton.Position = [236 16 126 23];
+            app.PrintmotorpositionsButton.Text = 'Print motor positions';
+
+            % Create PrintflipperstatusButton
+            app.PrintflipperstatusButton = uibutton(app.UIFigure, 'push');
+            app.PrintflipperstatusButton.ButtonPushedFcn = createCallbackFcn(app, @PrintflipperstatusButtonPushed, true);
+            app.PrintflipperstatusButton.Position = [210 378 112 23];
+            app.PrintflipperstatusButton.Text = 'Print flipper status';
+
+            % Create MasterdelaylinePanel
+            app.MasterdelaylinePanel = uipanel(app.UIFigure);
+            app.MasterdelaylinePanel.Title = 'Master delay line';
+            app.MasterdelaylinePanel.Position = [585 81 124 207];
+
+            % Create SetEditField_2Label_4
+            app.SetEditField_2Label_4 = uilabel(app.MasterdelaylinePanel);
+            app.SetEditField_2Label_4.HorizontalAlignment = 'right';
+            app.SetEditField_2Label_4.Position = [23 147 25 22];
+            app.SetEditField_2Label_4.Text = 'Set';
+
+            % Create SetMDLEditField
+            app.SetMDLEditField = uieditfield(app.MasterdelaylinePanel, 'numeric');
+            app.SetMDLEditField.ValueChangedFcn = createCallbackFcn(app, @SetMDLEditFieldValueChanged, true);
+            app.SetMDLEditField.Position = [62 147 52 22];
+            app.SetMDLEditField.Value = 37;
+
+            % Create Minlongestpath74Label
+            app.Minlongestpath74Label = uilabel(app.MasterdelaylinePanel);
+            app.Minlongestpath74Label.Position = [8 73 109 30];
+            app.Minlongestpath74Label.Text = {'Min (longest path): '; '-74'};
+
+            % Create Maxshortestpath76Label
+            app.Maxshortestpath76Label = uilabel(app.MasterdelaylinePanel);
+            app.Maxshortestpath76Label.Position = [6 37 115 30];
+            app.Maxshortestpath76Label.Text = {'Max (shortest path): '; '76'};
+
+            % Create MDLRBVLabel
+            app.MDLRBVLabel = uilabel(app.MasterdelaylinePanel);
+            app.MDLRBVLabel.Position = [21 117 85 22];
+            app.MDLRBVLabel.Text = 'RBV: ';
 
             % Show the figure after all components are created
             app.UIFigure.Visible = 'on';
