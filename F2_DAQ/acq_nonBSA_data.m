@@ -62,13 +62,15 @@ classdef acq_nonBSA_data < handle
             
         end
         
-        function obj = addDataFR(obj,PID)
+        function obj = addDataFR(obj)
             
-            if obj.PID ~= PID
-                new_data = lcaGetSmart(obj.nonBSA_list,0,'DBF_ENUM');
-                obj.data = [obj.data new_data];
-                obj.PID = PID;
+            try
+                new_data = lcaGet(obj.nonBSA_list,0,'DBF_ENUM');
+            catch
+                new_data = nan(size(obj.nonBSA_list));
             end
+            obj.data = [obj.data new_data];
+                
         end
         
         function interpolate(obj,time)

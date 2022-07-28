@@ -9,6 +9,8 @@ classdef F2_EventClass < handle
         EXCL_UNIQ
         EXCL_VALS
         EXCL_VAL0
+        
+        RATE
     end
 
     properties(Constant)
@@ -33,6 +35,13 @@ classdef F2_EventClass < handle
         RATE_BIT_VALUE = {0x400      ,0x10000     ,0x1000000  ,0x20000     ,0x40000}
         
         DAQ_EVNT_PV    = 'EVNT:SYS1:1:PMAQCHCK' % EC 214
+        
+        BEAM_RATE_PV    = 'EVNT:SYS1:1:BEAMRATE' % EC 203
+        DAQ_RATE_PV   = 'EVNT:SYS1:1:PMAQRATE' % EC 214
+        
+        BEAM_PID_PV    = 'PATT:SYS1:1:PULSEIDBR';
+        ONEH_PID_PV    = 'PATT:SYS1:1:PULSEID1H';
+        TENH_PID_PV    = 'PATT:SYS1:1:PULSEIDTH';
     end
     
     methods
@@ -86,6 +95,8 @@ classdef F2_EventClass < handle
             for i = 1:numel(obj.EXCL_UNIQ)
                 lcaPut([obj.DAQ_EVNT_PV '.' obj.EXCL_UNIQ{i}], double(obj.EXCL_VALS(i)));
             end
+            
+            obj.RATE = 'BEAM';
         end
         
         function select_rate(obj,rate)
@@ -105,6 +116,8 @@ classdef F2_EventClass < handle
                     ind = find(strcmp(enum,obj.INCL_UNIQ));
                     obj.INCL_VALS(ind) = obj.INCL_VAL0(ind) + uint32(val);
                     lcaPut([obj.DAQ_EVNT_PV '.' enum], double(obj.INCL_VALS(ind)));
+                    
+                    obj.RATE = rate;
                
                 catch
                     
@@ -125,13 +138,22 @@ classdef F2_EventClass < handle
             event_info.excmSet = obj.EXCL_NAME;
             event_info.excmReset = {''};
             event_info.beamcode = 10;
-            event_info.ratePV = 'EVNT:SYS1:1:PMAQRATE';
-            event_info.beamRatePV = 'EVNT:SYS1:1:BEAMRATE';
+            event_info.ratePV = obj.DAQ_RATE_PV;
+            event_info.beamRatePV = obj.BEAM_RATE_PV;
             
             event_info.liveRate = lcaGet(event_info.ratePV);
             event_info.beamRate = lcaGet(event_info.beamRatePV);
             event_info.rateRatio = event_info.beamRate/event_info.liveRate;
             
+            if strcmp(obj.RATE,'BEAM')
+                event_info.PID_PV = obj.BEAM_PID_PV;
+            elseif strcmp(obj.RATE,'ONE_HERTZ')
+                event_info.PID_PV = obj.ONEH_PID_PV;
+            elseif strcmp(obj.RATE,'TEN_HERTZ')
+                event_info.PID_PV = obj.TENH_PID_PV;
+            else
+                error('Invalid rate modifier.');
+            end
         end
 
             

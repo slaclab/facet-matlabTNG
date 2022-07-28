@@ -266,26 +266,28 @@ classdef F2_fastDAQ < handle
             set_CAM_filepath(obj);
             lcaPutNoWait(obj.daq_pvs.TIFF_Capture,1);
             
+            count = 0;
+            old_pid = lcaGet(obj.data_struct.metadata.Event.PID_PV);
+            %rate_ratio = obj.data_struct.metadata.Event.rateRatio;
+            
             % Start data
             lcaPut(['EDEF:SYS1:' num2str(obj.eDefNum) ':CTRL'],1);
             obj.event.start_event();
             
-            count = 0;
-            old_pid = lcaGet('PATT:SYS1:1:PULSEIDBR');
-            rate_ratio = obj.data_struct.metadata.Event.rateRatio;
-            disp(rate_ratio);
-            while count < (rate_ratio*obj.params.n_shot)
-                
+            while count < obj.params.n_shot
                 pause(0.01);
                 
-                new_pid = lcaGet('PATT:SYS1:1:PULSEIDBR');
-                obj.async_data.addDataFR(new_pid);
-                
+                try
+                    new_pid = lcaGet(obj.data_struct.metadata.Event.PID_PV);
+                catch
+                    continue;
+                end
                 if new_pid ~= old_pid
                     old_pid = new_pid;
                     count = count + 1;
-                end
-                
+                    
+                    obj.async_data.addDataFR();
+                end  
             end
             
             % Stop data
