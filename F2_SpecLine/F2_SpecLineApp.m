@@ -34,6 +34,8 @@ classdef F2_SpecLineApp < handle
                 PV(context,'name',"Q1D_BACT",'pvname',"LI20:LGPS:3261:BACT",'monitor',true,'mode',"r"); % Q1D BACT
                 PV(context,'name',"Q2D_BDES",'pvname',"LI20:LGPS:3091:BDES",'monitor',true,'mode',"rw"); % Q2D BDES
                 PV(context,'name',"Q2D_BACT",'pvname',"LI20:LGPS:3091:BACT",'monitor',true,'mode',"r"); % Q2D BACT
+                PV(context,'name',"Q5D_BDES",'pvname',"LI20:LGPS:3330:BDES",'monitor',true,'mode',"rw"); % Q5D BDES
+                PV(context,'name',"Q5D_BACT",'pvname',"LI20:LGPS:3330:BACT",'monitor',true,'mode',"r"); % Q5D BACT
                 ] ;
             pset(obj.pvlist,'debug',0) ;
             obj.pvs = struct(obj.pvlist);
@@ -54,6 +56,8 @@ classdef F2_SpecLineApp < handle
             obj.pvs.Q1D_BACT.guihan = apph.Q1DBACTField;
             obj.pvs.Q2D_BDES.guihan = apph.Q2DBDESEditField;
             obj.pvs.Q2D_BACT.guihan = apph.Q2DBACTField;
+            obj.pvs.Q5D_BDES.guihan = apph.B5DBDESEditField;
+            obj.pvs.Q5D_BACT.guihan = apph.B5DBACTField;
             
             % Start listening for PV updates
             obj.listeners = addlistener(obj,'PVUpdated',@(~,~) obj.loop) ;
