@@ -20,6 +20,8 @@ classdef F2_SpecLineApp < handle
         
         function obj = F2_SpecLineApp(apph)
             
+            addpath('../F2_DAQ/');
+            
             % initialize object and add PVs to be monitored
             context = PV.Initialize(PVtype.EPICS) ;
             obj.pvlist=[...
