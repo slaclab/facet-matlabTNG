@@ -657,7 +657,7 @@ classdef F2_DAN_exported < matlab.apps.AppBase
             % Create ImageAnalysisFunctionEditField
             app.ImageAnalysisFunctionEditField = uieditfield(app.dispImage, 'text');
             app.ImageAnalysisFunctionEditField.Position = [7 202 236 24];
-            app.ImageAnalysisFunctionEditField.Value = '@(x)fftshift(fft2(x))';
+            app.ImageAnalysisFunctionEditField.Value = '@(x)abs(fftshift(fft2(x)))';
 
             % Create ApplyImageanalysis2Dto2DCheckBox
             app.ApplyImageanalysis2Dto2DCheckBox = uicheckbox(app.dispImage);
