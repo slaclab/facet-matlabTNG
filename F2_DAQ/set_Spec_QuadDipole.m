@@ -8,7 +8,7 @@ function [delta] = set_Spec_QuadDipole(obj, quadPV, BDESs)
 end
 
 
-function [delta] = set_Quads_BDES(obj, quadPVs, values)
+function [delta] = set_QuadsDipole_BDES(obj, quadPVs, values)
 
         control_magnetSet({quadPVs.control_PV0,quadPVs.control_PV1,quadPVs.control_PV2,quadPVs.control_PV3},values,'action','TRIM');
         obj.daqhandle.dispMessage(sprintf('Setting Quads %s %s %s to %0.2f %0.2f %0.2f, and dipole %s to %0.2f', quadPVs.control_PV0,quadPVs.control_PV1,quadPVs.control_PV2,quadPVs.control_PV3, values(1), values(2), values(3), values(4)));
