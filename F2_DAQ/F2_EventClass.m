@@ -126,8 +126,11 @@ classdef F2_EventClass < handle
             event_info.excmReset = {''};
             event_info.beamcode = 10;
             event_info.ratePV = 'EVNT:SYS1:1:PMAQRATE';
+            event_info.beamRatePV = 'EVNT:SYS1:1:BEAMRATE';
             
             event_info.liveRate = lcaGet(event_info.ratePV);
+            event_info.beamRate = lcaGet(event_info.beamRatePV);
+            event_info.rateRatio = event_info.beamRate/event_info.liveRate;
             
         end
 
