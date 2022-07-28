@@ -181,17 +181,16 @@ classdef DataSetDAN < handle
             
         end
         
-        function visImages(s, diag, startNbr)
+        function visImages(s, diag, startNbr, fcn)
             
-            if nargin < 3
-                startNbr = 1;
+            if nargin < 4
+                fcn = @(x)x;
             end
             
             [data,~] = s.hlpCheckImage(diag);
             
-            
             for k = startNbr:s.visImageIncrement:length(data.common_index)
-                visImage(s, diag, k);
+                s.visImage(diag, k, fcn);
                 pause(s.loopWaitTime);
                 s.GUIHandle.ImagenumberEditField.Value = k;
                 
