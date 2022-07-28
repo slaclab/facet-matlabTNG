@@ -489,6 +489,13 @@ classdef F2_DAN_exported < matlab.apps.AppBase
         function LastDAQButtonPushed(app, event)
             app.getLatestExp();
         end
+
+        % Close request function: UIFigure
+        function UIFigureCloseRequest(app, event)
+            delete(app)
+            disp('Remember to uncomment the exit command')
+            exit;
+        end
     end
 
     % Component initialization
@@ -501,6 +508,7 @@ classdef F2_DAN_exported < matlab.apps.AppBase
             app.UIFigure = uifigure('Visible', 'off');
             app.UIFigure.Position = [100 100 1197 937];
             app.UIFigure.Name = 'MATLAB App';
+            app.UIFigure.CloseRequestFcn = createCallbackFcn(app, @UIFigureCloseRequest, true);
 
             % Create dataSet
             app.dataSet = uipanel(app.UIFigure);
