@@ -222,7 +222,7 @@ classdef F2_DAN_exported < matlab.apps.AppBase
         function startupFcn(app)
 %             set(app.dispImage.Children,'Enable','Off')
 %             set(app.correlationPlot.Children,'Enable','Off')
-            
+            addpath('DANfunction')
             app.getLatestExp();
             
         end
@@ -810,6 +810,7 @@ classdef F2_DAN_exported < matlab.apps.AppBase
             title(app.ImageAxes, 'Title')
             xlabel(app.ImageAxes, 'X')
             ylabel(app.ImageAxes, 'Y')
+            app.ImageAxes.FontSize = 14;
             app.ImageAxes.Position = [363 409 803 509];
 
             % Create WaterfallplotPanel

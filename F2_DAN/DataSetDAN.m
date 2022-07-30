@@ -84,7 +84,7 @@ classdef DataSetDAN < handle
             %DATASETDAN Construct an instance of this class
             %   Detailed explanation goes here
             
-            addpath('DANfunction')
+            
             
             s.dataSetID = dSID;
             s.hlpDispMsg('Looking for directory...\n')
