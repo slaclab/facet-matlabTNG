@@ -13,7 +13,7 @@ classdef F2_SpecLineApp < handle
     properties(Constant)
         maxbeat=1e7 % max heartbeat count, wrap to zero
         defaultEnergy=10
-        magnets={'LI20:LGPS:3141';'LI20:LGPS:3261';'LI20:LGPS:3091'}
+        magnets={'LI20:LGPS:3141';'LI20:LGPS:3261';'LI20:LGPS:3091'; 'LGPS:LI20:3330'}
     end
     
     methods
@@ -30,6 +30,7 @@ classdef F2_SpecLineApp < handle
                 PV(context,'name',"Z_Image",'pvname',"SIOC:SYS1:ML00:CALCOUT053",'monitor',true,'mode',"rw"); % Image Plane
                 PV(context,'name',"M12",'pvname',"SIOC:SYS1:ML00:CALCOUT054",'monitor',true,'mode',"rw"); % M12
                 PV(context,'name',"M34",'pvname',"SIOC:SYS1:ML00:CALCOUT055",'monitor',true,'mode',"rw"); % M34
+                %PV(context,'name',"incl_dipole",'pvname',"SIOC:SYS1:ML00:CALCOUT056",'monitor',true,'mode',"rw"); % Include dipole
                 PV(context,'name',"Q0D_BDES",'pvname',"LI20:LGPS:3141:BDES",'monitor',true,'mode',"rw"); % Q0D BDES
                 PV(context,'name',"Q0D_BACT",'pvname',"LI20:LGPS:3141:BACT",'monitor',true,'mode',"r"); % Q0D BACT
                 PV(context,'name',"Q1D_BDES",'pvname',"LI20:LGPS:3261:BDES",'monitor',true,'mode',"rw"); % Q1D BDES
@@ -51,6 +52,8 @@ classdef F2_SpecLineApp < handle
             obj.pvs.Z_Image.guihan = apph.ZImageEditField;
             obj.pvs.M12.guihan = apph.M12EditField;
             obj.pvs.M34.guihan = apph.M34EditField;
+            %obj.pvs.incl_dipole.guihan = apph.DipoleSwitch;
+
             
             obj.pvs.Q0D_BDES.guihan = apph.Q0DBDESEditField;
             obj.pvs.Q0D_BACT.guihan = apph.Q0DBACTField;
@@ -64,6 +67,8 @@ classdef F2_SpecLineApp < handle
             % Start listening for PV updates
             obj.listeners = addlistener(obj,'PVUpdated',@(~,~) obj.loop) ;
             run(obj.pvlist,true,0.1,obj,'PVUpdated');
+            
+            disp('hello from Doug s folder');
             
             
             
@@ -84,6 +89,8 @@ classdef F2_SpecLineApp < handle
             Z_Img = caget(obj.pvs.Z_Image);
             M12 = caget(obj.pvs.M12);
             M34 = caget(obj.pvs.M34);
+            %incl_dipole = caget(obj.pvs.incl_dipole);
+            incl_dipole = lcaGetSmart('SIOC:SYS1:ML00:CALCOUT056');
             
             DeltaE = E - obj.defaultEnergy;
             
@@ -93,6 +100,7 @@ classdef F2_SpecLineApp < handle
             disp(['Z_Img = ' num2str(Z_Img)]);
             disp(['M12 = ' num2str(M12)]);
             disp(['M34 = ' num2str(M34)]);
+            disp(['Include dipole = ' num2str(incl_dipole)]);
             
             [isok, BDES0, BDES1, BDES2] = E300_calc_QS_3(Z_Obj, Z_Img, DeltaE, M12, M34);
             
@@ -105,12 +113,16 @@ classdef F2_SpecLineApp < handle
             disp(['QD1 = ' num2str(BDES1)]);
             disp(['QD2 = ' num2str(BDES2)]);
             
-            values = [BDES0; BDES1; BDES2];
-            control_magnetSet(obj.magnets,values,'action','TRIM');
+            if incl_dipole == 1
+               control_magnetSet(obj.magnets,[BDES0; BDES1; BDES2; E],'action','TRIM');
+            else
+               control_magnetSet(obj.magnets(1:3),[BDES0; BDES1; BDES2],'action','TRIM');
+            end
             disp('Magnets set!');
                         
             
         end
+        
         
     end
     
