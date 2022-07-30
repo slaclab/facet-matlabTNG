@@ -46,7 +46,11 @@ classdef DataSetDAN < handle
         hdr;
         
         % Ugly GUI settings
+        showOnlyMatchedData = 1;
+        
+        hasBG = 0;
         subtractBackground = 0;
+        
         visImageIncrement = 1;
         keepPlotting = 1;
         loopWaitTime = 0.5;
@@ -80,6 +84,8 @@ classdef DataSetDAN < handle
             %DATASETDAN Construct an instance of this class
             %   Detailed explanation goes here
             
+            addpath('DANfunction')
+            
             s.dataSetID = dSID;
             s.hlpDispMsg('Looking for directory...\n')
             if nargin >= 2
@@ -103,7 +109,6 @@ classdef DataSetDAN < handle
             end
             
             s.hlpDispMsg('dataSet succefully loaded\n');
-            
             
         end
     end
