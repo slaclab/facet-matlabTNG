@@ -297,7 +297,7 @@ classdef F2_bpms < handle & matlab.mixin.Copyable
         aida_pid = mstruct.values.id ; aida_pid=reshape(aida_pid,npulse,sum(selaida))'; aida_pid=aida_pid(1,:);
         aida_x = mstruct.values.x ; aida_x=reshape(aida_x,npulse,sum(selaida))' ;
         aida_y = mstruct.values.y ; aida_y=reshape(aida_y,npulse,sum(selaida))' ;
-        aida_tmit = mstruct.values.tmit ; aida_tmit=reshape(aida_tmit,npulse,sum(selaida))' ;
+        aida_tmit = mstruct.values.tmits ; aida_tmit=reshape(aida_tmit,npulse,sum(selaida))' ;
       end
       % Wait for EPICS data to finish, then grab it
       if any(selepics)
