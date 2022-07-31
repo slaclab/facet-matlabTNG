@@ -18,7 +18,6 @@ classdef F2_Feedback_exported < matlab.apps.AppBase
     BC14BLENFeedbackMenu            matlab.ui.container.Menu
     BC20EnergyFeedbackMenu          matlab.ui.container.Menu
     RestoreallactuatorsMenu         matlab.ui.container.Menu
-    DisplayEnergyUnitsMenu          matlab.ui.container.Menu
     JitterTimeoutMenu               matlab.ui.container.Menu
     HelpMenu                        matlab.ui.container.Menu
     ActuatorReadbackPVsMenu         matlab.ui.container.Menu
@@ -30,13 +29,13 @@ classdef F2_Feedback_exported < matlab.apps.AppBase
     BC14_BLENSIOCSYS1ML01AO262Menu  matlab.ui.container.Menu
     DL10EnergyFeedbackPanel         matlab.ui.container.Panel
     SetpointEditField               matlab.ui.control.NumericEditField
-    mmLabel_5                       matlab.ui.control.Label
+    keVLabel                        matlab.ui.control.Label
     Gauge                           matlab.ui.control.LinearGauge
     StatusLamp                      matlab.ui.control.Lamp
     Switch                          matlab.ui.control.Switch
     Gauge_3                         matlab.ui.control.LinearGauge
     KLYSIN1041SFB_ADESLabel         matlab.ui.control.Label
-    BPMSIN10731X1HLabel             matlab.ui.control.Label
+    SIOCSYS1ML01AO606Label          matlab.ui.control.Label
     EditField                       matlab.ui.control.NumericEditField
     EditField_2                     matlab.ui.control.NumericEditField
     NotRunningButton                matlab.ui.control.Button
@@ -167,7 +166,7 @@ classdef F2_Feedback_exported < matlab.apps.AppBase
       app.aobj.SetpointOffsets(1) = value ;
     end
 
-    % Menu selected function: DisplayEnergyUnitsMenu
+    % Callback function
     function DisplayEnergyUnitsMenuSelected(app, event)
       if app.DisplayEnergyUnitsMenu.Checked
         app.DisplayEnergyUnitsMenu.Checked = false ;
@@ -671,11 +670,6 @@ classdef F2_Feedback_exported < matlab.apps.AppBase
       app.RestoreallactuatorsMenu.MenuSelectedFcn = createCallbackFcn(app, @RestoreallactuatorsMenuSelected, true);
       app.RestoreallactuatorsMenu.Text = 'Restore all actuators...';
 
-      % Create DisplayEnergyUnitsMenu
-      app.DisplayEnergyUnitsMenu = uimenu(app.SettingsMenu);
-      app.DisplayEnergyUnitsMenu.MenuSelectedFcn = createCallbackFcn(app, @DisplayEnergyUnitsMenuSelected, true);
-      app.DisplayEnergyUnitsMenu.Text = 'Display Energy Units';
-
       % Create JitterTimeoutMenu
       app.JitterTimeoutMenu = uimenu(app.SettingsMenu);
       app.JitterTimeoutMenu.MenuSelectedFcn = createCallbackFcn(app, @JitterTimeoutMenuSelected, true);
@@ -726,11 +720,11 @@ classdef F2_Feedback_exported < matlab.apps.AppBase
       app.SetpointEditField.HorizontalAlignment = 'center';
       app.SetpointEditField.Position = [17 128 100 29];
 
-      % Create mmLabel_5
-      app.mmLabel_5 = uilabel(app.DL10EnergyFeedbackPanel);
-      app.mmLabel_5.FontSize = 16;
-      app.mmLabel_5.Position = [123 130 48 28];
-      app.mmLabel_5.Text = 'mm';
+      % Create keVLabel
+      app.keVLabel = uilabel(app.DL10EnergyFeedbackPanel);
+      app.keVLabel.FontSize = 16;
+      app.keVLabel.Position = [123 130 48 28];
+      app.keVLabel.Text = 'keV';
 
       % Create Gauge
       app.Gauge = uigauge(app.DL10EnergyFeedbackPanel, 'linear');
@@ -765,10 +759,10 @@ classdef F2_Feedback_exported < matlab.apps.AppBase
       app.KLYSIN1041SFB_ADESLabel.Position = [323 141 148 22];
       app.KLYSIN1041SFB_ADESLabel.Text = 'KLYS:IN10:41:SFB_ADES';
 
-      % Create BPMSIN10731X1HLabel
-      app.BPMSIN10731X1HLabel = uilabel(app.DL10EnergyFeedbackPanel);
-      app.BPMSIN10731X1HLabel.Position = [189 140 119 22];
-      app.BPMSIN10731X1HLabel.Text = 'BPMS:IN10:731:X1H';
+      % Create SIOCSYS1ML01AO606Label
+      app.SIOCSYS1ML01AO606Label = uilabel(app.DL10EnergyFeedbackPanel);
+      app.SIOCSYS1ML01AO606Label.Position = [177 140 143 22];
+      app.SIOCSYS1ML01AO606Label.Text = 'SIOC:SYS1:ML01:AO606';
 
       % Create EditField
       app.EditField = uieditfield(app.DL10EnergyFeedbackPanel, 'numeric');
