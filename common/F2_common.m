@@ -194,7 +194,7 @@ classdef F2_common < handle
       % e.g. LogMessage('F2_Feedback','Something went wrong')
       ml = edu.stanford.slac.logapi.MessageLogAPI.getInstance(char(src));
       ml.log(char(mess));
-      fprintf(2,'%s : %s (%s)\n',datestr(now),mess,srcc);
+      fprintf(2,'%s : %s (%s)\n',datestr(now),mess,src);
     end
     function dnum = epics2mltime(tstamp)
       % Put epics time stamp as Matlab datenum format in gui requested
