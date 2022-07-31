@@ -81,12 +81,12 @@ classdef F2_Feedback_exported < matlab.apps.AppBase
     ActuatorReset_BC20E             matlab.ui.control.Button
     BC11EnergyFeedbackPanel         matlab.ui.container.Panel
     SetpointEditField_5             matlab.ui.control.NumericEditField
-    mmLabel_6                       matlab.ui.control.Label
+    keVLabel_2                      matlab.ui.control.Label
     StatusLamp_5                    matlab.ui.control.Lamp
     Switch_5                        matlab.ui.control.Switch
     Gauge_9                         matlab.ui.control.LinearGauge
     KLYSLI111121SSSB_ADESLabel      matlab.ui.control.Label
-    BPMSLI11333X1HLabel             matlab.ui.control.Label
+    SIOCSYS1ML01AO612Label          matlab.ui.control.Label
     EditField_11                    matlab.ui.control.NumericEditField
     EditField_12                    matlab.ui.control.NumericEditField
     NotRunningButton_3              matlab.ui.control.Button
@@ -1035,13 +1035,13 @@ classdef F2_Feedback_exported < matlab.apps.AppBase
       app.SetpointEditField_5 = uieditfield(app.BC11EnergyFeedbackPanel, 'numeric');
       app.SetpointEditField_5.ValueChangedFcn = createCallbackFcn(app, @SetpointEditField_5ValueChanged, true);
       app.SetpointEditField_5.HorizontalAlignment = 'center';
-      app.SetpointEditField_5.Position = [17 83 100 29];
+      app.SetpointEditField_5.Position = [9 72 100 29];
 
-      % Create mmLabel_6
-      app.mmLabel_6 = uilabel(app.BC11EnergyFeedbackPanel);
-      app.mmLabel_6.FontSize = 16;
-      app.mmLabel_6.Position = [123 84 58 29];
-      app.mmLabel_6.Text = 'mm';
+      % Create keVLabel_2
+      app.keVLabel_2 = uilabel(app.BC11EnergyFeedbackPanel);
+      app.keVLabel_2.FontSize = 16;
+      app.keVLabel_2.Position = [123 72 58 29];
+      app.keVLabel_2.Text = 'keV';
 
       % Create StatusLamp_5
       app.StatusLamp_5 = uilamp(app.BC11EnergyFeedbackPanel);
@@ -1051,7 +1051,7 @@ classdef F2_Feedback_exported < matlab.apps.AppBase
       % Create Switch_5
       app.Switch_5 = uiswitch(app.BC11EnergyFeedbackPanel, 'slider');
       app.Switch_5.ValueChangedFcn = createCallbackFcn(app, @Switch_5ValueChanged, true);
-      app.Switch_5.Position = [47 25 88 39];
+      app.Switch_5.Position = [48 16 88 39];
 
       % Create Gauge_9
       app.Gauge_9 = uigauge(app.BC11EnergyFeedbackPanel, 'linear');
@@ -1065,10 +1065,10 @@ classdef F2_Feedback_exported < matlab.apps.AppBase
       app.KLYSLI111121SSSB_ADESLabel.Position = [298 95 175 22];
       app.KLYSLI111121SSSB_ADESLabel.Text = 'KLYS:LI11:11&21:SSSB_ADES';
 
-      % Create BPMSLI11333X1HLabel
-      app.BPMSLI11333X1HLabel = uilabel(app.BC11EnergyFeedbackPanel);
-      app.BPMSLI11333X1HLabel.Position = [178 95 117 22];
-      app.BPMSLI11333X1HLabel.Text = 'BPMS:LI11:333:X1H';
+      % Create SIOCSYS1ML01AO612Label
+      app.SIOCSYS1ML01AO612Label = uilabel(app.BC11EnergyFeedbackPanel);
+      app.SIOCSYS1ML01AO612Label.Position = [154 95 143 22];
+      app.SIOCSYS1ML01AO612Label.Text = 'SIOC:SYS1:ML01:AO612';
 
       % Create EditField_11
       app.EditField_11 = uieditfield(app.BC11EnergyFeedbackPanel, 'numeric');
