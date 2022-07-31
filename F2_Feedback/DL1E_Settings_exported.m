@@ -286,7 +286,7 @@ classdef DL1E_Settings_exported < matlab.apps.AppBase
       app.UIAxes = uiaxes(app.RightPanel);
       title(app.UIAxes, 'DL10 Energy')
       xlabel(app.UIAxes, 'time [s]')
-      ylabel(app.UIAxes, 'dE [keV]')
+      ylabel(app.UIAxes, '\DeltaE [keV]')
       app.UIAxes.Position = [4 6 588 470];
 
       % Show the figure after all components are created

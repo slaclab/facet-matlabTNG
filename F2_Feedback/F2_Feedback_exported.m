@@ -11,7 +11,7 @@ classdef F2_Feedback_exported < matlab.apps.AppBase
     BC14BLENMenu                    matlab.ui.container.Menu
     BC20EnergyMenu                  matlab.ui.container.Menu
     SettingsMenu                    matlab.ui.container.Menu
-    DL1EnergyFeedbackMenu           matlab.ui.container.Menu
+    DL10EnergyFeedbackMenu          matlab.ui.container.Menu
     BC11EnergyFeedbackMenu          matlab.ui.container.Menu
     BC11BLENFeedbackMenu            matlab.ui.container.Menu
     BC14EnergyFeedbackMenu          matlab.ui.container.Menu
@@ -63,10 +63,10 @@ classdef F2_Feedback_exported < matlab.apps.AppBase
     ActuatorReset_BC14E             matlab.ui.control.Button
     BC20EnergyFeedbackPanel         matlab.ui.container.Panel
     SetpointEditField_4             matlab.ui.control.NumericEditField
-    mmLabel_7                       matlab.ui.control.Label
+    MeVLabel                        matlab.ui.control.Label
     Switch_4                        matlab.ui.control.Switch
     StatusLamp_4                    matlab.ui.control.Lamp
-    BPMSLI202050X57Label            matlab.ui.control.Label
+    SIOCSYS1ML01AO624Label          matlab.ui.control.Label
     EditField_8                     matlab.ui.control.NumericEditField
     NotRunningButton_6              matlab.ui.control.Button
     MKBLabel                        matlab.ui.control.Label
@@ -149,9 +149,9 @@ classdef F2_Feedback_exported < matlab.apps.AppBase
       !StripTool /u1/facet/tools/StripTool/config/FB_DL1_E.stp &
     end
 
-    % Menu selected function: DL1EnergyFeedbackMenu
-    function DL1EnergyFeedbackMenuSelected(app, event)
-      app.DL1EnergyFeedbackMenu.Enable = false ;
+    % Menu selected function: DL10EnergyFeedbackMenu
+    function DL10EnergyFeedbackMenuSelected(app, event)
+      app.DL10EnergyFeedbackMenu.Enable = false ;
       DL1E_Settings(app.aobj);
       drawnow;
     end
@@ -159,23 +159,8 @@ classdef F2_Feedback_exported < matlab.apps.AppBase
     % Value changed function: SetpointEditField
     function SetpointEditFieldValueChanged(app, event)
       value = app.SetpointEditField.Value;
-      if app.aobj.GuiEnergyUnits
-        value = (value - app.aobj.SetpointConversion{1}(1)) / app.aobj.SetpointConversion{1}(2) ;
-      end
       caput(app.aobj.pvs.DL1E_Offset,value) ;
       app.aobj.SetpointOffsets(1) = value ;
-    end
-
-    % Callback function
-    function DisplayEnergyUnitsMenuSelected(app, event)
-      if app.DisplayEnergyUnitsMenu.Checked
-        app.DisplayEnergyUnitsMenu.Checked = false ;
-        app.aobj.GuiEnergyUnits = false ;
-      else
-        app.DisplayEnergyUnitsMenu.Checked = true ;
-        app.aobj.GuiEnergyUnits = true ;
-      end
-      notify(app.aobj,'PVUpdated');
     end
 
     % Close request function: FACETIIFeedbackUIFigure
@@ -187,9 +172,6 @@ classdef F2_Feedback_exported < matlab.apps.AppBase
     % Value changed function: SetpointEditField_2
     function SetpointEditField_2ValueChanged(app, event)
       value = app.SetpointEditField_2.Value;
-      if app.aobj.GuiEnergyUnits
-        value = (value - app.aobj.SetpointConversion{2}(1)) / app.aobj.SetpointConversion{2}(2) ;
-      end
       caput(app.aobj.pvs.BC14E_Offset,value) ;
       app.aobj.SetpointOffsets(2) = value ;
     end
@@ -228,9 +210,6 @@ classdef F2_Feedback_exported < matlab.apps.AppBase
     % Value changed function: SetpointEditField_5
     function SetpointEditField_5ValueChanged(app, event)
       value = app.SetpointEditField_5.Value;
-      if app.aobj.GuiEnergyUnits
-        value = (value - app.aobj.SetpointConversion{3}(1)) / app.aobj.SetpointConversion{3}(2) ;
-      end
       caput(app.aobj.pvs.BC11E_Offset,value) ;
       app.aobj.SetpointOffsets(3) = value ;
     end
@@ -302,9 +281,6 @@ classdef F2_Feedback_exported < matlab.apps.AppBase
     % Value changed function: SetpointEditField_4
     function SetpointEditField_4ValueChanged(app, event)
       value = app.SetpointEditField_4.Value;
-      if app.aobj.GuiEnergyUnits
-        value = (value - app.aobj.SetpointConversion{5}(1)) / app.aobj.SetpointConversion{5}(2) ;
-      end
       caput(app.aobj.pvs.BC20E_Offset,value) ;
       app.aobj.SetpointOffsets(5) = value ;
     end
@@ -635,10 +611,10 @@ classdef F2_Feedback_exported < matlab.apps.AppBase
       app.SettingsMenu = uimenu(app.FACETIIFeedbackUIFigure);
       app.SettingsMenu.Text = 'Settings';
 
-      % Create DL1EnergyFeedbackMenu
-      app.DL1EnergyFeedbackMenu = uimenu(app.SettingsMenu);
-      app.DL1EnergyFeedbackMenu.MenuSelectedFcn = createCallbackFcn(app, @DL1EnergyFeedbackMenuSelected, true);
-      app.DL1EnergyFeedbackMenu.Text = 'DL1 Energy Feedback ...';
+      % Create DL10EnergyFeedbackMenu
+      app.DL10EnergyFeedbackMenu = uimenu(app.SettingsMenu);
+      app.DL10EnergyFeedbackMenu.MenuSelectedFcn = createCallbackFcn(app, @DL10EnergyFeedbackMenuSelected, true);
+      app.DL10EnergyFeedbackMenu.Text = 'DL10 Energy Feedback ...';
 
       % Create BC11EnergyFeedbackMenu
       app.BC11EnergyFeedbackMenu = uimenu(app.SettingsMenu);
@@ -943,11 +919,11 @@ classdef F2_Feedback_exported < matlab.apps.AppBase
       app.SetpointEditField_4.HorizontalAlignment = 'center';
       app.SetpointEditField_4.Position = [17 195 109 29];
 
-      % Create mmLabel_7
-      app.mmLabel_7 = uilabel(app.BC20EnergyFeedbackPanel);
-      app.mmLabel_7.FontSize = 16;
-      app.mmLabel_7.Position = [130 199 41 22];
-      app.mmLabel_7.Text = 'mm';
+      % Create MeVLabel
+      app.MeVLabel = uilabel(app.BC20EnergyFeedbackPanel);
+      app.MeVLabel.FontSize = 16;
+      app.MeVLabel.Position = [130 199 41 22];
+      app.MeVLabel.Text = 'MeV';
 
       % Create Switch_4
       app.Switch_4 = uiswitch(app.BC20EnergyFeedbackPanel, 'slider');
@@ -960,10 +936,10 @@ classdef F2_Feedback_exported < matlab.apps.AppBase
       app.StatusLamp_4.Position = [8 240 31 31];
       app.StatusLamp_4.Color = [0 0 0];
 
-      % Create BPMSLI202050X57Label
-      app.BPMSLI202050X57Label = uilabel(app.BC20EnergyFeedbackPanel);
-      app.BPMSLI202050X57Label.Position = [93 126 122 22];
-      app.BPMSLI202050X57Label.Text = 'BPMS:LI20:2050:X57';
+      % Create SIOCSYS1ML01AO624Label
+      app.SIOCSYS1ML01AO624Label = uilabel(app.BC20EnergyFeedbackPanel);
+      app.SIOCSYS1ML01AO624Label.Position = [80 126 143 22];
+      app.SIOCSYS1ML01AO624Label.Text = 'SIOC:SYS1:ML01:AO624';
 
       % Create EditField_8
       app.EditField_8 = uieditfield(app.BC20EnergyFeedbackPanel, 'numeric');
