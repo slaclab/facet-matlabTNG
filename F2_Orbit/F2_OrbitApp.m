@@ -111,18 +111,21 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
     WatcherConfsPV = "SIOC:SYS1:ML01:AO601" % bit pattern to use to select which orbit watchers to process
   end
   methods
-    function obj = F2_OrbitApp(appobj)
+    function obj = F2_OrbitApp(appobj,LLM)
       global BEAMLINE
       warning('off','MATLAB:lscov:RankDefDesignMat');
       warning('off','MATLAB:singularMatrix');
       warning('off','MATLAB:rankDeficientMatrix')
-      obj.LiveModel = F2_LiveModelApp ;
+      if exist('LLM','var') && ~isempty(LLM)
+        obj.LiveModel = LLM ;
+      else
+        obj.LiveModel = F2_LiveModelApp ;
+      end
       obj.BPMS = F2_bpms(obj.LiveModel.LM) ;
-      if exist('appobj','var')
+      if exist('appobj','var') && ~isempty(appobj)
         obj.aobj = appobj ;
       else
         obj.iswatcher = true ;
-        obj.StartWatcher ;
       end
       obj.LM=copy(obj.BPMS.LM); % local copy of LucretiaModel
       obj.LM.UseMissingEle = true ; % don't return info about missing correctors
@@ -192,23 +195,24 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
           obj.EnergyKnobsKlysID{iknob}(iklys) = BEAMLINE{ele(1)}.Klystron ;
         end
       end
+      % Start watcher timer function?
+      if obj.iswatcher
+        obj.StartWatcher ;
+      end
     end
     function StartWatcher(obj)
       if isempty(obj.WatcherTimer)
-        obj.WatcherTimer = timer('ErrorFcn',obj.StopWatcher,'ExecutionMode','fixedRate','Period',0.1,'TimerFcn',obj.Watcher) ;
+        obj.WatcherTimer = timer('ErrorFcn',@(~,~) obj.ErrWatcher,'ExecutionMode','fixedRate','Period',0.1,'TimerFcn',@(~,~) obj.Watcher) ;
       end
-      run(obj.WatcherTimer);
+      start(obj.WatcherTimer);
     end
-    function StopWatcher(obj,cmd)
-      if exist('cmd','var') && cmd
-        stop(obj.WatcherTimer);
-        return
-      end
+    function ErrWatcher(obj,~)
       F2_common.LogMessage('F2_OrbitApp_Watcher','Error with OrbitApp watcher function, restarting.');
       start(obj.WatcherTimer);
     end
-    function Watcher(obj)
+    function Watcher(obj,~)
       %WATCHER Run pre-saved configs in watcher function
+      global BEAMLINE
       persistent pobj pvs
       iw = lcaGet(char(obj.WatcherConfsPV)); % bit pattern of configs to process
       for iproc=1:length(obj.WatcherConfs) 
@@ -233,10 +237,11 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
         pobj.(wname).BPMS.read;
         % Fit orbit
         try
-          [~,X1]=pobj.orbitfit;
+          [~,X1]=pobj.(wname).orbitfit;
           if any(isnan(X1))
             error('No valid BPM data in buffer or other orbit fitting error');
           end
+          X1(5) = X1(5)*BEAMLINE{pobj.(wname).fitele}.P*1000 ; % Energy error in MeV
         catch ME
           lcaPutNoWait(char(pvs.(wname).valid),0);
           lcaPutNoWait('F2:WATCHER:ORBIT_STAT',1); % Write to watcher status PV
