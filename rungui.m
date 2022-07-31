@@ -5,9 +5,6 @@ if ~nargin || ~exist(appname,'dir')
   error('No provided app name or app doesn''t exist');
 end
 
-addpath common
-addpath web
-addpath F2_Wirescan
 cd(appname);
 appobj=eval([appname '_exported']);
 % appobj=eval(appname);

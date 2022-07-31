@@ -8,6 +8,7 @@ if ~isdeployed
   addpath python
   addpath F2_LiveModel
   addpath F2_LEM
+  addpath F2_Wirescan
   if string(getenv('IOCCONSOLE_ENV'))=="Dev"
     ldir="/afs/slac/g/ilc/codes/Lucretia/src/";
   else

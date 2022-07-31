@@ -54,7 +54,9 @@ classdef F2_MultiWire_exported < matlab.apps.AppBase
     end
     
     function RemoteSet(app)
-      app.LinacDropDownValueChanged();
+%       app.LinacDropDownValueChanged();
+      app.ButtonGroupSelectionChanged();
+      drawnow
     end
     
     function PlotData(app,iwire)
@@ -147,6 +149,7 @@ classdef F2_MultiWire_exported < matlab.apps.AppBase
       else
         app.LLM=F2_LiveModelApp;
       end
+      drawnow;
       app.LinacDropDownValueChanged;
     end
 

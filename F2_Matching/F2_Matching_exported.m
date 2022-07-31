@@ -472,6 +472,17 @@ classdef F2_Matching_exported < matlab.apps.AppBase
       app.Wire4_Sigma.Value=0; app.Wire4_SigmaErr.Value=0;
       drawnow
       app.DropDownValueChanged;
+      if ~isempty(app.WSApp) && isprop(app.WSApp,'UpdateObj')
+        if string(app.MeasurementPlaneDropDown.Value)=="Horizontal"
+          plane="x";
+        else
+          plane="y";
+        end
+        app.WSApp.(upper(plane)+"Button").Value=true;
+        app.WSApp.LinacDropDown.Value = app.LinacDropDown.Value ;
+        drawnow;
+        app.WSApp.RemoteSet() ;
+      end
     end
 
     % Button pushed function: FetchDatafromPVsButton
@@ -535,6 +546,17 @@ classdef F2_Matching_exported < matlab.apps.AppBase
     function MeasurementPlaneDropDownValueChanged(app, event)
       app.LinacDropDownValueChanged();
       app.TextArea_2.Value="";
+      if ~isempty(app.WSApp) && isprop(app.WSApp,'UpdateObj')
+        if string(app.MeasurementPlaneDropDown.Value)=="Horizontal"
+          plane="x";
+        else
+          plane="y";
+        end
+        app.WSApp.(upper(plane)+"Button").Value=true;
+        app.WSApp.LinacDropDown.Value = app.LinacDropDown.Value ;
+        drawnow;
+        app.WSApp.RemoteSet() ;
+      end
     end
 
     % Button pushed function: Button
@@ -601,6 +623,7 @@ classdef F2_Matching_exported < matlab.apps.AppBase
         else
           app.WSApp.(upper(plane)+"Button").Value=true;
           app.WSApp.LinacDropDown.Value = app.LinacDropDown.Value ;
+          drawnow;
           app.WSApp.RemoteSet() ;
         end
         app.WSApp.RemoteScan() ;
