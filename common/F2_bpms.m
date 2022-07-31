@@ -1,4 +1,4 @@
-classdef F2_bpms < handle
+classdef F2_bpms < handle & matlab.mixin.Copyable
   %F2_BPMS Read BPM orbit data from EPICS or use buffered BPM acquisition from EPICS+SCP
   events
     PVUpdated
@@ -6,6 +6,7 @@ classdef F2_bpms < handle
   properties
     plotscale uint8 = 0 % 0 = auto, else +/- mm scale
     dim string {mustBeMember(dim,["x","y","xy"])} = "xy" % Get new data for x, y or x & y (for read method only, readbuffer always gets x & y)
+    tmitcut % If set, require tmit>tmitcut else position fields set to nan for that pulse (and omitted from ave and rms stats)
   end
   properties(SetAccess=private)
     xdat % [nbpm x nread] mm
@@ -139,7 +140,6 @@ classdef F2_bpms < handle
       if ~exist('archivedate','var') || isempty(archivedate)
         for ipulse=1:npulse
           obj.read();
-          pause(max([1.5 1/double(obj.beamrate)]));
         end
       else
         obj.read(archivedate,npulse);
@@ -150,6 +150,7 @@ classdef F2_bpms < handle
       %READ Acquire a single orbit from EPICS
       %read() Read a single pulse from live EPICS database
       %read(startTime,npulse) Read npulses from archiver starting at startTime=[yr mnth day hr min sec]
+      persistent lastpvs
       
       % Reset data buffers if previously used buffered data aquisition method
       if obj.usebacq
@@ -208,6 +209,16 @@ classdef F2_bpms < handle
           end
       else
         
+        % Wait for any new BPM to post data, then pause 1/2 rep rate and grab all
+        if isempty(lastpvs) || ~isequal(lastpvs,pvs)
+          lcaSetMonitor(pvs);
+          lastpvs=pvs;
+        end
+        t0=tic;
+        while ~any(lcaNewMonitorValue(pvs)) || toc(t0)>1.5
+          pause(1/double(obj.beamrate)/10);
+        end
+        pause(1/double(obj.beamrate)/2);
         dat = lcaGet(pvs) ;
         
         % Sort new data
@@ -231,7 +242,13 @@ classdef F2_bpms < handle
         end
         
       end
-      
+      % Apply tmitcut if set
+      if ~isempty(obj.tmitcut)
+        cut = obj.tmit(:,obj.pulseid) < obj.tmitcut ;
+        obj.xdat(cut,obj.pulseid) = nan ;
+        obj.ydat(cut,obj.pulseid) = nan ;
+      end
+        
     end
     function readbuffer(obj,npulse)
       %READBUFFER get buffered BPM data
@@ -280,6 +297,7 @@ classdef F2_bpms < handle
         aida_pid = mstruct.values.id ; aida_pid=reshape(aida_pid,npulse,sum(selaida))'; aida_pid=aida_pid(1,:);
         aida_x = mstruct.values.x ; aida_x=reshape(aida_x,npulse,sum(selaida))' ;
         aida_y = mstruct.values.y ; aida_y=reshape(aida_y,npulse,sum(selaida))' ;
+        aida_tmit = mstruct.values.tmit ; aida_tmit=reshape(aida_tmit,npulse,sum(selaida))' ;
       end
       % Wait for EPICS data to finish, then grab it
       if any(selepics)
@@ -289,6 +307,7 @@ classdef F2_bpms < handle
         end
         epics_x = lcaGet(cellstr(obj.bpmnames(selepics)+":XHST"+obj.edef),npe) ;
         epics_y = lcaGet(cellstr(obj.bpmnames(selepics)+":YHST"+obj.edef),npe) ;
+        epics_tmit = lcaGet(cellstr(obj.bpmnames(selepics)+":TMITHST"+obj.edef),npe) ;
         epics_pid = lcaGet(sprintf('PATT:SYS1:1:PULSEID%d',obj.edef)) ; % Pulse ID of last data
       end
       % If both SCP and EPICS BPM data, then align using pulse ID
@@ -298,8 +317,8 @@ classdef F2_bpms < handle
           error('No overlapping SCP+EPICS BPMs found in buffer');
         end
         obj.nread = sum(aidaid) ;
-        obj.xdat = zeros(length(obj.bpmnames),obj.nread); obj.ydat=obj.xdat ;
-        obj.xdat(selaida,:) = aida_x(:,aidaid) ; obj.ydat(selaida,:) = aida_y(:,aidaid) ;
+        obj.xdat = zeros(length(obj.bpmnames),obj.nread); obj.ydat=obj.xdat ; obj.tmit=obj.xdat;
+        obj.xdat(selaida,:) = aida_x(:,aidaid) ; obj.ydat(selaida,:) = aida_y(:,aidaid) ; obj.tmit(selaida,:) = aida_tmit(:,aidaid) ;
         obj.pulseid = aida_pid(aidaid) ;
         dpid=diff(obj.pulseid(1:2));
         nepicsextd = (epics_pid - obj.pulseid(end))/dpid ;
@@ -315,18 +334,22 @@ classdef F2_bpms < handle
         end
         obj.xdat(selepics,:) = epics_x(:,i1:i2) ;
         obj.ydat(selepics,:) = epics_y(:,i1:i2) ;
+        obj.tmit(selepics,:) = epics_tmit(:,i1:i2) ;
       elseif any(selaida)
         obj.xdat = aida_x ;
         obj.ydat = aida_y ;
+        obj.tmit = aida_tmit ;
         obj.pulseid = aida_pid ;
       elseif any(selepics)
         obj.xdat = epics_x ;
         obj.ydat = epics_y ;
+        obj.tmit = epics_tmit ;
         obj.pulseid = epics_pid ;
       end
       % Assume exactly 0 vals are errors
       obj.xdat(obj.xdat==0)=nan;
       obj.ydat(obj.ydat==0)=nan;
+      obj.tmit(obj.tmit==0)=nan;
       % If all entries for given BPM are nan, then deselct BPM and adjust name lists etc.
       for ibpm=1:length(obj.bpmnames)
         if all(isnan(obj.xdat(ibpm,:))) || all(isnan(obj.ydat(ibpm,:)))
@@ -336,12 +359,19 @@ classdef F2_bpms < handle
       end
       obj.xdat=obj.xdat(selepics|selaida,:);
       obj.ydat=obj.ydat(selepics|selaida,:);
+      obj.tmit=obj.tmit(selepics|selaida,:);
       nsel = ~(selaida|selepics) ;
       obj.bpmnames(nsel)=[];
       obj.modelnames(nsel)=[];
       obj.modelZ(nsel)=[];
       obj.modelID(nsel)=[];
       obj.epicsnames(nsel)=[];
+      % Apply tmit cuts
+      if ~isempty(obj.tmitcut)
+        cut = obj.tmit < obj.tmitcut ;
+        obj.xdat(cut) = nan ;
+        obj.ydat(cut) = nan ;
+      end
     end
     function LoadData(obj,xdat_new,ydat_new,tmit_new)
       if exist('xdat_new','var') && ~isempty(xdat_new)

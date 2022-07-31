@@ -47,6 +47,7 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
     LiveModel % LiveModel object
   end
   properties(SetAccess=private)
+    iswatcher logical = false % Run in watcher mode? (set by constructor)
     cordat_x % XCOR data
     cordat_y % YCOR data
     dtheta_x % calculated x corrector kicks (rad)
@@ -66,6 +67,7 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
     OrbitFit(1,5) = [nan nan nan nan nan] % Orbit fitted at fitele location [mm/mrad/(dE/E)]
     regid % first and last BEAMLINE element of selected region
     disp0 % dispersion fit at regid(1)
+    WatcherTimer
   end
   properties(SetAccess=private,Hidden)
     bdesx_restore % bdes values store when written for undo function
@@ -105,6 +107,8 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
     EnergyKnobSettleTime = [10 10 10 10 10 10 2 10] % settle time (s) for each energy knob setting
     EnergyKnobs = {"MKB:S20_ENERGY_3AND4" "MKB:S20_ENERGY_4AND5" "MKB:S20_ENERGY_4AND6" "MKB:BC14_ENERGY_4AND5" "MKB:BC14_ENERGY_5AND6" "MKB:BC14_ENERGY_4AND6" ["KLYS:LI11:11:SSSB_ADES" "KLYS:LI11:21:SSSB_ADES"] "KLYS:LI10:41:SFB_ADES"}
     EnergyKnobsKlys = {["19_3","19_4"] ["19_4","19_5"] ["19_4","19_6"] ["14_4","14_5"] ["14_5","14_6"] ["14_4","14_6"] ["11_1","11_2"] "10_4"} % Klystron stations for each knob
+    WatcherConfs = ["OrbitFit_DL10" "OrbitFit_BC11" "OrbitFit_BC14" "OrbitFit_BC20"] % Which configs to process in watcher mode
+    WatcherConfsPV = "SIOC:SYS1:ML01:AO601" % bit pattern to use to select which orbit watchers to process
   end
   methods
     function obj = F2_OrbitApp(appobj)
@@ -116,6 +120,9 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
       obj.BPMS = F2_bpms(obj.LiveModel.LM) ;
       if exist('appobj','var')
         obj.aobj = appobj ;
+      else
+        obj.iswatcher = true ;
+        obj.StartWatcher ;
       end
       obj.LM=copy(obj.BPMS.LM); % local copy of LucretiaModel
       obj.LM.UseMissingEle = true ; % don't return info about missing correctors
@@ -185,6 +192,61 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
           obj.EnergyKnobsKlysID{iknob}(iklys) = BEAMLINE{ele(1)}.Klystron ;
         end
       end
+    end
+    function StartWatcher(obj)
+      if isempty(obj.WatcherTimer)
+        obj.WatcherTimer = timer('ErrorFcn',obj.StopWatcher,'ExecutionMode','fixedRate','Period',0.1,'TimerFcn',obj.Watcher) ;
+      end
+      run(obj.WatcherTimer);
+    end
+    function StopWatcher(obj,cmd)
+      if exist('cmd','var') && cmd
+        stop(obj.WatcherTimer);
+        return
+      end
+      F2_common.LogMessage('F2_OrbitApp_Watcher','Error with OrbitApp watcher function, restarting.');
+      start(obj.WatcherTimer);
+    end
+    function Watcher(obj)
+      %WATCHER Run pre-saved configs in watcher function
+      persistent pobj pvs
+      iw = lcaGet(char(obj.WatcherConfsPV)); % bit pattern of configs to process
+      for iproc=1:length(obj.WatcherConfs) 
+        % For each config, copy local obj, store another with config name and load
+        if bitget(iw,iproc)
+          wname=obj.WatcherConfs(iproc);
+          if ~isfield(pobj,wname)
+            pobj.(wname)=copyobj(obj);
+            pobj.(wname).ConfigLoad(wname);
+            % Get PV names
+            pvs.(wname).x = "SIOC:SYS1:ML01:AO" + (601 + (iproc-1)*6 + 1) ;
+            pvs.(wname).xp = "SIOC:SYS1:ML01:AO" + (601 + (iproc-1)*6 + 2) ;
+            pvs.(wname).y = "SIOC:SYS1:ML01:AO" + (601 + (iproc-1)*6 + 3) ;
+            pvs.(wname).yp = "SIOC:SYS1:ML01:AO" + (601 + (iproc-1)*6 + 4) ;
+            pvs.(wname).de = "SIOC:SYS1:ML01:AO" + (601 + (iproc-1)*6 + 5) ;
+            pvs.(wname).valid = "SIOC:SYS1:ML01:AO" + (601 + (iproc-1)*6 + 6) ;
+          end
+        else
+          continue
+        end
+        % Add BPM reading to buffer
+        pobj.(wname).BPMS.read;
+        % Fit orbit
+        try
+          [~,X1]=pobj.orbitfit;
+          if any(isnan(X1))
+            error('No valid BPM data in buffer or other orbit fitting error');
+          end
+        catch ME
+          lcaPutNoWait(char(pvs.(wname).valid),0);
+          lcaPutNoWait('F2:WATCHER:ORBIT_STAT',1); % Write to watcher status PV
+          throw(ME);
+        end
+        % Write orbit data to PVs
+        lcaPutNoWait(cellstr([pvs.(wname).x;pvs.(wname).xp;pvs.(wname).y;pvs.(wname).yp;pvs.(wname).de;pvs.(wname).valid]),[X1(:);1]) ;
+        lcaPutNoWait('F2:WATCHER:ORBIT_STAT',1); % Write to watcher status PV
+      end
+      
     end
     function acquire(obj,npulse)
       %ACQUIRE Get bpm and corrector data
@@ -815,6 +877,10 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
       % X1: [x,x',y,y',dE/E] at obj.fitele [mm,mrad]
       
       [xm,ym,xstd,ystd,~,id] = obj.GetOrbit ;
+      % Treat missing data as 0 with large errors to de-weight fit
+      xm(isnan(xm))=0;  xstd(isnan(xstd))=10;
+      ym(isnan(ym))=0;  ystd(isnan(ystd))=10;
+      % Convert to m/rad units for calculations
       xm=xm.*1e-3; ym=ym.*1e-3; xstd=xstd.*1e-3; ystd=ystd.*1e-3;
       
       A = zeros(length(xm)+length(ym),5) ; A(1,:) = [1 0 0 0 0] ; A(length(xm)+1,:) = [0 0 1 0 0] ;
@@ -829,7 +895,7 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
         if string(obj.orbitfitmethod)=="lscov"
           xf = lscov(A,[xm(:);ym(:)],1./[xstd(:);ystd(:)].^2) ;
         else
-          xf = A \ [xstd(:);ystd(:)] ;
+          xf = A \ [xm(:);ym(:)] ;
         end
       end
       i0=obj.regid(1); 
@@ -865,7 +931,8 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
       end
       fn = obj.OrbitConfigDir+"/conf_" + name + ".mat" ;
       % Get reference orbit to store
-      reforbit = obj.RefOrbit ;
+      reforbit = obj.RefOrbitLocal ;
+      obj.RefOrbitConfig = obj.RefOrbitLocal ;
       % For some bizzarre reason, usebpm, usexcor & useycor all load with false values regardless of their saved state, so use separate variables for these
       OrbitApp=copy(obj);
       usebpm=obj.usebpm; usexcor=obj.usexcor; useycor=obj.useycor; %#ok<PROPLC>
@@ -883,7 +950,7 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
       fprintf('Loading configuration file: %s\n',name);
       try
         % For some bizzarre reason, usebpm, usexcor & useycor all load with false values regardless of their saved state, so use separate variables for these
-        ld = load(obj.OrbitConfigDir+"/conf_" + name + ".mat",'OrbitApp','usebpm','usexcor','useycor') ;
+        ld = load(obj.OrbitConfigDir+"/conf_" + name + ".mat",'OrbitApp','usebpm','usexcor','useycor','reforbit') ;
       catch ME
         fprintf(2,'Error loading config: %s\n',name);
         throw(ME);
@@ -904,8 +971,11 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
       obj.ybpm_cor = [] ;
       obj.DispData = [] ;
       obj.DispFit = [] ;
+      % Load in reference orbit
+      obj.RefOrbitConfig = ld.reforbit ;
+      obj.RefOrbitLocal = ld.reforbit ;
       % Load everything else...
-      restorelist=["corsolv" "solvtol" "usex" "usey" "nmode" "domodelfit" "usebpmbuff" "dormsplot"  "fitele" "CorrectionOffset" "npulse" "orbitfitmethod" "plotallbpm" "escanrange" "escandev" "nescan"] ;
+      restorelist=["corsolv" "solvtol" "usex" "usey" "nmode" "domodelfit" "usebpmbuff" "dormsplot"  "fitele" "CorrectionOffset" "npulse" "orbitfitmethod" "plotallbpm" "escanrange" "escandev" "nescan" "UseRefOrbit"] ;
       for ilist=1:length(restorelist)
         try
           obj.(restorelist(ilist)) = ld.OrbitApp.(restorelist(ilist)) ;
@@ -913,6 +983,7 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
           fprintf(2,"Property not found in config file: %s\n",restorelist(ilist));
         end
       end
+      % Set current configuration name
       obj.ConfigName = name ;
     end
     function ConfigDelete(obj,name)
@@ -1117,6 +1188,61 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
       dispdat.y=dispy;
       dispdat.yerr=dispy_err;
       obj.DispData = dispdat ;
+    end
+    function cobj = copyobj(obj)
+      cobj=copy(obj);
+      cobj.BPMS=copy(obj.BPMS);
+    end
+    function [xm,ym,xstd,ystd,use,id] = GetOrbit(obj,varargin)
+      %GETORBIT Return mean and rms orbit from raw data
+      %[xm,ym,xstd,ystd,use,id] = GetOrbit()
+      %[xm,ym,xstd,ystd,use,id] = GetOrbit("all") % Include locally un-selected BPMs
+      % use and id reference obj.bpmid
+      
+      if nargin>1 && varargin{1}=="all"
+        id=obj.bpmid(obj.useregbpm) ;
+      else
+        id=obj.bpmid(obj.usebpm);
+      end
+      id=double(id(ismember(id,obj.BPMS.modelID)));
+      use=ismember(obj.bpmid,id);
+      use_local=ismember(obj.BPMS.modelID,id);
+      if ~any(use)
+        error('No BPM Data to use');
+      end
+      xm = mean(obj.BPMS.xdat,2,'omitnan') ; xm=xm(use_local);
+      ym = mean(obj.BPMS.ydat,2,'omitnan') ; ym=ym(use_local);
+      xstd = std(obj.BPMS.xdat,[],2,'omitnan') ; xstd=xstd(use_local);
+      ystd = std(obj.BPMS.ydat,[],2,'omitnan') ; ystd=ystd(use_local);
+      if ~isempty(obj.RefOrbit)
+        [rid,idd] = ismember(id,obj.RefOrbit(:,1)) ;
+        xm = xm(rid) ; xstd=xstd(rid); ym = ym(rid); ystd=ystd(rid);
+        xm = xm - obj.RefOrbit(idd,2) ; ym = ym - obj.RefOrbit(idd,3) ;
+        id=id(rid);
+        use=ismember(obj.bpmid,id);
+      end
+    end
+    function WriteGuiListBox(obj)
+      %WRITEGUILISTBOX Update BPM and Corrector list boxes on gui
+      % List all BPMs / correctors in region and show selected ones
+      obj.LM.ModelClasses="MONI";
+      usereg=false(size(obj.usebpm));
+      usereg(~obj.badbpms & ismember(obj.bpmid,obj.LM.ModelID)) = true ;
+      obj.aobj.ListBox.Items = obj.bpmnames(usereg) ;
+      obj.aobj.ListBox.ItemsData = obj.bpmid(usereg) ;
+      obj.aobj.ListBox.Value = obj.bpmid(obj.usebpm) ;
+      obj.LM.ModelClasses="XCOR";
+      usereg=false(size(obj.usexcor));
+      usereg(~obj.badxcors & ismember(obj.xcorid,obj.LM.ModelID)) = true ;
+      obj.aobj.ListBox_2.Items = obj.xcornames(usereg) ;
+      obj.aobj.ListBox_2.ItemsData = obj.xcorid(usereg) ;
+      obj.aobj.ListBox_2.Value = obj.xcorid(obj.usexcor) ;
+      obj.LM.ModelClasses="YCOR";
+      usereg=false(size(obj.useycor));
+      usereg(~obj.badycors & ismember(obj.ycorid,obj.LM.ModelID)) = true ;
+      obj.aobj.ListBox_3.Items = obj.ycornames(usereg) ;
+      obj.aobj.ListBox_3.ItemsData = obj.ycorid(usereg) ;
+      obj.aobj.ListBox_3.Value = obj.ycorid(obj.useycor) ;
     end
     % Plotting functions
     function plottol(obj)
@@ -1700,11 +1826,12 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
         hold(yax,'off');
       end
       % Superimpose model fit if requested
+      X0 = obj.orbitfit(); % X0 is orbit at region start
+      X0(1:4)=X0(1:4).*1e-3;
       if showmodel
         ylim_x=xax.YLim; ylim_y=yax.YLim;
         if plotall
           idf=obj.regid(1):obj.regid(2);
-          X0 = obj.orbitfit(); % X0 is orbit at region start
           i0m=obj.regid(1);
           nele = length(idf) ;
           x_fit=zeros(1,nele); y_fit=zeros(1,nele);
@@ -1720,15 +1847,14 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
           end
           zi=arrayfun(@(x) BEAMLINE{x}.Coordi(3),idf);
           hold(xax,'on');
-          plot(xax,zi,x_fit,'Color','k');
+          plot(xax,zi,x_fit.*1e3,'Color','k');
           hold(xax,'off');
           hold(yax,'on');
-          plot(yax,zi,y_fit,'Color','k');
+          plot(yax,zi,y_fit.*1e3,'Color','k');
           hold(yax,'off');
           xax.YLim=ylim_x; yax.YLim=ylim_y;
         end
         idf=id(1):id(end);
-        X0 = obj.orbitfit(); % X0 is orbit at region start
         i0m=obj.regid(1);
         nele = length(idf) ;
         x_fit=zeros(1,nele); y_fit=zeros(1,nele);
@@ -1744,10 +1870,10 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
         end
         zi=arrayfun(@(x) BEAMLINE{x}.Coordi(3),idf);
         hold(xax,'on');
-        plot(xax,zi,x_fit,'Color',F2_common.ColorOrder(2,:));
+        plot(xax,zi,x_fit.*1e3,'Color',F2_common.ColorOrder(2,:));
         hold(xax,'off');
         hold(yax,'on');
-        plot(yax,zi,y_fit,'Color',F2_common.ColorOrder(2,:));
+        plot(yax,zi,y_fit.*1e3,'Color',F2_common.ColorOrder(2,:));
         hold(yax,'off');
       end
       % Plot magnet bar
@@ -1772,57 +1898,7 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
         delete(fhan);
       end
     end
-    function [xm,ym,xstd,ystd,use,id] = GetOrbit(obj,varargin)
-      %GETORBIT Return mean and rms orbit from raw data
-      %[xm,ym,xstd,ystd,use,id] = GetOrbit()
-      %[xm,ym,xstd,ystd,use,id] = GetOrbit("all") % Include locally un-selected BPMs
-      % use and id reference obj.bpmid
-      
-      if nargin>1 && varargin{1}=="all"
-        id=obj.bpmid(obj.useregbpm) ;
-      else
-        id=obj.bpmid(obj.usebpm);
-      end
-      id=double(id(ismember(id,obj.BPMS.modelID)));
-      use=ismember(obj.bpmid,id);
-      use_local=ismember(obj.BPMS.modelID,id);
-      if ~any(use)
-        error('No BPM Data to use');
-      end
-      xm = mean(obj.BPMS.xdat,2,'omitnan') ; xm=xm(use_local);
-      ym = mean(obj.BPMS.ydat,2,'omitnan') ; ym=ym(use_local);
-      xstd = std(obj.BPMS.xdat,[],2,'omitnan') ; xstd=xstd(use_local);
-      ystd = std(obj.BPMS.ydat,[],2,'omitnan') ; ystd=ystd(use_local);
-      if ~isempty(obj.RefOrbit)
-        [rid,idd] = ismember(id,obj.RefOrbit(:,1)) ;
-        xm = xm(rid) ; xstd=xstd(rid); ym = ym(rid); ystd=ystd(rid);
-        xm = xm - obj.RefOrbit(idd,2) ; ym = ym - obj.RefOrbit(idd,3) ;
-        id=id(rid);
-        use=ismember(obj.bpmid,id);
-      end
-    end
-    function WriteGuiListBox(obj)
-      %WRITEGUILISTBOX Update BPM and Corrector list boxes on gui
-      % List all BPMs / correctors in region and show selected ones
-      obj.LM.ModelClasses="MONI";
-      usereg=false(size(obj.usebpm));
-      usereg(~obj.badbpms & ismember(obj.bpmid,obj.LM.ModelID)) = true ;
-      obj.aobj.ListBox.Items = obj.bpmnames(usereg) ;
-      obj.aobj.ListBox.ItemsData = obj.bpmid(usereg) ;
-      obj.aobj.ListBox.Value = obj.bpmid(obj.usebpm) ;
-      obj.LM.ModelClasses="XCOR";
-      usereg=false(size(obj.usexcor));
-      usereg(~obj.badxcors & ismember(obj.xcorid,obj.LM.ModelID)) = true ;
-      obj.aobj.ListBox_2.Items = obj.xcornames(usereg) ;
-      obj.aobj.ListBox_2.ItemsData = obj.xcorid(usereg) ;
-      obj.aobj.ListBox_2.Value = obj.xcorid(obj.usexcor) ;
-      obj.LM.ModelClasses="YCOR";
-      usereg=false(size(obj.useycor));
-      usereg(~obj.badycors & ismember(obj.ycorid,obj.LM.ModelID)) = true ;
-      obj.aobj.ListBox_3.Items = obj.ycornames(usereg) ;
-      obj.aobj.ListBox_3.ItemsData = obj.ycorid(usereg) ;
-      obj.aobj.ListBox_3.Value = obj.ycorid(obj.useycor) ;
-    end
+    % --- 
   end
   %set/get
   methods
