@@ -46,7 +46,11 @@ classdef DataSetDAN < handle
         hdr;
         
         % Ugly GUI settings
+        showOnlyMatchedData = 1;
+        
+        hasBG = 0;
         subtractBackground = 0;
+        
         visImageIncrement = 1;
         keepPlotting = 1;
         loopWaitTime = 0.5;
@@ -80,6 +84,8 @@ classdef DataSetDAN < handle
             %DATASETDAN Construct an instance of this class
             %   Detailed explanation goes here
             
+            
+            
             s.dataSetID = dSID;
             s.hlpDispMsg('Looking for directory...\n')
             if nargin >= 2
@@ -103,7 +109,6 @@ classdef DataSetDAN < handle
             end
             
             s.hlpDispMsg('dataSet succefully loaded\n');
-            
             
         end
     end
@@ -181,17 +186,16 @@ classdef DataSetDAN < handle
             
         end
         
-        function visImages(s, diag, startNbr)
+        function visImages(s, diag, startNbr, fcn)
             
-            if nargin < 3
-                startNbr = 1;
+            if nargin < 4
+                fcn = @(x)x;
             end
             
             [data,~] = s.hlpCheckImage(diag);
             
-            
             for k = startNbr:s.visImageIncrement:length(data.common_index)
-                visImage(s, diag, k);
+                s.visImage(diag, k, fcn);
                 pause(s.loopWaitTime);
                 s.GUIHandle.ImagenumberEditField.Value = k;
                 

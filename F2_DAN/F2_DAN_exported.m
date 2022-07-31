@@ -2,90 +2,92 @@ classdef F2_DAN_exported < matlab.apps.AppBase
 
     % Properties that correspond to app components
     properties (Access = public)
-        UIFigure                      matlab.ui.Figure
-        dataSet                       matlab.ui.container.Panel
-        ExperimentLabel               matlab.ui.control.Label
-        expDropDown                   matlab.ui.control.DropDown
-        dataSetIDLabel                matlab.ui.control.Label
-        dataSetID                     matlab.ui.control.NumericEditField
-        LoadDataSetButton             matlab.ui.control.Button
-        DANlogTextAreaLabel           matlab.ui.control.Label
-        DANlogTextArea                matlab.ui.control.TextArea
+        UIFigure                        matlab.ui.Figure
+        dataSet                         matlab.ui.container.Panel
+        ExperimentLabel                 matlab.ui.control.Label
+        expDropDown                     matlab.ui.control.DropDown
+        dataSetIDLabel                  matlab.ui.control.Label
+        dataSetID                       matlab.ui.control.NumericEditField
+        LoadDataSetButton               matlab.ui.control.Button
+        DANlogTextAreaLabel             matlab.ui.control.Label
+        DANlogTextArea                  matlab.ui.control.TextArea
         SubtractImageBackgroundCheckBox  matlab.ui.control.CheckBox
-        DataSetInfoTextAreaLabel      matlab.ui.control.Label
-        DataSetInfoTextArea           matlab.ui.control.TextArea
-        LastDAQButton                 matlab.ui.control.Button
-        dispImage                     matlab.ui.container.Panel
-        ImageincrementEditFieldLabel  matlab.ui.control.Label
-        ImageincrementEditField       matlab.ui.control.NumericEditField
-        PlotImageButton               matlab.ui.control.Button
-        CameraDropDownLabel           matlab.ui.control.Label
-        CameraDropDown_DI             matlab.ui.control.DropDown
-        NextImageButton               matlab.ui.control.Button
-        ImagenumberEditFieldLabel     matlab.ui.control.Label
-        ImagenumberEditField          matlab.ui.control.NumericEditField
-        PreviousImageButton           matlab.ui.control.Button
-        LoopThroughallButton          matlab.ui.control.Button
-        WaittimesEditFieldLabel       matlab.ui.control.Label
-        WaittimesEditField            matlab.ui.control.NumericEditField
-        StopButton                    matlab.ui.control.Button
-        correlationPlot               matlab.ui.container.Panel
-        FACETScalarArray1Panel        matlab.ui.container.Panel
-        ScalarDropDown_Corr1          matlab.ui.control.DropDown
-        ScalargroupLabel_Corr1        matlab.ui.control.Label
-        ScalarLabel_Corr1             matlab.ui.control.Label
-        ScalargroupDropDown_Corr1     matlab.ui.control.DropDown
-        CameraDropDown_Corr1          matlab.ui.control.DropDown
-        CameraLabel_Corr1             matlab.ui.control.Label
-        DtoscalarfunctionLabel_Corr1  matlab.ui.control.Label
-        D21DFunctionEditField_Corr1   matlab.ui.control.EditField
-        Switch_Corr1FS                matlab.ui.control.Switch
-        HistogramCheckBox             matlab.ui.control.CheckBox
-        FACETScalarArray2Panel        matlab.ui.container.Panel
-        ScalarDropDown_Corr2          matlab.ui.control.DropDown
-        ScalargroupLabel_Corr2        matlab.ui.control.Label
-        ScalarLabel_Corr2             matlab.ui.control.Label
-        ScalargroupDropDown_Corr2     matlab.ui.control.DropDown
-        CameraDropDown_Corr2          matlab.ui.control.DropDown
-        CameraLabel_Corr2             matlab.ui.control.Label
-        DtoscalarfunctionLabel_Corr2  matlab.ui.control.Label
-        D21DFunctionEditField_Corr2   matlab.ui.control.EditField
-        Switch_Corr2FS                matlab.ui.control.Switch
-        CorrelationCheckBox           matlab.ui.control.CheckBox
-        PlotcorrelationButton         matlab.ui.control.Button
-        ImageAxes                     matlab.ui.control.UIAxes
-        WaterfallplotPanel            matlab.ui.container.Panel
-        CameraDropDown_3Label         matlab.ui.control.Label
-        CameraDropDown_WF             matlab.ui.control.DropDown
-        D21DFunctionEditField_WF      matlab.ui.control.EditField
-        PlotwaterfallButton           matlab.ui.control.Button
-        Dto1DFunctionLabel_WF         matlab.ui.control.Label
-        SortwaterfallplotPanel        matlab.ui.container.Panel
-        ScalarDropDown_WFS            matlab.ui.control.DropDown
-        ScalargroupLabel_WFS          matlab.ui.control.Label
-        ScalargroupDropDown_WFS       matlab.ui.control.DropDown
-        ScalarLabel_WFS               matlab.ui.control.Label
-        CameraLabel_WFS               matlab.ui.control.Label
-        CameraDropDown_WFS            matlab.ui.control.DropDown
-        D2SFunctionLabel_WFS          matlab.ui.control.Label
-        D2SFunctionEditField_WFS      matlab.ui.control.EditField
-        Switch_WFSFS                  matlab.ui.control.Switch
-        SortonscalarCheckBox          matlab.ui.control.CheckBox
+        DataSetInfoTextAreaLabel        matlab.ui.control.Label
+        DataSetInfoTextArea             matlab.ui.control.TextArea
+        LastDAQButton                   matlab.ui.control.Button
+        dispImage                       matlab.ui.container.Panel
+        ImageincrementEditFieldLabel    matlab.ui.control.Label
+        ImageincrementEditField         matlab.ui.control.NumericEditField
+        PlotImageButton                 matlab.ui.control.Button
+        CameraDropDownLabel             matlab.ui.control.Label
+        CameraDropDown_DI               matlab.ui.control.DropDown
+        NextImageButton                 matlab.ui.control.Button
+        ImagenumberEditFieldLabel       matlab.ui.control.Label
+        ImagenumberEditField            matlab.ui.control.NumericEditField
+        PreviousImageButton             matlab.ui.control.Button
+        LoopThroughallButton            matlab.ui.control.Button
+        WaittimesEditFieldLabel         matlab.ui.control.Label
+        WaittimesEditField              matlab.ui.control.NumericEditField
+        StopButton                      matlab.ui.control.Button
+        ImageAnalysisFunctionEditField  matlab.ui.control.EditField
+        ApplyImageanalysis2Dto2DCheckBox  matlab.ui.control.CheckBox
+        correlationPlot                 matlab.ui.container.Panel
+        FACETScalarArray1Panel          matlab.ui.container.Panel
+        ScalarDropDown_Corr1            matlab.ui.control.DropDown
+        ScalargroupLabel_Corr1          matlab.ui.control.Label
+        ScalarLabel_Corr1               matlab.ui.control.Label
+        ScalargroupDropDown_Corr1       matlab.ui.control.DropDown
+        CameraDropDown_Corr1            matlab.ui.control.DropDown
+        CameraLabel_Corr1               matlab.ui.control.Label
+        DtoscalarfunctionLabel_Corr1    matlab.ui.control.Label
+        D21DFunctionEditField_Corr1     matlab.ui.control.EditField
+        Switch_Corr1FS                  matlab.ui.control.Switch
+        HistogramCheckBox               matlab.ui.control.CheckBox
+        FACETScalarArray2Panel          matlab.ui.container.Panel
+        ScalarDropDown_Corr2            matlab.ui.control.DropDown
+        ScalargroupLabel_Corr2          matlab.ui.control.Label
+        ScalarLabel_Corr2               matlab.ui.control.Label
+        ScalargroupDropDown_Corr2       matlab.ui.control.DropDown
+        CameraDropDown_Corr2            matlab.ui.control.DropDown
+        CameraLabel_Corr2               matlab.ui.control.Label
+        DtoscalarfunctionLabel_Corr2    matlab.ui.control.Label
+        D21DFunctionEditField_Corr2     matlab.ui.control.EditField
+        Switch_Corr2FS                  matlab.ui.control.Switch
+        CorrelationCheckBox             matlab.ui.control.CheckBox
+        PlotcorrelationButton           matlab.ui.control.Button
+        ImageAxes                       matlab.ui.control.UIAxes
+        WaterfallplotPanel              matlab.ui.container.Panel
+        CameraDropDown_3Label           matlab.ui.control.Label
+        CameraDropDown_WF               matlab.ui.control.DropDown
+        D21DFunctionEditField_WF        matlab.ui.control.EditField
+        PlotwaterfallButton             matlab.ui.control.Button
+        Dto1DFunctionLabel_WF           matlab.ui.control.Label
+        SortwaterfallplotPanel          matlab.ui.container.Panel
+        ScalarDropDown_WFS              matlab.ui.control.DropDown
+        ScalargroupLabel_WFS            matlab.ui.control.Label
+        ScalargroupDropDown_WFS         matlab.ui.control.DropDown
+        ScalarLabel_WFS                 matlab.ui.control.Label
+        CameraLabel_WFS                 matlab.ui.control.Label
+        CameraDropDown_WFS              matlab.ui.control.DropDown
+        D2SFunctionLabel_WFS            matlab.ui.control.Label
+        D2SFunctionEditField_WFS        matlab.ui.control.EditField
+        Switch_WFSFS                    matlab.ui.control.Switch
+        SortonscalarCheckBox            matlab.ui.control.CheckBox
         MotivationIndicatorAirspeedIndicatorLabel  matlab.ui.control.Label
         MotivationIndicatorAirspeedIndicator  Aero.ui.control.AirspeedIndicator
-        PrinttologbookButton          matlab.ui.control.Button
-        BoostmotivationButton         matlab.ui.control.Button
-        CLimPanel                     matlab.ui.container.Panel
-        ColorbarMinEditFieldLabel     matlab.ui.control.Label
-        ColorbarMinEditField          matlab.ui.control.NumericEditField
-        ColorbarMaxEditFieldLabel     matlab.ui.control.Label
-        ColorbarMaxEditField          matlab.ui.control.NumericEditField
-        ColormapDropDownLabel         matlab.ui.control.Label
-        ColormapDropDown              matlab.ui.control.DropDown
-        LockCLimCheckBox              matlab.ui.control.CheckBox
-        SaveplotdataButton            matlab.ui.control.Button
-        SavedfilenameLabel            matlab.ui.control.Label
-        SavedfilenameEditField        matlab.ui.control.EditField
+        PrinttologbookButton            matlab.ui.control.Button
+        BoostmotivationButton           matlab.ui.control.Button
+        CLimPanel                       matlab.ui.container.Panel
+        ColorbarMinEditFieldLabel       matlab.ui.control.Label
+        ColorbarMinEditField            matlab.ui.control.NumericEditField
+        ColorbarMaxEditFieldLabel       matlab.ui.control.Label
+        ColorbarMaxEditField            matlab.ui.control.NumericEditField
+        ColormapDropDownLabel           matlab.ui.control.Label
+        ColormapDropDown                matlab.ui.control.DropDown
+        LockCLimCheckBox                matlab.ui.control.CheckBox
+        SaveplotdataButton              matlab.ui.control.Button
+        SavedfilenameLabel              matlab.ui.control.Label
+        SavedfilenameEditField          matlab.ui.control.EditField
     end
 
     
@@ -185,6 +187,19 @@ classdef F2_DAN_exported < matlab.apps.AppBase
             app.ColorbarMinEditField.Value = app.ImageAxes.CLim(1);
             app.ColorbarMaxEditField.Value = app.ImageAxes.CLim(2);
         end
+        
+        function plotImage(app, imageNumber)
+            cameraName = app.CameraDropDown_DI.Value;
+            applyfcn = app.ApplyImageanalysis2Dto2DCheckBox.Value;
+            if ~applyfcn
+                app.DANobject.visImage(cameraName, imageNumber);
+            else 
+                funk = app.ImageAnalysisFunctionEditField.Value;
+                funkh = str2func(funk);
+                app.DANobject.visImage(cameraName, imageNumber, funkh);
+            end
+            app.UpdateCLim();
+        end
     end
     
     methods (Access = public)
@@ -207,7 +222,7 @@ classdef F2_DAN_exported < matlab.apps.AppBase
         function startupFcn(app)
 %             set(app.dispImage.Children,'Enable','Off')
 %             set(app.correlationPlot.Children,'Enable','Off')
-            
+            addpath('DANfunction')
             app.getLatestExp();
             
         end
@@ -242,11 +257,8 @@ classdef F2_DAN_exported < matlab.apps.AppBase
 
         % Button pushed function: PlotImageButton
         function PlotImageButtonPushed(app, event)
-            cameraName = app.CameraDropDown_DI.Value;
             imageNumber = app.ImagenumberEditField.Value;
-            app.DANobject.visImage(cameraName, imageNumber);
-            
-            app.UpdateCLim();
+            app.plotImage(imageNumber);
         end
 
         % Value changed function: ImageincrementEditField
@@ -260,12 +272,10 @@ classdef F2_DAN_exported < matlab.apps.AppBase
             
             imageInc = app.ImageincrementEditField.Value;
             imageNumber = app.ImagenumberEditField.Value + imageInc;
-            cameraName = app.CameraDropDown_DI.Value;
             
             if app.DANobject.validShotNbr(imageNumber)
                 app.ImagenumberEditField.Value = imageNumber;
-                app.DANobject.visImage(cameraName, imageNumber);
-                app.UpdateCLim();
+                app.plotImage(imageNumber);
             else
                 disp('Next number out of range');
             end
@@ -276,12 +286,9 @@ classdef F2_DAN_exported < matlab.apps.AppBase
             imageInc = app.ImageincrementEditField.Value;
             imageNumber = app.ImagenumberEditField.Value - imageInc;
             
-            cameraName = app.CameraDropDown_DI.Value;
-            
             if app.DANobject.validShotNbr(imageNumber)
                 app.ImagenumberEditField.Value = imageNumber;
-                app.DANobject.visImage(cameraName, imageNumber);
-                app.UpdateCLim();
+                app.plotImage(imageNumber);
             else
                 disp('Previous number out of range');
             end
@@ -292,7 +299,16 @@ classdef F2_DAN_exported < matlab.apps.AppBase
             cameraName = app.CameraDropDown_DI.Value;
             imageNumber = app.ImagenumberEditField.Value;
             
-            app.DANobject.visImages(cameraName,imageNumber);
+            applyfcnBool = app.ApplyImageanalysis2Dto2DCheckBox.Value;
+            if ~applyfcnBool
+                app.DANobject.visImages(cameraName, imageNumber);
+            else 
+                funk = app.ImageAnalysisFunctionEditField.Value;
+                funkh = str2func(funk);
+                app.DANobject.visImages(cameraName, imageNumber, funkh);
+            end
+            %app.UpdateCLim();
+            %app.DANobject.visImages(cameraName,imageNumber);
         end
 
         % Button pushed function: StopButton
@@ -473,6 +489,13 @@ classdef F2_DAN_exported < matlab.apps.AppBase
         function LastDAQButtonPushed(app, event)
             app.getLatestExp();
         end
+
+        % Close request function: UIFigure
+        function UIFigureCloseRequest(app, event)
+            delete(app)
+            disp('Remember to uncomment the exit command')
+            exit;
+        end
     end
 
     % Component initialization
@@ -485,6 +508,7 @@ classdef F2_DAN_exported < matlab.apps.AppBase
             app.UIFigure = uifigure('Visible', 'off');
             app.UIFigure.Position = [100 100 1197 937];
             app.UIFigure.Name = 'MATLAB App';
+            app.UIFigure.CloseRequestFcn = createCallbackFcn(app, @UIFigureCloseRequest, true);
 
             % Create dataSet
             app.dataSet = uipanel(app.UIFigure);
@@ -562,14 +586,14 @@ classdef F2_DAN_exported < matlab.apps.AppBase
             % Create ImageincrementEditFieldLabel
             app.ImageincrementEditFieldLabel = uilabel(app.dispImage);
             app.ImageincrementEditFieldLabel.HorizontalAlignment = 'right';
-            app.ImageincrementEditFieldLabel.Position = [28 185 96 22];
+            app.ImageincrementEditFieldLabel.Position = [28 159 96 22];
             app.ImageincrementEditFieldLabel.Text = 'Image increment';
 
             % Create ImageincrementEditField
             app.ImageincrementEditField = uieditfield(app.dispImage, 'numeric');
             app.ImageincrementEditField.Limits = [1 Inf];
             app.ImageincrementEditField.ValueChangedFcn = createCallbackFcn(app, @ImageincrementEditFieldValueChanged, true);
-            app.ImageincrementEditField.Position = [139 185 100 22];
+            app.ImageincrementEditField.Position = [139 159 100 22];
             app.ImageincrementEditField.Value = 1;
 
             % Create PlotImageButton
@@ -593,7 +617,7 @@ classdef F2_DAN_exported < matlab.apps.AppBase
             % Create NextImageButton
             app.NextImageButton = uibutton(app.dispImage, 'push');
             app.NextImageButton.ButtonPushedFcn = createCallbackFcn(app, @NextImageButtonPushed, true);
-            app.NextImageButton.Position = [147 153 76 23];
+            app.NextImageButton.Position = [147 127 76 23];
             app.NextImageButton.Text = 'Next Image';
 
             % Create ImagenumberEditFieldLabel
@@ -610,33 +634,43 @@ classdef F2_DAN_exported < matlab.apps.AppBase
             % Create PreviousImageButton
             app.PreviousImageButton = uibutton(app.dispImage, 'push');
             app.PreviousImageButton.ButtonPushedFcn = createCallbackFcn(app, @PreviousImageButtonPushed, true);
-            app.PreviousImageButton.Position = [33 153 100 23];
+            app.PreviousImageButton.Position = [33 127 100 23];
             app.PreviousImageButton.Text = 'Previous Image';
 
             % Create LoopThroughallButton
             app.LoopThroughallButton = uibutton(app.dispImage, 'push');
             app.LoopThroughallButton.ButtonPushedFcn = createCallbackFcn(app, @LoopThroughallButtonPushed, true);
-            app.LoopThroughallButton.Position = [50 78 168 30];
+            app.LoopThroughallButton.Position = [50 52 168 30];
             app.LoopThroughallButton.Text = 'Loop Through all';
 
             % Create WaittimesEditFieldLabel
             app.WaittimesEditFieldLabel = uilabel(app.dispImage);
             app.WaittimesEditFieldLabel.HorizontalAlignment = 'right';
-            app.WaittimesEditFieldLabel.Position = [25 116 70 22];
+            app.WaittimesEditFieldLabel.Position = [25 90 70 22];
             app.WaittimesEditFieldLabel.Text = 'Wait time [s]';
 
             % Create WaittimesEditField
             app.WaittimesEditField = uieditfield(app.dispImage, 'numeric');
             app.WaittimesEditField.Limits = [0.1 Inf];
             app.WaittimesEditField.ValueChangedFcn = createCallbackFcn(app, @WaittimesEditFieldValueChanged, true);
-            app.WaittimesEditField.Position = [110 116 118 22];
+            app.WaittimesEditField.Position = [110 90 118 22];
             app.WaittimesEditField.Value = 0.5;
 
             % Create StopButton
             app.StopButton = uibutton(app.dispImage, 'push');
             app.StopButton.ButtonPushedFcn = createCallbackFcn(app, @StopButtonPushed, true);
-            app.StopButton.Position = [85 35 100 23];
+            app.StopButton.Position = [85 9 100 23];
             app.StopButton.Text = 'Stop';
+
+            % Create ImageAnalysisFunctionEditField
+            app.ImageAnalysisFunctionEditField = uieditfield(app.dispImage, 'text');
+            app.ImageAnalysisFunctionEditField.Position = [7 202 236 24];
+            app.ImageAnalysisFunctionEditField.Value = '@(x)abs(fftshift(fft2(x)))';
+
+            % Create ApplyImageanalysis2Dto2DCheckBox
+            app.ApplyImageanalysis2Dto2DCheckBox = uicheckbox(app.dispImage);
+            app.ApplyImageanalysis2Dto2DCheckBox.Text = 'Apply Image analysis (2D to 2D)';
+            app.ApplyImageanalysis2Dto2DCheckBox.Position = [11 232 198 22];
 
             % Create correlationPlot
             app.correlationPlot = uipanel(app.UIFigure);
@@ -776,6 +810,7 @@ classdef F2_DAN_exported < matlab.apps.AppBase
             title(app.ImageAxes, 'Title')
             xlabel(app.ImageAxes, 'X')
             ylabel(app.ImageAxes, 'Y')
+            app.ImageAxes.FontSize = 14;
             app.ImageAxes.Position = [363 409 803 509];
 
             % Create WaterfallplotPanel

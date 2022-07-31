@@ -126,7 +126,7 @@ classdef F2_fastDAQ < handle
             obj.event.select_rate(obj.params.rate);
             obj.event_info = obj.event.evt_struct();
             obj.data_struct.metadata.Event = obj.event_info;
-            
+            %disp(obj.data_struct.metadata.Event.liveRate);
             % Fill in BSA data
             obj.bsa_list = {obj.pulseIDPV; obj.secPV; obj.nSecPV;};
             for i = 1:numel(obj.params.BSA_list)
@@ -238,7 +238,8 @@ classdef F2_fastDAQ < handle
                 
                 try
                     status = obj.daq_step();
-                catch
+                catch ME
+                    disp(ME.message);
                     obj.dispMessage(sprintf('DAQ failed on step %d',obj.step));
                     eDefRelease(obj.eDefNum);
                     status = 1;
@@ -265,24 +266,28 @@ classdef F2_fastDAQ < handle
             set_CAM_filepath(obj);
             lcaPutNoWait(obj.daq_pvs.TIFF_Capture,1);
             
+            count = 0;
+            old_pid = lcaGet(obj.data_struct.metadata.Event.PID_PV);
+            %rate_ratio = obj.data_struct.metadata.Event.rateRatio;
+            
             % Start data
             lcaPut(['EDEF:SYS1:' num2str(obj.eDefNum) ':CTRL'],1);
             obj.event.start_event();
             
-            count = 0;
-            old_pid = lcaGet('PATT:SYS1:1:PULSEIDBR');
             while count < obj.params.n_shot
-                
                 pause(0.01);
                 
-                new_pid = lcaGet('PATT:SYS1:1:PULSEIDBR');
-                obj.async_data.addDataFR(new_pid);
-                
+                try
+                    new_pid = lcaGet(obj.data_struct.metadata.Event.PID_PV);
+                catch
+                    continue;
+                end
                 if new_pid ~= old_pid
                     old_pid = new_pid;
                     count = count + 1;
-                end
-                
+                    
+                    obj.async_data.addDataFR();
+                end  
             end
             
             % Stop data
@@ -366,11 +371,17 @@ classdef F2_fastDAQ < handle
             
             obj.data_struct.scalars.steps = [obj.data_struct.scalars.steps; steps];
             
+            disp('beep');
+            
             obj.getBSAdata(n_use);
+            
+            disp('bop');
             
             %eDefRelease(obj.eDefNum);
             
             obj.getNonBSAdata(slac_time);
+            
+            disp('borp');
             
             status = obj.getCamData();
                         
@@ -415,20 +426,33 @@ classdef F2_fastDAQ < handle
                 if n_imgs < obj.params.n_shot
                     obj.dispMessage([obj.params.camNames{i} ' didn"t save all the shots']);
                 end
+                if n_imgs == 0
+                    obj.dispMessage([obj.params.camNames{i} ' saved zero shots. Ending scan.']);
+                    status = 1;
+                    return;
+                end
+                
+                disp('bleep');
                 
                 locs = strcat([obj.save_info.cam_paths{i} '/'],{imgs.name}');
                 obj.data_struct.images.(obj.params.camNames{i}).loc = ...
                     [obj.data_struct.images.(obj.params.camNames{i}).loc; locs];
                 
+                disp('blop');
+                
                 im_size = obj.data_struct.metadata.(obj.params.camNames{i}).ROI_SizeX_RBV*...
                     obj.data_struct.metadata.(obj.params.camNames{i}).ROI_SizeY_RBV;
                 file_pos = 2*im_size+obj.offset;
                 pid_list = zeros(n_imgs,1);
+                
                 for j = 1:n_imgs
                     status = obj.check_abort();
                     if status; return; end
                     pid_list(j) = tiff_get_PID(locs{j},file_pos);
                 end
+                
+                disp('blorp');
+                
                 UIDs = obj.generateUIDs(pid_list);
                 steps = obj.step*ones(size(pid_list));
                 obj.data_struct.images.(obj.params.camNames{i}).pid = ...

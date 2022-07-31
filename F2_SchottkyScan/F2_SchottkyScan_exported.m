@@ -22,6 +22,14 @@ classdef F2_SchottkyScan_exported < matlab.apps.AppBase
         InStateLamp                   matlab.ui.control.Lamp
         SetSlowFeedbackPDESEditFieldLabel  matlab.ui.control.Label
         SetSlowFeedbackPDESEditField  matlab.ui.control.NumericEditField
+        SlowFeedbackSwitchLabel       matlab.ui.control.Label
+        SlowFeedbackSwitch            matlab.ui.control.Switch
+        ChargeFeedbackSwitchLabel     matlab.ui.control.Label
+        ChargeFeedbackSwitch          matlab.ui.control.Switch
+        StateLampLabel                matlab.ui.control.Label
+        SFB_Lamp                      matlab.ui.control.Lamp
+        StateLamp_2Label              matlab.ui.control.Label
+        CFB_Lamp                      matlab.ui.control.Lamp
         ScanPanel                     matlab.ui.container.Panel
         PhaseStartEditFieldLabel      matlab.ui.control.Label
         PhaseStartEditField           matlab.ui.control.NumericEditField
@@ -71,6 +79,8 @@ classdef F2_SchottkyScan_exported < matlab.apps.AppBase
         % Code that executes after component creation
         function startupFcn(app)
             app.aobj=F2_SchottkyScanApp(app);
+            app.SlowFeedbackSwitch.ItemsData = [0 1];
+            app.ChargeFeedbackSwitch.ItemsData = [0 1];
 
         end
 
@@ -296,6 +306,52 @@ classdef F2_SchottkyScan_exported < matlab.apps.AppBase
             app.SetSlowFeedbackPDESEditField.Enable = 'off';
             app.SetSlowFeedbackPDESEditField.Position = [359 102 42 22];
 
+            % Create SlowFeedbackSwitchLabel
+            app.SlowFeedbackSwitchLabel = uilabel(app.DevicePanel);
+            app.SlowFeedbackSwitchLabel.HorizontalAlignment = 'center';
+            app.SlowFeedbackSwitchLabel.Position = [309 51 89 22];
+            app.SlowFeedbackSwitchLabel.Text = 'Slow Feedback';
+
+            % Create SlowFeedbackSwitch
+            app.SlowFeedbackSwitch = uiswitch(app.DevicePanel, 'slider');
+            app.SlowFeedbackSwitch.ItemsData = {'0', '1'};
+            app.SlowFeedbackSwitch.FontSize = 10;
+            app.SlowFeedbackSwitch.Position = [331 72 45 20];
+            app.SlowFeedbackSwitch.Value = '0';
+
+            % Create ChargeFeedbackSwitchLabel
+            app.ChargeFeedbackSwitchLabel = uilabel(app.DevicePanel);
+            app.ChargeFeedbackSwitchLabel.HorizontalAlignment = 'center';
+            app.ChargeFeedbackSwitchLabel.Position = [302 6 103 22];
+            app.ChargeFeedbackSwitchLabel.Text = 'Charge Feedback';
+
+            % Create ChargeFeedbackSwitch
+            app.ChargeFeedbackSwitch = uiswitch(app.DevicePanel, 'slider');
+            app.ChargeFeedbackSwitch.FontSize = 10;
+            app.ChargeFeedbackSwitch.Position = [331 27 45 20];
+
+            % Create StateLampLabel
+            app.StateLampLabel = uilabel(app.DevicePanel);
+            app.StateLampLabel.HorizontalAlignment = 'right';
+            app.StateLampLabel.FontSize = 10;
+            app.StateLampLabel.Position = [247 71 30 22];
+            app.StateLampLabel.Text = 'State';
+
+            % Create SFB_Lamp
+            app.SFB_Lamp = uilamp(app.DevicePanel);
+            app.SFB_Lamp.Position = [284 77 10 10];
+
+            % Create StateLamp_2Label
+            app.StateLamp_2Label = uilabel(app.DevicePanel);
+            app.StateLamp_2Label.HorizontalAlignment = 'right';
+            app.StateLamp_2Label.FontSize = 10;
+            app.StateLamp_2Label.Position = [248 26 30 22];
+            app.StateLamp_2Label.Text = 'State';
+
+            % Create CFB_Lamp
+            app.CFB_Lamp = uilamp(app.DevicePanel);
+            app.CFB_Lamp.Position = [285 32 10 10];
+
             % Create ScanPanel
             app.ScanPanel = uipanel(app.LeftPanel);
             app.ScanPanel.Title = 'Scan';
@@ -311,6 +367,7 @@ classdef F2_SchottkyScan_exported < matlab.apps.AppBase
             app.PhaseStartEditField = uieditfield(app.ScanPanel, 'numeric');
             app.PhaseStartEditField.ValueChangedFcn = createCallbackFcn(app, @StepsEditFieldValueChanged, true);
             app.PhaseStartEditField.Position = [83 86 50 22];
+            app.PhaseStartEditField.Value = 20;
 
             % Create PhaseEndEditFieldLabel
             app.PhaseEndEditFieldLabel = uilabel(app.ScanPanel);
@@ -322,7 +379,7 @@ classdef F2_SchottkyScan_exported < matlab.apps.AppBase
             app.PhaseEndEditField = uieditfield(app.ScanPanel, 'numeric');
             app.PhaseEndEditField.ValueChangedFcn = createCallbackFcn(app, @StepsEditFieldValueChanged, true);
             app.PhaseEndEditField.Position = [220 86 50 22];
-            app.PhaseEndEditField.Value = 150;
+            app.PhaseEndEditField.Value = 80;
 
             % Create StepsEditFieldLabel
             app.StepsEditFieldLabel = uilabel(app.ScanPanel);
@@ -335,7 +392,7 @@ classdef F2_SchottkyScan_exported < matlab.apps.AppBase
             app.StepsEditField.Limits = [2 100];
             app.StepsEditField.ValueChangedFcn = createCallbackFcn(app, @StepsEditFieldValueChanged, true);
             app.StepsEditField.Position = [98 53 33 22];
-            app.StepsEditField.Value = 21;
+            app.StepsEditField.Value = 42;
 
             % Create ShotsperstepEditFieldLabel
             app.ShotsperstepEditFieldLabel = uilabel(app.ScanPanel);
@@ -428,6 +485,7 @@ classdef F2_SchottkyScan_exported < matlab.apps.AppBase
             title(app.UIAxes, 'Schottky Scan')
             xlabel(app.UIAxes, 'KLYS LI10 2-1 Phase [deg] ')
             ylabel(app.UIAxes, 'Charge [pC]')
+            app.UIAxes.FontSize = 14;
             app.UIAxes.HandleVisibility = 'off';
             app.UIAxes.Position = [7 282 432 314];
 
