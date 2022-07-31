@@ -29,8 +29,10 @@ classdef F2_SchottkyScanApp < handle
         
         function obj = F2_SchottkyScanApp(apph)
             
+            
+            
             % initialize object and add PVs to be monitored
-            context = PV.Initialize(PVtype.EPICS_labca) ;
+            context = PV.Initialize(PVtype.EPICS) ;
             obj.pvlist=[...
                 PV(context,'name',"Instance",'pvname',"SIOC:SYS1:ML00:AO401",'mode',"rw",'monitor',true); % Number of times code is run
                 PV(context,'name',"State",'pvname',"SIOC:SYS1:ML00:AO402",'mode',"rw",'monitor',true); % Current scan state
@@ -41,8 +43,9 @@ classdef F2_SchottkyScanApp < handle
                 %PV(context,'name',"KLYS_21_SLED_PHAS",'pvname',"KLYS:LI10:21:SLED_PHAS",'monitor',true); % KLYS LI10 21 SLED PHAS (I think it is same as one above)
                 PV(context,'name',"GUN_21_PHAS",'pvname',"ACCL:LI10:21:PHASE_W0CH6",'monitor',true); % Gun PHAS
                 PV(context,'name',"KLYS_21_OFFSET",'pvname',"KLYS:LI10:21:T5:PREQ_OFFSET",'monitor',true); % Offset between 2-1 PDES and PHAS
-                PV(context,'name',"SFB_ENABLE",'pvname',"KLYS:LI10:21:SFB_PDIS",'monitor',true); % Slow feedback on/off
-                PV(context,'name',"SFB_PDES",'pvname',"KLYS:LI10:21:SFB_PDES",'monitor',true); % Slow feedback setpoint
+                PV(context,'name',"SFB_ENABLE",'pvname',"KLYS:LI10:21:SFB_PDIS",'monitor',true,'mode',"rw",'pvdatatype',"int"); % Slow feedback on/off
+                %PV(context,'name',"SFB_SWITCH",'pvname',"KLYS:LI10:21:SFB_PDIS",'monitor',true,'mode',"rw",'pvdatatype',"int"); % Slow feedback on/off
+                PV(context,'name',"SFB_PDES",'pvname',"KLYS:LI10:21:SFB_PDES",'monitor',true,'mode',"rw"); % Slow feedback setpoint
                 
                 PV(context,'name',"LaserEnergy",'pvname',"LASR:LT10:930:PWR",'monitor',true); % IN10 laser power meter
                 PV(context,'name',"BPM_221_TMIT",'pvname',"BPMS:IN10:221:TMIT",'monitor',true,'mode',"rw"); % BPM IN10 221 charge meas
@@ -85,8 +88,13 @@ classdef F2_SchottkyScanApp < handle
             obj.pvs.ZeroOffset.guihan = apph.PhaseOffsetEditField;
             
             
-            % Set GUI callbacks for FC cup in/out
+            % Set GUI callbacks for Lamps
             obj.pvs.fcupStats.guihan = apph.InStateLamp ;
+            obj.pvs.SFB_ENABLE.guihan = [apph.SFB_Lamp apph.SlowFeedbackSwitch];
+            obj.pvs.chargeFB.guihan = [apph.CFB_Lamp apph.ChargeFeedbackSwitch];
+            %obj.pvs.SFB_ENABLE.guihan = apph.SlowFeedbackSwitch ;
+            %obj.pvs.chargeFB.guihan = apph.ChargeFeedbackSwitch ;
+            
             
             % Set scan state false
             obj.scan_state = false;
@@ -120,7 +128,17 @@ classdef F2_SchottkyScanApp < handle
             % function where stuff happens
             persistent lastMEAS lastPHAS pdes_count
             
-            
+%             if obj.pvs.SFB_ENABLE.val{1}
+%                 obj.guihan.SlowFeedbackSwitch.Value = 'On';
+%             else
+%                 obj.guihan.SlowFeedbackSwitch.Value = 'Off';
+%             end
+%             
+%             if obj.pvs.chargeFB.val{1}
+%                 obj.guihan.ChargeFeedbackSwitch.Value = 'On';
+%             else
+%                 obj.guihan.ChargeFeedbackSwitch.Value = 'Off';
+%             end
             
             
             switch obj.mode
@@ -214,23 +232,27 @@ classdef F2_SchottkyScanApp < handle
                                 if ~obj.dummy_mode
                                     if obj.machine_state.set_ZC_phas
                                         obj.setZeroCrossing();
-                                        if strcmp(obj.machine_state.init_fb_state,'Enabled')
+                                        %if strcmp(obj.machine_state.init_fb_state,'Enabled')
+                                        if obj.machine_state.init_fb_state
                                             obj.addMessage('Re-enabling slow feedback.');
                                             caput(obj.pvs.SFB_ENABLE,1);
                                         end
                                         
-                                        if strcmp(obj.machine_state.init_charge_fb_state,'RUNNING')
+                                        %if strcmp(obj.machine_state.init_charge_fb_state,'RUNNING')
+                                        if obj.machine_state.init_charge_fb_state
                                             obj.addMessage('Re-enabling charge feedback.');
                                             caput(obj.pvs.chargeFB,1);
                                         end
                                     else
                                         obj.restoreInitPhas();
-                                        if strcmp(obj.machine_state.init_fb_state,'Enabled')
+                                        %if strcmp(obj.machine_state.init_fb_state,'Enabled')
+                                        if obj.machine_state.init_fb_state
                                             obj.addMessage('Re-enabling slow feedback.');
                                             caput(obj.pvs.SFB_ENABLE,1);
                                         end
                                         
-                                        if strcmp(obj.machine_state.init_charge_fb_state,'RUNNING')
+                                        %if strcmp(obj.machine_state.init_charge_fb_state,'RUNNING')
+                                        if obj.machine_state.init_charge_fb_state
                                             obj.addMessage('Re-enabling charge feedback.');
                                             caput(obj.pvs.chargeFB,1);
                                         end
@@ -264,11 +286,13 @@ classdef F2_SchottkyScanApp < handle
             obj.guihan.SettingPhaseLamp.Enable = false;
             obj.guihan.AcquiringDataLamp.Enable = false;
             obj.restoreInitPhas();
-            if strcmp(obj.machine_state.init_fb_state,'Enabled') && ~obj.dummy_mode
+            %if strcmp(obj.machine_state.init_fb_state,'Enabled') && ~obj.dummy_mode
+            if obj.machine_state.init_fb_state && ~obj.dummy_mode
                 obj.addMessage('Re-enabling slow feedback.');
                 caput(obj.pvs.SFB_ENABLE,1);
             end
-            if strcmp(obj.machine_state.init_charge_fb_state,'RUNNING') && ~obj.dummy_mode
+            %if strcmp(obj.machine_state.init_charge_fb_state,'RUNNING') && ~obj.dummy_mode
+            if obj.machine_state.init_charge_fb_state && ~obj.dummy_mode
                 obj.addMessage('Re-enabling charge feedback.');
                 caput(obj.pvs.chargeFB,1);
             end
@@ -396,12 +420,14 @@ classdef F2_SchottkyScanApp < handle
             obj.abort_state = false;
             obj.getInitState();
             
-            if strcmp(obj.machine_state.init_charge_fb_state,'RUNNING') && ~obj.dummy_mode
+            %if strcmp(obj.machine_state.init_charge_fb_state,'RUNNING') && ~obj.dummy_mode
+            if obj.machine_state.init_charge_fb_state && ~obj.dummy_mode
                 obj.addMessage('Disabling charge feedback.');
                 caput(obj.pvs.chargeFB,0);
             end
             
-            if strcmp(obj.machine_state.init_fb_state,'Enabled') && ~obj.dummy_mode
+            %if strcmp(obj.machine_state.init_fb_state,'Enabled') && ~obj.dummy_mode
+            if obj.machine_state.init_fb_state && ~obj.dummy_mode
                 obj.addMessage('Disabling slow feedback.');
                 caput(obj.pvs.SFB_ENABLE,0);
             end

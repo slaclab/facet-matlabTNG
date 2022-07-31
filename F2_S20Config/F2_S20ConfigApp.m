@@ -738,7 +738,7 @@ classdef F2_S20ConfigApp < handle & F2_common
       [~,id_x] = min(abs(obj.EleZ-z_x)) ;
       [~,id_y] = min(abs(obj.EleZ-z_y)) ;
       obj.WaistID = [id_x id_y] ;
-      obj.WaistShift = obj.WaistDesZ - obj.WaistZ ;
+      obj.WaistShift = obj.WaistZ - obj.WaistDesZ ;
       caput(obj.pvs.WaistLocation,char(obj.EleNames(id_x)));
       caput(obj.pvs.WaistZ,z_x);
       fprintf('Waist Location = %s (Z=%f m)\n',obj.EleNames(id_x),z_x);

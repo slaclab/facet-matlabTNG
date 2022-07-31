@@ -60,11 +60,15 @@ classdef F2_MatchingApp < handle & F2_common
   end
  
   methods
-    function obj = F2_MatchingApp(ghan)
+    function obj = F2_MatchingApp(ghan,LLM)
       if exist('ghan','var') && ~isempty(ghan)
         obj.guihan=ghan;
       end
-      obj.LiveModel = F2_LiveModelApp ; % Initially update live model (default)
+      if exist('LLM','var') && ~isempty(LLM)
+        obj.LiveModel = LLM ;
+      else
+        obj.LiveModel = F2_LiveModelApp ; % Initially update live model (default)
+      end
       obj.LM=copy(obj.LiveModel.LM);
       obj.LM.ModelClasses=["PROF" "WIRE"];
       obj.ProfModelInd = obj.LM.ModelID(obj.LM.ControlNames==obj.ProfName) ;
@@ -933,7 +937,7 @@ classdef F2_MatchingApp < handle & F2_common
       
       % load analysis variables
       x=data(wsel).^2 ; % m^2
-      dx=2.*x.*data_err(wsel) ;
+      dx=x.*2.*(data_err./data);
       
       % compute least squares solution
       M=zeros(nw,3);
@@ -960,7 +964,9 @@ classdef F2_MatchingApp < handle & F2_common
         u=Tx*Bx'*zx;du=sqrt(diag(Tx));  %#ok<NASGU,MINV>
         if itry==1
           chi2x = sum( (Bx*u - zx).^2 ./ zx ) ;
-          dx=dx.*sqrt(chi2x);
+          if chi2x>1
+            dx=dx.*sqrt(chi2x);
+          end
         end
       end
       
@@ -1024,14 +1030,14 @@ classdef F2_MatchingApp < handle & F2_common
       
       txt_results{1} =  sprintf('%s emittance parameters at %s\n',dim,wname{1});
       txt_results{2} =  sprintf('----\n');
-      txt_results{3} =  sprintf('energy      = %10.4f               GeV\n',energy);
-      txt_results{4} =  sprintf('nemit       = %10.4f   (%9.4f) mm-mrad\n',1e6*emitxn,1e6*emitData.nemit0);
-      txt_results{5} =  sprintf('nemit*bmag  = %10.4f   (%9.4f) mm-mrad\n',1e6*emitxn*bmagx,1e6*emitData.nemit0);
-      txt_results{6} =  sprintf('emit        = %10.4f   (%9.4f) nm-rad\n',1e9*emitx,1e9*emitData.nemit0/egamma);
-      txt_results{7} =  sprintf('bmag        = %10.4f   (%9.4f)\n',bmagx,1);
-      txt_results{8} =  sprintf('beta        = %10.4f   (%9.4f) m\n',betax,bx0);
-      txt_results{9} =  sprintf('alpha       = %10.4f   (%9.4f)\n',alphx,ax0);
-      txt_results{10} = sprintf('chisq/N     = %10.4f\n',chi2x);
+      txt_results{3} =  sprintf('energy\t\t=\t%.3f\t\t\t\t\tGeV\n',energy);
+      txt_results{4} =  sprintf('nemit\t\t=\t%.2f +/- %.2f\t\t( %.2f )\tmm-mrad\n',1e6*emitxn,1e6*demitxn,1e6*emitData.nemit0);
+      txt_results{5} =  sprintf('nemit*bmag\t=\t%.2f +/- %.2f\t\t( %.2f )\tmm-mrad\n',1e6*emitxn*bmagx,1e6*demitxn*bmagx,1e6*emitData.nemit0);
+      txt_results{6} =  sprintf('emit\t\t=\t%.2f +/- %.2f\t\t( %.2f )\tnm-rad\n',1e9*emitx,1e9*demitx,1e9*emitData.nemit0/egamma);
+      txt_results{7} =  sprintf('bmag\t\t=\t%.2f\t\t\t( %.2f )\n',bmagx,1);
+      txt_results{8} =  sprintf('beta\t\t=\t%.3f +/- %.3f\t( %.3f )\tm\n',betax,dbetax,bx0);
+      txt_results{9} =  sprintf('alpha\t\t=\t%.3f +/- %.2f\t( %.3f )\n',alphx,dalphx,ax0);
+      txt_results{10} = sprintf('chisq/N\t\t=\t%.4f\n',chi2x);
       
       % Get design spot sizes
       emitData.sigma_des=zeros(1,nw) ;

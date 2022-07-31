@@ -2,6 +2,9 @@ classdef F2_WirescanApp < handle
   %F2_WIRESCANAPP FACET-II wirescanner control and data processing
   properties(Transient)
     AbortScan logical = false % Set true to trigger abort of in-progress scan
+    UpdateObj % Object to notify of updated data
+    UpdateMethod(1,2) string % Method to call when data is updated [first is called with ProcData method, second with wiresel or plane property changes]
+    UpdatePar(1,2) cell % Parameter to pass to method being called [first is called with ProcData method, second with wiresel or plane property changes]
   end
   properties(SetObservable=true,AbortSet)
     plane string {mustBeMember(plane,["x","y","u"])} = "x" % Selected measurement plane
@@ -20,6 +23,7 @@ classdef F2_WirescanApp < handle
   end
   properties(SetAccess=private)
     data
+    fitdata
     scansuccess logical = false
     scanstatus string
   end
@@ -58,6 +62,8 @@ classdef F2_WirescanApp < handle
       %F2_WIRESCANAPP
       %F2_WirescanApp([LucretiaLiveModel,WireSel,plane])
       
+      warning('off','MATLAB:rankDeficientMatrix');
+      
       % Use provided Lucretia Live Model, or generate new one
       if exist('LLM','var') && ~isempty(LLM)
         obj.LLM = LLM ;
@@ -73,11 +79,15 @@ classdef F2_WirescanApp < handle
       
       obj.confload;
     end
+    function LoadData(obj,data,fitdata)
+      obj.data=data; obj.fitdata=fitdata;
+    end
     function AttachGUI(obj,ghan)
       obj.guihan=ghan;
       obj.guihan.WIREDropDown.Items = obj.wires ;
       obj.guihan.WIREDropDown.Value = obj.wires(obj.wiresel) ;
       obj.guihan.(upper(obj.plane)+"Button").Value = 1 ;
+      obj.guihan.plane = obj.plane ;
       obj.guihan.PMTDropDown.Items = obj.pmts ;
       obj.guihan.TORODropDown.Items = obj.tors ;
       obj.guihan.BLENDropDown.Items = obj.blms ;
@@ -93,11 +103,15 @@ classdef F2_WirescanApp < handle
         obj.guihan.ScanCenterError.Value=0;
       end
     end
-    function StartScan(obj)
+    function StartScan(obj,ahan)
       %STARTSCAN Start wire scan process
       global BEAMLINE
       obj.AbortScan = false ;
       obj.scansuccess = false ;
+      
+      if ~exist('ahan','var')
+        ahan = obj.guihan.UIAxes ;
+      end
       
       % Reserve Edef
       obj.edef = eDefReserve('F2_Wirescan') ;
@@ -196,16 +210,16 @@ classdef F2_WirescanApp < handle
           obj.guiupdate;
         end
         pause(0.1);
-        if ~isempty(obj.guihan) % Display progress on axes
+        if ~isempty(ahan) % Display progress on axes
           prog=lcaGet(progress);
-          cla(obj.guihan.UIAxes); reset(obj.guihan.UIAxes); axis(obj.guihan.UIAxes,'off');
-          rectangle(obj.guihan.UIAxes,'Position',[0,0.4,prog/100,0.2],'facecolor','g');axis(obj.guihan.UIAxes,[0 1 0 1]);
-          title(obj.guihan.UIAxes,'Scan Progress...');
-          text(obj.guihan.UIAxes,max([0 prog/100-0.1]),0.5,sprintf('%.1f %%',prog));
+          cla(ahan); reset(ahan); axis(ahan,'off');
+          rectangle(ahan,'Position',[0,0.4,prog/100,0.2],'facecolor','g');axis(ahan,[0 1 0 1]);
+          title(ahan,sprintf('%s: Scan Progress...',obj.wirename));
+          text(ahan,max([0 prog/100-0.1]),0.5,sprintf('%.1f %%',prog));
           drawnow
         end
       end
-      cla(obj.guihan.UIAxes); reset(obj.guihan.UIAxes);
+      cla(ahan); reset(ahan);
       eDefOff(obj.edef);
       
       % Flag success of scan
@@ -288,14 +302,14 @@ classdef F2_WirescanApp < handle
       eDefRelease(obj.edef);
       
       % Process and save data
-      obj.ProcData;
+      obj.ProcData(ahan);
       obj.guiupdate;
       obj.confsave;
       F2C=F2_common;
       obj.confsave(fullfile(F2C.datadir,"F2_Wirescan_"+datestr(now,30)+".mat"));
       
     end
-    function ProcData(obj,ahan)
+    function ProcData(obj,ahan,NoUpdateCall)
       %PROCDATA
       %ProcData([AxesHandle])
       
@@ -310,6 +324,9 @@ classdef F2_WirescanApp < handle
           ahan=[];
         end
       end
+      if ~exist('NoUpdateCall','var')
+        NoUpdateCall=[];
+      end
       
       switch obj.plane
         case "x"
@@ -320,9 +337,14 @@ classdef F2_WirescanApp < handle
           pos = obj.data.pos ;
       end
       
-      ydat = obj.data.pmt(obj.pmtsel,:) ;
-      qdat = obj.data.toro(obj.torsel,:) ;
-      bad = isnan(ydat) | isinf(ydat) | ydat==0 | pos==0 | pos<obj.pos_range(1) | obj.data.pos>obj.pos_range(2) | isnan(pos) ;
+      try
+        ydat = obj.data.pmt(obj.pmtsel,:) ;
+        qdat = obj.data.toro(obj.torsel,:) ;
+      catch
+        ydat = obj.data.pmt ;
+        qdat = obj.data.toro ;
+      end
+      bad = isnan(ydat) | isinf(ydat) | ydat==0 | pos==0 | pos<obj.pos_range(1) | pos>obj.pos_range(2) | isnan(pos) ;
       
       % Apply BPM measured position correction?
       if obj.jittercor
@@ -342,23 +364,32 @@ classdef F2_WirescanApp < handle
       
       switch obj.fitmethod
         case "gauss"
+          [~,q,dq,chi2]=gauss_fit(pos,ydat,dy); q(5)=0;
+        case "agauss"
+          [~,q,dq,chi2]=agauss_fit(pos,ydat,dy);
+      end
+      dy=dy.*sqrt(chi2);
+      switch obj.fitmethod
+        case "gauss"
           [~,q,dq]=gauss_fit(pos,ydat,dy); q(5)=0;
         case "agauss"
           [~,q,dq]=agauss_fit(pos,ydat,dy);
       end
       sigma = abs(q(4))*1e6; sigmaErr = abs(dq(4))*1e6;
       center = q(3)*1e6; centerErr = dq(3)*1e6 ;
+      obj.fitdata.sigma=sigma; obj.fitdata.sigmaErr=sigmaErr;
+      obj.fitdata.center=center; obj.fitdata.centerErr = centerErr ;
       lcaPut(char(obj.wirename+":"+upper(obj.plane)+"RMS"),sigma);
       lcaPut(char(obj.wirename+":"+upper(obj.plane)),center);
       
       if ~isempty(ahan)
-        if string(obj.guihan.UnitsDropDown.Value)=="Motor"
+        if ~isempty(obj.guihan) && string(obj.guihan.UnitsDropDown.Value)=="Motor"
           pos=obj.data.pos(~bad);
         end
         plot(ahan,pos.*1e6,ydat,'*');
         xx = linspace(min(pos),max(pos),1000);
         yy = q(1)+q(2).*exp(-0.5.*((xx-q(3))./(q(4).*(1+sign(xx-q(3)).*q(5)))).^2) ;
-        if string(obj.guihan.UnitsDropDown.Value)=="Motor"
+        if ~isempty(obj.guihan) && string(obj.guihan.UnitsDropDown.Value)=="Motor"
           xx_pl=linspace(min(pos),max(pos),1000);
         else
           xx_pl=xx;
@@ -373,6 +404,11 @@ classdef F2_WirescanApp < handle
           obj.guihan.ScanWidth.Value = sigma ; obj.guihan.ScanWidthError.Value = sigmaErr ;
           obj.guihan.ScanCenter.Value = center ; obj.guihan.ScanCenterError.Value = centerErr ;
         end
+      end
+      
+      % Call upstream app to let it know data is updated
+      if ~isempty(obj.UpdateObj) && isempty(NoUpdateCall)
+        obj.UpdateObj.(obj.UpdateMethod(1))(obj.UpdatePar{1});
       end
       
     end
@@ -406,14 +442,20 @@ classdef F2_WirescanApp < handle
       end
       lpar = ["pmtsel" "jittercor" "chargenorm" "blenwin" "bpmsel" "torsel" "blmsel" "fitmethod" "data" "motor_range" "npulses" "scansuccess" "blenvals"] ;
       for ipar=1:length(lpar)
-        obj.(lpar(ipar)) = ld.(lpar(ipar)) ;
+        if isfield(ld,lpar(ipar))
+          obj.(lpar(ipar)) = ld.(lpar(ipar)) ;
+        end
       end
       if isempty(ld.data)
         obj.scansuccess=false;
       else
         obj.scansuccess=true;
       end
-      obj.ProcData;
+      try
+        obj.ProcData;
+      catch
+        warning('Incompatible data');
+      end
     end
     function confsave(obj,fname)
       %CONFSAVE
@@ -421,7 +463,7 @@ classdef F2_WirescanApp < handle
       if ~exist('fname','file')
         fname = F2_common.confdir + "/F2_Wirescan/" + obj.wirename + "_" + obj.plane + ".mat" ;
       end
-      lpar = ["pmtsel" "jittercor" "chargenorm" "blenwin" "bpmsel" "torsel" "blmsel" "fitmethod" "data" "motor_range" "npulses" "scansuccess" "blenvals"] ;
+      lpar = ["pmtsel" "jittercor" "chargenorm" "blenwin" "bpmsel" "torsel" "blmsel" "fitmethod" "data" "motor_range" "npulses" "scansuccess" "blenvals" "fitdata"] ;
       for ipar=1:length(lpar)
         ss.(lpar(ipar))=obj.(lpar(ipar));
       end
@@ -429,8 +471,23 @@ classdef F2_WirescanApp < handle
     end
     function guiupdate(obj)
       if ~isempty(obj.guihan)
+        obj.guihan.WIREDropDown.Value = obj.wires(obj.wiresel) ;
         obj.guihan.PMTDropDown.Value = obj.pmts(obj.pmtsel) ;
         obj.guihan.JitterCorrectionCheckBox.Value = obj.jittercor ;
+        switch obj.plane
+          case "x"
+            obj.guihan.XButton.Value=1;
+            obj.guihan.YButton.Value=0;
+            obj.guihan.UButton.Value=0;
+          case "y"
+            obj.guihan.XButton.Value=0;
+            obj.guihan.YButton.Value=1;
+            obj.guihan.UButton.Value=0;
+          case "u"
+            obj.guihan.XButton.Value=0;
+            obj.guihan.YButton.Value=0;
+            obj.guihan.UButton.Value=1;
+        end
         if isempty(obj.bpms)
           obj.guihan.BPM1DropDown.Items = "---" ;
           obj.guihan.BPM1DropDown.Value = "---" ;
@@ -509,9 +566,13 @@ classdef F2_WirescanApp < handle
     end
     function set.plane(obj,pl)
       fprintf('Set plane %c -> %c...\n',obj.plane,pl);
+      % Call upstream app to let it know data is updated
+      if ~isempty(obj.UpdateObj)
+        obj.UpdateObj.(obj.UpdateMethod(2))(obj.UpdatePar{2});
+      end
       obj.plane=pl;
-      disp('confload...');
       obj.confload;
+      
     end
     function pos = get.pos_range(obj)
       switch obj.plane
@@ -652,6 +713,10 @@ classdef F2_WirescanApp < handle
     function set.wiresel(obj,sel)
       if sel<1 || sel>length(obj.wires)
         error('No corresponding wire to selection')
+      end
+      % Call upstream app to let it know data is updated
+      if ~isempty(obj.UpdateObj)
+        obj.UpdateObj.(obj.UpdateMethod(2))(obj.UpdatePar{2});
       end
       obj.wiresel = sel ;
       obj.confload;
