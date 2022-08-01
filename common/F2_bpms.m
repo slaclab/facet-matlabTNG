@@ -214,11 +214,15 @@ classdef F2_bpms < handle & matlab.mixin.Copyable
           lcaSetMonitor(pvs);
           lastpvs=pvs;
         end
+        brate=max([1 double(obj.beamrate)]);
         t0=tic;
-        while ~any(lcaNewMonitorValue(pvs)) || toc(t0)>1.5
-          pause(1/double(obj.beamrate)/10);
+        while ~any(lcaNewMonitorValue(pvs)) && toc(t0)<2
+          pause(1/brate/10);
         end
-        pause(1/double(obj.beamrate)/2);
+        if toc(t0)>2
+          error('Timeout waiting for beam');
+        end
+        pause(1/brate/2);
         dat = lcaGet(pvs) ;
         
         % Sort new data

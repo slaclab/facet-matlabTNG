@@ -234,6 +234,10 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
           continue
         end
         % Add BPM reading to buffer
+        if obj.BPMS.beamrate==0
+          lcaPutNoWait(char(pvs.(wname).valid),0);
+          continue
+        end
         pobj.(wname).BPMS.read;
         % Fit orbit
         try
