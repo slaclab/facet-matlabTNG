@@ -6,6 +6,8 @@ classdef F2_S20Config_exported < matlab.apps.AppBase
     PlotMenu                        matlab.ui.container.Menu
     ShowlegendMenu                  matlab.ui.container.Menu
     DetachPlotMenu                  matlab.ui.container.Menu
+    OptimizerMenu                   matlab.ui.container.Menu
+    UseConstraintsMenu              matlab.ui.container.Menu
     HelpMenu                        matlab.ui.container.Menu
     ThereisnohelpforyouMenu         matlab.ui.container.Menu
     IPPrimaryWaistLocationPanel     matlab.ui.container.Panel
@@ -335,6 +337,16 @@ classdef F2_S20Config_exported < matlab.apps.AppBase
       app.BetaX_DESValueChanged;
       app.BetaY_DESValueChanged;
     end
+
+    % Menu selected function: UseConstraintsMenu
+    function UseConstraintsMenuSelected(app, event)
+      if app.UseConstraintsMenu.Checked
+        app.UseConstraintsMenu.Checked = false ;
+      else
+        app.UseConstraintsMenu.Checked = true ;
+      end
+      app.aobj.OptimConstraints = app.UseConstraintsMenu.Checked ;
+    end
   end
 
   % Component initialization
@@ -363,6 +375,16 @@ classdef F2_S20Config_exported < matlab.apps.AppBase
       app.DetachPlotMenu = uimenu(app.PlotMenu);
       app.DetachPlotMenu.MenuSelectedFcn = createCallbackFcn(app, @DetachPlotMenuSelected, true);
       app.DetachPlotMenu.Text = 'Detach Plot';
+
+      % Create OptimizerMenu
+      app.OptimizerMenu = uimenu(app.FACETIISector20ConfiguratorUIFigure);
+      app.OptimizerMenu.Text = 'Optimizer';
+
+      % Create UseConstraintsMenu
+      app.UseConstraintsMenu = uimenu(app.OptimizerMenu);
+      app.UseConstraintsMenu.MenuSelectedFcn = createCallbackFcn(app, @UseConstraintsMenuSelected, true);
+      app.UseConstraintsMenu.Checked = 'on';
+      app.UseConstraintsMenu.Text = 'Use Constraints';
 
       % Create HelpMenu
       app.HelpMenu = uimenu(app.FACETIISector20ConfiguratorUIFigure);

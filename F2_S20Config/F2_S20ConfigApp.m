@@ -12,6 +12,7 @@ classdef F2_S20ConfigApp < handle & F2_common
     isKracken logical = false % If true, use special matching conditions for Kracken configuration
     WaistDesNameDS string = "PDUMP" % Model name of (intended) downstream waist location
     showlegend logical = true % Display legend on Twiss plots or not
+    OptimConstraints logical = true ;
   end
   properties(SetObservable, AbortSet)
     WaistDesName string = "PENT" % Model name of (intended) IP waist location
@@ -70,7 +71,8 @@ classdef F2_S20ConfigApp < handle & F2_common
     CounterTimer
   end
   properties(Constant)
-    Q_BMAX = [256 446 457 440 440 440 239 386 240] ; % absolute max field of quads
+%     Q_BMAX = [256 446 457 440 440 440 239 386 240] ; % absolute max field of quads
+    Q_BMAX = [256.29 446.44 457.02 167.5 246.58 167.5 239.7 386.8 233.2] ; % absolute max field of quads
     QuadNames string = ["Q5FF" "Q4FF" "Q3FF" "Q2FF" "Q1FF" "Q0FF" "Q0D" "Q1D" "Q2D"]
     QuadUnitNo uint16 = [3011 3311 3151 1910 3204 3031 3142 3261 3091]
     IPClassList string = ["MARK" "PROF" "WIRE" "INST"] % Lucretia Classes to include in IP waist location selection
@@ -218,7 +220,7 @@ classdef F2_S20ConfigApp < handle & F2_common
           if stat{1}~=1
             oval=ones(1,5).*1e4;
           else
-            oval = [abs(objdes-[T.betax(end) T.betay(end)])*100 abs(T.alphax(end))*100 abs(T.alphay(end))*100] ;
+            oval = [abs(objdes-[T.betax(end) T.betay(end)])*100 abs(T.alphax(end))*100 abs(T.alphay(end))*100 sum(abs(x))./1000] ;
           end
         case 3 % return results of FFS match
           oval = [T.betax(end) T.betay(end) T.alphax(end) T.alphay(end)] ;
@@ -280,7 +282,11 @@ classdef F2_S20ConfigApp < handle & F2_common
       if ~obj.isSFQED && ( any(obj.BetaDES>1) || obj.isKracken ) % use fminsearch
         xmin=fminsearch(@(x) obj.MatchFun(x,obj.Initial,obj.BetaDES,qno,ipele,1),B0(qno),optimset('Display','iter','MaxFunEval',2000));
       else % use lsqnonlin
-        xmin=lsqnonlin(@(x) obj.MatchFun(x,obj.Initial,obj.BetaDES,qno,ipele,2),B0(qno),[],[],optimset('Display','iter','MaxFunEval',2000,'Algorithm','levenberg-marquardt'));
+        if obj.OptimConstraints
+          xmin=lsqnonlin(@(x) obj.MatchFun(x,obj.Initial,obj.BetaDES,qno,ipele,2),B0(qno),lval(qno),uval(qno),optimset('Display','iter','MaxFunEval',2000,'Algorithm','trust-region-reflective'));
+        else
+          xmin=lsqnonlin(@(x) obj.MatchFun(x,obj.Initial,obj.BetaDES,qno,ipele,2),B0(qno),[],[],optimset('Display','iter','MaxFunEval',2000,'Algorithm','levenberg-marquardt'));
+        end
       end
       matchvals = obj.MatchFun(xmin,obj.Initial,obj.BetaDES,qno,ipele,3) ;
       fprintf('Matching complete: Matched beta_x= %g beta_y= %g alpha_x= %g alpha_y= %g\n',matchvals);
@@ -738,7 +744,7 @@ classdef F2_S20ConfigApp < handle & F2_common
       [~,id_x] = min(abs(obj.EleZ-z_x)) ;
       [~,id_y] = min(abs(obj.EleZ-z_y)) ;
       obj.WaistID = [id_x id_y] ;
-      obj.WaistShift = obj.WaistZ - obj.WaistDesZ ;
+      obj.WaistShift = obj.WaistDesZ - obj.WaistZ ;
       caput(obj.pvs.WaistLocation,char(obj.EleNames(id_x)));
       caput(obj.pvs.WaistZ,z_x);
       fprintf('Waist Location = %s (Z=%f m)\n',obj.EleNames(id_x),z_x);
@@ -951,6 +957,7 @@ classdef F2_S20ConfigApp < handle & F2_common
       end
     end
     function set.UserParams(obj,parvec)
+      obj.InitialUser = obj.InitialDesign ;
       obj.InitialUser.x.Twiss.beta = parvec(1) ;
       obj.InitialUser.y.Twiss.beta = parvec(2) ;
       obj.InitialUser.x.Twiss.alpha = parvec(3) ;
@@ -968,10 +975,10 @@ classdef F2_S20ConfigApp < handle & F2_common
         end
         if ~obj.startup
           disp('Initial parameters changed, re-calculating Twiss parameters and Waist data...');
-          obj.LM.ModelBDES = obj.Q_BDES ;
+          obj.LM.ModelBDES = obj.Q_BDES(:) ;
           obj.TwissACT=obj.TwissCalc(obj.WaistResolution);
           if obj.MatchOK
-            obj.LM.ModelBDES = obj.Q_Match ;
+            obj.LM.ModelBDES = obj.Q_Match(:) ;
             obj.TwissMATCH=obj.TwissCalc(obj.WaistResolution);
           end
           obj.WaistCalc;
