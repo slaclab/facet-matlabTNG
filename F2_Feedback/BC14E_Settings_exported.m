@@ -13,14 +13,14 @@ classdef BC14E_Settings_exported < matlab.apps.AppBase
     EditField_2               matlab.ui.control.NumericEditField
     LowLabel                  matlab.ui.control.Label
     HighLabel                 matlab.ui.control.Label
-    SetpointBPM14801SaturationLimitsmmPanel  matlab.ui.container.Panel
+    SetpointEnergySaturationLimitsMeVPanel  matlab.ui.container.Panel
     EditField_3               matlab.ui.control.NumericEditField
     EditField_4               matlab.ui.control.NumericEditField
     LowLabel_2                matlab.ui.control.Label
     HighLabel_2               matlab.ui.control.Label
     SetpointFilterFreqHz0OFFEditFieldLabel  matlab.ui.control.Label
     FilterFreqEditField       matlab.ui.control.NumericEditField
-    SetpointBPM14801DeadbandLimitsmmPanel  matlab.ui.container.Panel
+    SetpointEnergyDeadbandLimitsMeVPanel  matlab.ui.container.Panel
     EditField_5               matlab.ui.control.NumericEditField
     EditField_6               matlab.ui.control.NumericEditField
     LowLabel_3                matlab.ui.control.Label
@@ -185,30 +185,30 @@ classdef BC14E_Settings_exported < matlab.apps.AppBase
       app.HighLabel.Position = [174 38 31 22];
       app.HighLabel.Text = 'High';
 
-      % Create SetpointBPM14801SaturationLimitsmmPanel
-      app.SetpointBPM14801SaturationLimitsmmPanel = uipanel(app.LeftPanel);
-      app.SetpointBPM14801SaturationLimitsmmPanel.Title = 'Setpoint: BPM14801 Saturation Limits [mm]';
-      app.SetpointBPM14801SaturationLimitsmmPanel.Position = [17 232 260 85];
+      % Create SetpointEnergySaturationLimitsMeVPanel
+      app.SetpointEnergySaturationLimitsMeVPanel = uipanel(app.LeftPanel);
+      app.SetpointEnergySaturationLimitsMeVPanel.Title = 'Setpoint: Energy Saturation Limits [MeV]';
+      app.SetpointEnergySaturationLimitsMeVPanel.Position = [17 232 260 85];
 
       % Create EditField_3
-      app.EditField_3 = uieditfield(app.SetpointBPM14801SaturationLimitsmmPanel, 'numeric');
+      app.EditField_3 = uieditfield(app.SetpointEnergySaturationLimitsMeVPanel, 'numeric');
       app.EditField_3.HorizontalAlignment = 'center';
       app.EditField_3.Position = [13 17 100 22];
       app.EditField_3.Value = -5;
 
       % Create EditField_4
-      app.EditField_4 = uieditfield(app.SetpointBPM14801SaturationLimitsmmPanel, 'numeric');
+      app.EditField_4 = uieditfield(app.SetpointEnergySaturationLimitsMeVPanel, 'numeric');
       app.EditField_4.HorizontalAlignment = 'center';
       app.EditField_4.Position = [138 17 100 22];
       app.EditField_4.Value = 5;
 
       % Create LowLabel_2
-      app.LowLabel_2 = uilabel(app.SetpointBPM14801SaturationLimitsmmPanel);
+      app.LowLabel_2 = uilabel(app.SetpointEnergySaturationLimitsMeVPanel);
       app.LowLabel_2.Position = [49 38 28 22];
       app.LowLabel_2.Text = 'Low';
 
       % Create HighLabel_2
-      app.HighLabel_2 = uilabel(app.SetpointBPM14801SaturationLimitsmmPanel);
+      app.HighLabel_2 = uilabel(app.SetpointEnergySaturationLimitsMeVPanel);
       app.HighLabel_2.Position = [174 38 31 22];
       app.HighLabel_2.Text = 'High';
 
@@ -223,30 +223,30 @@ classdef BC14E_Settings_exported < matlab.apps.AppBase
       app.FilterFreqEditField.Position = [172 18 100 22];
       app.FilterFreqEditField.Value = 0.1;
 
-      % Create SetpointBPM14801DeadbandLimitsmmPanel
-      app.SetpointBPM14801DeadbandLimitsmmPanel = uipanel(app.LeftPanel);
-      app.SetpointBPM14801DeadbandLimitsmmPanel.Title = 'Setpoint: BPM14801 Deadband Limits [mm]';
-      app.SetpointBPM14801DeadbandLimitsmmPanel.Position = [17 141 260 85];
+      % Create SetpointEnergyDeadbandLimitsMeVPanel
+      app.SetpointEnergyDeadbandLimitsMeVPanel = uipanel(app.LeftPanel);
+      app.SetpointEnergyDeadbandLimitsMeVPanel.Title = 'Setpoint: Energy Deadband Limits [MeV]';
+      app.SetpointEnergyDeadbandLimitsMeVPanel.Position = [17 141 260 85];
 
       % Create EditField_5
-      app.EditField_5 = uieditfield(app.SetpointBPM14801DeadbandLimitsmmPanel, 'numeric');
+      app.EditField_5 = uieditfield(app.SetpointEnergyDeadbandLimitsMeVPanel, 'numeric');
       app.EditField_5.HorizontalAlignment = 'center';
       app.EditField_5.Position = [13 17 100 22];
       app.EditField_5.Value = -0.2;
 
       % Create EditField_6
-      app.EditField_6 = uieditfield(app.SetpointBPM14801DeadbandLimitsmmPanel, 'numeric');
+      app.EditField_6 = uieditfield(app.SetpointEnergyDeadbandLimitsMeVPanel, 'numeric');
       app.EditField_6.HorizontalAlignment = 'center';
       app.EditField_6.Position = [138 17 100 22];
       app.EditField_6.Value = 0.2;
 
       % Create LowLabel_3
-      app.LowLabel_3 = uilabel(app.SetpointBPM14801DeadbandLimitsmmPanel);
+      app.LowLabel_3 = uilabel(app.SetpointEnergyDeadbandLimitsMeVPanel);
       app.LowLabel_3.Position = [49 38 28 22];
       app.LowLabel_3.Text = 'Low';
 
       % Create HighLabel_3
-      app.HighLabel_3 = uilabel(app.SetpointBPM14801DeadbandLimitsmmPanel);
+      app.HighLabel_3 = uilabel(app.SetpointEnergyDeadbandLimitsMeVPanel);
       app.HighLabel_3.Position = [174 38 31 22];
       app.HighLabel_3.Text = 'High';
 
@@ -284,9 +284,9 @@ classdef BC14E_Settings_exported < matlab.apps.AppBase
 
       % Create UIAxes
       app.UIAxes = uiaxes(app.RightPanel);
-      title(app.UIAxes, 'BPM14801')
+      title(app.UIAxes, 'BC14 Energy')
       xlabel(app.UIAxes, 'time [s]')
-      ylabel(app.UIAxes, 'X [mm]')
+      ylabel(app.UIAxes, '\DeltaE [MeV]')
       app.UIAxes.Position = [4 6 588 470];
 
       % Show the figure after all components are created

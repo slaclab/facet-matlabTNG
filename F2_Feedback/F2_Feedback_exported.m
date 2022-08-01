@@ -45,12 +45,12 @@ classdef F2_Feedback_exported < matlab.apps.AppBase
     ActuatorRestoreToDate_DL10      matlab.ui.control.Button
     BC14EnergyFeedbackPanel         matlab.ui.container.Panel
     SetpointEditField_2             matlab.ui.control.NumericEditField
-    mmLabel_4                       matlab.ui.control.Label
+    MeVLabel_2                      matlab.ui.control.Label
     Switch_2                        matlab.ui.control.Switch
     StatusLamp_2                    matlab.ui.control.Lamp
     BC14_C1Lab                      matlab.ui.control.Label
     BC14_C2Lab                      matlab.ui.control.Label
-    BPMSLI14801X1HLabel             matlab.ui.control.Label
+    SIOCSYS1ML01AO618Label          matlab.ui.control.Label
     EditField_5                     matlab.ui.control.NumericEditField
     EditField_6                     matlab.ui.control.NumericEditField
     NotRunningButton_5              matlab.ui.control.Button
@@ -802,11 +802,11 @@ classdef F2_Feedback_exported < matlab.apps.AppBase
       app.SetpointEditField_2.HorizontalAlignment = 'center';
       app.SetpointEditField_2.Position = [52 177 100 29];
 
-      % Create mmLabel_4
-      app.mmLabel_4 = uilabel(app.BC14EnergyFeedbackPanel);
-      app.mmLabel_4.FontSize = 16;
-      app.mmLabel_4.Position = [159 177 47 29];
-      app.mmLabel_4.Text = 'mm';
+      % Create MeVLabel_2
+      app.MeVLabel_2 = uilabel(app.BC14EnergyFeedbackPanel);
+      app.MeVLabel_2.FontSize = 16;
+      app.MeVLabel_2.Position = [159 177 47 29];
+      app.MeVLabel_2.Text = 'MeV';
 
       % Create Switch_2
       app.Switch_2 = uiswitch(app.BC14EnergyFeedbackPanel, 'slider');
@@ -829,10 +829,10 @@ classdef F2_Feedback_exported < matlab.apps.AppBase
       app.BC14_C2Lab.Position = [348 158 116 22];
       app.BC14_C2Lab.Text = 'LI14:KLYS:51:PDES';
 
-      % Create BPMSLI14801X1HLabel
-      app.BPMSLI14801X1HLabel = uilabel(app.BC14EnergyFeedbackPanel);
-      app.BPMSLI14801X1HLabel.Position = [124 111 117 22];
-      app.BPMSLI14801X1HLabel.Text = 'BPMS:LI14:801:X1H';
+      % Create SIOCSYS1ML01AO618Label
+      app.SIOCSYS1ML01AO618Label = uilabel(app.BC14EnergyFeedbackPanel);
+      app.SIOCSYS1ML01AO618Label.Position = [108 113 143 22];
+      app.SIOCSYS1ML01AO618Label.Text = 'SIOC:SYS1:ML01:AO618';
 
       % Create EditField_5
       app.EditField_5 = uieditfield(app.BC14EnergyFeedbackPanel, 'numeric');
