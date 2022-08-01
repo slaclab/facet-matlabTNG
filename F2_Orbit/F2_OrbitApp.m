@@ -215,6 +215,7 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
       global BEAMLINE
       persistent pobj pvs
       iw = lcaGet(char(obj.WatcherConfsPV)); % bit pattern of configs to process
+      lcaPutNoWait('F2:WATCHER:ORBIT_STAT',1); % Write to watcher status PV
       for iproc=1:length(obj.WatcherConfs) 
         % For each config, copy local obj, store another with config name and load
         if bitget(iw,iproc)
