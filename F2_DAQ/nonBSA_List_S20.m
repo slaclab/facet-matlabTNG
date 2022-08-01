@@ -58,4 +58,6 @@ S20_nonBSA_List = {...
 'SIOC:SYS1:ML00:CALCOUT053'; % Spec Quad z img
 'SIOC:SYS1:ML00:CALCOUT054'; % Spec Quad M12
 'SIOC:SYS1:ML00:CALCOUT055'; % Spec Quad M34
+'SIOC:SYS1:ML00:CALCOUT056'; % Dipole Switch
+
 };
