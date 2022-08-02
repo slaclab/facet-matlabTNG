@@ -384,31 +384,43 @@ classdef DataSetDAN < handle
             end
         end
         
-        function N = nbrOfSyncedDataPoints(s)
-            N = length(s.dataSet.scalars.common_index);
+        
+        
+    end
+    
+    %% Getters and checks
+    methods (Access = public)
+        function listOfCameras = getListOfCameras(s)
+            % Returns a cell listOfCameras with all available camera names
+            
+            listOfCameras = s.listOfCameras;
         end
-            
-        function RVstruct = processImgsRV(s, diag, fcn)
-            % Returns a struct with a matrix RV defined by fcn and the 
-            % number of datapoints n in the diagnsotic diag and the length
-            % N of the 1D vector  
-            
-            [data,diagData] = s.hlpCheckImage(diag);
-            l = length(fcn(diagData));
-            RVstruct.RV = zeros(l,length(data.common_index));
-            
-            
-            for k = 1:length(data.common_index)
-                img = s.hlpGetImage(diag, k);
-                RVstruct.RV(:,k) = fcn(img);
+        
+        function scalarGroups = getScalarGroups(s)
+            % Return list of scalar groups
+            scalarGroups = s.scalarGroups;
+        end
+        
+        function scalarList = getScalarsInGroup(s,group)
+            % Return list of scalars in group
+            scalarList = fieldnames(s.dataSet.scalars.(group));
+        end
+        
+        function bool = validShotNbr(s, shotNbr)
+            % Checks if shot number exist
+            if shotNbr > 0 & shotNbr < s.maxShotNbr
+                bool = 1;
+            else
+                s.hlpDispMsg('shotNbr not within valid range')
+                bool = 0;
             end
-            
-            %fill meta data
-            RVstruct.diag = diag;
-            RVstruct.fcn = fcn;
-            RVstruct.fcnS = func2str(fcn);
-            RVstruct.idx = data.common_index;
-            
+        end
+        
+        function img = getImage(s, diag, sNbr)
+            img = imread( sprintf('%s%s',s.hdr,s.dataSet.images.(diag).loc{sNbr}) );
+            if s.subtractBackground
+                img = img - s.dataSet.backgrounds.(diag)';
+            end
         end
         
         function [scalarArray, scalarLabel] = getFacetScalar(s, ...
@@ -422,7 +434,7 @@ classdef DataSetDAN < handle
                 FACETscalar = {FACETscalar};
             end
             
-            type = hlpIsFSArray( FACETscalar, 'Input is not an FACET Scalar Array');
+            type = s.hlpIsFSArray( FACETscalar, 'Input is not an FACET Scalar Array');
 
             if type == 1
                 if isfield(s.dataSet.scalars,(FACETscalar{1}))
@@ -471,34 +483,32 @@ classdef DataSetDAN < handle
             end
 
         end
-    end
-    
-    %% Getters and checks
-    methods (Access = public)
-        function listOfCameras = getListOfCameras(s)
-            % Returns a cell listOfCameras with all available camera names
+        
+        function N = nbrOfSyncedDataPoints(s)
+            N = length(s.dataSet.scalars.common_index);
+        end
             
-            listOfCameras = s.listOfCameras;
-        end
-        
-        function scalarGroups = getScalarGroups(s)
-            % Return list of scalar groups
-            scalarGroups = s.scalarGroups;
-        end
-        
-        function scalarList = getScalarsInGroup(s,group)
-            % Return list of scalars in group
-            scalarList = fieldnames(s.dataSet.scalars.(group));
-        end
-        
-        function bool = validShotNbr(s, shotNbr)
-            % Checks if shot number exist
-            if shotNbr > 0 & shotNbr < s.maxShotNbr
-                bool = 1;
-            else
-                s.hlpDispMsg('shotNbr not within valid range')
-                bool = 0;
+        function RVstruct = processImgsRV(s, diag, fcn)
+            % Returns a struct with a matrix RV defined by fcn and the 
+            % number of datapoints n in the diagnsotic diag and the length
+            % N of the 1D vector  
+            
+            [data,diagData] = s.hlpCheckImage(diag);
+            l = length(fcn(diagData));
+            RVstruct.RV = zeros(l,length(data.common_index));
+            
+            
+            for k = 1:length(data.common_index)
+                img = s.hlpGetImage(diag, k);
+                RVstruct.RV(:,k) = fcn(img);
             end
+            
+            %fill meta data
+            RVstruct.diag = diag;
+            RVstruct.fcn = fcn;
+            RVstruct.fcnS = func2str(fcn);
+            RVstruct.idx = data.common_index;
+            
         end
         
     end

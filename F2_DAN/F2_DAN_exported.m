@@ -965,7 +965,7 @@ classdef F2_DAN_exported < matlab.apps.AppBase
 
             % Create ColormapDropDown
             app.ColormapDropDown = uidropdown(app.CLimPanel);
-            app.ColormapDropDown.Items = {'parula', 'jet', 'gray', ''};
+            app.ColormapDropDown.Items = {'parula', 'jet', 'gray', 'Bengt'};
             app.ColormapDropDown.ValueChangedFcn = createCallbackFcn(app, @ColormapDropDownValueChanged, true);
             app.ColormapDropDown.Position = [137 78 100 22];
             app.ColormapDropDown.Value = 'parula';
