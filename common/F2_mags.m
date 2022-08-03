@@ -320,6 +320,7 @@ classdef F2_mags < handle & matlab.mixin.Copyable & F2_common
           case 2
             obj.ReadB(true);
         end
+        fprintf('%s Magnets changed, updating model...\n',datestr(now));
       end
     end
     function StopProc(obj)

@@ -1,4 +1,7 @@
 classdef F2_LiveModelApp < handle & F2_common
+  events
+    ModelUpdated
+  end
   properties
     LEM % LEM App object
     LM % Lucretia Model object
@@ -17,6 +20,7 @@ classdef F2_LiveModelApp < handle & F2_common
   properties(SetObservable,AbortSet)
     ModelSource string {mustBeMember(ModelSource,["Live" "Archive" "Design"])} = "Live"
     UseFudge logical = false % Use all available fudge factors
+    autoupdate logical = false
   end
   properties(Constant)
     Initial_betaxPV = "SIOC:SYS1:ML01:AO401"
@@ -72,6 +76,16 @@ classdef F2_LiveModelApp < handle & F2_common
       obj.LEM.Mags.ReadB(true) ;
       obj.UseFudge = use ;
     end
+    function set.autoupdate(obj,ud)
+      if ud && obj.ModelSource~="Live"
+        error('Autoupdate feature invalid for ModelSource other than "Live"')
+      end
+      obj.LEM.autoupdate=ud;
+      obj.autoupdate=ud;
+      if ud
+        addlistener(obj.LEM,'ModelUpdated',@(~,~) obj.ProcModelUpdate) ;
+      end
+    end
     function set.ModelSource(obj,src)
       switch string(src)
         case "Live"
@@ -80,6 +94,7 @@ classdef F2_LiveModelApp < handle & F2_common
           obj.UpdateModel;
         case "Archive"
           obj.UseArchive=true;
+          obj.LEM.autoupdate=false;
           obj.LEM.UseArchive=true;
           % Load Initial structure from archived injector emittance scan data
           pset(obj.pvlist,'ArchiveDate',obj.ArchiveDate) ;
@@ -91,6 +106,7 @@ classdef F2_LiveModelApp < handle & F2_common
           obj.Initial.y.alpha = caget(obj.pvs.alphay) ;
         case "Design"
           obj.UseArchive=false;
+          obj.LEM.autoupdate=false;
           obj.LEM.UseArchive=false;
           obj.LEM.SetDesignModel;
       end
@@ -131,6 +147,11 @@ classdef F2_LiveModelApp < handle & F2_common
       load(fname,'LEM','BEAMLINE','PS','GIRDER','WF','KLYSTRON','Initial');
       obj.LEM=LEM; %#ok<PROPLC>
       obj.Initial=Initial; %#ok<PROPLC>
+    end
+  end
+  methods(Hidden)
+    function ProcModelUpdate(obj)
+      notify(obj,'ModelUpdated');
     end
   end
 end

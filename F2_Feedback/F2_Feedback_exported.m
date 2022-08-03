@@ -19,6 +19,11 @@ classdef F2_Feedback_exported < matlab.apps.AppBase
     BC20EnergyFeedbackMenu          matlab.ui.container.Menu
     RestoreallactuatorsMenu         matlab.ui.container.Menu
     JitterTimeoutMenu               matlab.ui.container.Menu
+    UseOrbitFitMenu                 matlab.ui.container.Menu
+    DL10Menu                        matlab.ui.container.Menu
+    BC11Menu                        matlab.ui.container.Menu
+    BC14Menu                        matlab.ui.container.Menu
+    BC20Menu                        matlab.ui.container.Menu
     HelpMenu                        matlab.ui.container.Menu
     ActuatorReadbackPVsMenu         matlab.ui.container.Menu
     DL10SIOCSYS1ML01AO257Menu       matlab.ui.container.Menu
@@ -27,6 +32,11 @@ classdef F2_Feedback_exported < matlab.apps.AppBase
     BC11_BLENSIOCSYS1ML01AO260Menu  matlab.ui.container.Menu
     BC20ESIOCSYS1ML01AO261Menu      matlab.ui.container.Menu
     BC14_BLENSIOCSYS1ML01AO262Menu  matlab.ui.container.Menu
+    OrbitFitPVsMenu                 matlab.ui.container.Menu
+    DL10SIOCSYS1ML01AO602606Menu    matlab.ui.container.Menu
+    BC11SIOCSYS1ML01AO608612Menu    matlab.ui.container.Menu
+    BC14SIOCSYS1ML01AO614618Menu    matlab.ui.container.Menu
+    BC20SIOCSYS1ML01AO620624Menu    matlab.ui.container.Menu
     DL10EnergyFeedbackPanel         matlab.ui.container.Panel
     SetpointEditField               matlab.ui.control.NumericEditField
     keVLabel                        matlab.ui.control.Label
@@ -35,7 +45,7 @@ classdef F2_Feedback_exported < matlab.apps.AppBase
     Switch                          matlab.ui.control.Switch
     Gauge_3                         matlab.ui.control.LinearGauge
     KLYSIN1041SFB_ADESLabel         matlab.ui.control.Label
-    SIOCSYS1ML01AO606Label          matlab.ui.control.Label
+    DL10SetpointLabel               matlab.ui.control.Label
     EditField                       matlab.ui.control.NumericEditField
     EditField_2                     matlab.ui.control.NumericEditField
     NotRunningButton                matlab.ui.control.Button
@@ -50,7 +60,7 @@ classdef F2_Feedback_exported < matlab.apps.AppBase
     StatusLamp_2                    matlab.ui.control.Lamp
     BC14_C1Lab                      matlab.ui.control.Label
     BC14_C2Lab                      matlab.ui.control.Label
-    SIOCSYS1ML01AO618Label          matlab.ui.control.Label
+    EnergySetpointLabel_2           matlab.ui.control.Label
     EditField_5                     matlab.ui.control.NumericEditField
     EditField_6                     matlab.ui.control.NumericEditField
     NotRunningButton_5              matlab.ui.control.Button
@@ -66,7 +76,7 @@ classdef F2_Feedback_exported < matlab.apps.AppBase
     MeVLabel                        matlab.ui.control.Label
     Switch_4                        matlab.ui.control.Switch
     StatusLamp_4                    matlab.ui.control.Lamp
-    SIOCSYS1ML01AO624Label          matlab.ui.control.Label
+    EnergySetpointLabel_3           matlab.ui.control.Label
     EditField_8                     matlab.ui.control.NumericEditField
     NotRunningButton_6              matlab.ui.control.Button
     MKBLabel                        matlab.ui.control.Label
@@ -86,7 +96,7 @@ classdef F2_Feedback_exported < matlab.apps.AppBase
     Switch_5                        matlab.ui.control.Switch
     Gauge_9                         matlab.ui.control.LinearGauge
     KLYSLI111121SSSB_ADESLabel      matlab.ui.control.Label
-    SIOCSYS1ML01AO612Label          matlab.ui.control.Label
+    EnergySetpointLabel             matlab.ui.control.Label
     EditField_11                    matlab.ui.control.NumericEditField
     EditField_12                    matlab.ui.control.NumericEditField
     NotRunningButton_3              matlab.ui.control.Button
@@ -558,6 +568,54 @@ classdef F2_Feedback_exported < matlab.apps.AppBase
       % Restore FBs
       caput(app.aobj.pvs.FeedbackEnable,initstate);
     end
+
+    % Menu selected function: DL10Menu
+    function DL10MenuSelected(app, event)
+      if app.DL10Menu.Checked
+        app.DL10Menu.Checked=false;
+        app.aobj.UseOrbitFit(1)=false;
+      else
+        app.DL10Menu.Checked=true;
+        app.aobj.UseOrbitFit(1)=true;
+      end
+      drawnow;
+    end
+
+    % Menu selected function: BC11Menu
+    function BC11MenuSelected(app, event)
+      if app.BC11Menu.Checked
+        app.BC11Menu.Checked=false;
+        app.aobj.UseOrbitFit(2)=false;
+      else
+        app.BC11Menu.Checked=true;
+        app.aobj.UseOrbitFit(2)=true;
+      end
+      drawnow;
+    end
+
+    % Menu selected function: BC14Menu
+    function BC14MenuSelected(app, event)
+      if app.BC14Menu.Checked
+        app.BC14Menu.Checked=false;
+        app.aobj.UseOrbitFit(3)=false;
+      else
+        app.BC14Menu.Checked=true;
+        app.aobj.UseOrbitFit(3)=true;
+      end
+      drawnow;
+    end
+
+    % Menu selected function: BC20Menu
+    function BC20MenuSelected(app, event)
+      if app.BC20Menu.Checked
+        app.BC20Menu.Checked=false;
+        app.aobj.UseOrbitFit(5)=false;
+      else
+        app.BC20Menu.Checked=true;
+        app.aobj.UseOrbitFit(5)=true;
+      end
+      drawnow;
+    end
   end
 
   % Component initialization
@@ -651,6 +709,34 @@ classdef F2_Feedback_exported < matlab.apps.AppBase
       app.JitterTimeoutMenu.MenuSelectedFcn = createCallbackFcn(app, @JitterTimeoutMenuSelected, true);
       app.JitterTimeoutMenu.Text = 'Jitter Timeout = 2 min';
 
+      % Create UseOrbitFitMenu
+      app.UseOrbitFitMenu = uimenu(app.SettingsMenu);
+      app.UseOrbitFitMenu.Text = 'Use Orbit Fit?';
+
+      % Create DL10Menu
+      app.DL10Menu = uimenu(app.UseOrbitFitMenu);
+      app.DL10Menu.MenuSelectedFcn = createCallbackFcn(app, @DL10MenuSelected, true);
+      app.DL10Menu.Checked = 'on';
+      app.DL10Menu.Text = 'DL10';
+
+      % Create BC11Menu
+      app.BC11Menu = uimenu(app.UseOrbitFitMenu);
+      app.BC11Menu.MenuSelectedFcn = createCallbackFcn(app, @BC11MenuSelected, true);
+      app.BC11Menu.Checked = 'on';
+      app.BC11Menu.Text = 'BC11';
+
+      % Create BC14Menu
+      app.BC14Menu = uimenu(app.UseOrbitFitMenu);
+      app.BC14Menu.MenuSelectedFcn = createCallbackFcn(app, @BC14MenuSelected, true);
+      app.BC14Menu.Checked = 'on';
+      app.BC14Menu.Text = 'BC14';
+
+      % Create BC20Menu
+      app.BC20Menu = uimenu(app.UseOrbitFitMenu);
+      app.BC20Menu.MenuSelectedFcn = createCallbackFcn(app, @BC20MenuSelected, true);
+      app.BC20Menu.Checked = 'on';
+      app.BC20Menu.Text = 'BC20';
+
       % Create HelpMenu
       app.HelpMenu = uimenu(app.FACETIIFeedbackUIFigure);
       app.HelpMenu.Text = 'Help';
@@ -682,6 +768,26 @@ classdef F2_Feedback_exported < matlab.apps.AppBase
       % Create BC14_BLENSIOCSYS1ML01AO262Menu
       app.BC14_BLENSIOCSYS1ML01AO262Menu = uimenu(app.ActuatorReadbackPVsMenu);
       app.BC14_BLENSIOCSYS1ML01AO262Menu.Text = 'BC14_BLEN = SIOC:SYS1:ML01:AO262';
+
+      % Create OrbitFitPVsMenu
+      app.OrbitFitPVsMenu = uimenu(app.HelpMenu);
+      app.OrbitFitPVsMenu.Text = 'Orbit Fit PVs...';
+
+      % Create DL10SIOCSYS1ML01AO602606Menu
+      app.DL10SIOCSYS1ML01AO602606Menu = uimenu(app.OrbitFitPVsMenu);
+      app.DL10SIOCSYS1ML01AO602606Menu.Text = 'DL10 = SIOC:SYS1:ML01:AO602-606';
+
+      % Create BC11SIOCSYS1ML01AO608612Menu
+      app.BC11SIOCSYS1ML01AO608612Menu = uimenu(app.OrbitFitPVsMenu);
+      app.BC11SIOCSYS1ML01AO608612Menu.Text = 'BC11 = SIOC:SYS1:ML01:AO608-612';
+
+      % Create BC14SIOCSYS1ML01AO614618Menu
+      app.BC14SIOCSYS1ML01AO614618Menu = uimenu(app.OrbitFitPVsMenu);
+      app.BC14SIOCSYS1ML01AO614618Menu.Text = 'BC14 = SIOC:SYS1:ML01:AO614-618';
+
+      % Create BC20SIOCSYS1ML01AO620624Menu
+      app.BC20SIOCSYS1ML01AO620624Menu = uimenu(app.OrbitFitPVsMenu);
+      app.BC20SIOCSYS1ML01AO620624Menu.Text = 'BC20 = SIOC:SYS1:ML01:AO620-624';
 
       % Create DL10EnergyFeedbackPanel
       app.DL10EnergyFeedbackPanel = uipanel(app.FACETIIFeedbackUIFigure);
@@ -735,10 +841,10 @@ classdef F2_Feedback_exported < matlab.apps.AppBase
       app.KLYSIN1041SFB_ADESLabel.Position = [323 141 148 22];
       app.KLYSIN1041SFB_ADESLabel.Text = 'KLYS:IN10:41:SFB_ADES';
 
-      % Create SIOCSYS1ML01AO606Label
-      app.SIOCSYS1ML01AO606Label = uilabel(app.DL10EnergyFeedbackPanel);
-      app.SIOCSYS1ML01AO606Label.Position = [177 140 143 22];
-      app.SIOCSYS1ML01AO606Label.Text = 'SIOC:SYS1:ML01:AO606';
+      % Create DL10SetpointLabel
+      app.DL10SetpointLabel = uilabel(app.DL10EnergyFeedbackPanel);
+      app.DL10SetpointLabel.Position = [202 142 92 22];
+      app.DL10SetpointLabel.Text = 'Energy Setpoint';
 
       % Create EditField
       app.EditField = uieditfield(app.DL10EnergyFeedbackPanel, 'numeric');
@@ -829,10 +935,10 @@ classdef F2_Feedback_exported < matlab.apps.AppBase
       app.BC14_C2Lab.Position = [348 158 116 22];
       app.BC14_C2Lab.Text = 'LI14:KLYS:51:PDES';
 
-      % Create SIOCSYS1ML01AO618Label
-      app.SIOCSYS1ML01AO618Label = uilabel(app.BC14EnergyFeedbackPanel);
-      app.SIOCSYS1ML01AO618Label.Position = [108 113 143 22];
-      app.SIOCSYS1ML01AO618Label.Text = 'SIOC:SYS1:ML01:AO618';
+      % Create EnergySetpointLabel_2
+      app.EnergySetpointLabel_2 = uilabel(app.BC14EnergyFeedbackPanel);
+      app.EnergySetpointLabel_2.Position = [132 113 92 22];
+      app.EnergySetpointLabel_2.Text = 'Energy Setpoint';
 
       % Create EditField_5
       app.EditField_5 = uieditfield(app.BC14EnergyFeedbackPanel, 'numeric');
@@ -936,10 +1042,10 @@ classdef F2_Feedback_exported < matlab.apps.AppBase
       app.StatusLamp_4.Position = [8 240 31 31];
       app.StatusLamp_4.Color = [0 0 0];
 
-      % Create SIOCSYS1ML01AO624Label
-      app.SIOCSYS1ML01AO624Label = uilabel(app.BC20EnergyFeedbackPanel);
-      app.SIOCSYS1ML01AO624Label.Position = [80 126 143 22];
-      app.SIOCSYS1ML01AO624Label.Text = 'SIOC:SYS1:ML01:AO624';
+      % Create EnergySetpointLabel_3
+      app.EnergySetpointLabel_3 = uilabel(app.BC20EnergyFeedbackPanel);
+      app.EnergySetpointLabel_3.Position = [106 126 92 22];
+      app.EnergySetpointLabel_3.Text = 'Energy Setpoint';
 
       % Create EditField_8
       app.EditField_8 = uieditfield(app.BC20EnergyFeedbackPanel, 'numeric');
@@ -1065,10 +1171,10 @@ classdef F2_Feedback_exported < matlab.apps.AppBase
       app.KLYSLI111121SSSB_ADESLabel.Position = [298 95 175 22];
       app.KLYSLI111121SSSB_ADESLabel.Text = 'KLYS:LI11:11&21:SSSB_ADES';
 
-      % Create SIOCSYS1ML01AO612Label
-      app.SIOCSYS1ML01AO612Label = uilabel(app.BC11EnergyFeedbackPanel);
-      app.SIOCSYS1ML01AO612Label.Position = [154 95 143 22];
-      app.SIOCSYS1ML01AO612Label.Text = 'SIOC:SYS1:ML01:AO612';
+      % Create EnergySetpointLabel
+      app.EnergySetpointLabel = uilabel(app.BC11EnergyFeedbackPanel);
+      app.EnergySetpointLabel.Position = [196 95 92 22];
+      app.EnergySetpointLabel.Text = 'Energy Setpoint';
 
       % Create EditField_11
       app.EditField_11 = uieditfield(app.BC11EnergyFeedbackPanel, 'numeric');

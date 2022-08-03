@@ -7,6 +7,7 @@ classdef F2_klys < handle
     UseDesignPhases logical = true % Use design L1,L2,L3 phases to override sub-booster live values, else use sub-booster live vals
     KlysPhaseOverride(8,10) single = nan(8,10) % override live values for ~nan values
     KlysAmplOverride(8,10) single = nan(8,10) % override live values for ~nan values
+    AutoUpdate string {mustBeMember(AutoUpdate,["All","Compliment"])} = "Compliment" % "All"=phases,ampls,design phases, stats; "Compliment"=stats, design phases only
   end
   properties(SetObservable,AbortSet)
     DesignPhases(1,3) = [-16.5 -31.7 0] % L1,L2,L3
@@ -28,6 +29,7 @@ classdef F2_klys < handle
   properties(SetAccess=protected,Hidden)
     pvlist PV
     pvs
+    pvlist_ud
     context
   end
   properties(Access=private)
@@ -104,9 +106,18 @@ classdef F2_klys < handle
         if isempty(obj.listeners)
           obj.listeners = addlistener(obj,'PVUpdated',@(~,~) obj.UpdateData) ;
         end
-        run(obj.pvlist,true,val,obj,'PVUpdated');
+        if obj.AutoUpdate=="All"
+          run(obj.pvlist,true,val,obj,'PVUpdated');
+        elseif obj.AutoUpdate=="Compliment"
+          obj.pvlist_ud = obj.pvlist(startsWith([obj.pvlist.name],["cudstat" "L1DesignPhase" "L2DesignPhase" "L3DesignPhase"])) ;
+          run(obj.pvlist_ud,true,val,obj,'PVUpdated');
+        end
       else
-        stop(obj.pvlist);
+        if obj.AutoUpdate=="All"
+          stop(obj.pvlist);
+        elseif obj.AutoUpdate=="Compliment"
+          stop(obj.pvlist_ud);
+        end
       end
       obj.UpdateRate=val;
     end
@@ -230,6 +241,7 @@ classdef F2_klys < handle
       obj.GetAmpl;
       obj.GetPhase;
       obj.GetStat;
+      fprintf('%s Klystron data and model updated\n',datestr(now));
     end
     function GetAmpl(obj)
       obj.KlysAmpl=nan(8,10);

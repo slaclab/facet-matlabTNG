@@ -33,12 +33,13 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
     CorrectionOffset(4,1) = [0; 0; 0; 0;] % Desired correction offset when using domodelfit (mm/mrad)
     npulse {mustBePositive} = 50 % default/GUI value for number of pulses of BPM data to take
     orbitfitmethod string {mustBeMember(orbitfitmethod,["lscov","backslash"])} = "lscov"
-    escandev string {mustBeMember(escandev,["S20_ENERGY_3AND4","S20_ENERGY_4AND5","S20_ENERGY_4AND6","BC14_ENERGY_4AND5","BC14_ENERGY_5AND6","BC14_ENERGY_4AND6","BC11_ENERGY","DL10_ENERGY"])} = "DL10_ENERGY"
-    escanrange(2,8) = [-50 -50 -50 -30 -30 -30 -30 -3.5; 50 50 50 30 30 30 30 3.5] % MeV
-    nescan(1,8) = ones(1,8).*10 % Number of energy scan steps to use
+    escandev string {mustBeMember(escandev,["DL10" "BC11" "BC14" "BC20"])} = "DL10"
+    escanrange(2,4) = [-3 -5 -10 -30;3 5 10 30] % MeV
+    nescan(1,4) = ones(1,4).*10 % Number of energy scan steps to use
     escanfitorder uint8 = 2 % Order of polynomial fit to energy vs. BPM position
     escanplotorder uint8 = 1 % Polynomial order to plot (1= linear dispersion, 2=second-order disperion)
     plotallbpm logical = false 
+    doabort logical = false
   end
   properties(Transient)
     BPMS % Storage for F2_bpms object
@@ -62,7 +63,7 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
     DispCorData % fitted dispersion correction device settings
     DispCorVals
     ConfigName string = "none"
-    ConfigDate
+    ConfigDate % datenum of loaded configuration
     escandata cell % Storage for energy scan data
     OrbitFit(1,5) = [nan nan nan nan nan] % Orbit fitted at fitele location [mm/mrad/(dE/E)]
     regid % first and last BEAMLINE element of selected region
@@ -103,12 +104,10 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
     DispDeviceWritePV = ["QUAD:IN10:731:BCTRL" "QUAD:LI11:317:BCTRL" "QUAD:LI11:340:BCTRL" "QUAD:LI11:352:BCTRL" "QUAD:LI14:738:BCTRL" "QUAD:LI14:866:BCTRL" "QUAD:LI20:2086:BDES" ...
       "SIOC:ML00:AO551" "SIOC:ML01:AO501" "SIOC:ML01:AO516" "SIOC:ML01:AO566" "SIOC:ML01:AO556" "SIOC:ML01:AO506" "SIOC:ML01:AO521" "SIOC:ML01:AO571"]
     DispDeviceWriteProto = ["EPICS" "EPICS" "EPICS" "EPICS" "EPICS" "EPICS" "AIDA" "EPICS" "EPICS" "EPICS" "EPICS" "EPICS" "EPICS" "EPICS" "EPICS"]
-    EnergyKnobNames = ["S20_ENERGY_3AND4","S20_ENERGY_4AND5","S20_ENERGY_4AND6","BC14_ENERGY_4AND5","BC14_ENERGY_5AND6","BC14_ENERGY_4AND6","BC11_ENERGY","DL10_ENERGY"]
-    EnergyKnobSettleTime = [10 10 10 10 10 10 2 10] % settle time (s) for each energy knob setting
-    EnergyKnobs = {"MKB:S20_ENERGY_3AND4" "MKB:S20_ENERGY_4AND5" "MKB:S20_ENERGY_4AND6" "MKB:BC14_ENERGY_4AND5" "MKB:BC14_ENERGY_5AND6" "MKB:BC14_ENERGY_4AND6" ["KLYS:LI11:11:SSSB_ADES" "KLYS:LI11:21:SSSB_ADES"] "KLYS:LI10:41:SFB_ADES"}
-    EnergyKnobsKlys = {["19_3","19_4"] ["19_4","19_5"] ["19_4","19_6"] ["14_4","14_5"] ["14_5","14_6"] ["14_4","14_6"] ["11_1","11_2"] "10_4"} % Klystron stations for each knob
     WatcherConfs = ["OrbitFit_DL10" "OrbitFit_BC11" "OrbitFit_BC14" "OrbitFit_BC20"] % Which configs to process in watcher mode
     WatcherConfsPV = "SIOC:SYS1:ML01:AO601" % bit pattern to use to select which orbit watchers to process
+    EOffsetPV = ["SIOC:SYS1:ML00:AO858" "SIOC:SYS1:ML01:AO207" "SIOC:SYS1:ML00:AO898" "SIOC:SYS1:ML01:AO234"]
+    FBDeadbandPV = ["SIOC:SYS1:ML00:AO266" "SIOC:SYS1:ML01:AO263" "SIOC:SYS1:ML01:AO264" "SIOC:SYS1:ML01:AO265"]
   end
   methods
     function obj = F2_OrbitApp(appobj,LLM)
@@ -121,6 +120,8 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
       else
         obj.LiveModel = F2_LiveModelApp ;
       end
+      obj.LiveModel.autoupdate = true ;
+      addlistener(obj.LiveModel,'ModelUpdated',@(~,~) obj.ProcModelUpdate) ;
       obj.BPMS = F2_bpms(obj.LiveModel.LM) ;
       if exist('appobj','var') && ~isempty(appobj)
         obj.aobj = appobj ;
@@ -184,17 +185,6 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
           uimenu(obj.aobj.SelectMenu,'Text',confs(iconf)+"  ("+dates(iconf)+")",'Tag',confs(iconf),'MenuSelectedFcn',@(source,event) obj.GuiConfigLoad(event));
         end
       end
-      % Store Lucretia KLYSTRON IDs for energy knobs
-      for iknob=1:length(obj.EnergyKnobsKlys)
-        for iklys=1:length(obj.EnergyKnobsKlys{iknob})
-          if ~isempty(regexp(obj.EnergyKnobsKlys{iknob}(iklys),'^10_','once'))
-            ele=findcells(BEAMLINE,'Name','L0BF_*');
-          else
-            ele=findcells(BEAMLINE,'Name',sprintf('K%s*',obj.EnergyKnobsKlys{iknob}(iklys)));
-          end
-          obj.EnergyKnobsKlysID{iknob}(iklys) = BEAMLINE{ele(1)}.Klystron ;
-        end
-      end
       % Start watcher timer function?
       if obj.iswatcher
         obj.StartWatcher ;
@@ -230,6 +220,12 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
             pvs.(wname).yp = "SIOC:SYS1:ML01:AO" + (601 + (iproc-1)*6 + 4) ;
             pvs.(wname).de = "SIOC:SYS1:ML01:AO" + (601 + (iproc-1)*6 + 5) ;
             pvs.(wname).valid = "SIOC:SYS1:ML01:AO" + (601 + (iproc-1)*6 + 6) ;
+          else % Look for changed config and re-load if so
+            fd=dir(obj.OrbitConfigDir+"/conf_" + wname + ".mat");
+            if fd.datenum > pobj.(wname).ConfigDate
+              pobj.(wname).ConfigLoad(wname);
+              fprintf('%s Config file changed on disk, re-loading...',datestr(now));
+            end
           end
         else
           continue
@@ -959,8 +955,10 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
       end
       fprintf('Loading configuration file: %s\n',name);
       try
-        % For some bizzarre reason, usebpm, usexcor & useycor all load with false values regardless of their saved state, so use separate variables for these
+        % usebpm, usexcor & useycor all load with false values regardless of their saved state, so use separate variables for these
         ld = load(obj.OrbitConfigDir+"/conf_" + name + ".mat",'OrbitApp','usebpm','usexcor','useycor','reforbit') ;
+        fd = dir(obj.OrbitConfigDir+"/conf_" + name + ".mat") ;
+        obj.ConfigDate = fd.datenum ;
       catch ME
         fprintf(2,'Error loading config: %s\n',name);
         throw(ME);
@@ -990,7 +988,7 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
         try
           obj.(restorelist(ilist)) = ld.OrbitApp.(restorelist(ilist)) ;
         catch
-          fprintf(2,"Property not found in config file: %s\n",restorelist(ilist));
+          fprintf(2,"Property not found in config file (or inconsistent): %s\n",restorelist(ilist));
         end
       end
       % Set current configuration name
@@ -1084,56 +1082,76 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
       drawnow
     end
     function DoEscan(obj,nbpm)
-      %DOESCAN Perform energy scan and extract dispersion function at BPMs
+      %DOESCAN Perform energy scan and extract dispersion function at BPMs by driving feedback setpoint offsets
       %DoEscan(Nbpm)
       % Nbpm: number BPM readings to take per energy scan setting
-      global KLYSTRON
+      
+      % Get initial energy feedback setpoint offsets
+      E_init = lcaGet(cellstr(obj.EOffsetPV)) ; % MeV
       
       % Get energy knob to scan and desired range
-      id = find(ismember(obj.EnergyKnobNames,obj.escandev)) ;
+      id = find(ismember(["DL10" "BC11" "BC14" "BC20"],obj.escandev)) ;
       evals = linspace(obj.escanrange(1,id),obj.escanrange(2,id),obj.nescan(id)) ; % Delta-E (MeV)
       evals=evals(randperm(length(evals))); % Randomize energy ordering
-      knob = obj.EnergyKnobs{id} ;
-      
-      % Get starting knob value
-      % - MKB's adjust phase, EPICS adjusts amplitude
-      if startsWith(knob(1),"MKB:")
-        ismk=true;
-        MK = SCP_MKB(lower(regexprep(knob,"^MKB:",""))) ;
-        k0=0;
-      else
-        ismk=false;
-        k0=lcaGet(cellstr(knob(:)));
-      end
-      
-      % Get currently provided energy & phase for this energy knob
-      V0=sum(arrayfun(@(x) KLYSTRON(obj.EnergyKnobsKlysID{id}(x)).Ampl, 1 : length(obj.EnergyKnobsKlysID{id}) ) );
-      pha=KLYSTRON(obj.EnergyKnobsKlysID{id}(1)).Phase;
       
       % Scan the energy knob
       obj.escandata=cell(length(evals),7);
-      disp("Disabling Feedbacks...");
+      disp("Disabling upstream feedbacks...");
       fb_init = lcaGet('SIOC:SYS1:ML00:AO856');
-      lcaPut('SIOC:SYS1:ML00:AO856',0);
+      fb_off = fb_init ;
+      fbid = [1 3 2 5];
+      if id<4
+        for ifb=id+1:4
+          fb_off=bitset(fb_off,fbid(ifb),0);
+        end
+      end
+      lcaPut('SIOC:SYS1:ML00:AO856',fb_off);
       disp("Starting energy scan...");
       try
+         % Status display data
+        if ~isempty(obj.aobj)
+          axtop = obj.aobj.UIAxes5 ;
+          axbot = obj.aobj.UIAxes5_2 ;
+          ntop = floor(length(evals)) ;
+          nbot = length(evals)-ntop ;
+          evals_s = sort(evals) ;
+          axis(axtop,'off'); axis(axbot,'off');
+          xtop=linspace(0,1,ntop); xbot=linspace(0,1,nbot); dxtop=1/ntop; dxbot=1/nbot;
+          for ipl=1:ntop;rectangle(axtop,'Position',[xtop(ipl) 0 1/ntop 1]); text(axtop,(ipl-1)*dxtop+dxtop*0.3,0.5,sprintf('\DeltaE = %.1 MeV',evals_s(ipl))); end
+          for ipl=1:nbot;rectangle(axbot,'Position',[xbot(ipl) 0 1/nbot 1]); text(axbot,(ipl-1)*dxbot+dxbot*0.3,0.5,sprintf('\DeltaE = %.1 MeV',evals_s(ntop+ipl))); end
+        end
         for ival=1:length(evals)
-          drawnow;
-          % Set the knob
-          if ismk
-            % Get required phase change to adjust the energy as required
-            dth = acosd(evals(ival)/V0+cosd(pha)) - pha ;
-            disp("Setting MKB:"+MK.Name+" dpha= "+ dth + " ...");
-            MK.set(dth);
-          else
-            esca = 1 + evals(ival) / V0 ; % Scale energy knob by required amount
-            disp("Scaling " + knob(:) + " by " + esca + " ...");
-            lcaPut(cellstr(knob(:)),k0(:).*esca);
+          if obj.doabort
+            obj.doabort=false;
+            error('User abort requested');
           end
-          fprintf('Pausing %d s for knob to settle...\n',obj.EnergyKnobSettleTime(id));
-          pause(obj.EnergyKnobSettleTime(id));
+          % Show scan status on plot window
+          if ~isempty(obj.aobj)
+            ipl=find(evals_s,evals(ival));
+            if ipl>ntop
+              rectangle(axbot,'Position',[xbot(ipl-ntop) 0 1/nbot 1],'FaceColor', [0.4660 0.6740 0.1880],'EdgeColor','r','LineWidth',2);
+              text(axtbot,(ipl-1-ntop)*dxbot+dxbot*0.3,0.5,sprintf('\DeltaE = %.1 MeV',evals_s(ipl)));
+            else
+              rectangle(axtop,'Position',[xtop(ipl) 0 1/ntop 1],'FaceColor', [0.4660 0.6740 0.1880],'EdgeColor','r','LineWidth',2);
+              text(axtop,(ipl-1)*dxtop+dxtop*0.3,0.5,sprintf('\DeltaE = %.1 MeV',evals_s(ipl)));
+            end
+            drawnow;
+          end
+          % Set FB setpoint
+          fprintf('Change FB energy offset: Scan # (%d of %d) dE = %g MeV\n',ival,length(evals),E_init(id)+evals(ival));
+          lcaPut(char(obj.EOffsetPV(id)),E_init(id)+evals(ival));
+          pause(2);
+          lcaPut(char(obj.FBDeadbandPV(id)),0);
+          % Get BPM data when deadband of FB reached
+          while lcaGet(char(obj.FBDeadbandPV(id)))==0
+            pause(0.1);
+            if obj.doabort
+              obj.doabort=false;
+              error('User abort requested');
+            end
+            drawnow;
+          end
           disp("Geting BPM data...");
-          % Get BPM data:
           if obj.usebpmbuff
             obj.BPMS.readbuffer(nbpm);
           else
@@ -1148,6 +1166,17 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
           obj.escandata{ival,5}=use;
           obj.escandata{ival,6}=orbid;
           obj.escandata{ival,7}=evals(ival);
+          % Show scan status on plot window
+          if ~isempty(obj.aobj)
+            if ipl>ntop
+              rectangle(axbot,'Position',[xbot(ipl-ntop) 0 1/nbot 1],'FaceColor', [0.4660 0.6740 0.1880],'EdgeColor','k','LineWidth',0.5);
+              text(axtbot,(ipl-1-ntop)*dxbot+dxbot*0.3,0.5,sprintf('\DeltaE = %.1 MeV',evals_s(ipl)));
+            else
+              rectangle(axtop,'Position',[xtop(ipl) 0 1/ntop 1],'FaceColor', [0.4660 0.6740 0.1880],'EdgeColor','k','LineWidth',0.5);
+              text(axtop,(ipl-1)*dxtop+dxtop*0.3,0.5,sprintf('\DeltaE = %.1 MeV',evals_s(ipl)));
+            end
+            drawnow;
+          end
         end
       catch ME
         lcaPut('SIOC:SYS1:ML00:AO856',fb_init);
@@ -1156,6 +1185,9 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
       disp("Re-Enable Feedbacks...");
       lcaPut('SIOC:SYS1:ML00:AO856',fb_init);
       disp("Finished energy scan.");
+      if ~isempty(obj.aobj)
+        cla(axtop); cla(axbot); axtop.reset;axbot.reset;
+      end
     end
     function dispdat = ProcEscan(obj)
       %PROCESCAN Process escan data to generate dispersion at BPMs
@@ -1969,6 +2001,13 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
     function dates = get.ConfigsDate(obj)
       d = dir(obj.OrbitConfigDir+"/conf_*") ;
       dates = datenum({d.date}) ;
+    end
+  end
+  methods(Hidden)
+    function ProcModelUpdate(obj)
+      if ~isempty(obj.aobj)
+        obj.aobj.updateplots;
+      end
     end
   end
 end

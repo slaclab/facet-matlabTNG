@@ -9,6 +9,9 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
     SaveAsMenu                     matlab.ui.container.Menu
     SaveMenu                       matlab.ui.container.Menu
     DeleteMenu                     matlab.ui.container.Menu
+    ModelMenu                      matlab.ui.container.Menu
+    AutoUpdateMenu                 matlab.ui.container.Menu
+    UpdateNowMenu                  matlab.ui.container.Menu
     BPMsPanel                      matlab.ui.container.Panel
     ListBox                        matlab.ui.control.ListBox
     PlotallCheckBox                matlab.ui.control.CheckBox
@@ -136,11 +139,12 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
     NPulseEditField                matlab.ui.control.NumericEditField
     PlotRangeDropDownLabel         matlab.ui.control.Label
     PlotRangeDropDown              matlab.ui.control.DropDown
-    NReadEditFieldLabel            matlab.ui.control.Label
+    NReadLabel                     matlab.ui.control.Label
     NReadEditField                 matlab.ui.control.NumericEditField
-    UpdateLiveModelButton          matlab.ui.control.Button
     UseBufferedDataCheckBox        matlab.ui.control.CheckBox
     LogbookButton                  matlab.ui.control.Button
+    PasswordHTML                   matlab.ui.control.HTML
+    Image                          matlab.ui.control.Image
   end
 
   
@@ -161,6 +165,18 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
     end
   end
   
+  methods (Access = private)
+    
+    function isgood = CheckPassword(app)
+      isgood=false;
+      if (startsWith(app.aobj.ConfigName,"OrbitFit") || startsWith(app.aobj.ConfigName,"DispFit")) &&  string(app.Image.ImageSource) ~= "unlock-icon.svg"
+        errordlg('Password required to save configs starting with OrbitFit','Password Required');
+        return;
+      end
+      isgood=true;
+    end
+  end
+  
 
   % Callbacks that handle component events
   methods (Access = private)
@@ -171,9 +187,9 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
       app.INJButtonValueChanged(); % Populates BPM and corrector list boxes
     end
 
-    % Value changed function: BC11Button, BC14Button, BC20Button, 
-    % DL1Button, FFSButton, INJButton, L0Button, L1Button, 
-    % L2Button, L3Button, SPECTButton
+    % Value changed function: BC11Button, BC14Button, 
+    % BC20Button, DL1Button, FFSButton, INJButton, L0Button, 
+    % L1Button, L2Button, L3Button, SPECTButton
     function INJButtonValueChanged(app, event)
       global BEAMLINE
       value = [app.INJButton.Value app.L0Button.Value app.DL1Button.Value app.L1Button.Value ...
@@ -234,7 +250,7 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
         case app.CorrectorsTab
           app.aobj.plotcor([app.UIAxes2 app.UIAxes3],app.ShowMaxButton.Value,app.CorUnitsButton.Value);
         case app.DispersionTab
-          iknob=ismember(app.aobj.EnergyKnobNames,app.aobj.escandev);
+          iknob=ismember(["DL10" "BC11" "BC14" "BC20"],app.aobj.escandev);
           app.DropDown_7.Value = app.aobj.escandev ;
           app.MinEditField.Value=app.aobj.escanrange(1,iknob);
           app.MaxEditField.Value=app.aobj.escanrange(2,iknob);
@@ -370,7 +386,7 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
       app.CalcCorrectionButton.Enable=true;
     end
 
-    % Button pushed function: UpdateLiveModelButton
+    % Menu selected function: UpdateNowMenu
     function UpdateLiveModelButtonPushed(app, event)
       app.UpdateLiveModelButton.Enable=false;
       drawnow
@@ -383,6 +399,7 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
       end
       app.UpdateLiveModelButton.Enable=true;
       drawnow
+      app.TabGroupSelectionChanged;
     end
 
     % Value changed function: USEXButton
@@ -618,6 +635,7 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
 
     % Menu selected function: SaveMenu
     function SaveMenuSelected(app, event)
+      if ~app.CheckPassword; return; end
       app.aobj.ConfigSave();
     end
 
@@ -632,6 +650,7 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
     function SaveAsMenuSelected(app, event)
       cname=inputdlg('Provide new configuration name','Save New Config',1);
       if ~isempty(cname)
+        if ~app.CheckPassword; return; end
         name=string(cname{1});
         if ismember(name,app.aobj.Configs)
           if string(questdlg('Configuration file exists, overwrite?','Overwrite Config?','Yes','No','No'))=="Yes"
@@ -654,6 +673,7 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
 
     % Menu selected function: DeleteMenu
     function DeleteMenuSelected(app, event)
+      if ~app.CheckPassword; return; end
       resp=questdlg('Delete current configuration file?','Delete Config?','No');
       if string(resp)~="Yes"
         return
@@ -762,7 +782,7 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
     function DropDown_7ValueChanged(app, event)
       value = string(app.DropDown_7.Value);
       app.aobj.escandev = value ;
-      iknob=ismember(app.aobj.EnergyKnobNames,value) ;
+      iknob=ismember(["DL10" "BC11" "BC14" "BC20"],value) ;
       range=app.aobj.escanrange;
       app.MinEditField.Value = range(1,iknob) ;
       app.MaxEditField.Value = range(2,iknob) ;
@@ -772,21 +792,21 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
     % Value changed function: MinEditField
     function MinEditFieldValueChanged(app, event)
       value = app.MinEditField.Value;
-      iknob=ismember(app.aobj.EnergyKnobNames,app.aobj.escandev) ;
+      iknob=ismember(["DL10" "BC11" "BC14" "BC20"],app.aobj.escandev) ;
       app.aobj.escanrange(1,iknob) = value ;
     end
 
     % Value changed function: MaxEditField
     function MaxEditFieldValueChanged(app, event)
       value = app.MaxEditField.Value;
-      iknob=ismember(app.aobj.EnergyKnobNames,app.aobj.escandev) ;
+      iknob=ismember(["DL10" "BC11" "BC14" "BC20"],app.aobj.escandev) ;
       app.aobj.escanrange(2,iknob) = value ;
     end
 
     % Value changed function: NstepEditField
     function NstepEditFieldValueChanged(app, event)
       value = app.NstepEditField.Value;
-      iknob=ismember(app.aobj.EnergyKnobNames,app.aobj.escandev) ;
+      iknob=ismember(["DL10" "BC11" "BC14" "BC20"],app.aobj.escandev) ;
       app.aobj.nescan(iknob) = value ;
     end
 
@@ -839,6 +859,32 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
       end
       app.bapp.LoadData(app.aobj.bpmnames,app.aobj.bpmcnames,app.aobj.escandata) ;
     end
+
+    % Data changed function: PasswordHTML
+    function PasswordHTMLDataChanged(app, event)
+      
+      % Generate password with : echo "fixedforever" | openssl aes-256-cbc -a -salt -pass pass:somepassword
+      password = app.PasswordHTML.Data;
+      [~,spass]=system(sprintf('echo "U2FsdGVkX19s9rbZLfNp+wN+RwfUtyMC1WzwCaNnPNc=" | openssl aes-256-cbc -d -a -pass pass:%s',password));
+      if string(strip(spass)) == "fixedforever"
+        app.Image.ImageSource = 'unlock-icon.svg' ;
+        drawnow;
+      else
+        app.Image.ImageSource = 'lock-icon.svg' ;
+        drawnow
+      end
+    end
+
+    % Menu selected function: AutoUpdateMenu
+    function AutoUpdateMenuSelected(app, event)
+      if app.AutoUpdateMenu.Checked
+        app.aobj.autoupdate=false;
+        app.AutoUpdateMenu.Checked=false;
+      else
+        app.aobj.autoupdate=true;
+        app.AutoUpdateMenu.Checked=true;
+      end
+    end
   end
 
   % Component initialization
@@ -882,6 +928,21 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
       app.DeleteMenu = uimenu(app.ConfigMenu);
       app.DeleteMenu.MenuSelectedFcn = createCallbackFcn(app, @DeleteMenuSelected, true);
       app.DeleteMenu.Text = 'Delete';
+
+      % Create ModelMenu
+      app.ModelMenu = uimenu(app.FACETIIOrbitToolconfignoneUIFigure);
+      app.ModelMenu.Text = 'Model';
+
+      % Create AutoUpdateMenu
+      app.AutoUpdateMenu = uimenu(app.ModelMenu);
+      app.AutoUpdateMenu.MenuSelectedFcn = createCallbackFcn(app, @AutoUpdateMenuSelected, true);
+      app.AutoUpdateMenu.Checked = 'on';
+      app.AutoUpdateMenu.Text = 'Auto Update';
+
+      % Create UpdateNowMenu
+      app.UpdateNowMenu = uimenu(app.ModelMenu);
+      app.UpdateNowMenu.MenuSelectedFcn = createCallbackFcn(app, @UpdateLiveModelButtonPushed, true);
+      app.UpdateNowMenu.Text = 'Update Now';
 
       % Create BPMsPanel
       app.BPMsPanel = uipanel(app.FACETIIOrbitToolconfignoneUIFigure);
@@ -1348,11 +1409,11 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
 
       % Create DropDown_7
       app.DropDown_7 = uidropdown(app.DispersionfromEnergyScanPanel);
-      app.DropDown_7.Items = {'S20_ENERGY_3AND4', 'S20_ENERGY_4AND5', 'S20_ENERGY_4AND6', 'BC14_ENERGY_4AND5', 'BC14_ENERGY_5AND6', 'BC14_ENERGY_4AND6', 'BC11_ENERGY', 'DL10_ENERGY'};
+      app.DropDown_7.Items = {'DL10', 'BC11', 'BC14', 'BC20'};
       app.DropDown_7.ValueChangedFcn = createCallbackFcn(app, @DropDown_7ValueChanged, true);
       app.DropDown_7.FontSize = 10;
-      app.DropDown_7.Position = [5 236 162 26];
-      app.DropDown_7.Value = 'S20_ENERGY_3AND4';
+      app.DropDown_7.Position = [20 236 135 26];
+      app.DropDown_7.Value = 'DL10';
 
       % Create MinEditFieldLabel
       app.MinEditFieldLabel = uilabel(app.DispersionfromEnergyScanPanel);
@@ -1645,26 +1706,26 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
       app.AcquireButton = uibutton(app.FACETIIOrbitToolconfignoneUIFigure, 'push');
       app.AcquireButton.ButtonPushedFcn = createCallbackFcn(app, @AcquireButtonPushed, true);
       app.AcquireButton.Interruptible = 'off';
-      app.AcquireButton.Position = [187 17 109 37];
+      app.AcquireButton.Position = [188 12 109 45];
       app.AcquireButton.Text = 'Acquire';
 
       % Create NPulseEditFieldLabel
       app.NPulseEditFieldLabel = uilabel(app.FACETIIOrbitToolconfignoneUIFigure);
       app.NPulseEditFieldLabel.HorizontalAlignment = 'right';
-      app.NPulseEditFieldLabel.Position = [308 24 51 22];
+      app.NPulseEditFieldLabel.Position = [312 23 51 22];
       app.NPulseEditFieldLabel.Text = 'N Pulse:';
 
       % Create NPulseEditField
       app.NPulseEditField = uieditfield(app.FACETIIOrbitToolconfignoneUIFigure, 'numeric');
       app.NPulseEditField.ValueDisplayFormat = '%d';
       app.NPulseEditField.ValueChangedFcn = createCallbackFcn(app, @NPulseEditFieldValueChanged, true);
-      app.NPulseEditField.Position = [374 24 47 22];
+      app.NPulseEditField.Position = [378 23 47 22];
       app.NPulseEditField.Value = 50;
 
       % Create PlotRangeDropDownLabel
       app.PlotRangeDropDownLabel = uilabel(app.FACETIIOrbitToolconfignoneUIFigure);
       app.PlotRangeDropDownLabel.HorizontalAlignment = 'right';
-      app.PlotRangeDropDownLabel.Position = [703 23 66 22];
+      app.PlotRangeDropDownLabel.Position = [730 24 66 22];
       app.PlotRangeDropDownLabel.Text = 'Plot Range';
 
       % Create PlotRangeDropDown
@@ -1672,33 +1733,26 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
       app.PlotRangeDropDown.Items = {'Auto', '5 mm', '4 mm', '3 mm', '2 mm', '1mm'};
       app.PlotRangeDropDown.ItemsData = {'0', '5', '4', '3', '2', '1'};
       app.PlotRangeDropDown.ValueChangedFcn = createCallbackFcn(app, @PlotRangeDropDownValueChanged, true);
-      app.PlotRangeDropDown.Position = [784 23 100 22];
+      app.PlotRangeDropDown.Position = [811 24 100 22];
       app.PlotRangeDropDown.Value = '0';
 
-      % Create NReadEditFieldLabel
-      app.NReadEditFieldLabel = uilabel(app.FACETIIOrbitToolconfignoneUIFigure);
-      app.NReadEditFieldLabel.HorizontalAlignment = 'right';
-      app.NReadEditFieldLabel.Position = [436 24 47 22];
-      app.NReadEditFieldLabel.Text = 'N Read';
+      % Create NReadLabel
+      app.NReadLabel = uilabel(app.FACETIIOrbitToolconfignoneUIFigure);
+      app.NReadLabel.HorizontalAlignment = 'right';
+      app.NReadLabel.Position = [451 23 50 22];
+      app.NReadLabel.Text = 'N Read:';
 
       % Create NReadEditField
       app.NReadEditField = uieditfield(app.FACETIIOrbitToolconfignoneUIFigure, 'numeric');
       app.NReadEditField.ValueDisplayFormat = '%d';
       app.NReadEditField.Editable = 'off';
-      app.NReadEditField.Position = [498 24 47 22];
-
-      % Create UpdateLiveModelButton
-      app.UpdateLiveModelButton = uibutton(app.FACETIIOrbitToolconfignoneUIFigure, 'push');
-      app.UpdateLiveModelButton.ButtonPushedFcn = createCallbackFcn(app, @UpdateLiveModelButtonPushed, true);
-      app.UpdateLiveModelButton.Interruptible = 'off';
-      app.UpdateLiveModelButton.Position = [1032 16 118 34];
-      app.UpdateLiveModelButton.Text = 'Update Live Model';
+      app.NReadEditField.Position = [516 23 47 22];
 
       % Create UseBufferedDataCheckBox
       app.UseBufferedDataCheckBox = uicheckbox(app.FACETIIOrbitToolconfignoneUIFigure);
       app.UseBufferedDataCheckBox.ValueChangedFcn = createCallbackFcn(app, @UseBufferedDataCheckBoxValueChanged, true);
       app.UseBufferedDataCheckBox.Text = 'Use Buffered Data?';
-      app.UseBufferedDataCheckBox.Position = [565 23 129 22];
+      app.UseBufferedDataCheckBox.Position = [592 24 129 22];
       app.UseBufferedDataCheckBox.Value = true;
 
       % Create LogbookButton
@@ -1707,8 +1761,19 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
       app.LogbookButton.Icon = 'logbook.gif';
       app.LogbookButton.IconAlignment = 'center';
       app.LogbookButton.FontColor = [1 1 1];
-      app.LogbookButton.Position = [1168.5 8 68 50];
+      app.LogbookButton.Position = [947 8 51 50];
       app.LogbookButton.Text = '';
+
+      % Create PasswordHTML
+      app.PasswordHTML = uihtml(app.FACETIIOrbitToolconfignoneUIFigure);
+      app.PasswordHTML.HTMLSource = 'passwordEdit.html';
+      app.PasswordHTML.DataChangedFcn = createCallbackFcn(app, @PasswordHTMLDataChanged, true);
+      app.PasswordHTML.Position = [1019 22 165 24];
+
+      % Create Image
+      app.Image = uiimage(app.FACETIIOrbitToolconfignoneUIFigure);
+      app.Image.Position = [1196 21 31 28];
+      app.Image.ImageSource = 'lock-icon.svg';
 
       % Show the figure after all components are created
       app.FACETIIOrbitToolconfignoneUIFigure.Visible = 'on';
