@@ -1086,11 +1086,12 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
       %DoEscan(Nbpm)
       % Nbpm: number BPM readings to take per energy scan setting
       
+      id = find(ismember(["DL10" "BC11" "BC14" "BC20"],obj.escandev)) ;
+      
       % Get initial energy feedback setpoint offsets
-      E_init = lcaGet(cellstr(obj.EOffsetPV)) ; % MeV
+      E_init = lcaGet(char(obj.EOffsetPV(id))) ; % MeV
       
       % Get energy knob to scan and desired range
-      id = find(ismember(["DL10" "BC11" "BC14" "BC20"],obj.escandev)) ;
       evals = linspace(obj.escanrange(1,id),obj.escanrange(2,id),obj.nescan(id)) ; % Delta-E (MeV)
       evals=evals(randperm(length(evals))); % Randomize energy ordering
       
@@ -1110,15 +1111,15 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
       try
          % Status display data
         if ~isempty(obj.aobj)
-          axtop = obj.aobj.UIAxes5 ;
-          axbot = obj.aobj.UIAxes5_2 ;
-          ntop = floor(length(evals)) ;
+          axtop = obj.aobj.UIAxes5 ; axtop.reset; cla(axtop);
+          axbot = obj.aobj.UIAxes5_2 ; axbot.reset; cla(axbot);
+          ntop = floor(length(evals)/2) ;
           nbot = length(evals)-ntop ;
           evals_s = sort(evals) ;
           axis(axtop,'off'); axis(axbot,'off');
-          xtop=linspace(0,1,ntop); xbot=linspace(0,1,nbot); dxtop=1/ntop; dxbot=1/nbot;
-          for ipl=1:ntop;rectangle(axtop,'Position',[xtop(ipl) 0 1/ntop 1]); text(axtop,(ipl-1)*dxtop+dxtop*0.3,0.5,sprintf('\DeltaE = %.1 MeV',evals_s(ipl))); end
-          for ipl=1:nbot;rectangle(axbot,'Position',[xbot(ipl) 0 1/nbot 1]); text(axbot,(ipl-1)*dxbot+dxbot*0.3,0.5,sprintf('\DeltaE = %.1 MeV',evals_s(ntop+ipl))); end
+          xtop=linspace(0,1,ntop+1); xbot=linspace(0,1,nbot+1);
+          for ipl=1:ntop;rectangle(axtop,'Position',[xtop(ipl) 0 1/ntop 1]); text(axtop,(ipl-1)*1/ntop+(1/ntop)*0.3,0.5,sprintf('\\DeltaE = %.1f MeV',evals_s(ipl))); end
+          for ipl=1:nbot;rectangle(axbot,'Position',[xbot(ipl) 0 1/nbot 1]); text(axbot,(ipl-1)*1/nbot+(1/nbot)*0.3,0.5,sprintf('\\DeltaE = %.1f MeV',evals_s(ntop+ipl))); end
         end
         for ival=1:length(evals)
           if obj.doabort
@@ -1130,16 +1131,16 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
             ipl=find(evals_s,evals(ival));
             if ipl>ntop
               rectangle(axbot,'Position',[xbot(ipl-ntop) 0 1/nbot 1],'FaceColor', [0.4660 0.6740 0.1880],'EdgeColor','r','LineWidth',2);
-              text(axtbot,(ipl-1-ntop)*dxbot+dxbot*0.3,0.5,sprintf('\DeltaE = %.1 MeV',evals_s(ipl)));
+              text(axtop,(ipl-1)*1/ntop+(1/ntop)*0.3,0.5,sprintf('\\DeltaE = %.1f MeV',evals_s(ipl)));
             else
               rectangle(axtop,'Position',[xtop(ipl) 0 1/ntop 1],'FaceColor', [0.4660 0.6740 0.1880],'EdgeColor','r','LineWidth',2);
-              text(axtop,(ipl-1)*dxtop+dxtop*0.3,0.5,sprintf('\DeltaE = %.1 MeV',evals_s(ipl)));
+              text(axbot,(ipl-1)*1/nbot+(1/nbot)*0.3,0.5,sprintf('\\DeltaE = %.1f MeV',evals_s(ntop+ipl)));
             end
             drawnow;
           end
           % Set FB setpoint
-          fprintf('Change FB energy offset: Scan # (%d of %d) dE = %g MeV\n',ival,length(evals),E_init(id)+evals(ival));
-          lcaPut(char(obj.EOffsetPV(id)),E_init(id)+evals(ival));
+          fprintf('Change FB energy offset: Scan # (%d of %d) dE = %g MeV\n',ival,length(evals),E_init+evals(ival));
+          lcaPut(char(obj.EOffsetPV(id)),E_init+evals(ival));
           pause(2);
           lcaPut(char(obj.FBDeadbandPV(id)),0);
           % Get BPM data when deadband of FB reached
@@ -1170,20 +1171,22 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
           if ~isempty(obj.aobj)
             if ipl>ntop
               rectangle(axbot,'Position',[xbot(ipl-ntop) 0 1/nbot 1],'FaceColor', [0.4660 0.6740 0.1880],'EdgeColor','k','LineWidth',0.5);
-              text(axtbot,(ipl-1-ntop)*dxbot+dxbot*0.3,0.5,sprintf('\DeltaE = %.1 MeV',evals_s(ipl)));
+              text(axtop,(ipl-1)*1/ntop+(1/ntop)*0.3,0.5,sprintf('\\DeltaE = %.1f MeV',evals_s(ipl)));
             else
               rectangle(axtop,'Position',[xtop(ipl) 0 1/ntop 1],'FaceColor', [0.4660 0.6740 0.1880],'EdgeColor','k','LineWidth',0.5);
-              text(axtop,(ipl-1)*dxtop+dxtop*0.3,0.5,sprintf('\DeltaE = %.1 MeV',evals_s(ipl)));
+              text(axbot,(ipl-1)*1/nbot+(1/nbot)*0.3,0.5,sprintf('\\DeltaE = %.1f MeV',evals_s(ntop+ipl)));
             end
             drawnow;
           end
         end
       catch ME
         lcaPut('SIOC:SYS1:ML00:AO856',fb_init);
+        lcaPut(char(obj.EOffsetPV(id)),E_init) ;
         throw(ME);
       end
       disp("Re-Enable Feedbacks...");
       lcaPut('SIOC:SYS1:ML00:AO856',fb_init);
+      lcaPut(char(obj.EOffsetPV(id)),E_init) ;
       disp("Finished energy scan.");
       if ~isempty(obj.aobj)
         cla(axtop); cla(axbot); axtop.reset;axbot.reset;

@@ -105,6 +105,7 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
     PlotOrderSpinnerLabel          matlab.ui.control.Label
     PlotOrderSpinner               matlab.ui.control.Spinner
     ViewPlotsButton                matlab.ui.control.Button
+    AbortButton                    matlab.ui.control.Button
     MIATab                         matlab.ui.container.Tab
     UIAxes6                        matlab.ui.control.UIAxes
     PlotOptionPanel                matlab.ui.container.Panel
@@ -182,8 +183,12 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
   methods (Access = private)
 
     % Code that executes after component creation
-    function startupFcn(app)
-      app.aobj = F2_OrbitApp(app) ;
+    function startupFcn(app, LLM)
+      if exist('LLM','var') && ~isempty(LLM)
+        app.aobj = F2_OrbitApp(app,LLM) ;
+      else
+        app.aobj = F2_OrbitApp(app) ;
+      end
       app.INJButtonValueChanged(); % Populates BPM and corrector list boxes
     end
 
@@ -885,6 +890,11 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
         app.AutoUpdateMenu.Checked=true;
       end
     end
+
+    % Button pushed function: AbortButton
+    function AbortButtonPushed(app, event)
+      app.aobj.doabort=true;
+    end
   end
 
   % Component initialization
@@ -1404,7 +1414,7 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
       % Create DoScanButton
       app.DoScanButton = uibutton(app.DispersionfromEnergyScanPanel, 'push');
       app.DoScanButton.ButtonPushedFcn = createCallbackFcn(app, @DoScanButtonPushed, true);
-      app.DoScanButton.Position = [15 40 144 36];
+      app.DoScanButton.Position = [15 59 144 26];
       app.DoScanButton.Text = 'Do Scan';
 
       % Create DropDown_7
@@ -1467,35 +1477,41 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
       % Create FitOrderSpinnerLabel
       app.FitOrderSpinnerLabel = uilabel(app.DispersionfromEnergyScanPanel);
       app.FitOrderSpinnerLabel.HorizontalAlignment = 'right';
-      app.FitOrderSpinnerLabel.Position = [26 115 52 22];
+      app.FitOrderSpinnerLabel.Position = [26 118 52 22];
       app.FitOrderSpinnerLabel.Text = 'Fit Order';
 
       % Create FitOrderSpinner
       app.FitOrderSpinner = uispinner(app.DispersionfromEnergyScanPanel);
       app.FitOrderSpinner.Limits = [1 3];
       app.FitOrderSpinner.ValueChangedFcn = createCallbackFcn(app, @FitOrderSpinnerValueChanged, true);
-      app.FitOrderSpinner.Position = [92 115 47 22];
+      app.FitOrderSpinner.Position = [92 118 47 22];
       app.FitOrderSpinner.Value = 2;
 
       % Create PlotOrderSpinnerLabel
       app.PlotOrderSpinnerLabel = uilabel(app.DispersionfromEnergyScanPanel);
       app.PlotOrderSpinnerLabel.HorizontalAlignment = 'right';
-      app.PlotOrderSpinnerLabel.Position = [19 86 60 22];
+      app.PlotOrderSpinnerLabel.Position = [19 89 60 22];
       app.PlotOrderSpinnerLabel.Text = 'Plot Order';
 
       % Create PlotOrderSpinner
       app.PlotOrderSpinner = uispinner(app.DispersionfromEnergyScanPanel);
       app.PlotOrderSpinner.Limits = [1 3];
       app.PlotOrderSpinner.ValueChangedFcn = createCallbackFcn(app, @PlotOrderSpinnerValueChanged, true);
-      app.PlotOrderSpinner.Position = [93 86 47 22];
+      app.PlotOrderSpinner.Position = [93 89 47 22];
       app.PlotOrderSpinner.Value = 1;
 
       % Create ViewPlotsButton
       app.ViewPlotsButton = uibutton(app.DispersionfromEnergyScanPanel, 'push');
       app.ViewPlotsButton.ButtonPushedFcn = createCallbackFcn(app, @ViewPlotsButtonPushed, true);
       app.ViewPlotsButton.Enable = 'off';
-      app.ViewPlotsButton.Position = [15 12 144 24];
+      app.ViewPlotsButton.Position = [15 4 144 24];
       app.ViewPlotsButton.Text = 'View Plots';
+
+      % Create AbortButton
+      app.AbortButton = uibutton(app.DispersionfromEnergyScanPanel, 'push');
+      app.AbortButton.ButtonPushedFcn = createCallbackFcn(app, @AbortButtonPushed, true);
+      app.AbortButton.Position = [15 32 144 23];
+      app.AbortButton.Text = 'Abort';
 
       % Create MIATab
       app.MIATab = uitab(app.TabGroup);
@@ -1784,7 +1800,7 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
   methods (Access = public)
 
     % Construct app
-    function app = F2_Orbit_exported
+    function app = F2_Orbit_exported(varargin)
 
       % Create UIFigure and components
       createComponents(app)
@@ -1793,7 +1809,7 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
       registerApp(app, app.FACETIIOrbitToolconfignoneUIFigure)
 
       % Execute the startup function
-      runStartupFcn(app, @startupFcn)
+      runStartupFcn(app, @(app)startupFcn(app, varargin{:}))
 
       if nargout == 0
         clear app
