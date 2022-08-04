@@ -298,14 +298,15 @@ classdef F2_fastDAQ < handle
             
             fnum_rbv = lcaGet(obj.daq_pvs.TIFF_FileNumber_RBV);
             save_not_done = fnum_rbv < obj.params.n_shot;
-            tic;
+            count = 0;
             while any(save_not_done)
                 status = obj.check_abort();
                 if status; return; end
                 fnum_rbv = lcaGet(obj.daq_pvs.TIFF_FileNumber_RBV);
                 save_not_done = fnum_rbv < obj.params.n_shot;
                 pause(0.01);
-                if toc > 10 && any(fnum_rbv == 0)
+                count = count+1;
+                if count > 1000 && any(fnum_rbv == 0)
                     obj.dispMessage('Camera did not save');
                     break;
                 end
