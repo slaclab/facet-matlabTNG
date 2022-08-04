@@ -291,7 +291,7 @@ classdef F2_fastDAQ < handle
             end
             
             % Stop data
-            obj.event.stop_event();
+            
             lcaPut(['EDEF:SYS1:' num2str(obj.eDefNum) ':CTRL'],0);
             
             obj.dispMessage('Acquisition complete. Cameras saving data.');
@@ -310,7 +310,8 @@ classdef F2_fastDAQ < handle
                     obj.dispMessage('Camera did not save');
                     break;
                 end
-            end  
+            end
+            obj.event.stop_event();
             obj.dispMessage('Data saving complete. Starting quality control.');
             
             status = obj.collectData();
