@@ -428,11 +428,11 @@ classdef F2_fastDAQ < handle
                 if n_imgs < obj.params.n_shot
                     obj.dispMessage([obj.params.camNames{i} ' didn"t save all the shots']);
                 end
-                if n_imgs == 0
-                    obj.dispMessage([obj.params.camNames{i} ' saved zero shots. Ending scan.']);
-                    status = 1;
-                    return;
-                end
+%                 if n_imgs == 0
+%                     obj.dispMessage([obj.params.camNames{i} ' saved zero shots. Ending scan.']);
+%                     status = 1;
+%                     return;
+%                 end
                 
                 disp('bleep');
                 
