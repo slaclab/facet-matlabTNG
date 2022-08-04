@@ -272,9 +272,10 @@ classdef F2_fastDAQ < handle
             
             % Start data
             lcaPut(['EDEF:SYS1:' num2str(obj.eDefNum) ':CTRL'],1);
+            pause(0.1);
             obj.event.start_event();
             
-            while count < obj.params.n_shot
+            while count < (obj.params.n_shot+1)
                 pause(0.01);
                 
                 try
@@ -296,8 +297,15 @@ classdef F2_fastDAQ < handle
             
             obj.dispMessage('Acquisition complete. Cameras saving data.');
             
+            pause(0.1);
             fnum_rbv = lcaGet(obj.daq_pvs.TIFF_FileNumber_RBV);
             save_not_done = fnum_rbv < obj.params.n_shot;
+%             for c = 1:obj.params.num_CAM
+%                 if save_not_done(c)
+%                     obj.dispMessage([obj.params.camNames{c} ' saved ' num2str(fnum_rbv(c)) ' shots. Moving on.']);
+%                 end
+%             end
+                    
             count = 0;
             while any(save_not_done)
                 status = obj.check_abort();
@@ -342,6 +350,9 @@ classdef F2_fastDAQ < handle
                 
             end
             
+            obj.dispMessage('Collecting camera data.');
+            status = obj.getCamData();
+            
             obj.dispMessage('Comparing pulse IDs.');
             obj.compareUIDs();
             
@@ -363,7 +374,7 @@ classdef F2_fastDAQ < handle
             nSeconds = lcaGet(sprintf('%sHST%d',obj.nSecPV,obj.eDefNum),n_use)';
             slac_time = seconds + nSeconds/1e9;
             
-            UIDs = obj.generateUIDs(pulse_IDs);
+            UIDs = obj.generateUIDs(pulse_IDs,obj.step);
             steps = obj.step*ones(size(pulse_IDs));
             
             obj.data_struct.pulseID.scalar_PID = [obj.data_struct.pulseID.scalar_PID; pulse_IDs];
@@ -385,7 +396,8 @@ classdef F2_fastDAQ < handle
             
             disp('borp');
             
-            status = obj.getCamData();
+            %status = obj.getCamData();
+            status = 0;
                         
             obj.dispMessage('Quality control complete.');
         end
@@ -420,49 +432,59 @@ classdef F2_fastDAQ < handle
             
         
         function status = getCamData(obj)
-            for i = 1:obj.params.num_CAM
-                imgs = dir([obj.save_info.cam_paths{i} '/*_data_step' num2str(obj.step,'%02d') '*.tif']);
-                n_imgs = numel(imgs);
-                obj.daq_status(i,1) = n_imgs;
-                obj.daq_status(i,2) = obj.params.n_shot;
-                if n_imgs < obj.params.n_shot
-                    obj.dispMessage([obj.params.camNames{i} ' didn"t save all the shots']);
+            status = 0;
+            if obj.params.totalSteps == 0
+                nSteps = 1;
+            else
+                nSteps =  obj.params.totalSteps;
+            end
+            
+            for k = 1:nSteps
+                for i = 1:obj.params.num_CAM
+                    imgs = dir([obj.save_info.cam_paths{i} '/*_data_step' num2str(k,'%02d') '*.tif']);
+                    %imgs = dir([obj.save_info.cam_paths{i} '/*_data_step*.tif']);
+                    n_imgs = numel(imgs);
+                    obj.daq_status(i,1) = n_imgs;
+                    obj.daq_status(i,2) = obj.params.n_shot;
+                    if n_imgs < obj.params.n_shot
+                        obj.dispMessage([obj.params.camNames{i} ' didn"t save all the shots']);
+                    end
+                    if n_imgs == 0
+                        obj.dispMessage([obj.params.camNames{i} ' saved zero shots. Ending scan.']);
+                        status = 1;
+                        continue;
+                    end
+                    
+                    disp('bleep');
+                    
+                    locs = strcat([obj.save_info.cam_paths{i} '/'],{imgs.name}');
+                    obj.data_struct.images.(obj.params.camNames{i}).loc = ...
+                        [obj.data_struct.images.(obj.params.camNames{i}).loc; locs];
+                    
+                    disp('blop');
+                    
+                    im_size = obj.data_struct.metadata.(obj.params.camNames{i}).ROI_SizeX_RBV*...
+                        obj.data_struct.metadata.(obj.params.camNames{i}).ROI_SizeY_RBV;
+                    file_pos = 2*im_size+obj.offset;
+                    pid_list = zeros(n_imgs,1);
+                    
+                    for j = 1:n_imgs
+                        status = obj.check_abort();
+                        if status; return; end
+                        pid_list(j) = tiff_get_PID(locs{j},file_pos);
+                    end
+                    
+                    disp('blorp');
+                    
+                    UIDs = obj.generateUIDs(pid_list,k);
+                    steps = k*ones(size(pid_list));
+                    obj.data_struct.images.(obj.params.camNames{i}).pid = ...
+                        [obj.data_struct.images.(obj.params.camNames{i}).pid; pid_list];
+                    obj.data_struct.images.(obj.params.camNames{i}).uid = ...
+                        [obj.data_struct.images.(obj.params.camNames{i}).uid; UIDs];
+                    obj.data_struct.images.(obj.params.camNames{i}).step = ...
+                        [obj.data_struct.images.(obj.params.camNames{i}).step; steps];
                 end
-%                 if n_imgs == 0
-%                     obj.dispMessage([obj.params.camNames{i} ' saved zero shots. Ending scan.']);
-%                     status = 1;
-%                     return;
-%                 end
-                
-                disp('bleep');
-                
-                locs = strcat([obj.save_info.cam_paths{i} '/'],{imgs.name}');
-                obj.data_struct.images.(obj.params.camNames{i}).loc = ...
-                    [obj.data_struct.images.(obj.params.camNames{i}).loc; locs];
-                
-                disp('blop');
-                
-                im_size = obj.data_struct.metadata.(obj.params.camNames{i}).ROI_SizeX_RBV*...
-                    obj.data_struct.metadata.(obj.params.camNames{i}).ROI_SizeY_RBV;
-                file_pos = 2*im_size+obj.offset;
-                pid_list = zeros(n_imgs,1);
-                
-                for j = 1:n_imgs
-                    status = obj.check_abort();
-                    if status; return; end
-                    pid_list(j) = tiff_get_PID(locs{j},file_pos);
-                end
-                
-                disp('blorp');
-                
-                UIDs = obj.generateUIDs(pid_list);
-                steps = obj.step*ones(size(pid_list));
-                obj.data_struct.images.(obj.params.camNames{i}).pid = ...
-                    [obj.data_struct.images.(obj.params.camNames{i}).pid; pid_list];
-                obj.data_struct.images.(obj.params.camNames{i}).uid = ...
-                    [obj.data_struct.images.(obj.params.camNames{i}).uid; UIDs];
-                obj.data_struct.images.(obj.params.camNames{i}).step = ...
-                    [obj.data_struct.images.(obj.params.camNames{i}).step; steps];
             end
             
         end
@@ -497,8 +519,8 @@ classdef F2_fastDAQ < handle
             obj.data_struct.pulseID.common_PIDs = obj.data_struct.pulseID.scalar_PID(obj.data_struct.pulseID.common_scalar_index);
         end                
         
-        function UIDs = generateUIDs(obj,pulseIDs)
-            UIDs = 1e9*obj.Instance + 1e6*obj.step + pulseIDs;
+        function UIDs = generateUIDs(obj,pulseIDs,step)
+            UIDs = 1e9*obj.Instance + 1e6*step + pulseIDs;
         end
         
         function save_data(obj)
