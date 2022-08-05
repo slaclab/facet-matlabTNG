@@ -18,7 +18,7 @@ classdef F2_S20ConfigApp < handle & F2_common
     WaistDesName string = "PENT" % Model name of (intended) IP waist location
     E0 = 10 % Beam energy [GeV]
     dE = 1.2 % Energy spread [% RMS]
-    WaistResolution {mustBePositive} = 1e-2 % Resolution for finding z location of waist [m]
+    WaistResolution {mustBePositive} = 0.5e-2 % Resolution for finding z location of waist [m]
     InitialOption string {mustBeMember(InitialOption,["Design","L3","IP","User"])} = "Design" % Source of initial parameters
     InitialIPOption string {mustBeMember(InitialIPOption,["USTHz","USOTR","IPOTR1","IPOTR1P","IPOTR2","DSOTR","WDSOTR","PRDMP"])} = "IPOTR1" % Source of IP initial parameters
     UserParams(1,10) = [5 5 1 1 0 0 0 0 0 0] % emit_x, emit_y, beta_x, beta_y, alpha_x, alpha_y, Dx, D'x, Dy, D'y [um-rad, m & mm/mrad] - Changes trigger waist calculation & Twiss propogation calculations If User initial source selected
@@ -259,8 +259,8 @@ classdef F2_S20ConfigApp < handle & F2_common
       % Match IP
       qno=1:5;
       B0=obj.LM.ModelBDES ;
-      lval=obj.Q_BMAX.*qsign; lval(lval>0)=0;
-      uval=obj.Q_BMAX.*qsign; uval(uval<0)=0;
+      lval=obj.Q_BMAX.*qsign; lval(lval>0)=2.7;
+      uval=obj.Q_BMAX.*qsign; uval(uval<0)=2.7;
       % - If SFQED, then only use central quad of triplet
       if obj.isSFQED
         B0=obj.Q_BDES; B0(4:6)=0; obj.LM.ModelBDES=B0;
@@ -279,7 +279,7 @@ classdef F2_S20ConfigApp < handle & F2_common
 
       ipele=double(obj.WaistDesEle);
       disp('Run matching algorithm...')
-      if ~obj.isSFQED && ( any(obj.BetaDES>1) || obj.isKracken ) % use fminsearch
+      if ~obj.isSFQED && ( any(obj.BetaDES>0.5) || obj.isKracken ) % use fminsearch
         xmin=fminsearch(@(x) obj.MatchFun(x,obj.Initial,obj.BetaDES,qno,ipele,1),B0(qno),optimset('Display','iter','MaxFunEval',2000));
       else % use lsqnonlin
         if obj.OptimConstraints
@@ -744,7 +744,7 @@ classdef F2_S20ConfigApp < handle & F2_common
       [~,id_x] = min(abs(obj.EleZ-z_x)) ;
       [~,id_y] = min(abs(obj.EleZ-z_y)) ;
       obj.WaistID = [id_x id_y] ;
-      obj.WaistShift = obj.WaistDesZ - obj.WaistZ ;
+      obj.WaistShift = obj.WaistZ - obj.WaistDesZ ;
       caput(obj.pvs.WaistLocation,char(obj.EleNames(id_x)));
       caput(obj.pvs.WaistZ,z_x);
       fprintf('Waist Location = %s (Z=%f m)\n',obj.EleNames(id_x),z_x);
