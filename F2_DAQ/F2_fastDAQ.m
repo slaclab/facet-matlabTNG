@@ -447,10 +447,10 @@ classdef F2_fastDAQ < handle
                     obj.daq_status(i,1) = n_imgs;
                     obj.daq_status(i,2) = obj.params.n_shot;
                     if n_imgs < obj.params.n_shot
-                        obj.dispMessage([obj.params.camNames{i} ' didn"t save all the shots']);
+                        obj.dispMessage([obj.params.camNames{i} ' didn"t save all the shots on step ' num2str(k) '.']);
                     end
                     if n_imgs == 0
-                        obj.dispMessage([obj.params.camNames{i} ' saved zero shots. Ending scan.']);
+                        obj.dispMessage([obj.params.camNames{i} ' saved zero shots. Skipping step ' num2str(k) '.']);
                         status = 1;
                         continue;
                     end
