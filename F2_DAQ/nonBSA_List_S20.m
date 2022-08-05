@@ -60,4 +60,9 @@ S20_nonBSA_List = {...
 'SIOC:SYS1:ML00:CALCOUT055'; % Spec Quad M34
 'SIOC:SYS1:ML00:CALCOUT056'; % Dipole Switch
 
+'VGCM:LI20:M3201:P';%CM Gauge 1000 Torr
+'VGCM:LI20:M3202:P';%CM Gauge 0.1 Torr
+'VGCM:LI20:M3203:P';%CM Gauge 10 Torr
+'VPTM:LI20:M3202:P';%fourth gauge
+
 };
