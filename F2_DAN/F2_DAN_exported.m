@@ -73,6 +73,7 @@ classdef F2_DAN_exported < matlab.apps.AppBase
         D2SFunctionEditField_WFS        matlab.ui.control.EditField
         Switch_WFSFS                    matlab.ui.control.Switch
         SortonscalarCheckBox            matlab.ui.control.CheckBox
+        PlotsortvaluesCheckBox          matlab.ui.control.CheckBox
         MotivationIndicatorAirspeedIndicatorLabel  matlab.ui.control.Label
         MotivationIndicatorAirspeedIndicator  Aero.ui.control.AirspeedIndicator
         PrinttologbookButton            matlab.ui.control.Button
@@ -166,6 +167,11 @@ classdef F2_DAN_exported < matlab.apps.AppBase
             xlabel(app.ImageAxes,'', 'Interpreter', 'none');
             ylabel(app.ImageAxes,'', 'Interpreter', 'none');
             title(app.ImageAxes,'', 'Interpreter', 'none');
+            yyaxis(app.ImageAxes,'right')
+            cla(app.ImageAxes);
+            yticks(app.ImageAxes,[]);
+            ylabel(app.ImageAxes,'', 'Interpreter', 'none');
+            yyaxis(app.ImageAxes,'left')
         end
         
         function FS = getFacetScalar(app, sw, scalarDD, cameraDD, funcEF )
@@ -257,6 +263,7 @@ classdef F2_DAN_exported < matlab.apps.AppBase
 
         % Button pushed function: PlotImageButton
         function PlotImageButtonPushed(app, event)
+            app.clearAxis();
             imageNumber = app.ImagenumberEditField.Value;
             app.plotImage(imageNumber);
         end
@@ -326,6 +333,7 @@ classdef F2_DAN_exported < matlab.apps.AppBase
 
         % Button pushed function: PlotwaterfallButton
         function PlotwaterfallButtonPushed(app, event)
+            app.clearAxis();
             camera = app.CameraDropDown_WF.Value;
             funk = app.D21DFunctionEditField_WF.Value;
             funkh = str2func(funk);
@@ -336,14 +344,15 @@ classdef F2_DAN_exported < matlab.apps.AppBase
                 FS = getFacetScalar(app, app.Switch_WFSFS, ...
                     app.ScalarDropDown_WFS, app.CameraDropDown_WFS, ...
                     app.D2SFunctionEditField_WFS );
-                    
-                app.DANobject.waterfallPlot(camera,funkh, FS)
+                
+                plotSort = app.PlotsortvaluesCheckBox.Value;
+                app.DANobject.waterfallPlot(camera,funkh, FS, plotSort)
             end
         end
 
         % Button pushed function: PlotcorrelationButton
         function PlotcorrelationButtonPushed(app, event)
-            
+            app.clearAxis();
             % Reset Axes after explicitly setting xlim and ylim
             app.ImageAxes.XLimMode = "auto";
             app.ImageAxes.YLimMode = "auto";
@@ -906,6 +915,11 @@ classdef F2_DAN_exported < matlab.apps.AppBase
             app.SortonscalarCheckBox.Text = 'Sort on scalar';
             app.SortonscalarCheckBox.Position = [5 142 97 22];
 
+            % Create PlotsortvaluesCheckBox
+            app.PlotsortvaluesCheckBox = uicheckbox(app.SortwaterfallplotPanel);
+            app.PlotsortvaluesCheckBox.Text = 'Plot sort values';
+            app.PlotsortvaluesCheckBox.Position = [5 117 105 22];
+
             % Create MotivationIndicatorAirspeedIndicatorLabel
             app.MotivationIndicatorAirspeedIndicatorLabel = uilabel(app.UIFigure);
             app.MotivationIndicatorAirspeedIndicatorLabel.HorizontalAlignment = 'center';
@@ -965,7 +979,7 @@ classdef F2_DAN_exported < matlab.apps.AppBase
 
             % Create ColormapDropDown
             app.ColormapDropDown = uidropdown(app.CLimPanel);
-            app.ColormapDropDown.Items = {'parula', 'jet', 'gray', 'Bengt'};
+            app.ColormapDropDown.Items = {'Bengt', 'parula', 'jet', 'gray'};
             app.ColormapDropDown.ValueChangedFcn = createCallbackFcn(app, @ColormapDropDownValueChanged, true);
             app.ColormapDropDown.Position = [137 78 100 22];
             app.ColormapDropDown.Value = 'parula';

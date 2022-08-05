@@ -164,8 +164,7 @@ classdef DataSetDAN < handle
                 fcn =@(x)x;
             end
             
-            if s.validShotNbr(shotNbr)
-                
+            if s.validShotNbr(shotNbr)                
                 % Get image data
                 [data,~] = s.hlpCheckImage(diag);
                 diagData = s.hlpGetImage(diag, data.common_index(shotNbr));
@@ -211,7 +210,7 @@ classdef DataSetDAN < handle
 %             
 %         end
         
-        function waterfallPlot(s, diag, fcn, sortFSArray)
+        function waterfallPlot(s, diag, fcn, sortFSArray, plotBool)
 
             if nargin < 3
                 s.hlpDispMsg('Need at least 3 inputs')
@@ -238,12 +237,17 @@ classdef DataSetDAN < handle
             sortedIdx = 1:len;
             sortLab = 'idx';
             
-            if nargin == 4
+            if nargin >= 4
                 type = s.hlpIsFSArray(sortFSArray);
                 s.hlpDispMsg('Starting to sort vector')
                 [sortFSArray,sortLab] = s.hlpGetScalarArray(sortFSArray, type);
+                sortLab = ['Sorted on ', sortLab];
                 [~, sortedIdx] = sort(sortFSArray);
                 s.hlpDispMsg('Done with sorting vector')
+            end
+            
+            if nargin < 5
+                plotBool = 0
             end
             
             %Label for applied function
@@ -276,6 +280,9 @@ classdef DataSetDAN < handle
 
             s.hlpPlotImage(curHandle, waterfall(:,sortedIdx), type, ...
             titleS, xlabS, ylabS);
+            if plotBool
+                s.hlpPlotOverlay(sortFSArray,sortedIdx,sortLab);
+            end
 
         end
         
@@ -810,6 +817,17 @@ classdef DataSetDAN < handle
             s.hlpSetPlotLabels(plotHandle, titleS, xlabS, ylabS);
         end
         
+        function hlpPlotOverlay(s, values, index, ylab)
+            curHandle = s.hlpGetFigAxis();
+            hold(curHandle)
+            yyaxis(curHandle,'right')
+            plot(curHandle,values(index),'ro')
+            yticks(curHandle,'auto')
+            ylabel(curHandle,ylab)
+            yyaxis(curHandle,'left')
+            hold(curHandle)
+        end
+        
         function hlpSetPlotLabels(s, plotHandle, titleS, xlabS, ylabS)
             % Set standardized plot labels, forces labels to be set
             % Saves labels to lastPlotData
@@ -825,6 +843,15 @@ classdef DataSetDAN < handle
             title(plotHandle, titleS, 'Interpreter', 'none');
             xlabel(plotHandle, xlabS, 'Interpreter', 'none');
             ylabel(plotHandle, ylabS, 'Interpreter', 'none');
+        end
+        
+        function hlpClearPlot(s, plotHandle)
+            yyaxis(plotHandle,'right')
+            cla(plotHandle);
+            yticks(plotHandle,[])
+            yyaxis(plotHandle,'left')
+            cla(plotHandle);
+            
         end
         
         function fcnSN = fcn2fieldName(s, fcnS)
