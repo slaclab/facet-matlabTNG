@@ -333,6 +333,17 @@ classdef fbSISO < handle
           end
         end
       end
+      % Flag in/out of feedback deadband status
+      dDES = (obj.SetpointVal-obj.SetpointDES) ;
+      if dDES < obj.SetpointDeadband(1) || dDES > obj.SetpointDeadband(2)
+        if ~isempty(obj.SetpointInDeadbandPV)
+          lcaPutNoWait(char(obj.SetpointInDeadbandPV),0);
+        end
+      else
+        if ~isempty(obj.SetpointInDeadbandPV)
+          lcaPutNoWait(char(obj.SetpointInDeadbandPV),1);
+        end
+      end
       % Process the feedback if enabled and not in error state
       if obj.state==0
         % Write to status PV bit
@@ -457,13 +468,6 @@ classdef fbSISO < handle
             dDES = (obj.SetpointVal-obj.SetpointDES) ;
             if dDES < obj.SetpointDeadband(1) || dDES > obj.SetpointDeadband(2)
               dc = dDES * obj.Kp ;
-              if ~isempty(obj.SetpointInDeadbandPV) && obj.WriteEnable % Indicate setpoint within deadband if cntrl writing enabled
-                lcaPutNoWait(char(obj.SetpointInDeadbandPV),0);
-              end
-            else
-              if ~isempty(obj.SetpointInDeadbandPV) && obj.WriteEnable % Indicate setpoint within deadband if cntrl writing enabled
-                lcaPutNoWait(char(obj.SetpointInDeadbandPV),1);
-              end
             end
           otherwise
             error('This feedback method not yet implemented');

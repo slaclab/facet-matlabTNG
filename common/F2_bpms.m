@@ -403,6 +403,9 @@ classdef F2_bpms < handle & matlab.mixin.Copyable
         obj.tmit=tmit_new;
       end
     end
+    function resetPID(obj)
+      obj.pulseid=1;
+    end
   end
   methods(Access=private)
     function UpdateProc(obj) %#ok<MANU>

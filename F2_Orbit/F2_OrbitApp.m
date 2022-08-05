@@ -34,8 +34,8 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
     npulse {mustBePositive} = 50 % default/GUI value for number of pulses of BPM data to take
     orbitfitmethod string {mustBeMember(orbitfitmethod,["lscov","backslash"])} = "lscov"
     escandev string {mustBeMember(escandev,["DL10" "BC11" "BC14" "BC20"])} = "DL10"
-    escanrange(2,4) = [-3 -5 -10 -30;3 5 10 30] % MeV
-    nescan(1,4) = ones(1,4).*10 % Number of energy scan steps to use
+    escanrange(2,4) = [-2 -3 -20 -60;2 3 20 60] % MeV
+    nescan(1,4) = ones(1,4).*7 % Number of energy scan steps to use
     escanfitorder uint8 = 2 % Order of polynomial fit to energy vs. BPM position
     escanplotorder uint8 = 1 % Polynomial order to plot (1= linear dispersion, 2=second-order disperion)
     plotallbpm logical = false 
@@ -107,7 +107,8 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
     WatcherConfs = ["OrbitFit_DL10" "OrbitFit_BC11" "OrbitFit_BC14" "OrbitFit_BC20"] % Which configs to process in watcher mode
     WatcherConfsPV = "SIOC:SYS1:ML01:AO601" % bit pattern to use to select which orbit watchers to process
     EOffsetPV = ["SIOC:SYS1:ML00:AO858" "SIOC:SYS1:ML01:AO207" "SIOC:SYS1:ML00:AO898" "SIOC:SYS1:ML01:AO234"]
-    FBDeadbandPV = ["SIOC:SYS1:ML00:AO266" "SIOC:SYS1:ML01:AO263" "SIOC:SYS1:ML01:AO264" "SIOC:SYS1:ML01:AO265"]
+    FBDeadbandPV = ["SIOC:SYS1:ML01:AO266" "SIOC:SYS1:ML01:AO263" "SIOC:SYS1:ML01:AO264" "SIOC:SYS1:ML01:AO265"]
+    EPV = ["SIOC:SYS1:ML01:AO606" "SIOC:SYS1:ML01:AO612" "SIOC:SYS1:ML01:AO618" "SIOC:SYS1:ML01:AO624"] % Fitted energy offsets @ DL10, BC11, BC14, BC20
   end
   methods
     function obj = F2_OrbitApp(appobj,LLM)
@@ -1092,8 +1093,10 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
       E_init = lcaGet(char(obj.EOffsetPV(id))) ; % MeV
       
       % Get energy knob to scan and desired range
-      evals = linspace(obj.escanrange(1,id),obj.escanrange(2,id),obj.nescan(id)) ; % Delta-E (MeV)
-      evals=evals(randperm(length(evals))); % Randomize energy ordering
+      evals_s = linspace(obj.escanrange(1,id),obj.escanrange(2,id),obj.nescan(id)) ; % Delta-E (MeV)
+      evals=evals_s(randperm(length(evals_s))); % Randomize energy ordering
+      ntop = floor(length(evals_s)/2) ;
+%       nbot = length(evals_s)-ntop ;
       
       % Scan the energy knob
       obj.escandata=cell(length(evals),7);
@@ -1111,16 +1114,10 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
       try
          % Status display data
         if ~isempty(obj.aobj)
-          axtop = obj.aobj.UIAxes5 ; axtop.reset; cla(axtop);
-          axbot = obj.aobj.UIAxes5_2 ; axbot.reset; cla(axbot);
-          ntop = floor(length(evals)/2) ;
-          nbot = length(evals)-ntop ;
-          evals_s = sort(evals) ;
-          axis(axtop,'off'); axis(axbot,'off');
-          xtop=linspace(0,1,ntop+1); xbot=linspace(0,1,nbot+1);
-          for ipl=1:ntop;rectangle(axtop,'Position',[xtop(ipl) 0 1/ntop 1]); text(axtop,(ipl-1)*1/ntop+(1/ntop)*0.3,0.5,sprintf('\\DeltaE = %.1f MeV',evals_s(ipl))); end
-          for ipl=1:nbot;rectangle(axbot,'Position',[xbot(ipl) 0 1/nbot 1]); text(axbot,(ipl-1)*1/nbot+(1/nbot)*0.3,0.5,sprintf('\\DeltaE = %.1f MeV',evals_s(ntop+ipl))); end
+          axtop = obj.aobj.UIAxes5 ; axbot = obj.aobj.UIAxes5_2 ;
+          obj.EscanStatPlot(axtop,axbot,evals_s);
         end
+        cmd2={[] []};
         for ival=1:length(evals)
           if obj.doabort
             obj.doabort=false;
@@ -1128,38 +1125,56 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
           end
           % Show scan status on plot window
           if ~isempty(obj.aobj)
-            ipl=find(evals_s,evals(ival));
+            ipl=find(ismember(evals_s,evals(ival)));
             if ipl>ntop
-              rectangle(axbot,'Position',[xbot(ipl-ntop) 0 1/nbot 1],'FaceColor', [0.4660 0.6740 0.1880],'EdgeColor','r','LineWidth',2);
-              text(axtop,(ipl-1)*1/ntop+(1/ntop)*0.3,0.5,sprintf('\\DeltaE = %.1f MeV',evals_s(ipl)));
+              cmd=[0 ipl-ntop];
+              cmd2{2}=[cmd2{2} ipl-ntop];
             else
-              rectangle(axtop,'Position',[xtop(ipl) 0 1/ntop 1],'FaceColor', [0.4660 0.6740 0.1880],'EdgeColor','r','LineWidth',2);
-              text(axbot,(ipl-1)*1/nbot+(1/nbot)*0.3,0.5,sprintf('\\DeltaE = %.1f MeV',evals_s(ntop+ipl)));
+              cmd=[ipl 0];
+              cmd2{1}=[cmd2{1} ipl];
             end
-            drawnow;
+            obj.EscanStatPlot(axtop,axbot,evals_s,cmd,cmd2,'');
           end
           % Set FB setpoint
-          fprintf('Change FB energy offset: Scan # (%d of %d) dE = %g MeV\n',ival,length(evals),E_init+evals(ival));
-          lcaPut(char(obj.EOffsetPV(id)),E_init+evals(ival));
+          fprintf('Change FB energy offset: Scan # (%d of %d) dE = %g MeV\n',ival,length(evals),evals(ival));
+          if id==1 || id==2
+            lcaPut(char(obj.EOffsetPV(id)),1000*(E_init+evals(ival))); % keV
+          else
+            lcaPut(char(obj.EOffsetPV(id)),E_init+evals(ival)); % MeV
+          end
           pause(2);
           lcaPut(char(obj.FBDeadbandPV(id)),0);
           % Get BPM data when deadband of FB reached
           while lcaGet(char(obj.FBDeadbandPV(id)))==0
+            obj.EscanStatPlot(axtop,axbot,evals_s,cmd,cmd2,sprintf('(Meas = %.2f)',lcaGet(char(obj.EPV(id)))-E_init)); % also does drawnow
             pause(0.1);
             if obj.doabort
               obj.doabort=false;
+              cla(axtop); cla(axbot); axtop.reset; axbot.reset;
+              drawnow;
               error('User abort requested');
             end
-            drawnow;
           end
           disp("Geting BPM data...");
-          if obj.usebpmbuff
-            obj.BPMS.readbuffer(nbpm);
-          else
-            obj.BPMS.readnp(nbpm);
+          obj.BPMS.BufferLen=nbpm;
+          obj.BPMS.resetPID();
+          while obj.BPMS.pulseid<nbpm
+            obj.EscanStatPlot(axtop,axbot,evals_s,cmd,cmd2,sprintf('Reading BPMs...\n( pulse %d/%d )',obj.BPMS.pulseid,nbpm)); % also does drawnow
+            if lcaGet(char(obj.FBDeadbandPV(id)))
+              obj.BPMS.read();
+            else
+              pause(0.1);
+            end
+            if obj.doabort
+              obj.doabort=false;
+              cla(axtop); cla(axbot); axtop.reset; axbot.reset;
+              drawnow;
+              error('User abort requested');
+            end
           end
           % Process and store data
           [xm,ym,xstd,ystd,use,orbid] = obj.GetOrbit("all");
+          xstd(xstd==0)=min(xstd(xstd>0)); ystd(ystd==0)=min(ystd(ystd>0));
           obj.escandata{ival,1}=xm;
           obj.escandata{ival,2}=ym;
           obj.escandata{ival,3}=xstd;
@@ -1169,14 +1184,7 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
           obj.escandata{ival,7}=evals(ival);
           % Show scan status on plot window
           if ~isempty(obj.aobj)
-            if ipl>ntop
-              rectangle(axbot,'Position',[xbot(ipl-ntop) 0 1/nbot 1],'FaceColor', [0.4660 0.6740 0.1880],'EdgeColor','k','LineWidth',0.5);
-              text(axtop,(ipl-1)*1/ntop+(1/ntop)*0.3,0.5,sprintf('\\DeltaE = %.1f MeV',evals_s(ipl)));
-            else
-              rectangle(axtop,'Position',[xtop(ipl) 0 1/ntop 1],'FaceColor', [0.4660 0.6740 0.1880],'EdgeColor','k','LineWidth',0.5);
-              text(axbot,(ipl-1)*1/nbot+(1/nbot)*0.3,0.5,sprintf('\\DeltaE = %.1f MeV',evals_s(ntop+ipl)));
-            end
-            drawnow;
+            obj.EscanStatPlot(axtop,axbot,evals_s,[0 0],cmd2,'');
           end
         end
       catch ME
@@ -1215,12 +1223,14 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
         sel = ~isnan(xvals(:,ibpm)) ;
         if sum(sel)>=3
           x = evals(sel) / (BEAMLINE{bid(n)}.P.*1000) ; y = xvals(sel,ibpm) ; dy = dxvals(sel,ibpm) ;
+          dy(dy==0)=min(dy(dy>0));
           [q,dq] = noplot_polyfit(x,y,dy,double(obj.escanfitorder)) ;
           dispx(ibpm) = q(1+obj.escanplotorder); dispx_err(ibpm) = dq(1+obj.escanplotorder) ;
         end
         sel = ~isnan(yvals(:,ibpm)) ;
         if sum(sel)>=3
           x = evals(sel) / (BEAMLINE{bid(n)}.P.*1000) ; y = yvals(sel,ibpm) ; dy = dyvals(sel,ibpm) ;
+          dy(dy==0)=min(dy(dy>0));
           [q,dq] = noplot_polyfit(x,y,dy,double(obj.escanfitorder)) ;
           dispy(ibpm) = q(1+obj.escanplotorder); dispy_err(ibpm) = dq(1+obj.escanplotorder) ;
         end
@@ -2011,6 +2021,50 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
       if ~isempty(obj.aobj)
         obj.aobj.updateplots;
       end
+    end
+  end
+  methods(Static,Hidden)
+    function EscanStatPlot(axtop,axbot,evals_s,cmd,cmd2,txt)
+      %ESCANSTATPLOT Status display for energy scan
+      if ~exist('cmd','var')
+        cmd=[0 0];
+        cmd2={0 0};
+      end
+      axtop.reset; cla(axtop);
+      axbot.reset; cla(axbot);
+      ntop = floor(length(evals_s)/2) ;
+      nbot = length(evals_s)-ntop ;
+      axis(axtop,'off'); axis(axbot,'off');
+      xtop=linspace(0,1,ntop+1); xbot=linspace(0,1,nbot+1);
+      for ipl=1:ntop
+        if cmd(1)==ipl
+          rectangle(axtop,'Position',[xtop(ipl) 0 1/ntop 1],'FaceColor', [0.4660 0.6740 0.1880],'EdgeColor','r','LineWidth',2);
+          text(axtop,(ipl-1)*1/ntop+(1/ntop)*0.3,0.5,sprintf('\\DeltaE = %.1f MeV',evals_s(ipl)));
+          text(axtop,(ipl-1)*1/ntop+(1/ntop)*0.3,0.4,txt);
+        else
+          if ismember(ipl,cmd2{1})
+            rectangle(axtop,'Position',[xtop(ipl) 0 1/ntop 1],'FaceColor', [0.4660 0.6740 0.1880]);
+          else
+            rectangle(axtop,'Position',[xtop(ipl) 0 1/ntop 1]);
+          end
+          text(axtop,(ipl-1)*1/ntop+(1/ntop)*0.3,0.5,sprintf('\\DeltaE = %.1f MeV',evals_s(ipl)));
+        end
+      end
+      for ipl=1:nbot
+        if cmd(2)==ipl
+          rectangle(axbot,'Position',[xbot(ipl) 0 1/nbot 1],'FaceColor', [0.4660 0.6740 0.1880],'EdgeColor','r','LineWidth',2);
+          text(axbot,(ipl-1)*1/nbot+(1/nbot)*0.3,0.5,sprintf('\\DeltaE = %.1f MeV',evals_s(ntop+ipl)));
+          text(axbot,(ipl-1)*1/nbot+(1/nbot)*0.3,0.4,txt);
+        else
+          if ismember(ipl,cmd2{2})
+            rectangle(axbot,'Position',[xbot(ipl) 0 1/nbot 1],'FaceColor', [0.4660 0.6740 0.1880]);
+          else
+            rectangle(axbot,'Position',[xbot(ipl) 0 1/nbot 1]);
+          end
+          text(axbot,(ipl-1)*1/nbot+(1/nbot)*0.3,0.5,sprintf('\\DeltaE = %.1f MeV',evals_s(ntop+ipl)));
+        end
+      end
+      drawnow;
     end
   end
 end
