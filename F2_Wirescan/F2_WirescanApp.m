@@ -16,7 +16,7 @@ classdef F2_WirescanApp < handle
     bpmsel(1,2) uint8 = [1 2]
     npulses uint16 = 100
     jittercor logical = false % Do jitter correction using BPMs?
-    fitmethod string {mustBeMember(fitmethod,["gauss","agauss"])} = "agauss"
+    fitmethod string {mustBeMember(fitmethod,["gauss","agauss","agauss2"])} = "agauss"
     blenvals(1,2) = [-inf,inf] % Window values for bunch length measurements
     blenwin logical = false % Window cut on blen measurements?
     chargenorm logical = false % Do charge normalization using PMT?
@@ -362,11 +362,24 @@ classdef F2_WirescanApp < handle
       ydat=ydat./sum(ydat).*Q.*1e9;
       dy=ones(size(ydat)).*max(ydat)./100;
       
+      xx = linspace(min(pos),max(pos),1000);
+%       if ~isempty(obj.guihan) && string(obj.guihan.UnitsDropDown.Value)=="Motor"
+%         xx_pl=linspace(min(pos),max(pos),1000);
+%       else
+        xx_pl=xx;
+%       end
+      
+      [pos,ii]=sort(pos); ydat=ydat(ii); dy=dy(ii);
+
       switch obj.fitmethod
         case "gauss"
           [~,q,dq,chi2]=gauss_fit(pos,ydat,dy); q(5)=0;
         case "agauss"
           [~,q,dq,chi2]=agauss_fit(pos,ydat,dy);
+        case "agauss2"
+          [par, yFit, parstd, ~, chi2] = util_gaussFit(pos, ydat, 1, '1', dy, xx_pl); % [AMP, XM, SIG, BG, BGS]
+          q(1) = par(4); q(2) = par(1); q(3)=par(2); q(4)=par(3);
+          dq(1) = parstd(4); dq(2) = parstd(1); dq(3)=parstd(2); dq(4)=parstd(3);
       end
       dy=dy.*sqrt(chi2);
       switch obj.fitmethod
@@ -374,6 +387,10 @@ classdef F2_WirescanApp < handle
           [~,q,dq]=gauss_fit(pos,ydat,dy); q(5)=0;
         case "agauss"
           [~,q,dq]=agauss_fit(pos,ydat,dy);
+        case "agauss2"
+          [par, yFit, parstd] = util_gaussFit(pos, ydat, 1, '1', dy, xx_pl); % [AMP, XM, SIG, BG, BGS]
+          q(1) = par(4); q(2) = par(1); q(3)=par(2); q(4)=par(3);
+          dq(1) = parstd(4); dq(2) = parstd(1); dq(3)=parstd(2); dq(4)=parstd(3);
       end
       sigma = abs(q(4))*1e6; sigmaErr = abs(dq(4))*1e6;
       center = q(3)*1e6; centerErr = dq(3)*1e6 ;
@@ -383,17 +400,16 @@ classdef F2_WirescanApp < handle
       lcaPut(char(obj.wirename+":"+upper(obj.plane)),center);
       
       if ~isempty(ahan)
-        if ~isempty(obj.guihan) && string(obj.guihan.UnitsDropDown.Value)=="Motor"
-          pos=obj.data.pos(~bad);
-        end
+%         if ~isempty(obj.guihan) && string(obj.guihan.UnitsDropDown.Value)=="Motor"
+%           pos=obj.data.pos(~bad);
+%         end
         plot(ahan,pos.*1e6,ydat,'*');
-        xx = linspace(min(pos),max(pos),1000);
-        yy = q(1)+q(2).*exp(-0.5.*((xx-q(3))./(q(4).*(1+sign(xx-q(3)).*q(5)))).^2) ;
-        if ~isempty(obj.guihan) && string(obj.guihan.UnitsDropDown.Value)=="Motor"
-          xx_pl=linspace(min(pos),max(pos),1000);
+        if obj.fitmethod == "agauss2"
+          yy = yFit ;
         else
-          xx_pl=xx;
+          yy = q(1)+q(2).*exp(-0.5.*((xx-q(3))./(q(4).*(1+sign(xx-q(3)).*q(5)))).^2) ;
         end
+        
         hold(ahan,'on');
         plot(ahan,xx_pl.*1e6,yy,'r');
         hold(ahan,'off');
@@ -507,7 +523,9 @@ classdef F2_WirescanApp < handle
         obj.guihan.BLENDropDown.Value = obj.blms(obj.blmsel) ;
         switch obj.fitmethod
           case "agauss"
-            obj.guihan.FitMethodDropDown.Value = "Asymmetric Gaussian" ;
+            obj.guihan.FitMethodDropDown.Value = "Asymm Gaussian" ;
+          case "agauss2"
+            obj.guihan.FitMethodDropDown.Value = "Asymm Gaussian (2)" ;
           case "gauss"
             obj.guihan.FitMethodDropDown.Value = "Gaussian" ;
         end

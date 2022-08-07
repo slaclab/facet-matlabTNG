@@ -347,8 +347,10 @@ classdef F2_Wirescan_exported < matlab.apps.AppBase
       switch string(value)
         case "Gaussian"
           app.aobj.fitmethod="gauss";
-        case "Asymmetric Gaussian"
+        case "Asymm Gaussian"
           app.aobj.fitmethod="agauss";
+        case "Asymm Gaussian (2)"
+          app.aobj.fitmethod="agauss2";
       end
       app.aobj.ProcData;
     end
@@ -605,10 +607,10 @@ classdef F2_Wirescan_exported < matlab.apps.AppBase
 
       % Create FitMethodDropDown
       app.FitMethodDropDown = uidropdown(app.ProcessingPanel);
-      app.FitMethodDropDown.Items = {'Gaussian', 'Asymmetric Gaussian'};
+      app.FitMethodDropDown.Items = {'Gaussian', 'Asymm Gaussian', 'Asymm Gaussian (2)'};
       app.FitMethodDropDown.ValueChangedFcn = createCallbackFcn(app, @FitMethodDropDownValueChanged, true);
       app.FitMethodDropDown.Position = [93 8 154 22];
-      app.FitMethodDropDown.Value = 'Asymmetric Gaussian';
+      app.FitMethodDropDown.Value = 'Asymm Gaussian (2)';
 
       % Create RightPanel
       app.RightPanel = uipanel(app.GridLayout);
