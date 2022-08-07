@@ -73,7 +73,7 @@ classdef F2_MatchingApp < handle & F2_common
       obj.LM.ModelClasses=["PROF" "WIRE"];
       obj.ProfModelInd = obj.LM.ModelID(obj.LM.ControlNames==obj.ProfName) ;
       obj.ProfModelInd = obj.ProfModelInd(1) ;
-      obj.UseArchive = true ; % default to getting data from archive from now on
+%       obj.UseArchive = true ; % default to getting data from archive from now on
       obj.LiveModel.ModelSource = "Live" ;
       obj.LEMQuadID = obj.LiveModel.LEM.Mags.LM.ModelClassList == "QUAD" ; % Tag quadrupoles in LEM magnet list
 %       obj.LiveModel.LEM.Mags.WriteEnable=false; % disable writing to magnets to test

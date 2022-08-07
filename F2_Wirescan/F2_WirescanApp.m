@@ -625,6 +625,7 @@ classdef F2_WirescanApp < handle
         obj.npulses = floor(range(obj.motor_range) / (speedMin * beamrate)) ;
         return
       end
+      lcaPut(char(obj.wirename+":SCANPULSES"),double(np))
       obj.npulses=np;
       obj.confsave;
     end
@@ -648,6 +649,15 @@ classdef F2_WirescanApp < handle
         ran=ran.*1e-6;
       end
       obj.motor_range=ran;
+      ran=ran*1e6;
+      switch obj.plane
+        case "x"
+          lcaPut(char(obj.wirename+":XWIREINNER"),ran(1)); lcaPut(char(obj.wirename+":XWIREOUTER"),ran(2)) ;
+        case "y"
+          lcaPut(char(obj.wirename+":YWIREINNER"),ran(1)); lcaPut(char(obj.wirename+":YWIREOUTER"),ran(2)) ;
+        case "u"
+          lcaPut(char(obj.wirename+":UWIREINNER"),ran(1)); lcaPut(char(obj.wirename+":UWIREOUTER"),ran(2)) ;
+      end
       obj.confsave;
     end
     function ran = get.motor_range(obj)
