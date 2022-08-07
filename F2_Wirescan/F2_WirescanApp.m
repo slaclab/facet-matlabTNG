@@ -601,6 +601,7 @@ classdef F2_WirescanApp < handle
         case "u"
           pos = obj.motor_range ;
       end
+      pos=sort(pos);
     end
     function set.pos_range(obj,ran)
       switch obj.plane
@@ -609,7 +610,7 @@ classdef F2_WirescanApp < handle
         case "y"
           ran = ran ./ cosd(obj.scan_angle) ;
       end
-      obj.motor_range=ran;
+      obj.motor_range=sort(ran);
     end
     function set.npulses(obj,np)
       beamrate = lcaGet(char(obj.BeamRatePV)) ;
@@ -651,7 +652,7 @@ classdef F2_WirescanApp < handle
       obj.confsave;
     end
     function ang = get.scan_angle(obj)
-      ang = abs(lcaGet(char(obj.wirename+":INSTALLANGLE"))) ;
+      ang = lcaGet(char(obj.wirename+":INSTALLANGLE")) ;
     end
     function pos = get.curpos(obj)
       pos = lcaGet(char(obj.wirename+":MOTR"))*1e-6 ;
@@ -666,9 +667,9 @@ classdef F2_WirescanApp < handle
       lims = [lcaGet(char(obj.wirename+":MOTR.LLM")) lcaGet(char(obj.wirename+":MOTR.HLM"))].*1e-6 ;
        switch obj.plane % case for "u" assumes in same plane as motor card movement
         case "x"
-          lims = lims .* sind(obj.scan_angle) ;
+          lims = sort(lims .* sind(obj.scan_angle)) ;
         case "y"
-          lims = lims .* cosd(obj.scan_angle) ;
+          lims = sort(lims .* cosd(obj.scan_angle)) ;
       end
     end
     function bpms = get.bpms(obj)
