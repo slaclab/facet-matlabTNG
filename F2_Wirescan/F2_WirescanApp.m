@@ -344,7 +344,7 @@ classdef F2_WirescanApp < handle
         ydat = obj.data.pmt ;
         qdat = obj.data.toro ;
       end
-      bad = isnan(ydat) | isinf(ydat) | ydat==0 | pos==0 | pos<obj.pos_range(1) | pos>obj.pos_range(2) | isnan(pos) ;
+      bad = isnan(ydat) | isinf(ydat) | ydat==0 | pos==0 | pos<(obj.pos_range(1)+5e-6) | pos>(obj.pos_range(2)-5e-6) | isnan(pos) ;
       
       % Apply BPM measured position correction?
       if obj.jittercor
@@ -436,14 +436,6 @@ classdef F2_WirescanApp < handle
       end
       if ~exist(fname,'file')
         warning('No config file, using default settings...');
-        switch obj.plane
-          case "x"
-            obj.motor_range=[lcaGet(char(obj.wirename+":XWIREINNER")) lcaGet(char(obj.wirename+":XWIREOUTER"))].*1e-6 ;
-          case "y"
-            obj.motor_range=[lcaGet(char(obj.wirename+":YWIREINNER")) lcaGet(char(obj.wirename+":YWIREOUTER"))].*1e-6 ;
-          case "u"
-            obj.motor_range=[lcaGet(char(obj.wirename+":UWIREINNER")) lcaGet(char(obj.wirename+":UWIREOUTER"))].*1e-6 ;
-        end
         obj.npulses = lcaGet(char(obj.wirename+":SCANPULSES")) ;
         obj.data=[];
         obj.confsave;
@@ -456,7 +448,7 @@ classdef F2_WirescanApp < handle
         obj.confload;
         return
       end
-      lpar = ["pmtsel" "jittercor" "chargenorm" "blenwin" "bpmsel" "torsel" "blmsel" "fitmethod" "data" "motor_range" "npulses" "scansuccess" "blenvals"] ;
+      lpar = ["pmtsel" "jittercor" "chargenorm" "blenwin" "bpmsel" "torsel" "blmsel" "fitmethod" "data" "scansuccess" "blenvals"] ;
       for ipar=1:length(lpar)
         if isfield(ld,lpar(ipar))
           obj.(lpar(ipar)) = ld.(lpar(ipar)) ;
@@ -476,6 +468,10 @@ classdef F2_WirescanApp < handle
     function confsave(obj,fname)
       %CONFSAVE
       %confsave([filename])
+      % Only save if scan successful and data present
+      if ~obj.scansuccess || isempty(obj.data)
+        return
+      end
       if ~exist('fname','file')
         fname = F2_common.confdir + "/F2_Wirescan/" + obj.wirename + "_" + obj.plane + ".mat" ;
       end
@@ -566,7 +562,7 @@ classdef F2_WirescanApp < handle
       name = obj.blms(obj.blmsel) ;
     end
     function lims = get.npulselim(obj)
-      beamrate = lcaGet(char(obj.BeamRatePV)) ;
+      beamrate = lcaGet(char(obj.BeamRatePV)) ; if beamrate<1; beamrate=1; end
       speedMax = lcaGet(char(obj.wirename+":MOTR.VMAX"))*1e-6 ;
       speedMin = lcaGet(char(obj.wirename+":MOTR.VBAS"))*1e-6 ;
       lims = [ceil(range(obj.motor_range) / speedMax * beamrate), floor(range(obj.motor_range) / speedMin * beamrate)];
@@ -590,7 +586,6 @@ classdef F2_WirescanApp < handle
       end
       obj.plane=pl;
       obj.confload;
-      
     end
     function pos = get.pos_range(obj)
       switch obj.plane
@@ -611,6 +606,9 @@ classdef F2_WirescanApp < handle
           ran = ran ./ cosd(obj.scan_angle) ;
       end
       obj.motor_range=sort(ran);
+    end
+    function np = get.npulses(obj)
+      np = lcaGet(char(obj.wirename+":SCANPULSES")) ;
     end
     function set.npulses(obj,np)
       beamrate = lcaGet(char(obj.BeamRatePV)) ;
@@ -647,9 +645,21 @@ classdef F2_WirescanApp < handle
           case "u"
             ran = [lcaGet(char(obj.wirename+":UWIREINNER"))  lcaGet(char(obj.wirename+":UWIREOUTER"))] ;
         end
+        ran=ran.*1e-6;
       end
       obj.motor_range=ran;
       obj.confsave;
+    end
+    function ran = get.motor_range(obj)
+      switch obj.plane
+        case "x"
+          ran = [lcaGet(char(obj.wirename+":XWIREINNER"))  lcaGet(char(obj.wirename+":XWIREOUTER"))] ;
+        case "y"
+          ran = [lcaGet(char(obj.wirename+":YWIREINNER"))  lcaGet(char(obj.wirename+":YWIREOUTER"))] ;
+        case "u"
+          ran = [lcaGet(char(obj.wirename+":UWIREINNER"))  lcaGet(char(obj.wirename+":UWIREOUTER"))] ;
+      end
+      ran=ran.*1e-6;
     end
     function ang = get.scan_angle(obj)
       ang = lcaGet(char(obj.wirename+":INSTALLANGLE")) ;
