@@ -1,38 +1,88 @@
-/* 
- * applauncher_client.c - A UDP client for communicating with Matlab application launcher
- * usage: applauncher_client <message>
- */
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
-#include <sys/types.h>
 #include <sys/socket.h>
-#include <netinet/in.h>
-#include <netdb.h> 
+#include <arpa/inet.h>
 #include <dirent.h>
-#include <unistd.h>
-#include <stdio.h>
+#include <string.h>
+#define SOCKNO 49151
 
-#define PORTRANGE1 49152
-#define PORTRANGE2 65535
-
-#define BUFSIZE 1024
-
-/* 
- * error - wrapper for perror
- */
-void error(char *msg) {
-    perror(msg);
-    exit(0);
+int main(int argc, char **argv){
+    int socket_desc;
+    struct sockaddr_in server_addr;
+    char server_message[2000], client_message[2000];
+    char rungui[] = "./rungui.sh ";
+    int server_struct_length = sizeof(server_addr);
+    
+    /* check command line arguments */
+    if (argc != 2) {
+      fprintf(stderr,"usage: %s <message>\n", argv[0]);
+      return -1;
+    }
+    
+    // Clean buffers:
+    memset(server_message, '\0', sizeof(server_message));
+    memset(client_message, '\0', sizeof(client_message));
+    
+    // Create socket:
+    socket_desc = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+    
+    if(socket_desc < 0){
+        printf("Error while creating socket\n");
+        return -1;
+    }
+    printf("Socket created successfully\n");
+    
+    // Set port and IP:
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_port = htons(SOCKNO);
+    server_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
+    
+    // Get input from the user:
+    strcpy(client_message,argv[1]);
+    
+    // Send the message to server:
+    if(sendto(socket_desc, client_message, strlen(client_message), 0,
+         (struct sockaddr*)&server_addr, server_struct_length) < 0){
+        printf("Unable to send message\n");
+        return -1;
+    }
+    
+    struct timeval tv;
+    tv.tv_sec = 0;
+    tv.tv_usec = 100000;
+    if (setsockopt(socket_desc, SOL_SOCKET, SO_RCVTIMEO,&tv,sizeof(tv)) < 0) {
+      perror("Error");
+    }
+    
+    // Receive the server's response:
+    if(recvfrom(socket_desc, server_message, sizeof(server_message), 0,
+         (struct sockaddr*)&server_addr, &server_struct_length) < 0){
+        printf("Error communicating with server, using rungui.sh\n");
+        strcat(rungui,argv[1]);
+        system( rungui ) ;
+        return -1;
+    }
+    // server should respond with the same message as sent
+    if (strcmp((const char*) server_message, (const char*) client_message))
+    {
+      printf("Error communicating with server, using rungui.sh\n");
+      strcat(rungui,argv[1]);
+      system( rungui ) ;
+      return -1;
+    }
+    
+    // Close the socket:
+    close(socket_desc);
+    
+    return 0;
 }
 
-// Get port ID and Increment file name port number by 1 within range PORTRANGE1:PORTRANGE2
-int getPort(int newport)
+// Get port ID
+int getPort()
 {
   DIR *folder;
   struct dirent *entry;
-  int files=0, portnum=PORTRANGE1 ;
+  int files=0, portnum=0 ;
   FILE *fp ;
   char newfile[80], portchar[80] ;
 
@@ -47,74 +97,9 @@ int getPort(int newport)
     files++;
     if (!strncmp("applauncherPort_",entry->d_name,16)) {
       portnum = atoi(entry->d_name+16) ;
-      if (newport)
-        portnum = portnum+1 ;
-      remove(entry->d_name);
+      break;
     }
   }
-  if (portnum >= PORTRANGE2)
-    portnum = PORTRANGE1 ;
   closedir(folder);
-  strcpy(newfile,"applauncherPort_");
-  sprintf(portchar,"%d",portnum);
-  strcat(newfile,portchar);
-  fp = fopen(newfile,"w") ;
-  fclose(fp);
   return(portnum);
-}
-
-int main(int argc, char **argv) {
-    int sockfd, portno, n;
-    int serverlen;
-    struct sockaddr_in serveraddr;
-    struct hostent *server;
-    char *hostname;
-    char buf[BUFSIZE];
-
-    /* check command line arguments */
-    printf("Check args...\n");
-    if (argc != 3 && strcmp(argv[2],"PORTINIT")) {
-      fprintf(stderr,"usage: %s <message> <portnum> , OR %s PORTINIT\n", argv[0],argv[0]);
-      exit(0);
-    }
-    printf("Done.\n");
-
-    // Assign port # for communictions
-    hostname = "127.0.0.1";
-    if (!strcmp(argv[1],"PORTINIT")) {
-      printf("GET PORT...\n");
-      portno = getPort(1) ; // Get port # from file ID and increment
-      printf("Done.\n");
-      return(portno) ;
-    }
-    else // Use input from environment variable to get port ID
-      portno = atoi(argv[2]) ;  
-
-    /* socket: create the socket */
-    sockfd = socket(AF_INET, SOCK_DGRAM, 0);
-    if (sockfd < 0) 
-        error("ERROR opening socket");
-
-    /* gethostbyname: get the server's DNS entry */
-    server = gethostbyname(hostname);
-    if (server == NULL) {
-        fprintf(stderr,"ERROR, no such host as %s\n", hostname);
-        exit(0);
-    }
-
-    /* build the server's Internet address */
-    bzero((char *) &serveraddr, sizeof(serveraddr));
-    serveraddr.sin_family = AF_INET;
-    bcopy((char *)server->h_addr, 
-	  (char *)&serveraddr.sin_addr.s_addr, server->h_length);
-    serveraddr.sin_port = htons(portno);
-
-    /* send the message to the server */
-    strcpy(buf,argv[1]);
-    serverlen = sizeof(serveraddr);
-    n = sendto(sockfd, buf, strlen(buf), 0, &serveraddr, serverlen);
-    if (n < 0) 
-      error("ERROR in sendto");
-
-    return 0;
 }

@@ -367,13 +367,28 @@ classdef F2_LEM_exported < matlab.apps.AppBase
   methods (Access = private)
 
     % Code that executes after component creation
-    function startupFcn(app, arg1)
+    function startupFcn(app, LLM)
       
       % Make sure start with Messages and EREFS tab visible
       app.TabGroup2.SelectedTab = app.MessagesTab ;
       app.TabGroup.SelectedTab = app.EREFSTab ;
       
       drawnow
+      
+      % Attach existing LEM object if supplied
+      if exist("LLM","var")
+        app.aobj=LLM.LEM;
+        try
+          app.ReadDataButton.Enable=false;
+          app.aobj.attachGUI(app);
+          app.DataValidLamp.Color='green';
+        catch ME 
+          app.ReadDataButton.Enable=true;
+          app.DataValidLamp.Color='red';
+          app.TextArea.Value=["!!!!!!! Error initializing LEM app: " + string(ME.message); string(app.TextArea.Value)];
+          throw(ME);
+        end
+      end
       
       % Update data...
       app.ReadDataButtonPushed();

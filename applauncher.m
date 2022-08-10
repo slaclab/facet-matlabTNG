@@ -1,53 +1,42 @@
-function u=applauncher()
-%APPLAUNCHER Matlab GUI application launcher for use with mfacethome
+function applauncher()
+%APPLAUNCHER Matlab GUI application launcher server
 
-% Get port number to use from file directory and increment
-portno=49151;
-d=dir('.');
-for ifile=1:length(d)
-  t=regexp(d(ifile).name,'applauncherPort_(\d+)','tokens','once');
-  if ~isempty(t)
-    portno=str2double(t{1})+1;
-  end
-end
-delete('applauncherPort_*');
-if portno>65535
-  portno=49152;
-end
-fid=fopen(sprintf('applauncherPort_%d',portno),'w'); fclose(fid);
+% List of apps which need Live Model
+LLM_apps = ["F2_LEM" "F2_LiveModel" "F2_Matching" "F2_MultiWire" "F2_Orbit" "F2_Wirescan"] ;
 
-% Open UDP port
-u=udp ;
-set(u,'LocalPort',portno); set(u,'RemotePort',portno);
-fopen(u);
-fprintf('Matlab Application Launcher Listening on Port %d ...\n',portno);
+% Shutdown any open server on this host, all future client requests come to this new one
+!./applauncher_client SHUTDOWN
+
+% generate instance of LiveModel
+disp('Generating instance of LiveModel...');
+LLM = F2_LiveModelApp ; %#ok<NASGU>
+
+% Open UDP port server and wait for client connection
+fprintf('Matlab Application Launcher Listening on Port 49151...');
 
 % Wait for valid app launch command and launch
 addpath common
 addpath web
 while 1
-  if u.BytesAvailable>0
-    app = char(fread(u,u.BytesAvailable)); %#ok<FREAD>
-    app = app' ;
-    if string(app)=="exit"
-      exit
-    end
-    if ~exist(app,'dir')
-      fprintf(2,'Unknown app: %s\n',app);
-    else
-      % Launch new app launcher instance and then launch requested GUI app
-      system('./applauncher.sh');
-      cd(app);
-      try
-        appobj=eval([app '_exported']);
-        waitfor(appobj)
-      catch
-        fclose(u); delete(u);
-        exit
-      end
-      fclose(u); delete(u);
-      exit
-    end
+  app=string(applauncher_server);
+  if string(app)=="SHUTDOWN"
+    fprintf(2,'Shutdown requested, exiting...\n');
+    exit
   end
-  pause(1)
+  if ~exist(app,'dir')
+    fprintf(2,'Unknown app: %s\n',app);
+  else
+    % Launch new app launcher instance and then launch requested GUI app
+    fprintf('Launching app %s...\n',app);
+    system(sprintf('echo -ne "\033]0;"%s"\007"',app)) ; % change xterm title
+    system('./applauncher.sh');
+    cd(app);
+    if ismember(string(app),LLM_apps) % supply LiveModel object to app if supported
+      appobj=eval(app+"_exported(LLM)");
+    else
+      appobj=eval(app+"_exported");
+    end
+    waitfor(appobj)
+    exit
+  end
 end

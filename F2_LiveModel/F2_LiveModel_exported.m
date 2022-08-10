@@ -41,8 +41,12 @@ classdef F2_LiveModel_exported < matlab.apps.AppBase
   methods (Access = private)
 
     % Code that executes after component creation
-    function startupFcn(app)
-      app.aobj = F2_LiveModelApp ;
+    function startupFcn(app, LLM)
+      if exist("LLM","var")
+        app.aobj=LLM;
+      else
+        app.aobj = F2_LiveModelApp ;
+      end
       dt = datetime ; % Set current archive date as now
       app.DatePicker.Value = dt ; 
       app.aobj.ArchiveDate = [year(dt),month(dt),day(dt),hour(dt),minute(dt),second(dt)];
@@ -91,7 +95,7 @@ classdef F2_LiveModel_exported < matlab.apps.AppBase
           tdata{tind,4} = num2str([T.alphax(tind) T.alphay(tind)],4) ;
           tdata{tind,5} = num2str([T.etax(tind) T.etay(tind)],4) ;
           if isfield(BEAMLINE{iele},'B')
-            tdata{tind,6} = num2str(10*GetTrueStrength(iele,1),6) ;
+            tdata{tind,6} = num2str(10*GetTrueStrength(iele),6) ;
           else
             tdata{tind,6} = '---' ;
           end
@@ -350,7 +354,7 @@ classdef F2_LiveModel_exported < matlab.apps.AppBase
   methods (Access = public)
 
     % Construct app
-    function app = F2_LiveModel_exported
+    function app = F2_LiveModel_exported(varargin)
 
       % Create UIFigure and components
       createComponents(app)
@@ -359,7 +363,7 @@ classdef F2_LiveModel_exported < matlab.apps.AppBase
       registerApp(app, app.F2_LiveModelUIFigure)
 
       % Execute the startup function
-      runStartupFcn(app, @startupFcn)
+      runStartupFcn(app, @(app)startupFcn(app, varargin{:}))
 
       if nargout == 0
         clear app
