@@ -10,7 +10,7 @@ int main(int argc, char **argv){
     int socket_desc;
     struct sockaddr_in server_addr;
     char server_message[2000], client_message[2000];
-    char rungui[] = "./rungui.sh ";
+    char rungui[2000] ;
     int server_struct_length = sizeof(server_addr);
     
     /* check command line arguments */
@@ -59,7 +59,9 @@ int main(int argc, char **argv){
          (struct sockaddr*)&server_addr, &server_struct_length) < 0){
         if ( strcmp(argv[1],"SHUTDOWN") ) {
           printf("Error communicating with server, using rungui.sh\n");
-          strcat(rungui,argv[1]);
+          sprintf(rungui,"xterm -iconic -T \"%s\" -e \"cd /usr/local/facet/tools/matlabTNG; ./rungui.sh %s\" &",argv[1],argv[1]);
+          //strcat(rungui,argv[1]);
+          //strcat(rungui,argv[1]);
           system( rungui ) ;
         }
         return -1;
