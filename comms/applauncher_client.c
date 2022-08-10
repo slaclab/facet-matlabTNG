@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
@@ -19,6 +20,16 @@ int main(int argc, char **argv){
       return -1;
     }
     
+    /* Form username from environmental variables */
+    char username[2000];
+    char *user1 = "USER";
+    char *user2 = "PHYSICS_USER";
+    sprintf(username,"%s_%s",getenv(user1),getenv(user2));
+    //strcpy(username,getenv(user1));
+    //strcat(username,"_");
+    //strcat(username,getenv(user2));
+
+    
     // Clean buffers:
     memset(server_message, '\0', sizeof(server_message));
     memset(client_message, '\0', sizeof(client_message));
@@ -38,7 +49,8 @@ int main(int argc, char **argv){
     server_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
     
     // Get input from the user:
-    strcpy(client_message,argv[1]);
+    sprintf(client_message,"%s$$%s",username,argv[1]);
+    //strcpy(client_message,argv[1]);
     
     // Send the message to server:
     if(sendto(socket_desc, client_message, strlen(client_message), 0,
@@ -47,6 +59,7 @@ int main(int argc, char **argv){
         return -1;
     }
     
+    // Set timeout for waiting for server response
     struct timeval tv;
     tv.tv_sec = 0;
     tv.tv_usec = 100000;
@@ -60,8 +73,6 @@ int main(int argc, char **argv){
         if ( strcmp(argv[1],"SHUTDOWN") ) {
           printf("Error communicating with server, using rungui.sh\n");
           sprintf(rungui,"xterm -iconic -T \"%s\" -e \"cd /usr/local/facet/tools/matlabTNG; ./rungui.sh %s\" &",argv[1],argv[1]);
-          //strcat(rungui,argv[1]);
-          //strcat(rungui,argv[1]);
           system( rungui ) ;
         }
         return -1;
