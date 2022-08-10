@@ -24,11 +24,10 @@ int main(int argc, char **argv){
     char username[2000];
     char *user1 = "USER";
     char *user2 = "PHYSICS_USER";
-    sprintf(username,"%s_%s",getenv(user1),getenv(user2));
-    //strcpy(username,getenv(user1));
-    //strcat(username,"_");
-    //strcat(username,getenv(user2));
-
+    if ( getenv(user2) )
+      sprintf(username,"%s_%s",getenv(user1),getenv(user2));
+    else
+      sprintf(username,"%s_",getenv(user1));
     
     // Clean buffers:
     memset(server_message, '\0', sizeof(server_message));
