@@ -27,6 +27,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs,
     
     if(socket_desc < 0){
         printf("Error while creating socket\n");
+        plhs[0] = mxCreateString((const char *) client_message);
         return ;
     }
     printf("Socket created successfully\n");
@@ -40,6 +41,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs,
     // Bind to the set port and IP:
     if(bind(socket_desc, (struct sockaddr*)&server_addr, sizeof(server_addr)) < 0){
         printf("Couldn't bind to the port\n");
+        plhs[0] = mxCreateString((const char *) client_message);
         return ;
     }
     printf("Done with binding\n");
@@ -49,7 +51,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs,
     // Receive client's message:
     if (recvfrom(socket_desc, client_message, sizeof(client_message), 0,
          (struct sockaddr*)&client_addr, &client_struct_length) < 0){
-        printf("Couldn't receive\n");
+      plhs[0] = mxCreateString((const char *) client_message);  
+      printf("Couldn't receive\n");
         return ;
     }
     printf("Received message from IP: %s and port: %i\n",
