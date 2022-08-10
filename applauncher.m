@@ -12,7 +12,7 @@ system(sprintf('./applauncher_client %s SHUTDOWN',username));
 
 % generate instance of LiveModel
 disp('Generating instance of LiveModel...');
-% LLM = F2_LiveModelApp ; %#ok<NASGU>
+LLM = F2_LiveModelApp ; %#ok<NASGU>
 
 % Open UDP port server and wait for client connection
 fprintf('Matlab Application Launcher Listening on Port 49151...');
