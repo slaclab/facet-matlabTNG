@@ -57,17 +57,21 @@ int main(int argc, char **argv){
     // Receive the server's response:
     if(recvfrom(socket_desc, server_message, sizeof(server_message), 0,
          (struct sockaddr*)&server_addr, &server_struct_length) < 0){
-        printf("Error communicating with server, using rungui.sh\n");
-        strcat(rungui,argv[1]);
-        system( rungui ) ;
+        if ( strcmp(argv[1],"SHUTDOWN") ) {
+          printf("Error communicating with server, using rungui.sh\n");
+          strcat(rungui,argv[1]);
+          system( rungui ) ;
+        }
         return -1;
     }
     // server should respond with the same message as sent
     if (strcmp((const char*) server_message, (const char*) client_message))
     {
-      printf("Error communicating with server, using rungui.sh\n");
-      strcat(rungui,argv[1]);
-      system( rungui ) ;
+      if ( strcmp(argv[1],"SHUTDOWN") ) {
+          printf("Error communicating with server, using rungui.sh\n");
+          strcat(rungui,argv[1]);
+          system( rungui ) ;
+        }
       return -1;
     }
     
