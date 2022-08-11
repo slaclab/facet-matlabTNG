@@ -39,10 +39,10 @@ classdef F2_LCP_exported < matlab.apps.AppBase
         ShadowgraphyPanel               matlab.ui.container.Panel
         ShadowgraphyblockSwitchLabel    matlab.ui.control.Label
         ShadowgraphyblockSwitch         matlab.ui.control.Switch
-        Shadowgraphy1NDSwitchLabel      matlab.ui.control.Label
-        Shadowgraphy1NDSwitch           matlab.ui.control.Switch
-        Shadowgraphy2NDSwitchLabel      matlab.ui.control.Label
-        Shadowgraphy2NDSwitch           matlab.ui.control.Switch
+        Shadowgraphy1ND5Label           matlab.ui.control.Label
+        Shadowgraphy1ND5Switch          matlab.ui.control.Switch
+        Shadowgraphy2ND2SwitchLabel     matlab.ui.control.Label
+        Shadowgraphy2ND2Switch          matlab.ui.control.Switch
         UpdateGUIButton                 matlab.ui.control.Button
         LasershuttersPanel              matlab.ui.container.Panel
         HeNeflipperSwitchLabel          matlab.ui.control.Label
@@ -96,6 +96,9 @@ classdef F2_LCP_exported < matlab.apps.AppBase
         Minlongestpath74Label           matlab.ui.control.Label
         Maxshortestpath76Label          matlab.ui.control.Label
         MDLRBVLabel                     matlab.ui.control.Label
+        E320Panel                       matlab.ui.container.Panel
+        MOMAGND2SwitchLabel             matlab.ui.control.Label
+        MOMAGND2Switch                  matlab.ui.control.Switch
     end
 
     
@@ -160,13 +163,16 @@ classdef F2_LCP_exported < matlab.apps.AppBase
             %EOS
             app.EOSND2Switch.Value = app.LCP.filterList.EOSND2.getState();
             
+            %E320
+            app.MOMAGND2Switch.Value = app.LCP.filterList.E320MOMAG.getState();
+            
             %Ionizer
             app.IonizerblockSwitch_2.Value = app.LCP.blockList.ionizer.getState();
             app.IonizerND2Switch.Value = app.LCP.filterList.ionizerND2.getState();
             
             %Shadowgraphy 
-            app.Shadowgraphy1NDSwitch.Value = app.LCP.filterList.shadow1.getState()
-            app.Shadowgraphy2NDSwitch.Value = app.LCP.filterList.shadow2.getState();
+            app.Shadowgraphy1ND5Switch.Value = app.LCP.filterList.shadow1.getState()
+            app.Shadowgraphy2ND2Switch.Value = app.LCP.filterList.shadow2.getState();
             app.ShadowgraphyblockSwitch.Value = app.LCP.blockList.shadowgraphy.getState();
             
             %Main beam
@@ -225,14 +231,14 @@ classdef F2_LCP_exported < matlab.apps.AppBase
             app.updateGUI();
         end
 
-        % Value changed function: Shadowgraphy1NDSwitch
-        function Shadowgraphy1NDSwitchValueChanged(app, event)
+        % Value changed function: Shadowgraphy1ND5Switch
+        function Shadowgraphy1ND5SwitchValueChanged(app, event)
             app.LCP.filterList.shadow1.flip();
             app.updateGUI();
         end
 
-        % Value changed function: Shadowgraphy2NDSwitch
-        function Shadowgraphy2NDSwitchValueChanged(app, event)
+        % Value changed function: Shadowgraphy2ND2Switch
+        function Shadowgraphy2ND2SwitchValueChanged(app, event)
             app.LCP.filterList.shadow2.flip();
             app.updateGUI();
         end
@@ -325,6 +331,12 @@ classdef F2_LCP_exported < matlab.apps.AppBase
         % Value changed function: CompressorBeamBlockSwitch
         function CompressorBeamBlockSwitchValueChanged(app, event)
             app.LCP.blockList.Comp.flip();
+            app.updateGUI();
+        end
+
+        % Value changed function: MOMAGND2Switch
+        function MOMAGND2SwitchValueChanged(app, event)
+            app.LCP.filterList.E320MOMAG.flip();
             app.updateGUI();
         end
 
@@ -626,31 +638,31 @@ classdef F2_LCP_exported < matlab.apps.AppBase
             app.ShadowgraphyblockSwitch.Position = [44 165 45 20];
             app.ShadowgraphyblockSwitch.Value = 'In';
 
-            % Create Shadowgraphy1NDSwitchLabel
-            app.Shadowgraphy1NDSwitchLabel = uilabel(app.ShadowgraphyPanel);
-            app.Shadowgraphy1NDSwitchLabel.HorizontalAlignment = 'center';
-            app.Shadowgraphy1NDSwitchLabel.Position = [6 124 123 22];
-            app.Shadowgraphy1NDSwitchLabel.Text = 'Shadowgraphy1 ND?';
+            % Create Shadowgraphy1ND5Label
+            app.Shadowgraphy1ND5Label = uilabel(app.ShadowgraphyPanel);
+            app.Shadowgraphy1ND5Label.HorizontalAlignment = 'center';
+            app.Shadowgraphy1ND5Label.Position = [6.5 124 123 22];
+            app.Shadowgraphy1ND5Label.Text = 'Shadowgraphy1 ND5';
 
-            % Create Shadowgraphy1NDSwitch
-            app.Shadowgraphy1NDSwitch = uiswitch(app.ShadowgraphyPanel, 'slider');
-            app.Shadowgraphy1NDSwitch.Items = {'In', 'Out'};
-            app.Shadowgraphy1NDSwitch.ValueChangedFcn = createCallbackFcn(app, @Shadowgraphy1NDSwitchValueChanged, true);
-            app.Shadowgraphy1NDSwitch.Position = [42 93 45 20];
-            app.Shadowgraphy1NDSwitch.Value = 'In';
+            % Create Shadowgraphy1ND5Switch
+            app.Shadowgraphy1ND5Switch = uiswitch(app.ShadowgraphyPanel, 'slider');
+            app.Shadowgraphy1ND5Switch.Items = {'In', 'Out'};
+            app.Shadowgraphy1ND5Switch.ValueChangedFcn = createCallbackFcn(app, @Shadowgraphy1ND5SwitchValueChanged, true);
+            app.Shadowgraphy1ND5Switch.Position = [42 93 45 20];
+            app.Shadowgraphy1ND5Switch.Value = 'In';
 
-            % Create Shadowgraphy2NDSwitchLabel
-            app.Shadowgraphy2NDSwitchLabel = uilabel(app.ShadowgraphyPanel);
-            app.Shadowgraphy2NDSwitchLabel.HorizontalAlignment = 'center';
-            app.Shadowgraphy2NDSwitchLabel.Position = [6 57 123 22];
-            app.Shadowgraphy2NDSwitchLabel.Text = 'Shadowgraphy2 ND?';
+            % Create Shadowgraphy2ND2SwitchLabel
+            app.Shadowgraphy2ND2SwitchLabel = uilabel(app.ShadowgraphyPanel);
+            app.Shadowgraphy2ND2SwitchLabel.HorizontalAlignment = 'center';
+            app.Shadowgraphy2ND2SwitchLabel.Position = [6 57 123 22];
+            app.Shadowgraphy2ND2SwitchLabel.Text = 'Shadowgraphy2 ND2';
 
-            % Create Shadowgraphy2NDSwitch
-            app.Shadowgraphy2NDSwitch = uiswitch(app.ShadowgraphyPanel, 'slider');
-            app.Shadowgraphy2NDSwitch.Items = {'In', 'Out'};
-            app.Shadowgraphy2NDSwitch.ValueChangedFcn = createCallbackFcn(app, @Shadowgraphy2NDSwitchValueChanged, true);
-            app.Shadowgraphy2NDSwitch.Position = [42 26 45 20];
-            app.Shadowgraphy2NDSwitch.Value = 'In';
+            % Create Shadowgraphy2ND2Switch
+            app.Shadowgraphy2ND2Switch = uiswitch(app.ShadowgraphyPanel, 'slider');
+            app.Shadowgraphy2ND2Switch.Items = {'In', 'Out'};
+            app.Shadowgraphy2ND2Switch.ValueChangedFcn = createCallbackFcn(app, @Shadowgraphy2ND2SwitchValueChanged, true);
+            app.Shadowgraphy2ND2Switch.Position = [42 26 45 20];
+            app.Shadowgraphy2ND2Switch.Value = 'In';
 
             % Create UpdateGUIButton
             app.UpdateGUIButton = uibutton(app.UIFigure, 'push');
@@ -790,6 +802,7 @@ classdef F2_LCP_exported < matlab.apps.AppBase
 
             % Create SetLaserEditField
             app.SetLaserEditField = uieditfield(app.LaserattenuatorPanel, 'numeric');
+            app.SetLaserEditField.Limits = [70 122];
             app.SetLaserEditField.ValueChangedFcn = createCallbackFcn(app, @SetLaserEditFieldValueChanged, true);
             app.SetLaserEditField.Position = [62 147 52 22];
             app.SetLaserEditField.Value = 74;
@@ -822,6 +835,7 @@ classdef F2_LCP_exported < matlab.apps.AppBase
 
             % Create SetProbeEditField
             app.SetProbeEditField = uieditfield(app.ProbeattenuatorPanel, 'numeric');
+            app.SetProbeEditField.Limits = [34 85];
             app.SetProbeEditField.ValueChangedFcn = createCallbackFcn(app, @SetProbeEditFieldValueChanged, true);
             app.SetProbeEditField.Position = [62 147 52 22];
             app.SetProbeEditField.Value = 37;
@@ -854,9 +868,10 @@ classdef F2_LCP_exported < matlab.apps.AppBase
 
             % Create SetLPolEditField
             app.SetLPolEditField = uieditfield(app.LaserpolarizationPanel, 'numeric');
+            app.SetLPolEditField.Limits = [47 98];
             app.SetLPolEditField.ValueChangedFcn = createCallbackFcn(app, @SetLPolEditFieldValueChanged, true);
             app.SetLPolEditField.Position = [62 147 52 22];
-            app.SetLPolEditField.Value = 37;
+            app.SetLPolEditField.Value = 50;
 
             % Create SpolPulsed50Label
             app.SpolPulsed50Label = uilabel(app.LaserpolarizationPanel);
@@ -886,9 +901,10 @@ classdef F2_LCP_exported < matlab.apps.AppBase
 
             % Create SetLIrisEditField
             app.SetLIrisEditField = uieditfield(app.LaseraperturePanel, 'numeric');
+            app.SetLIrisEditField.Limits = [-60 -5];
             app.SetLIrisEditField.ValueChangedFcn = createCallbackFcn(app, @SetLIrisEditFieldValueChanged, true);
             app.SetLIrisEditField.Position = [62 147 52 22];
-            app.SetLIrisEditField.Value = 37;
+            app.SetLIrisEditField.Value = -40;
 
             % Create mmmin5Label
             app.mmmin5Label = uilabel(app.LaseraperturePanel);
@@ -935,9 +951,9 @@ classdef F2_LCP_exported < matlab.apps.AppBase
 
             % Create SetMDLEditField
             app.SetMDLEditField = uieditfield(app.MasterdelaylinePanel, 'numeric');
+            app.SetMDLEditField.Limits = [-74 76];
             app.SetMDLEditField.ValueChangedFcn = createCallbackFcn(app, @SetMDLEditFieldValueChanged, true);
             app.SetMDLEditField.Position = [62 147 52 22];
-            app.SetMDLEditField.Value = 37;
 
             % Create Minlongestpath74Label
             app.Minlongestpath74Label = uilabel(app.MasterdelaylinePanel);
@@ -953,6 +969,24 @@ classdef F2_LCP_exported < matlab.apps.AppBase
             app.MDLRBVLabel = uilabel(app.MasterdelaylinePanel);
             app.MDLRBVLabel.Position = [21 117 85 22];
             app.MDLRBVLabel.Text = 'RBV: ';
+
+            % Create E320Panel
+            app.E320Panel = uipanel(app.UIFigure);
+            app.E320Panel.Title = 'E320';
+            app.E320Panel.Position = [957 405 107 96];
+
+            % Create MOMAGND2SwitchLabel
+            app.MOMAGND2SwitchLabel = uilabel(app.E320Panel);
+            app.MOMAGND2SwitchLabel.HorizontalAlignment = 'center';
+            app.MOMAGND2SwitchLabel.Position = [9.5 46 82 22];
+            app.MOMAGND2SwitchLabel.Text = 'MO MAG ND2';
+
+            % Create MOMAGND2Switch
+            app.MOMAGND2Switch = uiswitch(app.E320Panel, 'slider');
+            app.MOMAGND2Switch.Items = {'In', 'Out'};
+            app.MOMAGND2Switch.ValueChangedFcn = createCallbackFcn(app, @MOMAGND2SwitchValueChanged, true);
+            app.MOMAGND2Switch.Position = [27 15 45 20];
+            app.MOMAGND2Switch.Value = 'In';
 
             % Show the figure after all components are created
             app.UIFigure.Visible = 'on';

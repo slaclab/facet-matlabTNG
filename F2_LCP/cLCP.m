@@ -39,6 +39,7 @@ classdef cLCP  < handle
             
             
             s.filterList.Probeline0HeNe = cFlipper('APC:LI20:EX02:24VOUT_7',-1);
+            s.filterList.E320MOMAG = cFlipper('APC:LI20:EX02:24VOUT_8',1);
             
             s.filterList.PBNFF = cFlipper('APC:LI20:EX02:24VOUT_1',1);
             s.filterList.CompNFF = cFlipper('APC:LI20:EX02:24VOUT_18',1);
