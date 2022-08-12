@@ -12,7 +12,16 @@ int main(int argc, char **argv){
     struct sockaddr_in server_addr;
     char server_message[2000], client_message[2000];
     char rungui[2000] ;
+    char hname[2000];
     int server_struct_length = sizeof(server_addr);
+    
+    // Don't use server for facet-srv*
+    sprintf(hname,"%s",getenv("HOSTNAME"));
+    if (!strncmp(hname,"facet-srv",9)) {
+      sprintf(rungui,"xterm -iconic -T \"%s\" -e \"cd /usr/local/facet/tools/matlabTNG; ./rungui.sh %s\" &",argv[1],argv[1]);
+      system( rungui ) ;
+      return 0;
+    }
     
     /* check command line arguments */
     if (argc != 2) {
@@ -49,7 +58,6 @@ int main(int argc, char **argv){
     
     // Get input from the user:
     sprintf(client_message,"%s$$%s",username,argv[1]);
-    //strcpy(client_message,argv[1]);
     
     // Send the message to server:
     if(sendto(socket_desc, client_message, strlen(client_message), 0,
@@ -66,22 +74,17 @@ int main(int argc, char **argv){
       perror("Error");
     }
     
-    // Receive the server's response:
-    if(recvfrom(socket_desc, server_message, sizeof(server_message), 0,
-         (struct sockaddr*)&server_addr, &server_struct_length) < 0){
-        if ( strcmp(argv[1],"SHUTDOWN") ) {
+    // Receive the server's response
+    while (recvfrom(socket_desc, server_message, sizeof(server_message), 0,
+         (struct sockaddr*)&server_addr, &server_struct_length) > 0 ) ;
+    printf("Server response: %s\n",server_message);
+      
+    // server should respond with the same message as sent
+    if (strcmp((const char*) server_message, client_message))
+    {
+      if ( strcmp(argv[1],"SHUTDOWN") &&  strcmp(argv[1],"TEST")) {
           printf("Error communicating with server, using rungui.sh\n");
           sprintf(rungui,"xterm -iconic -T \"%s\" -e \"cd /usr/local/facet/tools/matlabTNG; ./rungui.sh %s\" &",argv[1],argv[1]);
-          system( rungui ) ;
-        }
-        return -1;
-    }
-    // server should respond with the same message as sent
-    if (strcmp((const char*) server_message, (const char*) client_message))
-    {
-      if ( strcmp(argv[1],"SHUTDOWN") ) {
-          printf("Error communicating with server, using rungui.sh\n");
-          strcat(rungui,argv[1]);
           system( rungui ) ;
         }
       return -1;
