@@ -199,7 +199,7 @@ classdef F2_WirescanApp < handle
       lcaPutNoWait(wirecmd,1);
       
       % If there AIDA BPMs, get buffered data whilst scan is happening
-      if obj.aidabpms(obj.wiresel)
+      if obj.aidabpms(obj.wiresel) && obj.jittercor
         aidapva;
         builder = pvaRequest('FACET-II:BUFFACQ');
         builder.with('BPMD', 57);
