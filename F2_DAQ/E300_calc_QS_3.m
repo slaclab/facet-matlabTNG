@@ -40,17 +40,17 @@ M_03 = [1 d3; 0 1];
 M4_03 = [M_03 OO; OO M_03];
 M_04 = [1 d4; 0 1];
 M4_04 = [M_04 OO; OO M_04];
-
+options = optimset('TolX',1e-8);  
 if keep_KQS0_eq_KQS2
-    [fit_result, chi2] = fminsearch(@transportError_2, [KQS0_0 KQS1_0]);
-    BDES0 =  fit_result(1) * (E0+QS) * LEFF_QS0 / 0.0299792;
-    BDES1 =  fit_result(2) * (E0+QS) * LEFF_QS1 / 0.0299792;
-    BDES2 =  fit_result(1) * (E0+QS) * LEFF_QS2 / 0.0299792;
+    [fit_result, chi2] = fminsearch(@transportError_2, [KQS0_0 KQS1_0],options);
+    BDES0 =  fit_result(1) * (E0+QS) * LEFF_QS0 / 0.0299792458;
+    BDES1 =  fit_result(2) * (E0+QS) * LEFF_QS1 / 0.0299792458;
+    BDES2 =  fit_result(1) * (E0+QS) * LEFF_QS2 / 0.0299792458;
 else
-    [fit_result, chi2] = fminsearch(@transportError, [KQS0_0 KQS1_0 KQS2_0]);
-    BDES0 =  fit_result(1) * (E0+QS) * LEFF_QS0 / 0.0299792;
-    BDES1 =  fit_result(2) * (E0+QS) * LEFF_QS1 / 0.0299792;
-    BDES2 =  fit_result(3) * (E0+QS) * LEFF_QS2 / 0.0299792;
+    [fit_result, chi2] = fminsearch(@transportError, [KQS0_0 KQS1_0 KQS2_0],options);
+    BDES0 =  fit_result(1) * (E0+QS) * LEFF_QS0 / 0.0299792458;
+    BDES1 =  fit_result(2) * (E0+QS) * LEFF_QS1 / 0.0299792458;
+    BDES2 =  fit_result(3) * (E0+QS) * LEFF_QS2 / 0.0299792458;
 end
 
 
