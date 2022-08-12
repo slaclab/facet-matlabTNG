@@ -15,7 +15,7 @@ disp('Generating instance of LiveModel...');
 LLM = F2_LiveModelApp ; %#ok<NASGU>
 
 % Open UDP port server and wait for client connection
-fprintf('Matlab Application Launcher Listening on Port 49151...');
+fprintf('Matlab Application Launcher Listening on Port 49152...');
 
 % Wait for valid app launch command and launch
 addpath common
@@ -24,7 +24,8 @@ while 1
   app=string(applauncher_server);
   server_user = regexprep(app,'\$\$\S+$','') ;
   if server_user ~= username
-    fprintf(2,'Request comes from another user (%s), skipping...\n',server_user);
+    fprintf(2,'Request comes from another user or server failure (%s), skipping...\n',server_user);
+    pause(1);
     continue
   end
   app = regexprep(app,'^\w+\$\$','') ;

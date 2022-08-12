@@ -4,7 +4,7 @@
 #include <arpa/inet.h>
 #include <dirent.h>
 #include "mex.h"
-#define SOCKNO 49151
+#define SOCKNO 49152
 
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, 
   const mxArray *prhs[]) {

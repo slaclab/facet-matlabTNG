@@ -124,9 +124,9 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
       obj.LiveModel.autoupdate = true ;
       addlistener(obj.LiveModel,'ModelUpdated',@(~,~) obj.ProcModelUpdate) ;
       obj.BPMS = F2_bpms(obj.LiveModel.LM) ;
-      if exist('appobj','var') && ~isempty(appobj)
+      if exist('appobj','var') && (isa(appobj,'F2_Orbit') || isa(appobj,'F2_Orbit_exported'))
         obj.aobj = appobj ;
-      else
+      elseif ~exist('appobj','var') || isempty(appobj) || ~appobj % Assume watcher mode if nothing passed as first argument
         obj.iswatcher = true ;
       end
       obj.LM=copy(obj.BPMS.LM); % local copy of LucretiaModel
@@ -1732,6 +1732,7 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
       %  Plot on new figure window
       %plotbpm([axisHandle1 , axisHandle2])
       %  Plot on provided axis handles (for [x y])
+      %   -- set x or y = 0 to ignore plotting in that plane
       global BEAMLINE
       if isempty(obj.BPMS.xdat)
         error('No data to plot')
@@ -1766,125 +1767,150 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
         sp2=subplot(2,1,2,'Parent',fhan);
         ahan=[sp1 sp2];
       else
-        ahan(1).reset; ahan(2).reset;
+        if isa(ahan(1),'matlab.ui.control.UIAxes') || isa(ahan(1),'matlab.graphics.axis.Axes')
+          ahan(1).reset;
+        end
+        if isa(ahan(2),'matlab.ui.control.UIAxes') || isa(ahan(2),'matlab.graphics.axis.Axes')
+          ahan(2).reset;
+        end
       end
-      xax=ahan(1); yax=ahan(2);
+      if isa(ahan(1),'matlab.ui.control.UIAxes') || isa(ahan(1),'matlab.graphics.axis.Axes')
+        xax=ahan(1);
+      else
+        xax=[];
+      end
+      if isa(ahan(2),'matlab.ui.control.UIAxes') || isa(ahan(2),'matlab.graphics.axis.Axes')
+        yax=ahan(2);
+      else
+        yax=[];
+      end
       
       obj.LM.ModelClasses="MONI";
       
       z = arrayfun(@(x) BEAMLINE{x}.Coordi(3),id) ;
       
-      if obj.dormsplot
-        if plotall
-          pl_all=plot(xax,z_all,(xstd_all(:).*1e-3)./sqrt(emit_all(:).*betades_xall(:)),'k.');
-          hold(xax,'on');
+      if ~isempty(xax)
+        if obj.dormsplot
+          if plotall
+            pl_all=plot(xax,z_all,(xstd_all(:).*1e-3)./sqrt(emit_all(:).*betades_xall(:)),'k.');
+            hold(xax,'on');
+          end
+          pl=plot(xax,z,(xstd(:).*1e-3)./sqrt(emit(:).*betades_x(:)),'*','Color',F2_common.ColorOrder(2,:));
+          ylabel(xax,'<X^2>^{1/2}/\sigma_x');
+        else
+          if plotall
+            pl_all=errorbar(xax,z_all,xm_all,xstd_all,'k.');
+            hold(xax,'on');
+          end
+          pl=errorbar(xax,z,xm,xstd,'.','MarkerFaceColor',F2_common.ColorOrder(2,:));
+          ylabel(xax,'X [mm]');
         end
-        pl=plot(xax,z,(xstd(:).*1e-3)./sqrt(emit(:).*betades_x(:)),'*','Color',F2_common.ColorOrder(2,:));
-        ylabel(xax,'<X^2>^{1/2}/\sigma_x');
-      else
         if plotall
-          pl_all=errorbar(xax,z_all,xm_all,xstd_all,'k.');
-          hold(xax,'on');
+          zmin=z_all(1); zmax=z_all(end);
+        else
+          zmin=z(1); zmax=z(end);
         end
-        pl=errorbar(xax,z,xm,xstd,'.','MarkerFaceColor',F2_common.ColorOrder(2,:));
-        ylabel(xax,'X [mm]');
-      end
-      if plotall
-        zmin=z_all(1); zmax=z_all(end);
-      else
-        zmin=z(1); zmax=z(end);
-      end
-      
-      pl.DataTipTemplate.DataTipRows(1).Label = 'Linac Z' ;
-      pl.DataTipTemplate.DataTipRows(2).Label = '<X>' ;
-      pl.DataTipTemplate.DataTipRows(end+1) = dataTipTextRow('RMS-X',xstd);
-      pl.DataTipTemplate.DataTipRows(end+1) = dataTipTextRow('Name',obj.bpmnames(use));
-      if plotall
-        pl_all.DataTipTemplate.DataTipRows(1).Label = 'Linac Z' ;
-        pl_all.DataTipTemplate.DataTipRows(2).Label = '<X>' ;
-        pl_all.DataTipTemplate.DataTipRows(end+1) = dataTipTextRow('RMS-X',xstd_all);
-        pl_all.DataTipTemplate.DataTipRows(end+1) = dataTipTextRow('Name',obj.bpmnames(use_all));
-      end
-      grid(xax,'on');
-      if obj.BPMS.plotscale>0
-        xax.YLim=[-double(obj.BPMS.plotscale) double(obj.BPMS.plotscale)];
-      else
-        xax.YLimMode="auto";
-      end
-      if obj.dormsplot
+
+        pl.DataTipTemplate.DataTipRows(1).Label = 'Linac Z' ;
+        pl.DataTipTemplate.DataTipRows(2).Label = '<X>' ;
+        pl.DataTipTemplate.DataTipRows(end+1) = dataTipTextRow('RMS-X',xstd);
+        pl.DataTipTemplate.DataTipRows(end+1) = dataTipTextRow('Name',obj.bpmnames(use));
         if plotall
-          pl_all=plot(yax,z_all,(ystd_all(:).*1e-3)./sqrt(emit_all(:).*betades_yall(:)),'k*');
-          hold(yax,'on');
+          pl_all.DataTipTemplate.DataTipRows(1).Label = 'Linac Z' ;
+          pl_all.DataTipTemplate.DataTipRows(2).Label = '<X>' ;
+          pl_all.DataTipTemplate.DataTipRows(end+1) = dataTipTextRow('RMS-X',xstd_all);
+          pl_all.DataTipTemplate.DataTipRows(end+1) = dataTipTextRow('Name',obj.bpmnames(use_all));
         end
-        pl=plot(yax,z,(ystd(:).*1e-3)./sqrt(emit(:).*betades_y(:)),'*','Color',F2_common.ColorOrder(2,:));
-        ylabel(yax,'<Y^2>^{1/2}/\sigma_y');
-      else
+        grid(xax,'on');
+        if obj.BPMS.plotscale>0
+          xax.YLim=[-double(obj.BPMS.plotscale) double(obj.BPMS.plotscale)];
+        else
+          xax.YLimMode="auto";
+        end
+      end
+      if ~isempty(yax)
+        if obj.dormsplot
+          if plotall
+            pl_all=plot(yax,z_all,(ystd_all(:).*1e-3)./sqrt(emit_all(:).*betades_yall(:)),'k*');
+            hold(yax,'on');
+          end
+          pl=plot(yax,z,(ystd(:).*1e-3)./sqrt(emit(:).*betades_y(:)),'*','Color',F2_common.ColorOrder(2,:));
+          ylabel(yax,'<Y^2>^{1/2}/\sigma_y');
+        else
+          if plotall
+            pl_all=errorbar(yax,z_all,ym_all,ystd_all,'k.');
+            hold(yax,'on');
+          end
+          pl=errorbar(yax,z,ym,ystd,'.','MarkerFaceColor',F2_common.ColorOrder(2,:));
+          xlabel(yax,'Z [m]'); ylabel(yax,'Y [mm]');
+          ylabel(yax,'Y [mm]');
+        end
         if plotall
-          pl_all=errorbar(yax,z_all,ym_all,ystd_all,'k.');
-          hold(yax,'on');
+          zmin=min([zmin z_all(1)]); zmax=max([zmax z_all(end)]);
+        else
+          zmin=min([zmin z(1)]); zmax=max([zmax z(end)]);
         end
-        pl=errorbar(yax,z,ym,ystd,'.','MarkerFaceColor',F2_common.ColorOrder(2,:));
-        xlabel(yax,'Z [m]'); ylabel(yax,'Y [mm]');
-        ylabel(yax,'Y [mm]');
-      end
-      if plotall
-        zmin=min([zmin z_all(1)]); zmax=max([zmax z_all(end)]);
-      else
-        zmin=min([zmin z(1)]); zmax=max([zmax z(end)]);
-      end
-      pl.DataTipTemplate.DataTipRows(1).Label = 'Linac Z' ;
-      pl.DataTipTemplate.DataTipRows(2).Label = '<Y>' ;
-      pl.DataTipTemplate.DataTipRows(end+1) = dataTipTextRow('RMS-Y',ystd);
-      pl.DataTipTemplate.DataTipRows(end+1) = dataTipTextRow('Name',obj.bpmnames(use));
-      if plotall
-        pl_all.DataTipTemplate.DataTipRows(1).Label = 'Linac Z' ;
-        pl_all.DataTipTemplate.DataTipRows(2).Label = '<Y>' ;
-        pl_all.DataTipTemplate.DataTipRows(end+1) = dataTipTextRow('RMS-Y',ystd_all);
-        pl_all.DataTipTemplate.DataTipRows(end+1) = dataTipTextRow('Name',obj.bpmnames(use_all));
-      end
-      grid(yax,'on');
-      if obj.BPMS.plotscale>0
-        yax.YLim=[-double(obj.BPMS.plotscale) double(obj.BPMS.plotscale)];
-      else
-        yax.YLimMode="auto";
+        pl.DataTipTemplate.DataTipRows(1).Label = 'Linac Z' ;
+        pl.DataTipTemplate.DataTipRows(2).Label = '<Y>' ;
+        pl.DataTipTemplate.DataTipRows(end+1) = dataTipTextRow('RMS-Y',ystd);
+        pl.DataTipTemplate.DataTipRows(end+1) = dataTipTextRow('Name',obj.bpmnames(use));
+        if plotall
+          pl_all.DataTipTemplate.DataTipRows(1).Label = 'Linac Z' ;
+          pl_all.DataTipTemplate.DataTipRows(2).Label = '<Y>' ;
+          pl_all.DataTipTemplate.DataTipRows(end+1) = dataTipTextRow('RMS-Y',ystd_all);
+          pl_all.DataTipTemplate.DataTipRows(end+1) = dataTipTextRow('Name',obj.bpmnames(use_all));
+        end
+        grid(yax,'on');
+        if obj.BPMS.plotscale>0
+          yax.YLim=[-double(obj.BPMS.plotscale) double(obj.BPMS.plotscale)];
+        else
+          yax.YLimMode="auto";
+        end
       end
       % Show corrector locations?
       if showcors
-        hold(xax,'on');
-        hold(yax,'on');
-        for icor=find(obj.usexcor(:)')
-          line(xax,[obj.cordat_x.z(icor) obj.cordat_x.z(icor)],xax.YLim,'LineStyle','-','Color','black','LineWidth',2);
+        if ~isempty(xax)
+          hold(xax,'on');
+          for icor=find(obj.usexcor(:)')
+            line(xax,[obj.cordat_x.z(icor) obj.cordat_x.z(icor)],xax.YLim,'LineStyle','-','Color','black','LineWidth',2);
+          end
+          zmin=min([zmin min(obj.cordat_x.z(icor))]); zmax=max([zmax max(obj.cordat_x.z(icor))]);
+          hold(xax,'off');
         end
-        zmin=min([zmin min(obj.cordat_x.z(icor))]); zmax=max([zmax max(obj.cordat_x.z(icor))]);
-        for icor=find(obj.useycor(:)')
-          line(yax,[obj.cordat_y.z(icor) obj.cordat_y.z(icor)],yax.YLim,'LineStyle','-','Color','black','LineWidth',2);
+        if ~isempty(yax)
+          hold(yax,'on');
+          for icor=find(obj.useycor(:)')
+            line(yax,[obj.cordat_y.z(icor) obj.cordat_y.z(icor)],yax.YLim,'LineStyle','-','Color','black','LineWidth',2);
+          end
+          zmin=min([zmin min(obj.cordat_y.z(icor))]); zmax=max([zmax max(obj.cordat_y.z(icor))]);
+          hold(yax,'off');
         end
-        zmin=min([zmin min(obj.cordat_y.z(icor))]); zmax=max([zmax max(obj.cordat_y.z(icor))]);
-        hold(xax,'off');
-        hold(yax,'off');
       end
       % If orbit correction calcs performed, superimpose solution
       if obj.calcperformed
-        hold(xax,'on');
-        xc=obj.xbpm_cor(obj.usebpm);
-        if plotall
-          plot(xax,z_all,obj.xbpm_cor(use_all),'Color','k');
+        if ~isempty(xax)
+          hold(xax,'on');
+          xc=obj.xbpm_cor(obj.usebpm);
+          if plotall
+            plot(xax,z_all,obj.xbpm_cor(use_all),'Color','k');
+          end
+          plot(xax,z,xc,'Color',F2_common.ColorOrder(2,:));
+          hold(xax,'off');
         end
-        plot(xax,z,xc,'Color',F2_common.ColorOrder(2,:));
-        hold(xax,'off');
-        hold(yax,'on');
-        yc=obj.ybpm_cor(obj.usebpm);
-        plot(yax,z,yc,'Color',F2_common.ColorOrder(2,:));
-        if plotall
-          plot(yax,z_all,obj.ybpm_cor(use_all),'Color','k');
+        if ~isempty(yax)
+          hold(yax,'on');
+          yc=obj.ybpm_cor(obj.usebpm);
+          plot(yax,z,yc,'Color',F2_common.ColorOrder(2,:));
+          if plotall
+            plot(yax,z_all,obj.ybpm_cor(use_all),'Color','k');
+          end
+          hold(yax,'off');
         end
-        hold(yax,'off');
       end
       % Superimpose model fit if requested
       X0 = obj.orbitfit(); % X0 is orbit at region start
       X0(1:4)=X0(1:4).*1e-3;
       if showmodel
-        ylim_x=xax.YLim; ylim_y=yax.YLim;
         if plotall
           idf=obj.regid(1):obj.regid(2);
           i0m=obj.regid(1);
@@ -1901,13 +1927,20 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
             x_fit(n) = Xf(1); y_fit(n) = Xf(3) ;
           end
           zi=arrayfun(@(x) BEAMLINE{x}.Coordi(3),idf);
-          hold(xax,'on');
-          plot(xax,zi,x_fit.*1e3,'Color','k');
-          hold(xax,'off');
-          hold(yax,'on');
-          plot(yax,zi,y_fit.*1e3,'Color','k');
-          hold(yax,'off');
-          xax.YLim=ylim_x; yax.YLim=ylim_y;
+          if ~isempty(xax)
+            ylim_x=xax.YLim;
+            hold(xax,'on');
+            plot(xax,zi,x_fit.*1e3,'Color','k');
+            hold(xax,'off');
+            xax.YLim=ylim_x;
+          end
+          if ~isempty(yax)
+            ylim_y=yax.YLim;
+            hold(yax,'on');
+            plot(yax,zi,y_fit.*1e3,'Color','k');
+            hold(yax,'off');
+            yax.YLim=ylim_y;
+          end
         end
         idf=id(1):id(end);
         i0m=obj.regid(1);
@@ -1924,12 +1957,16 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
           x_fit(n) = Xf(1); y_fit(n) = Xf(3) ;
         end
         zi=arrayfun(@(x) BEAMLINE{x}.Coordi(3),idf);
-        hold(xax,'on');
-        plot(xax,zi,x_fit.*1e3,'Color',F2_common.ColorOrder(2,:));
-        hold(xax,'off');
-        hold(yax,'on');
-        plot(yax,zi,y_fit.*1e3,'Color',F2_common.ColorOrder(2,:));
-        hold(yax,'off');
+        if ~isempty(xax)
+          hold(xax,'on');
+          plot(xax,zi,x_fit.*1e3,'Color',F2_common.ColorOrder(2,:));
+          hold(xax,'off');
+        end
+        if ~isempty(yax)
+          hold(yax,'on');
+          plot(yax,zi,y_fit.*1e3,'Color',F2_common.ColorOrder(2,:));
+          hold(yax,'off');
+        end
       end
       % Plot magnet bar
       F2_common.AddMagnetPlotZ(obj.LM.istart,obj.LM.iend,ahan(1)) ;

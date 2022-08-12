@@ -50,6 +50,7 @@ classdef F2_WirescanApp < handle
   end
   properties(Constant)
     usejit logical = [1 0 0 0 0 0 0 0 0 1 1] % Can use jitter correction for wires?
+    aidabpms logical = [0          1         1           1          1          1         1          1            1          0           0     ]
     wires string = ["IN10:561" "LI11:444" "LI11:614" "LI11:744" "LI12:214" "LI18:944" "LI19:144" "LI19:244" "LI19:344" "LI20:3179" "LI20:3206"]
     wiremodel string = ["WS10561" "WS11444" "WS11614" "WS11744" "WS12214" "WS18944" "WS19144" "WS19244" "WS19344" "IPWS1" "IPWS3"]
     pmts string = ["IN10:561" "LI11:444" "LI11:614" "LI11:744" "LI12:214" "LI18:944" "LI19:144" "LI19:244" "LI19:344" "LI20:3060" "LI20:3070" "LI20:3179" "LI20:3350" "LI20:3360"]
@@ -197,6 +198,22 @@ classdef F2_WirescanApp < handle
       % Start wire scan
       lcaPutNoWait(wirecmd,1);
       
+      % If there AIDA BPMs, get buffered data whilst scan is happening
+      if obj.aidabpms(obj.wiresel)
+        aidapva;
+        builder = pvaRequest('FACET-II:BUFFACQ');
+        builder.with('BPMD', 57);
+        builder.with('NRPOS', double(obj.npulses+50));
+        builder.timeout(180);
+        builder.with('BPMS', cellstr(obj.bpms(obj.bpmsel))) ;
+        try 
+          mstruct = ML(builder.get()) ;
+        catch
+          fprintf(2,'Failed to get AIDA BPMs, probably asking for too many pulses, try reducing pulses or increasing beam rate\n');
+          mstruct = [];
+        end
+      end
+      
       % Monitor scan progress
       obj.data=[];
       while string(cell2mat(lcaGet(wirecmd)))=="Scanning"
@@ -242,10 +259,37 @@ classdef F2_WirescanApp < handle
         obj.data.pmt=lcaGet(cellstr("PMT:"+obj.pmts(:)+":QDCRAWHST"+obj.edef),scanWireBufferNum) ;
         obj.data.toro = lcaGet(cellstr("TORO:"+obj.tors(:)+":0:TMITHST"+obj.edef),scanWireBufferNum) ;
         if ~isempty(obj.bpms)
-          obj.data.xbpm1 = lcaGet(char(obj.bpms(obj.bpmsel(1))+":XHST"+obj.edef),scanWireBufferNum).*1e-3 ;
-          obj.data.xbpm2 = lcaGet(char(obj.bpms(obj.bpmsel(2))+":XHST"+obj.edef),scanWireBufferNum).*1e-3 ;
-          obj.data.ybpm1 = lcaGet(char(obj.bpms(obj.bpmsel(1))+":YHST"+obj.edef),scanWireBufferNum).*1e-3 ;
-          obj.data.ybpm2 = lcaGet(char(obj.bpms(obj.bpmsel(2))+":YHST"+obj.edef),scanWireBufferNum).*1e-3 ;
+          if obj.aidabpms(obj.wiresel) && ~isempty(mstruct) % align bpm data with pulse IDs
+            nameid1 = ismember( string(mstruct.name) , obj.bpms(obj.bpmsel(1)) ) ;
+            nameid2 = ismember( string(mstruct.name) , obj.bpms(obj.bpmsel(2)) ) ;
+            id1 = mstruct.id(nameid1) ; id2 = mstruct.id(nameid2) ;
+            x1 = mstruct.x(nameid1) ; x2 = mstruct.x(nameid2) ;
+            y1 = mstruct.y(nameid1) ; y2 = mstruct.y(nameid2) ;
+            [pidmatch1,pid1] = ismember(id1,obj.data.pid) ;
+            [pidmatch2,pid2] = ismember(id2,obj.data.pid) ;
+            if sum(pidmatch1) < obj.npulses || sum(pidmatch2) < obj.npulses
+              obj.data.xbpm1 = zeros(size(obj.data.toro)) ;
+              obj.data.xbpm2 = obj.data.xbpm1;
+              obj.data.ybpm1 = obj.data.xbpm1 ;
+              obj.data.ybpm2 = obj.data.xbpm2 ;
+              fprintf(2,'No overlap found between AIDA BPMs and wirescanner data\n');
+            else
+              obj.data.xbpm1(pid1(pid1>0)) = x1(pidmatch1) ;
+              obj.data.xbpm2(pid2(pid2>0)) = x2(pidmatch2) ;
+              obj.data.ybpm1(pid1(pid1>0)) = y1(pidmatch1) ;
+              obj.data.ybpm2(pid2(pid2>0)) = y2(pidmatch2) ;
+            end
+          elseif obj.aidabpms(obj.wiresel) % failed to get AIDA BPMs
+            obj.data.xbpm1 = zeros(size(obj.data.toro)) ;
+            obj.data.xbpm2 = obj.data.xbpm1;
+            obj.data.ybpm1 = obj.data.xbpm1 ;
+            obj.data.ybpm2 = obj.data.xbpm2 ;
+          else % EPICS buffered BPM data
+            obj.data.xbpm1 = lcaGet(char(obj.bpms(obj.bpmsel(1))+":XHST"+obj.edef),scanWireBufferNum).*1e-3 ;
+            obj.data.xbpm2 = lcaGet(char(obj.bpms(obj.bpmsel(2))+":XHST"+obj.edef),scanWireBufferNum).*1e-3 ;
+            obj.data.ybpm1 = lcaGet(char(obj.bpms(obj.bpmsel(1))+":YHST"+obj.edef),scanWireBufferNum).*1e-3 ;
+            obj.data.ybpm2 = lcaGet(char(obj.bpms(obj.bpmsel(2))+":YHST"+obj.edef),scanWireBufferNum).*1e-3 ;
+          end
           % Convert to position at wire
           obj.LLM.UpdateModel ;
           mname=obj.modelbpms;
@@ -701,6 +745,22 @@ classdef F2_WirescanApp < handle
           bpms = ["BPMS:LI20:3156" "BPMS:LI20:3218" "BPMS:LI20:3265" "BPMS:LI20:3315"] ;
         case "WIRE:IN10:561"
           bpms = ["BPMS:IN10:425" "BPMS:IN10:525" "BPMS:IN10:581" "BPMS:IN10:631"] ;
+        case "WIRE:LI11:444"
+          bpms = ["BPMS:LI11:401" "BPMS:LI11:501" "BPMS:LI11:601" "BPMS:LI11:701"] ;
+        case "WIRE:LI11:614"
+          bpms = ["BPMS:LI11:501" "BPMS:LI11:601" "BPMS:LI11:701" "BPMS:LI11:801"] ;
+        case "WIRE:LI11:744"
+          bpms = ["BPMS:LI11:601" "BPMS:LI11:701" "BPMS:LI11:801" "BPMS:LI11:901"] ;
+        case "WIRE:LI12:214"
+          bpms = ["BPMS:LI11:901" "BPMS:LI12:201" "BPMS:LI12:301" "BPMS:LI12:401"] ;
+        case "WIRE:LI18:944"
+          bpms = ["BPMS:LI18:801" "BPMS:LI18:901" "BPMS:LI19:201" "BPMS:LI19:301"] ;
+        case "WIRE:LI19:144"
+          bpms = ["BPMS:LI18:801" "BPMS:LI18:901" "BPMS:LI19:201" "BPMS:LI19:301"] ;
+        case "WIRE:LI19:244"
+          bpms = ["BPMS:LI18:901" "BPMS:LI19:201" "BPMS:LI19:301" "BPMS:LI19:401"] ;
+        case "WIRE:LI19:344"
+          bpms = ["BPMS:LI19:201" "BPMS:LI19:301" "BPMS:LI19:401" "BPMS:LI19:501"] ;
       end
     end
     function bpms = get.modelbpms(obj)
