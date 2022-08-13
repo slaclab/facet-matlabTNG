@@ -400,6 +400,11 @@ classdef F2_DAN_exported < matlab.apps.AppBase
         function PrinttologbookButtonPushed(app, event)
             fh = figure(101);
             newAx = axes;
+            
+            yyaxis(app.ImageAxes,'right');
+            ylabel(newAx, '', 'Interpreter', 'none');
+            yyaxis(app.ImageAxes,'left');
+            
             copyobj(app.ImageAxes.Children, newAx);
             uiAxParams = get(app.ImageAxes);
             uiAxParamsNames = fieldnames(uiAxParams);
@@ -420,6 +425,9 @@ classdef F2_DAN_exported < matlab.apps.AppBase
             titleS = app.ImageAxes.Title.String;
             xlabS = app.ImageAxes.XLabel.String;
             ylabS = app.ImageAxes.YLabel.String;
+            yyaxis(app.ImageAxes,'right');
+            ylab2S = app.ImageAxes.YLabel.String;
+            yyaxis(app.ImageAxes,'left');
 
             set(newAx, uiAxGoodParams);
             %coptiyobj(uiAxGoodParams,newAx);
@@ -434,6 +442,18 @@ classdef F2_DAN_exported < matlab.apps.AppBase
             title(app.ImageAxes, titleS, 'Interpreter', 'none');
             xlabel(app.ImageAxes, xlabS, 'Interpreter', 'none');
             ylabel(app.ImageAxes, ylabS, 'Interpreter', 'none');
+            yyaxis(app.ImageAxes,'right');
+            ylabel(app.ImageAxes, ylab2S, 'Interpreter', 'none');
+            yyaxis(app.ImageAxes,'left');
+            
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            
+            info_str = sprintf('%s %s', xlabS, ylabS);
+            
+            set(gcf,'Position',[10 10 10 10]);
+            util_printLog2020(fh,'title',titleS,...
+            'author','DAN','text',info_str);
+            clf(99), close(99);
             
         end
 
@@ -532,7 +552,7 @@ classdef F2_DAN_exported < matlab.apps.AppBase
 
             % Create expDropDown
             app.expDropDown = uidropdown(app.dataSet);
-            app.expDropDown.Items = {'TEST', 'E300', 'E305', 'E320', 'E325', 'E326', 'E327', 'E332'};
+            app.expDropDown.Items = {'TEST', 'E300', 'E305', 'E308', 'E320', 'E325', 'E326', 'E327', 'E332'};
             app.expDropDown.Position = [98 335 124 22];
             app.expDropDown.Value = 'TEST';
 
@@ -819,7 +839,6 @@ classdef F2_DAN_exported < matlab.apps.AppBase
             title(app.ImageAxes, 'Title')
             xlabel(app.ImageAxes, 'X')
             ylabel(app.ImageAxes, 'Y')
-            app.ImageAxes.FontSize = 14;
             app.ImageAxes.Position = [363 409 803 509];
 
             % Create WaterfallplotPanel

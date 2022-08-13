@@ -2,7 +2,7 @@ function applauncher()
 %APPLAUNCHER Matlab GUI application launcher server
 
 % List of apps which need Live Model
-LLM_apps = ["F2_LEM" "F2_LiveModel" "F2_Matching" "F2_MultiWire" "F2_Orbit" "F2_Wirescan"] ;
+LLM_apps = ["F2_LEM" "F2_LiveModel" "F2_Matching" "F2_MultiWire" "F2_Orbit" "F2_Wirescan" "F2_OrbitBump"] ;
 
 % Form user to use for client-server comms
 username = string(getenv('USER'))+"_"+string(getenv('PHYSICS_USER')) ;
