@@ -36,6 +36,8 @@ classdef F2_aligner_control < handle
                 'MOTR:LI20:MC08:S1:CH4', 'MOTR:LI20:MC08:S1:CH3', 570, 477,1,-1);
             s.aList.PBFar = cAligner('CAMR:LI20:306', ...
                 'MOTR:LI20:MC08:S3:CH2', 'MOTR:LI20:MC08:S3:CH1', 604, 530,-1,-1);
+            s.aList.Probeline0HeNe = cAligner('CAMR:LI20:200', ... 
+                'MOTR:LI20:MC07:S1:CH2', 'MOTR:LI20:MC07:S1:CH1', 658, 422, 1, 1);
             
 %             s.aList.PL0B3 = cAligner('CAMR:LI20:200', ... 
 %                 'MOTR:LI20:MC07:S1:CH2', 'MOTR:LI20:MC07:S1:CH1', 632, 391,-1,-1);
@@ -137,6 +139,10 @@ classdef F2_aligner_control < handle
         function moveHorP(s)
             step = s.GUI.StepsizerevsEditField.Value;
             s.aList.(s.currentCamera).moveX(step);
+        end
+        
+        function setExposure(s,expT)
+            s.aList.(s.currentCamera).cam.setExposure(expT);
         end
     end
 end

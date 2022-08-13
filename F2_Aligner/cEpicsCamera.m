@@ -68,7 +68,7 @@ classdef cEpicsCamera < handle
     %% Setters
     methods
         function setExposure(s, expT)
-            lcaPutSmart([s.cameraPV,':AcquireTime'], expT)
+            lcaPutSmart([s.PV,':AcquireTime'], expT);
         end
     end
     
