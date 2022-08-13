@@ -1,4 +1,4 @@
-classdef scanFunc_TargetMountX
+classdef scanFunc_E320_YAG_vertical
     properties
         pvlist PV
         pvs
@@ -15,7 +15,7 @@ classdef scanFunc_TargetMountX
     
     methods 
         
-        function obj = scanFunc_TargetMountX(daqhandle)
+        function obj = scanFunc_E320_YAG_vertical(daqhandle)
             
             % Check if scanfunc called by DAQ
             if exist('daqhandle','var')
