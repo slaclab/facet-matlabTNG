@@ -1,11 +1,14 @@
 classdef F2_OrbitBumpApp < handle
+  properties
+    FO % F2_Orbit object
+    corapp % link to corrector app
+  end
   properties(SetObservable,AbortSet)
     BumpVal = 0 % Corrector bump amplitude (m) at targetID
     UseRegion(1,11) logical = true(1,11) % ["INJ";"L0";"DL1";"L1";"BC11";"L2";"BC14";"L3";"BC20";"FFS";"SPECTDUMP"]
     usecor(1,3) = [1,2,3] % Corrector ID's to use in bump (indexed to obj.CORS)
     targetID % BEAMLINE index of desired bump location 
     dim string {mustBeMember(dim,["x","y"])} = "x" % Bumps considered in horizontal (x) or vertical (y) dimension
-    FO % F2_Orbit object
   end
   properties(SetAccess=private)
     XCORS % LucretiaModel object for XCORS
@@ -50,22 +53,28 @@ classdef F2_OrbitBumpApp < handle
       obj.LM=copy(obj.LiveModel.LM);
       addpath ../F2_Orbit
       obj.FO = F2_OrbitApp(true,obj.LiveModel) ;
-      obj.FO.npulse=20;
+      if ~isempty(obj.guihan)
+        obj.FO.npulse=obj.guihan.NAveEditField.Value;
+      else
+        obj.FO.npulse=20;
+      end
       obj.FO.usebpmbuff=false;
-      obj.XCORS = F2_mags(obj.LM) ; obj.XCORS.MagClasses="XCOR" ; obj.XCORS.autoupdate=true; 
-      obj.YCORS = F2_mags(obj.LM) ; obj.YCORS.MagClasses="YCOR" ; obj.YCORS.autoupdate=true;
+      obj.XCORS = F2_mags(obj.LM) ; obj.XCORS.MagClasses="XCOR" ; obj.XCORS.ReadB ; obj.XCORS.autoupdate=true; 
+      obj.YCORS = F2_mags(obj.LM) ; obj.YCORS.MagClasses="YCOR" ; obj.YCORS.ReadB ; obj.YCORS.autoupdate=true;
       obj.targetID = obj.LM.ModelID(floor(length(obj.LM.ModelID)/2)) ; % dummy initial target ID
-      obj.ChooseCor;
-      obj.GetCorResp();
-      obj.ProcCors();
       %
+      obj.FO.acquire();
+      obj.FO.StoreRef();
+      obj.FO.UseRefOrbit="local";
+      if ~isempty(obj.guihan)
+        obj.guihan.ReferenceEditField.Value=datestr(now);
+      end
       addlistener(obj.XCORS,'PVUpdated',@(~,~) obj.ProcCors) ;
       addlistener(obj.YCORS,'PVUpdated',@(~,~) obj.ProcCors) ;
       addlistener(obj.LiveModel,'ModelUpdated',@(~,~) obj.ModelUpdate) ;
-      obj.StartTimer;
     end
     function StartTimer(obj)
-      obj.tobj=timer('ExecutionMode','fixedRate','Period',1,'TimerFcn',@ProcLoop) ;
+      obj.tobj=timer('ExecutionMode','fixedRate','Period',1,'TimerFcn',@(~,~) obj.ProcLoop) ;
       start(obj.tobj);
     end
     function StopTimer(obj)
@@ -74,54 +83,121 @@ classdef F2_OrbitBumpApp < handle
       end
     end
     function SetBump(obj)
-%       control_magnetSet(cellstr(obj.CorControlNames),obj.CorBDESRef(:)+obj.CorCoef(:).*obj.BumpVal);
+      dkick = obj.CorCoef(:).*obj.BumpVal ;
+      dbdes = dkick .* obj.CORS.LM.ModelP(obj.usecor).*LucretiaModel.GEV2KGM ;
+      for icor=1:3; fprintf(2,'SET %s %g -> %g\n',obj.CorControlNames(icor),obj.CorBDESRef(icor),obj.CorBDESRef(icor)+dbdes(icor)); end
+      control_magnetSet(cellstr(obj.CorControlNames),obj.CorBDESRef(:)+dbdes);
     end
   end
-  methods(Access=private)
+  methods(Hidden)
     function ModelUpdate(obj)
       obj.GetCorCoef;
       obj.GetCorResp;
       if ~isempty(obj.guihan)
-        obj.guihan.ListBox_2.Items = sprintf("%s / %.1f",obj.CorModelNames,obj.CorResp) ;
+        obj.guihan.ListBox_2.Items = obj.CORS.LM.ControlNames(:) + " / " + obj.CorResp(:) ;
         obj.guihan.ListBox_2.ItemsData = 1:length(obj.guihan.ListBox_2.Items) ;
         obj.guihan.ListBox_2.Value = obj.guihan.ListBox_2.ItemsData(obj.usecor) ;
         drawnow;
       end
+      obj.ProcCors;
     end
     function ProcCors(obj)
       %PROCCORS Process changes to corrector magnet readbacks
       if ~isempty(obj.guihan)
-        obj.guihan.EditField_4.Value = obj.CORS.BDES_cntrl(obj.usecor(1)) ;
-        obj.guihan.EditField_16.Value = obj.CORS.BACT_cntrl(obj.usecor(1)) ;
-        obj.guihan.EditField_6.Value = obj.CORS.KLDES_cntrl(obj.usecor(1)) * 1e3 ;
-        obj.guihan.EditField_8.Value = obj.CORS.BDES_cntrl(obj.usecor(2)) ;
-        obj.guihan.EditField_17.Value = obj.CORS.BACT_cntrl(obj.usecor(2)) ;
-        obj.guihan.EditField_10.Value = obj.CORS.KLDES_cntrl(obj.usecor(2)) * 1e3 ;
-        obj.guihan.EditField_12.Value = obj.CORS.BDES_cntrl(obj.usecor(3)) ;
-        obj.guihan.EditField_18.Value = obj.CORS.BACT_cntrl(obj.usecor(3)) ;
-        obj.guihan.EditField_14.Value = obj.CORS.KLDES_cntrl(obj.usecor(3)) * 1e3 ;
+        dkick = obj.CorCoef(:).*obj.BumpVal ;
+        dbdes = dkick .* obj.CORS.LM.ModelP(obj.usecor).*LucretiaModel.GEV2KGM ;
+        bdes=obj.CorBDESRef(:)+dbdes(:) ;
+        bact = obj.CORS.BACT_cntrl(obj.usecor) ;
+        if abs(bact(1)-bdes(1)) > 1e-4 && abs(bact(1)-bdes(1)) / abs(bdes(1)) > 0.02
+          obj.guihan.EditField_16.FontColor = 'r';
+        else
+          obj.guihan.EditField_16.FontColor = 'k';
+        end
+        if abs(bact(2)-bdes(2)) > 1e-4 && abs(bact(2)-bdes(2)) / abs(bdes(2)) > 0.02
+          obj.guihan.EditField_17.FontColor = 'r';
+        else
+          obj.guihan.EditField_17.FontColor = 'k';
+        end
+        if abs(bact(1)-bdes(3)) > 1e-4 && abs(bact(3)-bdes(3)) / abs(bdes(3)) > 0.02
+          obj.guihan.EditField_18.FontColor = 'r';
+        else
+          obj.guihan.EditField_18.FontColor = 'k';
+        end
+        obj.guihan.EditField_4.Value = bdes(1) ;
+        obj.guihan.EditField_16.Value = bact(1) ;
+        obj.guihan.EditField_6.Value = dkick(1)*1e3 ;
+        obj.guihan.EditField_8.Value = bdes(2) ;
+        obj.guihan.EditField_17.Value = bact(2) ;
+        obj.guihan.EditField_10.Value = dkick(2) * 1e3 ;
+        obj.guihan.EditField_12.Value = bdes(3) ;
+        obj.guihan.EditField_18.Value = bact(3) ;
+        obj.guihan.EditField_14.Value = dkick(3) * 1e3 ;
         obj.guihan.BumpRange.Value = sprintf("[ %.1f : %.1f ]",obj.BumpRange.*1e3) ;
         obj.guihan.BumpRdb_cor.Value = obj.BumpVal_rdb * 1e3 ;
         obj.guihan.BumpVal.Limits = obj.BumpRange .* 1e3 ;
         drawnow;
       end
+      % If corrector panel open, update numbers
+      if ~isempty(obj.corapp) && isprop(obj.corapp,'Cor1')
+        obj.corapp.Update();
+      end
     end
     function ProcLoop(obj,~)
       %PROCLOOP Main processing loop (for BPM updates)
+      global BEAMLINE
       try
         obj.FO.BPMS.read(); % Update BPM buffer
         [~,X1]=obj.FO.orbitfit; obj.OrbitFit=X1;
         if ~isempty(obj.guihan)
+          cla(obj.guihan.PlotAxes); obj.guihan.PlotAxes.reset();
+          [xm,ym,xstd,ystd,~,id] = obj.FO.GetOrbit ;
+          z1 = arrayfun(@(x) BEAMLINE{x}.Coordi(3),id) ;
           if obj.dim=="x"
-            obj.guihan.BumpRdb_bpm.Value = X1(1).*1e3 ;
-            obj.FO.plotbpm([obj.guihan.PlotAxes 0],1,0,0);
+            obj.guihan.BumpRdb_bpm.Value = X1(1) ;
+            errorbar(obj.guihan.PlotAxes,z1,xm,xstd,'.','MarkerFaceColor',F2_common.ColorOrder(2,:));
+            ylabel(obj.guihan.PlotAxes,'X [mm]');
           else
-            obj.guihan.BumpRdb_bpm.Value = X1(3).*1e3 ;
-            obj.FO.plotbpm([0 obj.guihan.PlotAxes],1,0,0);
+            obj.guihan.BumpRdb_bpm.Value = X1(3) ;
+            errorbar(obj.guihan.PlotAxes,z1,ym,ystd,'.','MarkerFaceColor',F2_common.ColorOrder(2,:));
+            ylabel(obj.guihan.PlotAxes,'Y [mm]');
           end
+          
+          % Superimpose design kick
+          dkick = obj.CorCoef(:).*obj.BumpVal ;
+          icor = obj.CORS.LM.ModelID(obj.usecor) ;
+          np=range(icor)+1;
+          if obj.dim=="x"; inds=[1 2]; else; inds=[3 4]; end
+          z=zeros(1,np); x=z;
+          for iele=1:np
+            blele = icor(1)-1+iele ;
+            z(iele) = BEAMLINE{blele}.Coordi(3) ;
+            x(iele) = 0 ;
+            if blele>icor(1) && blele<=icor(2)
+              [~,R]=RmatAtoB(icor(1),blele-1);
+              x(iele) = R(inds(1),inds(2))*dkick(1) ;
+            elseif blele>icor(2)
+              [~,R1]=RmatAtoB(icor(1),blele-1);
+              [~,R2]=RmatAtoB(icor(2),blele-1);
+              x(iele) = R1(inds(1),inds(2))*dkick(1) + R2(inds(1),inds(2))*dkick(2);
+            end
+          end
+          hold(obj.guihan.PlotAxes,'on');
+          plot(obj.guihan.PlotAxes,z,x*1e3,'r--');
+          zpl_z=linspace(z1(1),z(1),100); zpl_x=zeros(size(zpl_z)); 
+          plot(obj.guihan.PlotAxes,zpl_z,zpl_x,'r--');
+          zpl_z=linspace(z(end),z1(end),100);
+          plot(obj.guihan.PlotAxes,zpl_z,zpl_x,'r--');
+          % Plot magnet bar
+          F2_common.AddMagnetPlotZ(obj.FO.LM.istart,obj.FO.LM.iend,obj.guihan.PlotAxes) ;
+          obj.guihan.PlotAxes.XLim=[z1(1) z1(end)];
+          ax=axis(obj.guihan.PlotAxes);
+          line(obj.guihan.PlotAxes,ones(1,2).*obj.targetZ,ax(3:4),'Color','m');
+          hold(obj.guihan.PlotAxes,'off');
+          grid(obj.guihan.PlotAxes,'on');
           drawnow;
         end
       catch ME
+        drawnow;
         fprintf(2,'F2_OrbitBumpApp main loop error:\n');
         fprintf(2,sprintf('%s\n',ME.message));
       end
@@ -137,8 +213,7 @@ classdef F2_OrbitBumpApp < handle
       elseif id==obj.CORS.LM.ModelID(1)
         id=id+1;
       end
-      obj.usecor = [id-1 id id+1] ;
-      obj.GetCorCoef();
+      obj.usecor = [id-1 id id+1] ; % Calls GetCorCoef etc
     end
     function GetCorResp(obj)
       %GETCORRESP Get response matrices from correctors to targetID
@@ -192,6 +267,7 @@ classdef F2_OrbitBumpApp < handle
   methods
     function set.BumpVal(obj,val)
       obj.BumpVal = val ;
+      obj.ProcCors();
     end
     function val = get.BumpVal_rdb(obj)
       val = mean((obj.CorKick-obj.CorKickRef) ./ obj.CorCoef) ;
@@ -209,8 +285,8 @@ classdef F2_OrbitBumpApp < handle
     function maxvals = get.CorMax(obj)
       maxvals=[obj.CORS.BMAX(obj.usecor(1)) obj.CORS.BMAX(obj.usecor(2)) obj.CORS.BMAX(obj.usecor(3))];
     end
-    function minvals = get.CorMaxKick(obj)
-      minvals=-[obj.CORS.BMAX(obj.usecor(1)) obj.CORS.BMAX(obj.usecor(2)) obj.CORS.BMAX(obj.usecor(3))]./...
+    function maxvals = get.CorMaxKick(obj)
+      maxvals=[obj.CORS.BMAX(obj.usecor(1)) obj.CORS.BMAX(obj.usecor(2)) obj.CORS.BMAX(obj.usecor(3))]./...
         [obj.CORS.LM.ModelP(obj.usecor(1)).*LucretiaModel.GEV2KGM obj.CORS.LM.ModelP(obj.usecor(2)).*LucretiaModel.GEV2KGM obj.CORS.LM.ModelP(obj.usecor(3)).*LucretiaModel.GEV2KGM] ;
     end
     function names = get.CorModelNames(obj)
@@ -220,11 +296,11 @@ classdef F2_OrbitBumpApp < handle
       names = obj.CORS.LM.ControlNames(obj.usecor) ;
     end
     function range = get.BumpRange(obj)
-      maxkick = obj.CorMaxKick - obj.CorKick ;
-      minkick = -obj.CorMaxKick - obj.CorKick ;
+      maxkick = obj.CorMaxKick - obj.CorKickRef ;
+      minkick = -obj.CorMaxKick - obj.CorKickRef ;
       maxbump = maxkick./obj.CorCoef ; maxbump=min(maxbump) ;
       minbump = minkick./obj.CorCoef ; minbump=max(minbump) ;
-      range = obj.BumpVal + [minbump,maxbump] ;
+      range = sort([minbump,maxbump]) ;
     end
     function set.usecor(obj,icor)
       obj.usecor=icor;
@@ -232,6 +308,9 @@ classdef F2_OrbitBumpApp < handle
       obj.CorKickRef = obj.CorKick ;
       obj.CorBDESRef = obj.CorBDES ;
       obj.ProcCors();
+      if ~isempty(obj.corapp) && isprop(obj.corapp,'Cor1')
+        obj.corapp.init(char(obj.CorControlNames(1)),char(obj.CorControlNames(2)),char(obj.CorControlNames(3)));
+      end
     end
     function set.targetID(obj,id)
       if id>obj.CORS.LM.ModelID(end)
@@ -243,6 +322,7 @@ classdef F2_OrbitBumpApp < handle
       obj.targetID=id;
       obj.ChooseCor;
       obj.FO.fitele=id;
+      obj.GetCorResp();
     end
     function set.targetName(obj,name)
       global BEAMLINE
@@ -256,9 +336,6 @@ classdef F2_OrbitBumpApp < handle
       global BEAMLINE
       name = BEAMLINE{obj.targetID}.Name ;
     end
-    function z = get.targetZ(obj)
-      z = obj.LM.ModelZ(ismember(obj.LM.ModelID,obj.targetID)) ;
-    end
     function CORS = get.CORS(obj)
       if obj.dim=="x"
         CORS=obj.XCORS;
@@ -268,10 +345,10 @@ classdef F2_OrbitBumpApp < handle
     end
     function set.UseRegion(obj,reg)
       obj.UseRegion=reg;
-      obj.FO.UseRegion(reg);
-      obj.XCORS.UseRegion(reg); obj.XCORS.ReadB();
-      obj.YCORS.UseRegion(reg); obj.YCORS.ReadB();
-      obj.LM.UseRegion(reg);
+      obj.FO.UseRegion=reg;
+      obj.XCORS.LM.UseRegion=reg; obj.XCORS.ReadB();
+      obj.YCORS.LM.UseRegion=reg; obj.YCORS.ReadB();
+      obj.LM.UseRegion=reg;
       if ~ismember(obj.targetName,obj.LM.ModelNames)
         obj.targetID = obj.LM.ModelID(floor(length(obj.LM.ModelID)/2)) ; % dummy initial target ID
       end
@@ -284,6 +361,10 @@ classdef F2_OrbitBumpApp < handle
       obj.ChooseCor;
       obj.GetCorResp();
       obj.ProcCors();
+    end
+    function z = get.targetZ(obj)
+      global BEAMLINE
+      z=BEAMLINE{obj.targetID}.Coordi(3);
     end
   end
 end

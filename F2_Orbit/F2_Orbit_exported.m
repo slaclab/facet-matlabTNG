@@ -192,37 +192,48 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
       app.INJButtonValueChanged(); % Populates BPM and corrector list boxes
     end
 
-    % Value changed function: BC11Button, BC14Button, 
-    % BC20Button, DL1Button, FFSButton, INJButton, L0Button, 
-    % L1Button, L2Button, L3Button, SPECTButton
+    % Value changed function: BC11Button, BC14Button, BC20Button, 
+    % DL1Button, FFSButton, INJButton, L0Button, L1Button, 
+    % L2Button, L3Button, SPECTButton
     function INJButtonValueChanged(app, event)
       global BEAMLINE
       value = [app.INJButton.Value app.L0Button.Value app.DL1Button.Value app.L1Button.Value ...
         app.BC11Button.Value app.L2Button.Value app.BC14Button.Value app.L3Button.Value ...
         app.BC20Button.Value app.FFSButton.Value app.SPECTButton.Value] ;
-%       ele1=find(value,1);
-%       if isempty(ele1)
-%         value(1)=true;
-%         app.INJButton.Value=true;
-%       end
-%       ele2=find(~value,1)-1;
-%       if isempty(ele2)
-%         ele2=length(value);
-%       elseif ele2<ele1
-%         ele2=length(value);
-%       end
-%       value=false(1,length(value)); value(ele1:ele2)=true;
-      app.INJButton.Value=value(1);
-      app.L0Button.Value=value(2);
-      app.DL1Button.Value=value(3);
-      app.L1Button.Value=value(4);
-      app.BC11Button.Value=value(5);
-      app.L2Button.Value=value(6);
-      app.BC14Button.Value=value(7);
-      app.L3Button.Value=value(8);
-      app.BC20Button.Value=value(9);
-      app.FFSButton.Value=value(10);
-      app.SPECTButton.Value=value(11);
+      if exist('even','var')
+        regname=["INJ" "L0" "DL1" "L1" "BC11" "L2" "BC14" "L3" "BC20" "FFS" "SPECT"];
+        ibut = find(ismember(regname,string(event.Source.Text))) ;
+        if ~any(value)
+          value(ibut)=1;
+        end
+        % Ensure selected regions are contiguous
+        ireg=find(value);
+        if length(ireg)>1
+          for regid=2:length(ireg)
+            if (ireg(regid)-ireg(regid-1)) > 1
+              if ibut==min(ireg)
+                ireg = ireg(1:regid-1) ;
+                break ;
+              else
+                ireg(1:regid-1)=[];
+              end
+            end
+          end
+        end
+        value=false(size(value));
+        value(ireg)=true;
+        app.INJButton.Value=value(1);
+        app.L0Button.Value=value(2);
+        app.DL1Button.Value=value(3);
+        app.L1Button.Value=value(4);
+        app.BC11Button.Value=value(5);
+        app.L2Button.Value=value(6);
+        app.BC14Button.Value=value(7);
+        app.L3Button.Value=value(8);
+        app.BC20Button.Value=value(9);
+        app.FFSButton.Value=value(10);
+        app.SPECTButton.Value=value(11);
+      end
       drawnow
       app.aobj.UseRegion = value ;
       app.EditField_13.Value = BEAMLINE{app.aobj.fitele}.Name ;

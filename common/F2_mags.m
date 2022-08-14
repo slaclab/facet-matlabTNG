@@ -79,27 +79,25 @@ classdef F2_mags < handle & matlab.mixin.Copyable & F2_common
         obj.LM.ModelBDES = bdes ;
       end
       % Write BMIN/BMAX values
-      if isempty(obj.BMAX) % only need to update when changing magnet selection
-        maxpv = obj.LM.ControlNames+":BMAX" ;
-        lgps = find(startsWith(maxpv,"LGPS")) ;
-        for ipv=lgps(:)'
-          t=regexp(maxpv(ipv),"LGPS:(\w+):(\d+)",'tokens','once');
-          maxpv(ipv) = t(1) + ":LGPS:" + t(2) + ":BMAX" ;
-        end
-        minpv = regexprep(maxpv,"(BMAX)$","BMIN") ;
-        dominpv = true(size(minpv)); dominpv(contains(minpv,["QUAS","LGPS","SXTS"])) = false ;
-        dominpv(~startsWith(minpv,"QUAD") & ~startsWith(minpv,"XCOR") & ~startsWith(minpv,"YCOR")) = false ;
-        obj.BMAX = lcaGet(cellstr(maxpv(:))) ; % obj.BMAX(val>=0) = val(val>=0) ; obj.BMIN(val<0) = val(val<0) ;
-        obj.BMIN = zeros(size(obj.BMAX)) ;
-        if any(dominpv)
-          obj.BMIN(dominpv) = lcaGet(cellstr(minpv(dominpv))) ;
-        end
-        isinv = obj.BMAX<obj.BMIN ;
-        tempmax = obj.BMAX(isinv) ;
-        obj.BMAX(isinv) = obj.BMIN(isinv) ;
-        obj.BMIN(isinv) = tempmax ;
-        obj.BMAX=obj.BMAX(:); obj.BMIN=obj.BMIN(:);
+      maxpv = obj.LM.ControlNames+":BMAX" ;
+      lgps = find(startsWith(maxpv,"LGPS")) ;
+      for ipv=lgps(:)'
+        t=regexp(maxpv(ipv),"LGPS:(\w+):(\d+)",'tokens','once');
+        maxpv(ipv) = t(1) + ":LGPS:" + t(2) + ":BMAX" ;
       end
+      minpv = regexprep(maxpv,"(BMAX)$","BMIN") ;
+      dominpv = true(size(minpv)); dominpv(contains(minpv,["QUAS","LGPS","SXTS"])) = false ;
+      dominpv(~startsWith(minpv,"QUAD") & ~startsWith(minpv,"XCOR") & ~startsWith(minpv,"YCOR")) = false ;
+      obj.BMAX = lcaGet(cellstr(maxpv(:))) ; % obj.BMAX(val>=0) = val(val>=0) ; obj.BMIN(val<0) = val(val<0) ;
+      obj.BMIN = zeros(size(obj.BMAX)) ;
+      if any(dominpv)
+        obj.BMIN(dominpv) = lcaGet(cellstr(minpv(dominpv))) ;
+      end
+      isinv = obj.BMAX<obj.BMIN ;
+      tempmax = obj.BMAX(isinv) ;
+      obj.BMAX(isinv) = obj.BMIN(isinv) ;
+      obj.BMIN(isinv) = tempmax ;
+      obj.BMAX=obj.BMAX(:); obj.BMIN=obj.BMIN(:);
       % Apply any fudge factors
       if obj.UseFudge && ~isempty(obj.Bfud)
         [ifud,wfud] = ismember(obj.LM.ModelNames,obj.BfudName) ;

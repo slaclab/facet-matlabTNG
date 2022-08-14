@@ -257,12 +257,15 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
     end
     function acquire(obj,npulse)
       %ACQUIRE Get bpm and corrector data
-      %acquire(npulse)
+      %acquire([npulse])
       global BEAMLINE
       % Clear data
       obj.DispFit=[];
       obj.DispData=[];
       % BPM data:
+      if ~exist('npulse','var')
+        npulse=obj.npulse;
+      end
       if obj.usebpmbuff
         obj.BPMS.readbuffer(npulse);
       else
@@ -1761,7 +1764,7 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
       if ~any(use)
         error('No Data to plot');
       end
-      if ~exist('ahan','var') || isempty(ahan) || obj.aobj.logplot
+      if ~exist('ahan','var') || isempty(ahan) || (~isempty(obj.aobj) && obj.aobj.logplot)
         fhan=figure;
         sp1=subplot(2,1,1,'Parent',fhan);
         sp2=subplot(2,1,2,'Parent',fhan);
@@ -1969,10 +1972,14 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
         end
       end
       % Plot magnet bar
-      F2_common.AddMagnetPlotZ(obj.LM.istart,obj.LM.iend,ahan(1)) ;
-      F2_common.AddMagnetPlotZ(obj.LM.istart,obj.LM.iend,ahan(2)) ;
-      ahan(1).XLim=[zmin zmax];
-      ahan(2).XLim=[zmin zmax];
+      if ~isempty(xax)
+        F2_common.AddMagnetPlotZ(obj.LM.istart,obj.LM.iend,xax) ;
+        xax.XLim=[zmin zmax];
+      end
+      if ~isempty(yax)
+        F2_common.AddMagnetPlotZ(obj.LM.istart,obj.LM.iend,yax) ;
+        yax.XLim=[zmin zmax];
+      end
       
       % Logbook plot
       if ~isempty(obj.aobj) && obj.aobj.logplot
