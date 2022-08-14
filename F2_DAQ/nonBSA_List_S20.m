@@ -46,6 +46,30 @@ S20_nonBSA_List = {...
 'XPS:LI20:MC05:M7'; % E13 Ionizer Imaging
 'XPS:LI20:MC05:M8'; % E9 Ionizer Delay
 
+% E-320 motors start
+'XPS:LI20:MC10:M1'; % E-320 alignment target (AT) up/down (vertical)
+'XPS:LI20:MC10:M2'; % E-320 MO tower in/out
+'XPS:LI20:MC10:M3'; % E-320 OAP assembly in/out
+'XPS:LI20:MC10:M4'; % E-320 elliptical mirror in/out
+'XPS:LI20:MC10:M5'; % E-320 MO tower up/down (vertical)
+
+'MOTR:LI20:MC08:S6:CH1:MOTOR'; % AT focal
+'MOTR:LI20:MC08:S6:CH2:MOTOR'; % AT horizontal
+'MOTR:LI20:MC08:S6:CH3:MOTOR'; % MO focal
+'MOTR:LI20:MC08:S6:CH4:MOTOR'; % MO horizontal
+
+'MOTR:LI20:MC08:S7:CH1:MOTOR'; % OAP1 vertical rid
+'MOTR:LI20:MC08:S7:CH2:MOTOR'; % OAP1 horizontal ril
+'MOTR:LI20:MC08:S7:CH3:MOTOR'; % OAP1 vertical tilt riu (rid?)
+'MOTR:LI20:MC08:S7:CH4:MOTOR'; % OAP1 horizontal tilt ril
+
+'MOTR:LI20:MC08:S8:CH1:MOTOR'; % OAP1 focal
+'MOTR:LI20:MC08:S8:CH2:MOTOR'; % OAP2 focal
+'MOTR:LI20:MC08:S8:CH3:MOTOR'; % OAP2 horizontal
+'MOTR:LI20:MC08:S8:CH4:MOTOR'; % OAP2 vertical
+% E-320 motors end
+
+
 'RADM:LI20:1:CH01:MEAS'; % Rad monitor IP
 'RADM:LI20:2:CH01:MEAS'; % Rad monitor Dump table
 'LION:LI20:3120:VACT'; % LI19-LION-3N

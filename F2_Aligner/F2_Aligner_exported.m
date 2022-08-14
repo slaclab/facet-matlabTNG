@@ -102,6 +102,18 @@ classdef F2_Aligner_exported < matlab.apps.AppBase
         function DownButtonPushed(app, event)
             app.aligner.moveVerP();
         end
+
+        % Value changed function: ExposuretimeEditField
+        function ExposuretimeEditFieldValueChanged(app, event)
+            value = app.ExposuretimeEditField.Value;
+            app.aligner.setExposure(value); 
+        end
+
+        % Close request function: UIFigure
+        function UIFigureCloseRequest(app, event)
+            delete(app)
+            exit;
+        end
     end
 
     % Component initialization
@@ -114,6 +126,7 @@ classdef F2_Aligner_exported < matlab.apps.AppBase
             app.UIFigure = uifigure('Visible', 'off');
             app.UIFigure.Position = [100 100 751 907];
             app.UIFigure.Name = 'MATLAB App';
+            app.UIFigure.CloseRequestFcn = createCallbackFcn(app, @UIFigureCloseRequest, true);
 
             % Create ImageAxes
             app.ImageAxes = uiaxes(app.UIFigure);
@@ -193,6 +206,7 @@ classdef F2_Aligner_exported < matlab.apps.AppBase
 
             % Create ExposuretimeEditField
             app.ExposuretimeEditField = uieditfield(app.CamerasettingsPanel, 'numeric');
+            app.ExposuretimeEditField.ValueChangedFcn = createCallbackFcn(app, @ExposuretimeEditFieldValueChanged, true);
             app.ExposuretimeEditField.Position = [308 61 83 22];
 
             % Create StartButton
@@ -257,11 +271,13 @@ classdef F2_Aligner_exported < matlab.apps.AppBase
 
             % Create ShowcentroidfitCheckBox
             app.ShowcentroidfitCheckBox = uicheckbox(app.TargetPanel);
+            app.ShowcentroidfitCheckBox.Enable = 'off';
             app.ShowcentroidfitCheckBox.Text = 'Show centroid fit';
             app.ShowcentroidfitCheckBox.Position = [21 14 112 22];
 
             % Create ShowtraceCheckBox
             app.ShowtraceCheckBox = uicheckbox(app.TargetPanel);
+            app.ShowtraceCheckBox.Enable = 'off';
             app.ShowtraceCheckBox.Text = 'Show trace';
             app.ShowtraceCheckBox.Position = [154 14 83 22];
 
