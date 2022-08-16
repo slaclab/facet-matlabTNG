@@ -17,13 +17,13 @@ int main(int argc, char **argv){
     char hname[2000];
     int server_struct_length = sizeof(server_addr);
     
-    /* Don't use server for facet-srv*
+    /* Don't use server for facet-srv */
     sprintf(hname,"%s",getenv("HOSTNAME"));
     if (!strncmp(hname,"facet-srv",9)) {
       sprintf(rungui,"xterm -iconic -T \"%s\" -e \"cd /usr/local/facet/tools/matlabTNG; ./rungui.sh %s\" &",argv[1],argv[1]);
       system( rungui ) ;
       return 0;
-    }*/
+    }
     
     /* check command line arguments */
     if (argc != 3) {
