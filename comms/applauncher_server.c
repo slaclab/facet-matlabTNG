@@ -4,19 +4,27 @@
 #include <arpa/inet.h>
 #include <dirent.h>
 #include "mex.h"
-#define SOCKNO 49152
 
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, 
   const mxArray *prhs[]) {
     int socket_desc;
+    int portno=49153;
     struct sockaddr_in server_addr, client_addr;
     char server_message[2000], client_message[2000];
     int client_struct_length = sizeof(client_addr);
     
     // Check output parameters
-    if (nlhs<1)
+    if (nlhs<1) {
       mexPrintf("Error, must supply output parameter");
+      return;
+    }
+    if (nrhs<1) {
+      mexPrintf("Error, must supply port number string");
+      return;
+    }
     
+    // Get port number
+    portno = (int) *mxGetPr(prhs[0]);
     
     // Clean buffers:
     memset(server_message, '\0', sizeof(server_message));
@@ -32,15 +40,24 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs,
     }
     printf("Socket created successfully\n");
     
+    // Set timeout for waiting for server response
+    struct timeval tv;
+    tv.tv_sec = 60;
+    tv.tv_usec = 0;
+    if (setsockopt(socket_desc, SOL_SOCKET, SO_RCVTIMEO,&tv,sizeof(tv)) < 0) {
+      perror("Error");
+    }
+    
     // Set port and IP:
     server_addr.sin_family = AF_INET;
-    //printf("Using socket port %d\n",portno);
-    server_addr.sin_port = htons(SOCKNO);
+    printf("Using socket port %d\n",portno);
+    server_addr.sin_port = htons(portno);
     server_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
     
     // Bind to the set port and IP:
     if(bind(socket_desc, (struct sockaddr*)&server_addr, sizeof(server_addr)) < 0){
         printf("Couldn't bind to the port\n");
+        close(socket_desc);
         plhs[0] = mxCreateString((const char *) client_message);
         return ;
     }
@@ -53,6 +70,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs,
          (struct sockaddr*)&client_addr, &client_struct_length) < 0){
       plhs[0] = mxCreateString((const char *) client_message);  
       printf("Couldn't receive\n");
+      close(socket_desc);
         return ;
     }
     printf("Received message from IP: %s and port: %i\n",
@@ -68,6 +86,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs,
     if (sendto(socket_desc, server_message, strlen(server_message), 0,
          (struct sockaddr*)&client_addr, client_struct_length) < 0){
         printf("Can't send\n");
+        close(socket_desc);
         return ;
     }
     

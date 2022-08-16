@@ -5,38 +5,31 @@
 #include <arpa/inet.h>
 #include <dirent.h>
 #include <string.h>
-#define SOCKNO 49152
+#define SOCK1 49153
+#define MAXSOCK 49155
 
 int main(int argc, char **argv){
     int socket_desc;
+    int sockno=SOCK1;
     struct sockaddr_in server_addr;
     char server_message[2000], client_message[2000];
     char rungui[2000] ;
     char hname[2000];
     int server_struct_length = sizeof(server_addr);
     
-    // Don't use server for facet-srv*
+    /* Don't use server for facet-srv*
     sprintf(hname,"%s",getenv("HOSTNAME"));
     if (!strncmp(hname,"facet-srv",9)) {
       sprintf(rungui,"xterm -iconic -T \"%s\" -e \"cd /usr/local/facet/tools/matlabTNG; ./rungui.sh %s\" &",argv[1],argv[1]);
       system( rungui ) ;
       return 0;
-    }
+    }*/
     
     /* check command line arguments */
-    if (argc != 2) {
-      fprintf(stderr,"usage: %s <message>\n", argv[0]);
+    if (argc != 3) {
+      fprintf(stderr,"usage: %s <appname> \"<workspace_num> <xpos> <ypos>\"\n", argv[0]);
       return -1;
     }
-    
-    /* Form username from environmental variables */
-    char username[2000];
-    char *user1 = "USER";
-    char *user2 = "PHYSICS_USER";
-    if ( getenv(user2) )
-      sprintf(username,"%s_%s",getenv(user1),getenv(user2));
-    else
-      sprintf(username,"%s_",getenv(user1));
     
     // Clean buffers:
     memset(server_message, '\0', sizeof(server_message));
@@ -53,18 +46,11 @@ int main(int argc, char **argv){
     
     // Set port and IP:
     server_addr.sin_family = AF_INET;
-    server_addr.sin_port = htons(SOCKNO);
+    server_addr.sin_port = htons(sockno);
     server_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
     
     // Get input from the user:
-    sprintf(client_message,"%s$$%s",username,argv[1]);
-    
-    // Send the message to server:
-    if(sendto(socket_desc, client_message, strlen(client_message), 0,
-         (struct sockaddr*)&server_addr, server_struct_length) < 0){
-        printf("Unable to send message\n");
-        return -1;
-    }
+    sprintf(client_message,"%s %s",argv[1],argv[2]); // app,workspace,xpos,ypos
     
     // Set timeout for waiting for server response
     struct timeval tv;
@@ -74,22 +60,47 @@ int main(int argc, char **argv){
       perror("Error");
     }
     
-    // Receive the server's response
-    while (recvfrom(socket_desc, server_message, sizeof(server_message), 0,
-         (struct sockaddr*)&server_addr, &server_struct_length) > 0 ) ;
-    printf("Server response: %s\n",server_message);
-      
-    // server should respond with the same message as sent
-    if (strcmp((const char*) server_message, client_message))
+    // Send the message to server:
+    while (sockno<=MAXSOCK)
     {
-      if ( strcmp(argv[1],"SHUTDOWN") &&  strcmp(argv[1],"TEST")) {
-          printf("Error communicating with server, using rungui.sh\n");
-          sprintf(rungui,"xterm -iconic -T \"%s\" -e \"cd /usr/local/facet/tools/matlabTNG; ./rungui.sh %s\" &",argv[1],argv[1]);
-          system( rungui ) ;
+      if(sendto(socket_desc, client_message, strlen(client_message), 0,
+              (struct sockaddr*)&server_addr, server_struct_length) < 0)
+      {
+        printf("Unable to send message, trying socket %d\n",++sockno);
+        server_addr.sin_port = htons(sockno);
+        continue;
+      }
+      
+
+      // Receive the server's response
+      while (recvfrom(socket_desc, server_message, sizeof(server_message), 0,
+           (struct sockaddr*)&server_addr, &server_struct_length) > 0 ) ;
+      printf("Server response: %s\n",server_message);
+
+      // server should respond with the same message as sent
+      if (strcmp((const char*) server_message, client_message))
+      {
+        if (sockno==MAXSOCK)
+        {
+          if ( strcmp(argv[1],"SHUTDOWN") &&  strcmp(argv[1],"TEST")) {
+              printf("Error communicating with server, using rungui.sh\n");
+              sprintf(rungui,"xterm -iconic -T \"%s\" -e \"cd /usr/local/facet/tools/matlabTNG; ./rungui.sh %s\" &",argv[1],argv[1]);
+              system( rungui ) ;
+          }
+          close(socket_desc);
+          return -1;
         }
-      return -1;
+        else
+        {
+          printf("Unable to send message, trying socket %d\n",++sockno);
+          server_addr.sin_port = htons(sockno);
+        }
+      }
+      else
+      {
+        break;
+      }
     }
-    
     // Close the socket:
     close(socket_desc);
     
