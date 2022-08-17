@@ -15,7 +15,7 @@ classdef scanFunc_E320_OAP1_vertical
     
     methods 
         
-        function obj = scanFunc_LensMountX(daqhandle)
+        function obj = scanFunc_E320_OAP1_vertical(daqhandle)
             
             % Check if scanfunc called by DAQ
             if exist('daqhandle','var')
