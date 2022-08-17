@@ -19,6 +19,7 @@ classdef F2_DAQ_exported < matlab.apps.AppBase
         FastDAQCheckBox                matlab.ui.control.CheckBox
         RateDropDownLabel              matlab.ui.control.Label
         RateDropDown                   matlab.ui.control.DropDown
+        SaveLaserBGCheckBox            matlab.ui.control.CheckBox
         CameraConfigPanel              matlab.ui.container.Panel
         Tree                           matlab.ui.container.Tree
         AddButton                      matlab.ui.control.Button
@@ -468,6 +469,12 @@ classdef F2_DAQ_exported < matlab.apps.AppBase
             app.RateDropDown.Tooltip = {'Beam rate may be any value. Select a different rate to limit the rate of the DAQ.'};
             app.RateDropDown.Position = [88 157 71 22];
             app.RateDropDown.Value = 'Beam';
+
+            % Create SaveLaserBGCheckBox
+            app.SaveLaserBGCheckBox = uicheckbox(app.DAQSettingsPanel);
+            app.SaveLaserBGCheckBox.Enable = 'off';
+            app.SaveLaserBGCheckBox.Text = 'Save Laser BG';
+            app.SaveLaserBGCheckBox.Position = [144 50 104 22];
 
             % Create CameraConfigPanel
             app.CameraConfigPanel = uipanel(app.FACETIIDAQUIFigure);
