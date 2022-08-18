@@ -72,7 +72,7 @@ classdef F2_S20ConfigApp < handle & F2_common
   end
   properties(Constant)
 %     Q_BMAX = [256 446 457 440 440 440 239 386 240] ; % absolute max field of quads
-    Q_BMAX = [256.29 446.44 457.02 167.5 246.58 167.5 239.7 386.8 233.2] ; % absolute max field of quads
+    Q_BMAX = [256.29 446.44 457.02 167.5 275 167.5 239.7 386.8 233.2] ; % absolute max field of quads
     QuadNames string = ["Q5FF" "Q4FF" "Q3FF" "Q2FF" "Q1FF" "Q0FF" "Q0D" "Q1D" "Q2D"]
     QuadUnitNo uint16 = [3011 3311 3151 1910 3204 3031 3142 3261 3091]
     IPClassList string = ["MARK" "PROF" "WIRE" "INST"] % Lucretia Classes to include in IP waist location selection
