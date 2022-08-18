@@ -438,7 +438,11 @@ classdef F2_WirescanApp < handle
           dq(1) = parstd(4); dq(2) = parstd(1); dq(3)=parstd(2); dq(4)=parstd(3);
       end
       sigma = abs(q(4))*1e6; sigmaErr = abs(dq(4))*1e6;
-      sigma = sqrt(sigma.^2 - obj.WireDiam.^2) ;
+      if sigma<(obj.WireDiam/4)
+        sigma=0;
+      else
+        sigma = sqrt(sigma.^2 - (obj.WireDiam/4).^2) ;
+      end
       center = q(3)*1e6; centerErr = dq(3)*1e6 ;
       obj.fitdata.sigma=sigma; obj.fitdata.sigmaErr=sigmaErr;
       obj.fitdata.center=center; obj.fitdata.centerErr = centerErr ;
