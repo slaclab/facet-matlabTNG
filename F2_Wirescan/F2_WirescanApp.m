@@ -20,6 +20,7 @@ classdef F2_WirescanApp < handle
     blenvals(1,2) = [-inf,inf] % Window values for bunch length measurements
     blenwin logical = false % Window cut on blen measurements?
     chargenorm logical = false % Do charge normalization using PMT?
+    WireDiam = 60 % um
   end
   properties(SetAccess=private)
     data
@@ -437,6 +438,7 @@ classdef F2_WirescanApp < handle
           dq(1) = parstd(4); dq(2) = parstd(1); dq(3)=parstd(2); dq(4)=parstd(3);
       end
       sigma = abs(q(4))*1e6; sigmaErr = abs(dq(4))*1e6;
+      sigma = sqrt(sigma.^2 - obj.WireDiam.^2) ;
       center = q(3)*1e6; centerErr = dq(3)*1e6 ;
       obj.fitdata.sigma=sigma; obj.fitdata.sigmaErr=sigmaErr;
       obj.fitdata.center=center; obj.fitdata.centerErr = centerErr ;
@@ -492,10 +494,14 @@ classdef F2_WirescanApp < handle
         obj.confload;
         return
       end
-      lpar = ["pmtsel" "jittercor" "chargenorm" "blenwin" "bpmsel" "torsel" "blmsel" "fitmethod" "data" "scansuccess" "blenvals"] ;
+      lpar = ["pmtsel" "jittercor" "chargenorm" "blenwin" "bpmsel" "torsel" "blmsel" "fitmethod" "data" "scansuccess" "blenvals" "WireDiam"] ;
       for ipar=1:length(lpar)
         if isfield(ld,lpar(ipar))
-          obj.(lpar(ipar)) = ld.(lpar(ipar)) ;
+          try
+            obj.(lpar(ipar)) = ld.(lpar(ipar)) ;
+          catch
+            fprintf(2,sprintf("No entry for parameter %s, using default value",lpar(ipar)));
+          end
         end
       end
       if isempty(ld.data)
@@ -519,7 +525,7 @@ classdef F2_WirescanApp < handle
       if ~exist('fname','file')
         fname = F2_common.confdir + "/F2_Wirescan/" + obj.wirename + "_" + obj.plane + ".mat" ;
       end
-      lpar = ["pmtsel" "jittercor" "chargenorm" "blenwin" "bpmsel" "torsel" "blmsel" "fitmethod" "data" "motor_range" "npulses" "scansuccess" "blenvals" "fitdata"] ;
+      lpar = ["pmtsel" "jittercor" "chargenorm" "blenwin" "bpmsel" "torsel" "blmsel" "fitmethod" "data" "motor_range" "npulses" "scansuccess" "blenvals" "fitdata" "WireDiam"] ;
       for ipar=1:length(lpar)
         ss.(lpar(ipar))=obj.(lpar(ipar));
       end
@@ -857,6 +863,11 @@ classdef F2_WirescanApp < handle
     function set.chargenorm(obj,docn)
       obj.chargenorm=docn;
       obj.confsave;
+    end
+    function set.WireDiam(obj,diam)
+      obj.WireDiam=diam;
+      obj.confsave;
+      obj.ProcData;
     end
   end
 end

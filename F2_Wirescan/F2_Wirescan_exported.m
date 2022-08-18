@@ -41,6 +41,9 @@ classdef F2_Wirescan_exported < matlab.apps.AppBase
     Label_4                       matlab.ui.control.Label
     FitMethodDropDownLabel        matlab.ui.control.Label
     FitMethodDropDown             matlab.ui.control.DropDown
+    Label_8                       matlab.ui.control.Label
+    WireDiameterumEditFieldLabel  matlab.ui.control.Label
+    WireDiameterumEditField       matlab.ui.control.NumericEditField
     RightPanel                    matlab.ui.container.Panel
     UIAxes                        matlab.ui.control.UIAxes
     EditField                     matlab.ui.control.NumericEditField
@@ -372,6 +375,13 @@ classdef F2_Wirescan_exported < matlab.apps.AppBase
       delete(app)
       
     end
+
+    % Value changed function: WireDiameterumEditField
+    function WireDiameterumEditFieldValueChanged(app, event)
+      value = app.WireDiameterumEditField.Value;
+      app.aobj.WireDiam = value ;
+      app.aobj.guiupdate;
+    end
   end
 
   % Component initialization
@@ -428,19 +438,19 @@ classdef F2_Wirescan_exported < matlab.apps.AppBase
       % Create MeasurementPanel
       app.MeasurementPanel = uipanel(app.LeftPanel);
       app.MeasurementPanel.Title = 'Measurement';
-      app.MeasurementPanel.Position = [21 372 260 213];
+      app.MeasurementPanel.Position = [21 403 260 186];
 
       % Create WIREDropDownLabel
       app.WIREDropDownLabel = uilabel(app.MeasurementPanel);
       app.WIREDropDownLabel.HorizontalAlignment = 'right';
-      app.WIREDropDownLabel.Position = [13 115 39 22];
+      app.WIREDropDownLabel.Position = [13 103 39 22];
       app.WIREDropDownLabel.Text = 'WIRE:';
 
       % Create WIREDropDown
       app.WIREDropDown = uidropdown(app.MeasurementPanel);
       app.WIREDropDown.Items = {'IN10:561', 'LI11:444', 'LI11:614', 'LI11:744', 'LI12:214', 'LI18:944', 'LI19:144', 'LI19:244', 'LI19:344'};
       app.WIREDropDown.ValueChangedFcn = createCallbackFcn(app, @WIREDropDownValueChanged, true);
-      app.WIREDropDown.Position = [67 115 144 22];
+      app.WIREDropDown.Position = [67 103 144 22];
       app.WIREDropDown.Value = 'IN10:561';
 
       % Create StartScanButton
@@ -462,7 +472,7 @@ classdef F2_Wirescan_exported < matlab.apps.AppBase
       % Create ButtonGroup
       app.ButtonGroup = uibuttongroup(app.MeasurementPanel);
       app.ButtonGroup.SelectionChangedFcn = createCallbackFcn(app, @ButtonGroupSelectionChanged, true);
-      app.ButtonGroup.Position = [8 149 241 30];
+      app.ButtonGroup.Position = [8 131 241 30];
 
       % Create XButton
       app.XButton = uiradiobutton(app.ButtonGroup);
@@ -483,134 +493,151 @@ classdef F2_Wirescan_exported < matlab.apps.AppBase
       % Create PMTDropDownLabel
       app.PMTDropDownLabel = uilabel(app.MeasurementPanel);
       app.PMTDropDownLabel.HorizontalAlignment = 'right';
-      app.PMTDropDownLabel.Position = [12 83 32 22];
+      app.PMTDropDownLabel.Position = [12 77 32 22];
       app.PMTDropDownLabel.Text = 'PMT:';
 
       % Create PMTDropDown
       app.PMTDropDown = uidropdown(app.MeasurementPanel);
       app.PMTDropDown.Items = {'LI19:144'};
       app.PMTDropDown.ValueChangedFcn = createCallbackFcn(app, @PMTDropDownValueChanged, true);
-      app.PMTDropDown.Position = [59 83 152 22];
+      app.PMTDropDown.Position = [59 77 152 22];
       app.PMTDropDown.Value = 'LI19:144';
 
       % Create ProcessingPanel
       app.ProcessingPanel = uipanel(app.LeftPanel);
       app.ProcessingPanel.Title = 'Processing';
-      app.ProcessingPanel.Position = [21 7 260 359];
+      app.ProcessingPanel.Position = [21 7 260 392];
 
       % Create JitterCorrectionCheckBox
       app.JitterCorrectionCheckBox = uicheckbox(app.ProcessingPanel);
       app.JitterCorrectionCheckBox.ValueChangedFcn = createCallbackFcn(app, @JitterCorrectionCheckBoxValueChanged, true);
       app.JitterCorrectionCheckBox.Text = 'Jitter Correction';
-      app.JitterCorrectionCheckBox.Position = [12 307 108 22];
+      app.JitterCorrectionCheckBox.Position = [12 305 108 22];
 
       % Create ChargeNormalizationCheckBox
       app.ChargeNormalizationCheckBox = uicheckbox(app.ProcessingPanel);
       app.ChargeNormalizationCheckBox.ValueChangedFcn = createCallbackFcn(app, @ChargeNormalizationCheckBoxValueChanged, true);
       app.ChargeNormalizationCheckBox.Text = 'Charge Normalization';
-      app.ChargeNormalizationCheckBox.Position = [13 199 142 22];
+      app.ChargeNormalizationCheckBox.Position = [13 197 142 22];
 
       % Create BunchLengthWindowingCheckBox
       app.BunchLengthWindowingCheckBox = uicheckbox(app.ProcessingPanel);
       app.BunchLengthWindowingCheckBox.ValueChangedFcn = createCallbackFcn(app, @BunchLengthWindowingCheckBoxValueChanged, true);
       app.BunchLengthWindowingCheckBox.Enable = 'off';
       app.BunchLengthWindowingCheckBox.Text = 'Bunch Length Windowing';
-      app.BunchLengthWindowingCheckBox.Position = [13 119 162 22];
+      app.BunchLengthWindowingCheckBox.Position = [13 117 162 22];
 
       % Create TORODropDownLabel
       app.TORODropDownLabel = uilabel(app.ProcessingPanel);
       app.TORODropDownLabel.HorizontalAlignment = 'right';
-      app.TORODropDownLabel.Position = [10 170 42 22];
+      app.TORODropDownLabel.Position = [10 168 42 22];
       app.TORODropDownLabel.Text = 'TORO:';
 
       % Create TORODropDown
       app.TORODropDown = uidropdown(app.ProcessingPanel);
       app.TORODropDown.Items = {'IN10:431', 'IN10:591', 'LI11:360', 'LI14:890', 'LI20:1988', 'LI20:2040', 'LI20:2452', 'LI20:3163', 'LI20:3255'};
       app.TORODropDown.ValueChangedFcn = createCallbackFcn(app, @TORODropDownValueChanged, true);
-      app.TORODropDown.Position = [67 170 153 22];
+      app.TORODropDown.Position = [67 168 153 22];
       app.TORODropDown.Value = 'IN10:431';
 
       % Create BLENDropDownLabel
       app.BLENDropDownLabel = uilabel(app.ProcessingPanel);
       app.BLENDropDownLabel.HorizontalAlignment = 'right';
-      app.BLENDropDownLabel.Position = [11 91 40 22];
+      app.BLENDropDownLabel.Position = [11 89 40 22];
       app.BLENDropDownLabel.Text = 'BLEN:';
 
       % Create BLENDropDown
       app.BLENDropDown = uidropdown(app.ProcessingPanel);
       app.BLENDropDown.Items = {'---'};
       app.BLENDropDown.ValueChangedFcn = createCallbackFcn(app, @BLENDropDownValueChanged, true);
-      app.BLENDropDown.Position = [66 91 145 22];
+      app.BLENDropDown.Position = [66 89 145 22];
       app.BLENDropDown.Value = '---';
 
       % Create BPM1DropDownLabel
       app.BPM1DropDownLabel = uilabel(app.ProcessingPanel);
       app.BPM1DropDownLabel.HorizontalAlignment = 'right';
-      app.BPM1DropDownLabel.Position = [13 275 41 22];
+      app.BPM1DropDownLabel.Position = [13 273 41 22];
       app.BPM1DropDownLabel.Text = 'BPM1:';
 
       % Create BPM1DropDown
       app.BPM1DropDown = uidropdown(app.ProcessingPanel);
       app.BPM1DropDown.Items = {'---'};
       app.BPM1DropDown.ValueChangedFcn = createCallbackFcn(app, @BPM1DropDownValueChanged, true);
-      app.BPM1DropDown.Position = [69 275 100 22];
+      app.BPM1DropDown.Position = [69 273 100 22];
       app.BPM1DropDown.Value = '---';
 
       % Create BPM2DropDownLabel
       app.BPM2DropDownLabel = uilabel(app.ProcessingPanel);
       app.BPM2DropDownLabel.HorizontalAlignment = 'right';
-      app.BPM2DropDownLabel.Position = [13 245 41 22];
+      app.BPM2DropDownLabel.Position = [13 243 41 22];
       app.BPM2DropDownLabel.Text = 'BPM2:';
 
       % Create BPM2DropDown
       app.BPM2DropDown = uidropdown(app.ProcessingPanel);
       app.BPM2DropDown.Items = {'---'};
       app.BPM2DropDown.ValueChangedFcn = createCallbackFcn(app, @BPM2DropDownValueChanged, true);
-      app.BPM2DropDown.Position = [69 245 100 22];
+      app.BPM2DropDown.Position = [69 243 100 22];
       app.BPM2DropDown.Value = '---';
 
       % Create EditField_3
       app.EditField_3 = uieditfield(app.ProcessingPanel, 'numeric');
       app.EditField_3.ValueChangedFcn = createCallbackFcn(app, @EditField_3ValueChanged, true);
-      app.EditField_3.Position = [12 61 100 22];
+      app.EditField_3.Position = [12 59 100 22];
 
       % Create EditField_4
       app.EditField_4 = uieditfield(app.ProcessingPanel, 'numeric');
       app.EditField_4.ValueChangedFcn = createCallbackFcn(app, @EditField_4ValueChanged, true);
-      app.EditField_4.Position = [141 61 100 22];
+      app.EditField_4.Position = [141 59 100 22];
 
       % Create Label
       app.Label = uilabel(app.ProcessingPanel);
-      app.Label.Position = [120 61 17 22];
+      app.Label.Position = [120 59 17 22];
       app.Label.Text = '---';
 
       % Create Label_2
       app.Label_2 = uilabel(app.ProcessingPanel);
-      app.Label_2.Position = [11 144 235 22];
+      app.Label_2.Position = [11 142 235 22];
       app.Label_2.Text = '---------------------------------------------------------';
 
       % Create Label_3
       app.Label_3 = uilabel(app.ProcessingPanel);
-      app.Label_3.Position = [12 222 235 22];
+      app.Label_3.Position = [12 220 235 22];
       app.Label_3.Text = '---------------------------------------------------------';
 
       % Create Label_4
       app.Label_4 = uilabel(app.ProcessingPanel);
-      app.Label_4.Position = [10 34 235 22];
+      app.Label_4.Position = [10 32 235 22];
       app.Label_4.Text = '---------------------------------------------------------';
 
       % Create FitMethodDropDownLabel
       app.FitMethodDropDownLabel = uilabel(app.ProcessingPanel);
       app.FitMethodDropDownLabel.HorizontalAlignment = 'right';
-      app.FitMethodDropDownLabel.Position = [13 8 65 22];
+      app.FitMethodDropDownLabel.Position = [13 6 65 22];
       app.FitMethodDropDownLabel.Text = 'Fit Method:';
 
       % Create FitMethodDropDown
       app.FitMethodDropDown = uidropdown(app.ProcessingPanel);
       app.FitMethodDropDown.Items = {'Gaussian', 'Asymm Gaussian', 'Asymm Gaussian (2)'};
       app.FitMethodDropDown.ValueChangedFcn = createCallbackFcn(app, @FitMethodDropDownValueChanged, true);
-      app.FitMethodDropDown.Position = [93 8 154 22];
+      app.FitMethodDropDown.Position = [93 6 154 22];
       app.FitMethodDropDown.Value = 'Asymm Gaussian (2)';
+
+      % Create Label_8
+      app.Label_8 = uilabel(app.ProcessingPanel);
+      app.Label_8.Position = [10 327 235 22];
+      app.Label_8.Text = '---------------------------------------------------------';
+
+      % Create WireDiameterumEditFieldLabel
+      app.WireDiameterumEditFieldLabel = uilabel(app.ProcessingPanel);
+      app.WireDiameterumEditFieldLabel.HorizontalAlignment = 'right';
+      app.WireDiameterumEditFieldLabel.Position = [34 343 111 22];
+      app.WireDiameterumEditFieldLabel.Text = 'Wire Diameter (um)';
+
+      % Create WireDiameterumEditField
+      app.WireDiameterumEditField = uieditfield(app.ProcessingPanel, 'numeric');
+      app.WireDiameterumEditField.ValueChangedFcn = createCallbackFcn(app, @WireDiameterumEditFieldValueChanged, true);
+      app.WireDiameterumEditField.Position = [154 343 46 22];
+      app.WireDiameterumEditField.Value = 60;
 
       % Create RightPanel
       app.RightPanel = uipanel(app.GridLayout);
