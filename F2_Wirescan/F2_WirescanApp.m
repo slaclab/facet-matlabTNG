@@ -200,6 +200,7 @@ classdef F2_WirescanApp < handle
       lcaPutNoWait(wirecmd,1);
       
       % If there AIDA BPMs, get buffered data whilst scan is happening
+      mstruct=[];
       if obj.aidabpms(obj.wiresel) && obj.jittercor
         aidapva;
         builder = pvaRequest('FACET-II:BUFFACQ');
@@ -782,6 +783,22 @@ classdef F2_WirescanApp < handle
           bpms = ["M5FF" "M0EX" "M1EX" "M2EX"] ;
         case "WIRE:IN10:561"
           bpms = ["BPM10425" "BPM10525" "BPM10581" "BPM10631"] ;
+        case "WIRE:LI11:444"
+          bpms = ["BPM11401" "BPM11501" "BPM11601" "BPM11701"] ;
+        case "WIRE:LI11:614"
+          bpms = ["BPM11501" "BPM11601" "BPM11701" "BPM11801"] ;
+        case "WIRE:LI11:744"
+          bpms = ["BPM11601" "BPM11701" "BPM11801" "BPM11901"] ;
+        case "WIRE:LI12:214"
+          bpms = ["BPM11901" "BPM12201" "BPM12301" "BPM12401"] ;
+        case "WIRE:LI18:944"
+          bpms = ["BPM18801" "BPM18901" "BPM19201" "BPM19301"] ;
+        case "WIRE:LI19:144"
+          bpms = ["BPM18801" "BPM18901" "BPM19201" "BPM19301"] ;
+        case "WIRE:LI19:244"
+          bpms = ["BPM18901" "BPM19201" "BPM19301" "BPM19401"] ;
+        case "WIRE:LI19:344"
+          bpms = ["BPM19201" "BPM19301" "BPM19401" "BPM19501"] ;
       end
     end
     function speed = get.motor_speed(obj)

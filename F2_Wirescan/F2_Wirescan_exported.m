@@ -208,20 +208,20 @@ classdef F2_Wirescan_exported < matlab.apps.AppBase
 
     % Button pushed function: StartScanButton
     function StartScanButtonPushed(app, event)
-      app.ScanSuccessLamp.Color='r';
+      app.ScanSuccessLamp.Color='r'; 
       app.aobj.ResetData;
       cla(app.UIAxes); reset(app.UIAxes); axis(app.UIAxes,'off');
       rectangle(app.UIAxes,'Position',[0,0.4,0/100,0.2],'facecolor','g');axis(app.UIAxes,[0 1 0 1]);
       title(app.UIAxes,'Scan Progress...');
       text(app.UIAxes,max([0 0/100-0.1]),0.5,sprintf('%.1f %%',0));
       drawnow
-      try
+%       try
         app.aobj.StartScan ;
-      catch ME
-        errordlg("Scan failed - see xterm window","Scan Failed");
-        eDefRelease(app.aobj.edef);
-        throw(ME);
-      end
+%       catch ME
+%         errordlg("Scan failed - see xterm window","Scan Failed");
+%         eDefRelease(app.aobj.edef);
+%         throw(ME);
+%       end
     end
 
     % Button pushed function: AbortScanButton
