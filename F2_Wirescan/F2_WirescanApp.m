@@ -449,6 +449,13 @@ classdef F2_WirescanApp < handle
       obj.fitdata.center=center; obj.fitdata.centerErr = centerErr ;
       lcaPut(char(obj.wirename+":"+upper(obj.plane)+"RMS"),sigma);
       lcaPut(char(obj.wirename+":"+upper(obj.plane)),center);
+      if obj.wirename == "WIRE:LI20:3179"
+        if obj.plane=="x"
+          lcaPut('SIOC:SYS1:ML01:AO149',sigmaErr);
+        elseif obj.plane=="y"
+          lcaPut('SIOC:SYS1:ML01:AO150',sigmaErr);
+        end
+      end
       
       if ~isempty(ahan)
 %         if ~isempty(obj.guihan) && string(obj.guihan.UnitsDropDown.Value)=="Motor"
