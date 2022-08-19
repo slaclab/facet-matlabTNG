@@ -5,6 +5,15 @@ function applauncher(portno)
 
 addpath comms
 
+% List of status PVs to keep up-to-date
+host=upper(string(getenv('HOSTNAME')));
+context = PV.Initialize(PVtype.EPICS) ;
+pvlist = [PV(context,'name',"Stat1",'pvname',"F2:MATLABSERVER:STAT1:"+host);
+  PV(context,'name',"Stat2",'pvname',"F2:MATLABSERVER:STAT2:"+host);
+  PV(context,'name',"Stat3",'pvname',"F2:MATLABSERVER:STAT3:"+host) ] ;
+pset(pvlist,'debug',0) ;
+pvs = struct(pvlist) ;
+
 % Retrieve port number to communicate on
 portno=str2double(portno);
 
@@ -27,6 +36,7 @@ addpath common
 addpath web
 while 1
   try
+    caput(pvs.Stat1,1); caput(pvs.Stat2,1); caput(pvs.Stat3,1);
     app=string(applauncher_server(portno));
     wID_des=regexp(app,"^\S+\s+(\d+)",'tokens','once');
     app = regexprep(app,'^(\S+).*','$1');
