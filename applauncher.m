@@ -26,7 +26,17 @@ LLM_apps = ["F2_LEM" "F2_LiveModel" "F2_Matching" "F2_MultiWire" "F2_Orbit" "F2_
 
 % generate instance of LiveModel
 disp('Generating instance of LiveModel...');
-LLM = F2_LiveModelApp ; %#ok<NASGU>
+try
+  LLM = F2_LiveModelApp ; %#ok<NASGU>
+catch
+  fprintf(2,'Failed to launch live model, retrying...\n');
+  try
+    LLM = F2_LiveModelApp ; %#ok<NASGU>
+  catch
+    fprintf(2,'Failed to launch live model again, exiting...\n');
+    exit;
+  end
+end
 
 % Open UDP port server and wait for client connection
 fprintf('Matlab Application Launcher Listening on Port %d...',portno);
