@@ -36,7 +36,7 @@ addpath common
 addpath web
 while 1
   try
-    caput(pvs.Stat1,1); caput(pvs.Stat2,1); caput(pvs.Stat3,1);
+    caput(pvs.Stat1,'RUNNING'); caput(pvs.Stat2,'RUNNING'); caput(pvs.Stat3,'RUNNING');
     app=string(applauncher_server(portno));
     wID_des=regexp(app,"^\S+\s+(\d+)",'tokens','once');
     app = regexprep(app,'^(\S+).*','$1');
