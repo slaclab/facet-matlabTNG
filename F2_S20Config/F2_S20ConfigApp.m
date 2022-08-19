@@ -120,8 +120,8 @@ classdef F2_S20ConfigApp < handle & F2_common
         PV(context,'name',"BDES_B5",'pvname',"LI20:LGPS:3330:BDES",'monitor',true);
         PV(context,'name',"IP_BETAX",'pvname',"SIOC:SYS1:ML01:AO129",'monitor',false,'mode',"rw");
         PV(context,'name',"IP_BETAY",'pvname',"SIOC:SYS1:ML01:AO130",'monitor',false,'mode',"rw");
-        PV(context,'name',"BETAX_DES",'pvname',"SIOC:SYS1:ML00:AO352",'monitor',true,'mode',"rw"); % Desire BETA_X
-        PV(context,'name',"BETAY_DES",'pvname',"SIOC:SYS1:ML00:AO354",'monitor',true,'mode',"rw"); % Desire BETA_X
+%         PV(context,'name',"BETAX_DES",'pvname',"SIOC:SYS1:ML00:AO352",'monitor',true,'mode',"rw"); % Desire BETA_X
+%         PV(context,'name',"BETAY_DES",'pvname',"SIOC:SYS1:ML00:AO354",'monitor',true,'mode',"rw"); % Desire BETA_X
         PV(context,'name',"WaistX_DES_Name",'pvname',"SIOC:SYS1:ML00:SO0351",'monitor',true,'mode',"rw");
         PV(context,'name',"WaistY_DES_Name",'pvname',"SIOC:SYS1:ML00:SO0353",'monitor',true,'mode',"rw");
         PV(context,'name',"WaistX_DES_Z",'pvname',"SIOC:SYS1:ML00:AO351");
@@ -220,7 +220,7 @@ classdef F2_S20ConfigApp < handle & F2_common
           if stat{1}~=1
             oval=ones(1,5).*1e4;
           else
-            oval = [abs(objdes-[T.betax(end) T.betay(end)])*100 abs(T.alphax(end))*100 abs(T.alphay(end))*100 sum(abs(x))./1000] ;
+            oval = [abs(objdes-[T.betax(end) T.betay(end)])*300 abs(T.alphax(end))*100 abs(T.alphay(end))*100 sum(abs(x))./10000] ;
           end
         case 3 % return results of FFS match
           oval = [T.betax(end) T.betay(end) T.alphax(end) T.alphay(end)] ;
@@ -504,7 +504,7 @@ classdef F2_S20ConfigApp < handle & F2_common
         obj.E0 = obj.pvs.EBC20.val{1} ;
       end
       obj.dE = obj.pvs.dE.val{1} ;
-      obj.BetaDES = [obj.pvs.BETAX_DES.val{1} obj.pvs.BETAY_DES.val{1}] ;
+%       obj.BetaDES = [obj.pvs.BETAX_DES.val{1} obj.pvs.BETAY_DES.val{1}] ;
       if ~isempty(obj.guihan)
         obj.guihan.BetaX_DES.Value = obj.BetaDES(1)*100 ;
         obj.guihan.BetaY_DES.Value = obj.BetaDES(2)*100 ;
@@ -869,8 +869,8 @@ classdef F2_S20ConfigApp < handle & F2_common
       end
       obj.MatchOK=false;
       % Write BETA DES PVs
-      caput(obj.pvs.BETAX_DES,beta(1));
-      caput(obj.pvs.BETAY_DES,beta(2));
+%       caput(obj.pvs.BETAX_DES,beta(1));
+%       caput(obj.pvs.BETAY_DES,beta(2));
     end
     function set.dE(obj,dE)
       caput(obj.pvs.dE,dE);
