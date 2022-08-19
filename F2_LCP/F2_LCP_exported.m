@@ -15,10 +15,7 @@ classdef F2_LCP_exported < matlab.apps.AppBase
         PBNFFFSwitch                    matlab.ui.control.Switch
         CompressorBeamBlockSwitchLabel  matlab.ui.control.Label
         CompressorBeamBlockSwitch       matlab.ui.control.Switch
-        DelayLinesPanel                 matlab.ui.container.Panel
-        EOSMainEditFieldLabel           matlab.ui.control.Label
-        EOSMainEditField                matlab.ui.control.NumericEditField
-        MainbeamsyncLimitsLabel         matlab.ui.control.Label
+        LasertimingPanel                matlab.ui.container.Panel
         EOSMainEditFieldLabel_2         matlab.ui.control.Label
         EOSMainEditField_2              matlab.ui.control.NumericEditField
         MainbeamsyncLimitsLabel_2       matlab.ui.control.Label
@@ -28,6 +25,12 @@ classdef F2_LCP_exported < matlab.apps.AppBase
         EOSMainEditFieldLabel_4         matlab.ui.control.Label
         EOSMainEditField_4              matlab.ui.control.NumericEditField
         MainbeamsyncLimitsLabel_4       matlab.ui.control.Label
+        MasterdelaylinePanel            matlab.ui.container.Panel
+        SetEditField_2Label_4           matlab.ui.control.Label
+        SetMDLEditField                 matlab.ui.control.NumericEditField
+        Minlongestpath74Label           matlab.ui.control.Label
+        Maxshortestpath76Label          matlab.ui.control.Label
+        MDLRBVLabel                     matlab.ui.control.Label
         EOSPanel                        matlab.ui.container.Panel
         EOSND2SwitchLabel               matlab.ui.control.Label
         EOSND2Switch                    matlab.ui.control.Switch
@@ -63,24 +66,25 @@ classdef F2_LCP_exported < matlab.apps.AppBase
         IPOTR2ND2Switch                 matlab.ui.control.Switch
         IPOTR2BlueSwitchLabel           matlab.ui.control.Label
         IPOTR2BlueSwitch                matlab.ui.control.Switch
+        PrintmotorpositionsButton       matlab.ui.control.Button
+        PrintflipperstatusButton        matlab.ui.control.Button
+        E320Panel                       matlab.ui.container.Panel
+        MOMAGND2SwitchLabel             matlab.ui.control.Label
+        MOMAGND2Switch                  matlab.ui.control.Switch
+        LaserenergyPanel                matlab.ui.container.Panel
         LaserattenuatorPanel            matlab.ui.container.Panel
         SetEditFieldLabel               matlab.ui.control.Label
         SetLaserEditField               matlab.ui.control.NumericEditField
         Max119Label                     matlab.ui.control.Label
         Min74Label                      matlab.ui.control.Label
         LaserRBVLabel                   matlab.ui.control.Label
+        MinimumenergyButton             matlab.ui.control.Button
         ProbeattenuatorPanel            matlab.ui.container.Panel
         SetEditField_2Label             matlab.ui.control.Label
         SetProbeEditField               matlab.ui.control.NumericEditField
         Max82Label                      matlab.ui.control.Label
         Min37Label                      matlab.ui.control.Label
         ProbeRBVLabel                   matlab.ui.control.Label
-        LaserpolarizationPanel          matlab.ui.container.Panel
-        SetEditField_2Label_2           matlab.ui.control.Label
-        SetLPolEditField                matlab.ui.control.NumericEditField
-        SpolPulsed50Label               matlab.ui.control.Label
-        PpolCW95Label                   matlab.ui.control.Label
-        LPolRBVLabel                    matlab.ui.control.Label
         LaseraperturePanel              matlab.ui.container.Panel
         SetEditField_2Label_3           matlab.ui.control.Label
         SetLIrisEditField               matlab.ui.control.NumericEditField
@@ -88,17 +92,12 @@ classdef F2_LCP_exported < matlab.apps.AppBase
         mm40Label                       matlab.ui.control.Label
         LIrisRBVLabel                   matlab.ui.control.Label
         mmmax60Label                    matlab.ui.control.Label
-        PrintmotorpositionsButton       matlab.ui.control.Button
-        PrintflipperstatusButton        matlab.ui.control.Button
-        MasterdelaylinePanel            matlab.ui.container.Panel
-        SetEditField_2Label_4           matlab.ui.control.Label
-        SetMDLEditField                 matlab.ui.control.NumericEditField
-        Minlongestpath74Label           matlab.ui.control.Label
-        Maxshortestpath76Label          matlab.ui.control.Label
-        MDLRBVLabel                     matlab.ui.control.Label
-        E320Panel                       matlab.ui.container.Panel
-        MOMAGND2SwitchLabel             matlab.ui.control.Label
-        MOMAGND2Switch                  matlab.ui.control.Switch
+        LaserpolarizationPanel          matlab.ui.container.Panel
+        SetEditField_2Label_2           matlab.ui.control.Label
+        SetLPolEditField                matlab.ui.control.NumericEditField
+        SpolPulsed50Label               matlab.ui.control.Label
+        PpolCW95Label                   matlab.ui.control.Label
+        LPolRBVLabel                    matlab.ui.control.Label
     end
 
     
@@ -408,6 +407,12 @@ classdef F2_LCP_exported < matlab.apps.AppBase
             app.LCP.SMotorList.MDL.move(value);
             app.updateGUI();
         end
+
+        % Button pushed function: MinimumenergyButton
+        function MinimumenergyButtonPushed(app, event)
+            app.LCP.SMotorList.LaserAttenuator.move(74);
+            app.updateGUI();
+        end
     end
 
     % Component initialization
@@ -497,79 +502,93 @@ classdef F2_LCP_exported < matlab.apps.AppBase
             app.CompressorBeamBlockSwitch.Position = [35 161 45 20];
             app.CompressorBeamBlockSwitch.Value = 'In';
 
-            % Create DelayLinesPanel
-            app.DelayLinesPanel = uipanel(app.UIFigure);
-            app.DelayLinesPanel.Title = 'Delay Lines';
-            app.DelayLinesPanel.Visible = 'off';
-            app.DelayLinesPanel.Position = [798 16 246 364];
-
-            % Create EOSMainEditFieldLabel
-            app.EOSMainEditFieldLabel = uilabel(app.DelayLinesPanel);
-            app.EOSMainEditFieldLabel.HorizontalAlignment = 'right';
-            app.EOSMainEditFieldLabel.Enable = 'off';
-            app.EOSMainEditFieldLabel.Position = [46 308 60 22];
-            app.EOSMainEditFieldLabel.Text = 'EOS Main';
-
-            % Create EOSMainEditField
-            app.EOSMainEditField = uieditfield(app.DelayLinesPanel, 'numeric');
-            app.EOSMainEditField.Position = [121 308 100 22];
-
-            % Create MainbeamsyncLimitsLabel
-            app.MainbeamsyncLimitsLabel = uilabel(app.DelayLinesPanel);
-            app.MainbeamsyncLimitsLabel.Enable = 'off';
-            app.MainbeamsyncLimitsLabel.Position = [83 264 100 30];
-            app.MainbeamsyncLimitsLabel.Text = {'Main beam sync: '; 'Limits:'};
+            % Create LasertimingPanel
+            app.LasertimingPanel = uipanel(app.UIFigure);
+            app.LasertimingPanel.Title = 'Laser timing ';
+            app.LasertimingPanel.Position = [604 20 474 364];
 
             % Create EOSMainEditFieldLabel_2
-            app.EOSMainEditFieldLabel_2 = uilabel(app.DelayLinesPanel);
+            app.EOSMainEditFieldLabel_2 = uilabel(app.LasertimingPanel);
             app.EOSMainEditFieldLabel_2.HorizontalAlignment = 'right';
             app.EOSMainEditFieldLabel_2.Enable = 'off';
-            app.EOSMainEditFieldLabel_2.Position = [72 227 34 22];
+            app.EOSMainEditFieldLabel_2.Position = [303 62 34 22];
             app.EOSMainEditFieldLabel_2.Text = 'E324';
 
             % Create EOSMainEditField_2
-            app.EOSMainEditField_2 = uieditfield(app.DelayLinesPanel, 'numeric');
-            app.EOSMainEditField_2.Position = [121 227 100 22];
+            app.EOSMainEditField_2 = uieditfield(app.LasertimingPanel, 'numeric');
+            app.EOSMainEditField_2.Position = [352 62 100 22];
 
             % Create MainbeamsyncLimitsLabel_2
-            app.MainbeamsyncLimitsLabel_2 = uilabel(app.DelayLinesPanel);
+            app.MainbeamsyncLimitsLabel_2 = uilabel(app.LasertimingPanel);
             app.MainbeamsyncLimitsLabel_2.Enable = 'off';
-            app.MainbeamsyncLimitsLabel_2.Position = [83 183 100 30];
+            app.MainbeamsyncLimitsLabel_2.Position = [314 18 100 30];
             app.MainbeamsyncLimitsLabel_2.Text = {'Main beam sync: '; 'Limits:'};
 
             % Create EOSMainEditFieldLabel_3
-            app.EOSMainEditFieldLabel_3 = uilabel(app.DelayLinesPanel);
+            app.EOSMainEditFieldLabel_3 = uilabel(app.LasertimingPanel);
             app.EOSMainEditFieldLabel_3.HorizontalAlignment = 'right';
             app.EOSMainEditFieldLabel_3.Enable = 'off';
-            app.EOSMainEditFieldLabel_3.Position = [64 146 42 22];
+            app.EOSMainEditFieldLabel_3.Position = [298 135 42 22];
             app.EOSMainEditFieldLabel_3.Text = 'Ionizer';
 
             % Create EOSMainEditField_3
-            app.EOSMainEditField_3 = uieditfield(app.DelayLinesPanel, 'numeric');
-            app.EOSMainEditField_3.Position = [121 146 100 22];
+            app.EOSMainEditField_3 = uieditfield(app.LasertimingPanel, 'numeric');
+            app.EOSMainEditField_3.Position = [355 135 100 22];
 
             % Create MainbeamsyncLimitsLabel_3
-            app.MainbeamsyncLimitsLabel_3 = uilabel(app.DelayLinesPanel);
+            app.MainbeamsyncLimitsLabel_3 = uilabel(app.LasertimingPanel);
             app.MainbeamsyncLimitsLabel_3.Enable = 'off';
-            app.MainbeamsyncLimitsLabel_3.Position = [83 102 100 30];
+            app.MainbeamsyncLimitsLabel_3.Position = [317 91 100 30];
             app.MainbeamsyncLimitsLabel_3.Text = {'Main beam sync: '; 'Limits:'};
 
             % Create EOSMainEditFieldLabel_4
-            app.EOSMainEditFieldLabel_4 = uilabel(app.DelayLinesPanel);
+            app.EOSMainEditFieldLabel_4 = uilabel(app.LasertimingPanel);
             app.EOSMainEditFieldLabel_4.HorizontalAlignment = 'right';
             app.EOSMainEditFieldLabel_4.Enable = 'off';
-            app.EOSMainEditFieldLabel_4.Position = [18 66 88 22];
+            app.EOSMainEditFieldLabel_4.Position = [96 62 88 22];
             app.EOSMainEditFieldLabel_4.Text = 'Shadowgraphy';
 
             % Create EOSMainEditField_4
-            app.EOSMainEditField_4 = uieditfield(app.DelayLinesPanel, 'numeric');
-            app.EOSMainEditField_4.Position = [121 66 100 22];
+            app.EOSMainEditField_4 = uieditfield(app.LasertimingPanel, 'numeric');
+            app.EOSMainEditField_4.Position = [199 62 100 22];
 
             % Create MainbeamsyncLimitsLabel_4
-            app.MainbeamsyncLimitsLabel_4 = uilabel(app.DelayLinesPanel);
+            app.MainbeamsyncLimitsLabel_4 = uilabel(app.LasertimingPanel);
             app.MainbeamsyncLimitsLabel_4.Enable = 'off';
-            app.MainbeamsyncLimitsLabel_4.Position = [83 22 100 30];
+            app.MainbeamsyncLimitsLabel_4.Position = [161 18 100 30];
             app.MainbeamsyncLimitsLabel_4.Text = {'Main beam sync: '; 'Limits:'};
+
+            % Create MasterdelaylinePanel
+            app.MasterdelaylinePanel = uipanel(app.LasertimingPanel);
+            app.MasterdelaylinePanel.Title = 'Master delay line';
+            app.MasterdelaylinePanel.Position = [22 120 124 207];
+
+            % Create SetEditField_2Label_4
+            app.SetEditField_2Label_4 = uilabel(app.MasterdelaylinePanel);
+            app.SetEditField_2Label_4.HorizontalAlignment = 'right';
+            app.SetEditField_2Label_4.Position = [23 147 25 22];
+            app.SetEditField_2Label_4.Text = 'Set';
+
+            % Create SetMDLEditField
+            app.SetMDLEditField = uieditfield(app.MasterdelaylinePanel, 'numeric');
+            app.SetMDLEditField.Limits = [-74 76];
+            app.SetMDLEditField.ValueChangedFcn = createCallbackFcn(app, @SetMDLEditFieldValueChanged, true);
+            app.SetMDLEditField.Position = [62 147 52 22];
+
+            % Create Minlongestpath74Label
+            app.Minlongestpath74Label = uilabel(app.MasterdelaylinePanel);
+            app.Minlongestpath74Label.Position = [8 73 109 30];
+            app.Minlongestpath74Label.Text = {'Min (longest path): '; '-74'};
+
+            % Create Maxshortestpath76Label
+            app.Maxshortestpath76Label = uilabel(app.MasterdelaylinePanel);
+            app.Maxshortestpath76Label.Position = [6 37 115 30];
+            app.Maxshortestpath76Label.Text = {'Max (shortest path): '; '76'};
+
+            % Create MDLRBVLabel
+            app.MDLRBVLabel = uilabel(app.MasterdelaylinePanel);
+            app.MDLRBVLabel.Position = [21 117 85 22];
+            app.MDLRBVLabel.Text = 'RBV: ';
 
             % Create EOSPanel
             app.EOSPanel = uipanel(app.UIFigure);
@@ -789,10 +808,45 @@ classdef F2_LCP_exported < matlab.apps.AppBase
             app.IPOTR2BlueSwitch.Position = [35 37 45 20];
             app.IPOTR2BlueSwitch.Value = 'In';
 
+            % Create PrintmotorpositionsButton
+            app.PrintmotorpositionsButton = uibutton(app.UIFigure, 'push');
+            app.PrintmotorpositionsButton.ButtonPushedFcn = createCallbackFcn(app, @PrintmotorpositionsButtonPushed, true);
+            app.PrintmotorpositionsButton.Position = [322 16 126 23];
+            app.PrintmotorpositionsButton.Text = 'Print motor positions';
+
+            % Create PrintflipperstatusButton
+            app.PrintflipperstatusButton = uibutton(app.UIFigure, 'push');
+            app.PrintflipperstatusButton.ButtonPushedFcn = createCallbackFcn(app, @PrintflipperstatusButtonPushed, true);
+            app.PrintflipperstatusButton.Position = [342 474 112 23];
+            app.PrintflipperstatusButton.Text = 'Print flipper status';
+
+            % Create E320Panel
+            app.E320Panel = uipanel(app.UIFigure);
+            app.E320Panel.Title = 'E320';
+            app.E320Panel.Position = [957 405 107 96];
+
+            % Create MOMAGND2SwitchLabel
+            app.MOMAGND2SwitchLabel = uilabel(app.E320Panel);
+            app.MOMAGND2SwitchLabel.HorizontalAlignment = 'center';
+            app.MOMAGND2SwitchLabel.Position = [9.5 46 82 22];
+            app.MOMAGND2SwitchLabel.Text = 'MO MAG ND2';
+
+            % Create MOMAGND2Switch
+            app.MOMAGND2Switch = uiswitch(app.E320Panel, 'slider');
+            app.MOMAGND2Switch.Items = {'In', 'Out'};
+            app.MOMAGND2Switch.ValueChangedFcn = createCallbackFcn(app, @MOMAGND2SwitchValueChanged, true);
+            app.MOMAGND2Switch.Position = [27 15 45 20];
+            app.MOMAGND2Switch.Value = 'In';
+
+            % Create LaserenergyPanel
+            app.LaserenergyPanel = uipanel(app.UIFigure);
+            app.LaserenergyPanel.Title = 'Laser energy';
+            app.LaserenergyPanel.Position = [30 65 550 245];
+
             % Create LaserattenuatorPanel
-            app.LaserattenuatorPanel = uipanel(app.UIFigure);
+            app.LaserattenuatorPanel = uipanel(app.LaserenergyPanel);
             app.LaserattenuatorPanel.Title = 'Laser attenuator';
-            app.LaserattenuatorPanel.Position = [37 82 124 207];
+            app.LaserattenuatorPanel.Position = [12 9 124 207];
 
             % Create SetEditFieldLabel
             app.SetEditFieldLabel = uilabel(app.LaserattenuatorPanel);
@@ -822,10 +876,16 @@ classdef F2_LCP_exported < matlab.apps.AppBase
             app.LaserRBVLabel.Position = [21 117 85 22];
             app.LaserRBVLabel.Text = 'RBV: ';
 
+            % Create MinimumenergyButton
+            app.MinimumenergyButton = uibutton(app.LaserattenuatorPanel, 'push');
+            app.MinimumenergyButton.ButtonPushedFcn = createCallbackFcn(app, @MinimumenergyButtonPushed, true);
+            app.MinimumenergyButton.Position = [12 28 106 23];
+            app.MinimumenergyButton.Text = 'Minimum energy';
+
             % Create ProbeattenuatorPanel
-            app.ProbeattenuatorPanel = uipanel(app.UIFigure);
+            app.ProbeattenuatorPanel = uipanel(app.LaserenergyPanel);
             app.ProbeattenuatorPanel.Title = 'Probe attenuator';
-            app.ProbeattenuatorPanel.Position = [174 81 124 207];
+            app.ProbeattenuatorPanel.Position = [147 9 124 207];
 
             % Create SetEditField_2Label
             app.SetEditField_2Label = uilabel(app.ProbeattenuatorPanel);
@@ -855,43 +915,10 @@ classdef F2_LCP_exported < matlab.apps.AppBase
             app.ProbeRBVLabel.Position = [21 117 85 22];
             app.ProbeRBVLabel.Text = 'RBV: ';
 
-            % Create LaserpolarizationPanel
-            app.LaserpolarizationPanel = uipanel(app.UIFigure);
-            app.LaserpolarizationPanel.Title = 'Laser polarization';
-            app.LaserpolarizationPanel.Position = [447 81 124 207];
-
-            % Create SetEditField_2Label_2
-            app.SetEditField_2Label_2 = uilabel(app.LaserpolarizationPanel);
-            app.SetEditField_2Label_2.HorizontalAlignment = 'right';
-            app.SetEditField_2Label_2.Position = [23 147 25 22];
-            app.SetEditField_2Label_2.Text = 'Set';
-
-            % Create SetLPolEditField
-            app.SetLPolEditField = uieditfield(app.LaserpolarizationPanel, 'numeric');
-            app.SetLPolEditField.Limits = [47 98];
-            app.SetLPolEditField.ValueChangedFcn = createCallbackFcn(app, @SetLPolEditFieldValueChanged, true);
-            app.SetLPolEditField.Position = [62 147 52 22];
-            app.SetLPolEditField.Value = 50;
-
-            % Create SpolPulsed50Label
-            app.SpolPulsed50Label = uilabel(app.LaserpolarizationPanel);
-            app.SpolPulsed50Label.Position = [14 80 109 22];
-            app.SpolPulsed50Label.Text = 'S-pol (Pulsed) : 50 ';
-
-            % Create PpolCW95Label
-            app.PpolCW95Label = uilabel(app.LaserpolarizationPanel);
-            app.PpolCW95Label.Position = [20 59 85 22];
-            app.PpolCW95Label.Text = 'P-pol (CW): 95';
-
-            % Create LPolRBVLabel
-            app.LPolRBVLabel = uilabel(app.LaserpolarizationPanel);
-            app.LPolRBVLabel.Position = [21 117 85 22];
-            app.LPolRBVLabel.Text = 'RBV: ';
-
             % Create LaseraperturePanel
-            app.LaseraperturePanel = uipanel(app.UIFigure);
+            app.LaseraperturePanel = uipanel(app.LaserenergyPanel);
             app.LaseraperturePanel.Title = 'Laser aperture';
-            app.LaseraperturePanel.Position = [305 81 124 207];
+            app.LaseraperturePanel.Position = [282 9 124 207];
 
             % Create SetEditField_2Label_3
             app.SetEditField_2Label_3 = uilabel(app.LaseraperturePanel);
@@ -926,67 +953,38 @@ classdef F2_LCP_exported < matlab.apps.AppBase
             app.mmmax60Label.Position = [14 37 100 22];
             app.mmmax60Label.Text = '60 mm (max): -60';
 
-            % Create PrintmotorpositionsButton
-            app.PrintmotorpositionsButton = uibutton(app.UIFigure, 'push');
-            app.PrintmotorpositionsButton.ButtonPushedFcn = createCallbackFcn(app, @PrintmotorpositionsButtonPushed, true);
-            app.PrintmotorpositionsButton.Position = [236 16 126 23];
-            app.PrintmotorpositionsButton.Text = 'Print motor positions';
+            % Create LaserpolarizationPanel
+            app.LaserpolarizationPanel = uipanel(app.LaserenergyPanel);
+            app.LaserpolarizationPanel.Title = 'Laser polarization';
+            app.LaserpolarizationPanel.Position = [416 9 124 207];
 
-            % Create PrintflipperstatusButton
-            app.PrintflipperstatusButton = uibutton(app.UIFigure, 'push');
-            app.PrintflipperstatusButton.ButtonPushedFcn = createCallbackFcn(app, @PrintflipperstatusButtonPushed, true);
-            app.PrintflipperstatusButton.Position = [210 378 112 23];
-            app.PrintflipperstatusButton.Text = 'Print flipper status';
+            % Create SetEditField_2Label_2
+            app.SetEditField_2Label_2 = uilabel(app.LaserpolarizationPanel);
+            app.SetEditField_2Label_2.HorizontalAlignment = 'right';
+            app.SetEditField_2Label_2.Position = [23 147 25 22];
+            app.SetEditField_2Label_2.Text = 'Set';
 
-            % Create MasterdelaylinePanel
-            app.MasterdelaylinePanel = uipanel(app.UIFigure);
-            app.MasterdelaylinePanel.Title = 'Master delay line';
-            app.MasterdelaylinePanel.Position = [585 81 124 207];
+            % Create SetLPolEditField
+            app.SetLPolEditField = uieditfield(app.LaserpolarizationPanel, 'numeric');
+            app.SetLPolEditField.Limits = [47 98];
+            app.SetLPolEditField.ValueChangedFcn = createCallbackFcn(app, @SetLPolEditFieldValueChanged, true);
+            app.SetLPolEditField.Position = [62 147 52 22];
+            app.SetLPolEditField.Value = 50;
 
-            % Create SetEditField_2Label_4
-            app.SetEditField_2Label_4 = uilabel(app.MasterdelaylinePanel);
-            app.SetEditField_2Label_4.HorizontalAlignment = 'right';
-            app.SetEditField_2Label_4.Position = [23 147 25 22];
-            app.SetEditField_2Label_4.Text = 'Set';
+            % Create SpolPulsed50Label
+            app.SpolPulsed50Label = uilabel(app.LaserpolarizationPanel);
+            app.SpolPulsed50Label.Position = [14 80 109 22];
+            app.SpolPulsed50Label.Text = 'S-pol (Pulsed) : 50 ';
 
-            % Create SetMDLEditField
-            app.SetMDLEditField = uieditfield(app.MasterdelaylinePanel, 'numeric');
-            app.SetMDLEditField.Limits = [-74 76];
-            app.SetMDLEditField.ValueChangedFcn = createCallbackFcn(app, @SetMDLEditFieldValueChanged, true);
-            app.SetMDLEditField.Position = [62 147 52 22];
+            % Create PpolCW95Label
+            app.PpolCW95Label = uilabel(app.LaserpolarizationPanel);
+            app.PpolCW95Label.Position = [20 59 85 22];
+            app.PpolCW95Label.Text = 'P-pol (CW): 95';
 
-            % Create Minlongestpath74Label
-            app.Minlongestpath74Label = uilabel(app.MasterdelaylinePanel);
-            app.Minlongestpath74Label.Position = [8 73 109 30];
-            app.Minlongestpath74Label.Text = {'Min (longest path): '; '-74'};
-
-            % Create Maxshortestpath76Label
-            app.Maxshortestpath76Label = uilabel(app.MasterdelaylinePanel);
-            app.Maxshortestpath76Label.Position = [6 37 115 30];
-            app.Maxshortestpath76Label.Text = {'Max (shortest path): '; '76'};
-
-            % Create MDLRBVLabel
-            app.MDLRBVLabel = uilabel(app.MasterdelaylinePanel);
-            app.MDLRBVLabel.Position = [21 117 85 22];
-            app.MDLRBVLabel.Text = 'RBV: ';
-
-            % Create E320Panel
-            app.E320Panel = uipanel(app.UIFigure);
-            app.E320Panel.Title = 'E320';
-            app.E320Panel.Position = [957 405 107 96];
-
-            % Create MOMAGND2SwitchLabel
-            app.MOMAGND2SwitchLabel = uilabel(app.E320Panel);
-            app.MOMAGND2SwitchLabel.HorizontalAlignment = 'center';
-            app.MOMAGND2SwitchLabel.Position = [9.5 46 82 22];
-            app.MOMAGND2SwitchLabel.Text = 'MO MAG ND2';
-
-            % Create MOMAGND2Switch
-            app.MOMAGND2Switch = uiswitch(app.E320Panel, 'slider');
-            app.MOMAGND2Switch.Items = {'In', 'Out'};
-            app.MOMAGND2Switch.ValueChangedFcn = createCallbackFcn(app, @MOMAGND2SwitchValueChanged, true);
-            app.MOMAGND2Switch.Position = [27 15 45 20];
-            app.MOMAGND2Switch.Value = 'In';
+            % Create LPolRBVLabel
+            app.LPolRBVLabel = uilabel(app.LaserpolarizationPanel);
+            app.LPolRBVLabel.Position = [21 117 85 22];
+            app.LPolRBVLabel.Text = 'RBV: ';
 
             % Show the figure after all components are created
             app.UIFigure.Visible = 'on';
