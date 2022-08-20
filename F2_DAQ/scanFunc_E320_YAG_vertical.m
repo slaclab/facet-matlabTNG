@@ -39,17 +39,18 @@ classdef scanFunc_E320_YAG_vertical
         function delta = set_value(obj,value)
             
             caput(obj.pvs.control,value);
-            obj.daqhandle.dispMessage(sprintf('Setting %s to %0.2f', obj.pvs.control.name, value));
+            obj.daqhandle.dispMessage(sprintf('Setting %s to %0.4f', obj.pvs.control.name, value));
             
             current_value = caget(obj.pvs.readback);
-            
+            pause(0.1);
+
             while abs(current_value - value) > obj.tolerance
                 current_value = caget(obj.pvs.readback);
                 pause(0.1);
             end
             
             delta = current_value - value;
-            obj.daqhandle.dispMessage(sprintf('%s readback is %0.2f', obj.pvs.readback.name, current_value));
+            obj.daqhandle.dispMessage(sprintf('%s readback is %0.4f', obj.pvs.readback.name, current_value));
             
         end
         
