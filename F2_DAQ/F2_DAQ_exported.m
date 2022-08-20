@@ -248,7 +248,7 @@ classdef F2_DAQ_exported < matlab.apps.AppBase
             end
             
             app.scan_vals = linspace(start_value,end_value,steps_val);
-            scan_str = num2str(app.scan_vals,'%0.2f, ');
+            scan_str = num2str(app.scan_vals,'%0.4f, ');
             app.ScanValuesTextArea.Value = scan_str;
             
         end
@@ -269,7 +269,7 @@ classdef F2_DAQ_exported < matlab.apps.AppBase
             end
             
             app.scan_vals2 = linspace(start_value,end_value,steps_val);
-            scan_str = num2str(app.scan_vals2,'%0.2f, ');
+            scan_str = num2str(app.scan_vals2,'%0.4f, ');
             app.ScanValuesTextArea_2.Value = scan_str;
             
         end
