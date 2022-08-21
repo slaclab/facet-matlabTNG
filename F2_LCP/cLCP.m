@@ -20,7 +20,7 @@ classdef cLCP  < handle
         
         
         function makeFlipperList(s)
-            %MAKEFLIPPERLIST fills flipper list
+            % MAKEFLIPPERLIST fills flipper list
             
             
             % blocks
@@ -96,12 +96,12 @@ classdef cLCP  < handle
             % EOS
             s.SMotorList.EOSAssembly = cStepper('XPS:LI20:MC04:M4');
             s.SMotorList.EOSCrystalSpacing = cStepper('XPS:LI20:MC04:M5');
-            s.SMotorList.EOSRot1Main = cStepper('XPS:LI20:MC04:M8');
+            s.SMotorList.EOSRot1 = cStepper('XPS:LI20:MC04:M8');
             s.SMotorList.EOSRot2 = cStepper('XPS:LI20:MC02:M3');
             s.SMotorList.EOSRot3 = cStepper('XPS:LI20:MC02:M8');
             s.SMotorList.EOSRot4 = cStepper('XPS:LI20:MC04:M7');
-            s.SMotorList.EOSCam1Translation = cStepper('XPS:LI20:MC04:M6');
-            s.SMotorList.EOSCam2Translation = cStepper('XPS:LI20:MC02:M4');
+            s.SMotorList.EOSCam1 = cStepper('XPS:LI20:MC04:M6');
+            s.SMotorList.EOSCam2 = cStepper('XPS:LI20:MC02:M4');
             
             % Ionizer
             s.SMotorList.IonImaging = cStepper('XPS:LI20:MC05:M7');

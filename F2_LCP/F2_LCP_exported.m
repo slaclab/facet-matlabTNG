@@ -39,9 +39,6 @@ classdef F2_LCP_exported < matlab.apps.AppBase
         MDLEditField                    matlab.ui.control.NumericEditField
         MDLLimitLabel                   matlab.ui.control.Label
         MDLRBV                          matlab.ui.control.Label
-        EOSPanel                        matlab.ui.container.Panel
-        EOSND2SwitchLabel               matlab.ui.control.Label
-        EOSND2Switch                    matlab.ui.control.Switch
         IonizerPanel                    matlab.ui.container.Panel
         IonizerblockSwitch_2Label       matlab.ui.control.Label
         IonizerblockSwitch_2            matlab.ui.control.Switch
@@ -144,6 +141,43 @@ classdef F2_LCP_exported < matlab.apps.AppBase
         VacuumGratingEditField          matlab.ui.control.NumericEditField
         VacuumGratingLimitLabel         matlab.ui.control.Label
         VacuumGratingRBV                matlab.ui.control.Label
+        EOSPanel                        matlab.ui.container.Panel
+        EOSRot1Label                    matlab.ui.control.Label
+        EOSRot1EditField                matlab.ui.control.NumericEditField
+        EOSRot1LimitLabel               matlab.ui.control.Label
+        EOSRot1RBV                      matlab.ui.control.Label
+        EOSRBVLabel                     matlab.ui.control.Label
+        EOSSetLabel                     matlab.ui.control.Label
+        EOSND2SwitchLabel               matlab.ui.control.Label
+        EOSND2Switch                    matlab.ui.control.Switch
+        EOSRot2Label                    matlab.ui.control.Label
+        EOSRot2EditField                matlab.ui.control.NumericEditField
+        EOSRot2LimitLabel               matlab.ui.control.Label
+        EOSRot2RBV                      matlab.ui.control.Label
+        EOSRot3Label                    matlab.ui.control.Label
+        EOSRot3EditField                matlab.ui.control.NumericEditField
+        EOSRot3LimitLabel               matlab.ui.control.Label
+        EOSRot3RBV                      matlab.ui.control.Label
+        EOSRot4Label                    matlab.ui.control.Label
+        EOSRot4EditField                matlab.ui.control.NumericEditField
+        EOSRot4LimitLabel               matlab.ui.control.Label
+        EOSRot4RBV                      matlab.ui.control.Label
+        EOSAssemblyLabel                matlab.ui.control.Label
+        EOSAssemblyEditField            matlab.ui.control.NumericEditField
+        EOSAssemblyLimitLabel           matlab.ui.control.Label
+        EOSAssemblyRBV                  matlab.ui.control.Label
+        EOSCrystalSpacingLabel          matlab.ui.control.Label
+        EOSCrystalSpacingEditField      matlab.ui.control.NumericEditField
+        EOSCrystalSpacingLimitLabel     matlab.ui.control.Label
+        EOSCrystalSpacingRBV            matlab.ui.control.Label
+        EOSCam1Label                    matlab.ui.control.Label
+        EOSCam1EditField                matlab.ui.control.NumericEditField
+        EOSCam1LimitLabel               matlab.ui.control.Label
+        EOSCam1RBV                      matlab.ui.control.Label
+        EOSCam2Label                    matlab.ui.control.Label
+        EOSCam2EditField                matlab.ui.control.NumericEditField
+        EOSCam2LimitLabel               matlab.ui.control.Label
+        EOSCam2RBV                      matlab.ui.control.Label
     end
 
     
@@ -192,6 +226,16 @@ classdef F2_LCP_exported < matlab.apps.AppBase
             app.LCP.updateGUImotor('USHM');
             % Vacuum grating
             app.LCP.updateGUImotor('VacuumGrating');
+            
+            % EOS
+            app.LCP.updateGUImotor('EOSRot1');
+            app.LCP.updateGUImotor('EOSRot2');
+            app.LCP.updateGUImotor('EOSRot3');
+            app.LCP.updateGUImotor('EOSRot4');
+            app.LCP.updateGUImotor('EOSAssembly');
+            app.LCP.updateGUImotor('EOSCam2');
+            app.LCP.updateGUImotor('EOSCam1');
+            app.LCP.updateGUImotor('EOSCrystalSpacing');
         end
         
         function setFlipperStatus(app)
@@ -472,7 +516,8 @@ classdef F2_LCP_exported < matlab.apps.AppBase
         % Value changed function: MDLEditField
         function MDLEditFieldValueChanged(app, event)
             value = app.MDLEditField.Value;
-            
+            app.LCP.SMotorList.MDL.move(value);
+            app.updateGUI();
         end
 
         % Button pushed function: MinimumenergyButton_2
@@ -581,7 +626,7 @@ classdef F2_LCP_exported < matlab.apps.AppBase
             % Create ProbeflippersPanel
             app.ProbeflippersPanel = uipanel(app.UIFigure);
             app.ProbeflippersPanel.Title = 'Probe flippers';
-            app.ProbeflippersPanel.Position = [662 545 140 192];
+            app.ProbeflippersPanel.Position = [741 546 140 192];
 
             % Create Probeline0HeNeSwitchLabel
             app.Probeline0HeNeSwitchLabel = uilabel(app.ProbeflippersPanel);
@@ -612,7 +657,7 @@ classdef F2_LCP_exported < matlab.apps.AppBase
             % Create MainflippersPanel
             app.MainflippersPanel = uipanel(app.UIFigure);
             app.MainflippersPanel.Title = 'Main flippers';
-            app.MainflippersPanel.Position = [181 486 125 251];
+            app.MainflippersPanel.Position = [181 487 125 251];
 
             % Create CompressorNFFFSwitchLabel
             app.CompressorNFFFSwitchLabel = uilabel(app.MainflippersPanel);
@@ -776,28 +821,10 @@ classdef F2_LCP_exported < matlab.apps.AppBase
             app.MDLRBV = uilabel(app.LasertimingPanel);
             app.MDLRBV.Position = [193 277 36 22];
 
-            % Create EOSPanel
-            app.EOSPanel = uipanel(app.UIFigure);
-            app.EOSPanel.Title = 'EOS';
-            app.EOSPanel.Position = [689 438 107 96];
-
-            % Create EOSND2SwitchLabel
-            app.EOSND2SwitchLabel = uilabel(app.EOSPanel);
-            app.EOSND2SwitchLabel.HorizontalAlignment = 'center';
-            app.EOSND2SwitchLabel.Position = [21 46 58 22];
-            app.EOSND2SwitchLabel.Text = 'EOS ND2';
-
-            % Create EOSND2Switch
-            app.EOSND2Switch = uiswitch(app.EOSPanel, 'slider');
-            app.EOSND2Switch.Items = {'In', 'Out'};
-            app.EOSND2Switch.ValueChangedFcn = createCallbackFcn(app, @EOSND2SwitchValueChanged, true);
-            app.EOSND2Switch.Position = [27 15 45 20];
-            app.EOSND2Switch.Value = 'In';
-
             % Create IonizerPanel
             app.IonizerPanel = uipanel(app.UIFigure);
             app.IonizerPanel.Title = 'Ionizer';
-            app.IonizerPanel.Position = [957 558 107 179];
+            app.IonizerPanel.Position = [1046 559 107 179];
 
             % Create IonizerblockSwitch_2Label
             app.IonizerblockSwitch_2Label = uilabel(app.IonizerPanel);
@@ -828,7 +855,7 @@ classdef F2_LCP_exported < matlab.apps.AppBase
             % Create ShadowgraphyPanel
             app.ShadowgraphyPanel = uipanel(app.UIFigure);
             app.ShadowgraphyPanel.Title = 'Shadowgraphy';
-            app.ShadowgraphyPanel.Position = [807 488 136 250];
+            app.ShadowgraphyPanel.Position = [893 488 136 250];
 
             % Create ShadowgraphyblockSwitchLabel
             app.ShadowgraphyblockSwitchLabel = uilabel(app.ShadowgraphyPanel);
@@ -923,7 +950,7 @@ classdef F2_LCP_exported < matlab.apps.AppBase
             % Create IPOTR1Panel
             app.IPOTR1Panel = uipanel(app.UIFigure);
             app.IPOTR1Panel.Title = 'IPOTR1';
-            app.IPOTR1Panel.Position = [351 547 133 188];
+            app.IPOTR1Panel.Position = [31 210 133 188];
 
             % Create IPOTR1OvensideSwitchLabel
             app.IPOTR1OvensideSwitchLabel = uilabel(app.IPOTR1Panel);
@@ -954,7 +981,7 @@ classdef F2_LCP_exported < matlab.apps.AppBase
             % Create IPOTR2Panel
             app.IPOTR2Panel = uipanel(app.UIFigure);
             app.IPOTR2Panel.Title = 'IPOTR2';
-            app.IPOTR2Panel.Position = [493 480 118 254];
+            app.IPOTR2Panel.Position = [180 170 118 254];
 
             % Create IPOTR2ND9SwitchLabel
             app.IPOTR2ND9SwitchLabel = uilabel(app.IPOTR2Panel);
@@ -998,19 +1025,19 @@ classdef F2_LCP_exported < matlab.apps.AppBase
             % Create PrintmotorpositionsButton
             app.PrintmotorpositionsButton = uibutton(app.UIFigure, 'push');
             app.PrintmotorpositionsButton.ButtonPushedFcn = createCallbackFcn(app, @PrintmotorpositionsButtonPushed, true);
-            app.PrintmotorpositionsButton.Position = [43 341 126 23];
+            app.PrintmotorpositionsButton.Position = [166 446 126 23];
             app.PrintmotorpositionsButton.Text = 'Print motor positions';
 
             % Create PrintflipperstatusButton
             app.PrintflipperstatusButton = uibutton(app.UIFigure, 'push');
             app.PrintflipperstatusButton.ButtonPushedFcn = createCallbackFcn(app, @PrintflipperstatusButtonPushed, true);
-            app.PrintflipperstatusButton.Position = [43 371 112 23];
+            app.PrintflipperstatusButton.Position = [38 446 112 23];
             app.PrintflipperstatusButton.Text = 'Print flipper status';
 
             % Create E320Panel
             app.E320Panel = uipanel(app.UIFigure);
             app.E320Panel.Title = 'E320';
-            app.E320Panel.Position = [957 438 107 96];
+            app.E320Panel.Position = [1044 450 107 96];
 
             % Create MOMAGND3SwitchLabel
             app.MOMAGND3SwitchLabel = uilabel(app.E320Panel);
@@ -1366,6 +1393,196 @@ classdef F2_LCP_exported < matlab.apps.AppBase
             % Create VacuumGratingRBV
             app.VacuumGratingRBV = uilabel(app.USHMPBM2Panel);
             app.VacuumGratingRBV.Position = [188 86 51 22];
+
+            % Create EOSPanel
+            app.EOSPanel = uipanel(app.UIFigure);
+            app.EOSPanel.Title = 'EOS';
+            app.EOSPanel.Position = [322 127 249 611];
+
+            % Create EOSRot1Label
+            app.EOSRot1Label = uilabel(app.EOSPanel);
+            app.EOSRot1Label.HorizontalAlignment = 'right';
+            app.EOSRot1Label.Position = [36 171 53 30];
+            app.EOSRot1Label.Text = {'Ingoing '; 'polarizer'};
+
+            % Create EOSRot1EditField
+            app.EOSRot1EditField = uieditfield(app.EOSPanel, 'numeric');
+            app.EOSRot1EditField.Position = [104 179 58 22];
+
+            % Create EOSRot1LimitLabel
+            app.EOSRot1LimitLabel = uilabel(app.EOSPanel);
+            app.EOSRot1LimitLabel.Position = [107 154 50 22];
+            app.EOSRot1LimitLabel.Text = 'Max:';
+
+            % Create EOSRot1RBV
+            app.EOSRot1RBV = uilabel(app.EOSPanel);
+            app.EOSRot1RBV.Position = [188 179 47 22];
+
+            % Create EOSRBVLabel
+            app.EOSRBVLabel = uilabel(app.EOSPanel);
+            app.EOSRBVLabel.Position = [194 565 30 22];
+            app.EOSRBVLabel.Text = 'RBV';
+
+            % Create EOSSetLabel
+            app.EOSSetLabel = uilabel(app.EOSPanel);
+            app.EOSSetLabel.Position = [122 565 25 22];
+            app.EOSSetLabel.Text = 'Set';
+
+            % Create EOSND2SwitchLabel
+            app.EOSND2SwitchLabel = uilabel(app.EOSPanel);
+            app.EOSND2SwitchLabel.HorizontalAlignment = 'center';
+            app.EOSND2SwitchLabel.Position = [156 54 58 22];
+            app.EOSND2SwitchLabel.Text = 'EOS ND2';
+
+            % Create EOSND2Switch
+            app.EOSND2Switch = uiswitch(app.EOSPanel, 'slider');
+            app.EOSND2Switch.Items = {'In', 'Out'};
+            app.EOSND2Switch.ValueChangedFcn = createCallbackFcn(app, @EOSND2SwitchValueChanged, true);
+            app.EOSND2Switch.Position = [162 23 45 20];
+            app.EOSND2Switch.Value = 'In';
+
+            % Create EOSRot2Label
+            app.EOSRot2Label = uilabel(app.EOSPanel);
+            app.EOSRot2Label.HorizontalAlignment = 'right';
+            app.EOSRot2Label.Enable = 'off';
+            app.EOSRot2Label.Position = [26 123 63 22];
+            app.EOSRot2Label.Text = 'Waveplate';
+
+            % Create EOSRot2EditField
+            app.EOSRot2EditField = uieditfield(app.EOSPanel, 'numeric');
+            app.EOSRot2EditField.Enable = 'off';
+            app.EOSRot2EditField.Position = [104 123 58 22];
+
+            % Create EOSRot2LimitLabel
+            app.EOSRot2LimitLabel = uilabel(app.EOSPanel);
+            app.EOSRot2LimitLabel.Enable = 'off';
+            app.EOSRot2LimitLabel.Position = [107 98 50 22];
+            app.EOSRot2LimitLabel.Text = 'Max:';
+
+            % Create EOSRot2RBV
+            app.EOSRot2RBV = uilabel(app.EOSPanel);
+            app.EOSRot2RBV.Enable = 'off';
+            app.EOSRot2RBV.Position = [188 123 47 22];
+
+            % Create EOSRot3Label
+            app.EOSRot3Label = uilabel(app.EOSPanel);
+            app.EOSRot3Label.HorizontalAlignment = 'right';
+            app.EOSRot3Label.Position = [32 416 57 22];
+            app.EOSRot3Label.Text = 'EOS1 pol';
+
+            % Create EOSRot3EditField
+            app.EOSRot3EditField = uieditfield(app.EOSPanel, 'numeric');
+            app.EOSRot3EditField.Position = [104 416 58 22];
+
+            % Create EOSRot3LimitLabel
+            app.EOSRot3LimitLabel = uilabel(app.EOSPanel);
+            app.EOSRot3LimitLabel.Position = [69 390 91 22];
+            app.EOSRot3LimitLabel.Text = 'Max: 38, Min 73';
+
+            % Create EOSRot3RBV
+            app.EOSRot3RBV = uilabel(app.EOSPanel);
+            app.EOSRot3RBV.Position = [188 416 47 22];
+
+            % Create EOSRot4Label
+            app.EOSRot4Label = uilabel(app.EOSPanel);
+            app.EOSRot4Label.HorizontalAlignment = 'right';
+            app.EOSRot4Label.Position = [32 296 57 22];
+            app.EOSRot4Label.Text = 'EOS2 pol';
+
+            % Create EOSRot4EditField
+            app.EOSRot4EditField = uieditfield(app.EOSPanel, 'numeric');
+            app.EOSRot4EditField.Position = [104 296 58 22];
+
+            % Create EOSRot4LimitLabel
+            app.EOSRot4LimitLabel = uilabel(app.EOSPanel);
+            app.EOSRot4LimitLabel.Position = [107 271 50 22];
+            app.EOSRot4LimitLabel.Text = 'Max:';
+
+            % Create EOSRot4RBV
+            app.EOSRot4RBV = uilabel(app.EOSPanel);
+            app.EOSRot4RBV.Position = [188 296 47 22];
+
+            % Create EOSAssemblyLabel
+            app.EOSAssemblyLabel = uilabel(app.EOSPanel);
+            app.EOSAssemblyLabel.HorizontalAlignment = 'right';
+            app.EOSAssemblyLabel.Position = [28 537 61 22];
+            app.EOSAssemblyLabel.Text = 'Assembly ';
+
+            % Create EOSAssemblyEditField
+            app.EOSAssemblyEditField = uieditfield(app.EOSPanel, 'numeric');
+            app.EOSAssemblyEditField.Position = [104 537 58 22];
+
+            % Create EOSAssemblyLimitLabel
+            app.EOSAssemblyLimitLabel = uilabel(app.EOSPanel);
+            app.EOSAssemblyLimitLabel.Position = [72 512 90 22];
+            app.EOSAssemblyLimitLabel.Text = 'Out: 50, In: 8.35';
+
+            % Create EOSAssemblyRBV
+            app.EOSAssemblyRBV = uilabel(app.EOSPanel);
+            app.EOSAssemblyRBV.Position = [188 537 47 22];
+
+            % Create EOSCrystalSpacingLabel
+            app.EOSCrystalSpacingLabel = uilabel(app.EOSPanel);
+            app.EOSCrystalSpacingLabel.HorizontalAlignment = 'right';
+            app.EOSCrystalSpacingLabel.Position = [39 473 50 30];
+            app.EOSCrystalSpacingLabel.Text = {'Crystal'; 'Spacing'};
+
+            % Create EOSCrystalSpacingEditField
+            app.EOSCrystalSpacingEditField = uieditfield(app.EOSPanel, 'numeric');
+            app.EOSCrystalSpacingEditField.Position = [104 481 58 22];
+
+            % Create EOSCrystalSpacingLimitLabel
+            app.EOSCrystalSpacingLimitLabel = uilabel(app.EOSPanel);
+            app.EOSCrystalSpacingLimitLabel.Position = [107 456 50 22];
+            app.EOSCrystalSpacingLimitLabel.Text = 'Max:';
+
+            % Create EOSCrystalSpacingRBV
+            app.EOSCrystalSpacingRBV = uilabel(app.EOSPanel);
+            app.EOSCrystalSpacingRBV.Position = [188 481 47 22];
+
+            % Create EOSCam1Label
+            app.EOSCam1Label = uilabel(app.EOSPanel);
+            app.EOSCam1Label.HorizontalAlignment = 'right';
+            app.EOSCam1Label.Enable = 'off';
+            app.EOSCam1Label.Position = [27 355 62 30];
+            app.EOSCam1Label.Text = {'EOS1 '; 'translation'};
+
+            % Create EOSCam1EditField
+            app.EOSCam1EditField = uieditfield(app.EOSPanel, 'numeric');
+            app.EOSCam1EditField.Enable = 'off';
+            app.EOSCam1EditField.Position = [104 363 58 22];
+
+            % Create EOSCam1LimitLabel
+            app.EOSCam1LimitLabel = uilabel(app.EOSPanel);
+            app.EOSCam1LimitLabel.Enable = 'off';
+            app.EOSCam1LimitLabel.Position = [107 338 50 22];
+            app.EOSCam1LimitLabel.Text = 'Max:';
+
+            % Create EOSCam1RBV
+            app.EOSCam1RBV = uilabel(app.EOSPanel);
+            app.EOSCam1RBV.Position = [188 363 47 22];
+
+            % Create EOSCam2Label
+            app.EOSCam2Label = uilabel(app.EOSPanel);
+            app.EOSCam2Label.HorizontalAlignment = 'right';
+            app.EOSCam2Label.Enable = 'off';
+            app.EOSCam2Label.Position = [27 231 62 30];
+            app.EOSCam2Label.Text = {'EOS2'; 'translation'};
+
+            % Create EOSCam2EditField
+            app.EOSCam2EditField = uieditfield(app.EOSPanel, 'numeric');
+            app.EOSCam2EditField.Enable = 'off';
+            app.EOSCam2EditField.Position = [104 239 58 22];
+
+            % Create EOSCam2LimitLabel
+            app.EOSCam2LimitLabel = uilabel(app.EOSPanel);
+            app.EOSCam2LimitLabel.Enable = 'off';
+            app.EOSCam2LimitLabel.Position = [107 214 50 22];
+            app.EOSCam2LimitLabel.Text = 'Max:';
+
+            % Create EOSCam2RBV
+            app.EOSCam2RBV = uilabel(app.EOSPanel);
+            app.EOSCam2RBV.Position = [188 239 47 22];
 
             % Show the figure after all components are created
             app.UIFigure.Visible = 'on';
