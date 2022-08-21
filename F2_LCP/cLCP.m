@@ -7,11 +7,13 @@ classdef cLCP  < handle
         SMotorList;
         
         EPSShutter;
+        GUIh;
         
     end
     
     methods
         function s = cLCP(GUIhandle)
+            s.GUIh = GUIhandle;
             s.makeFlipperList
             s.makeSMotorList
         end
@@ -56,18 +58,70 @@ classdef cLCP  < handle
         end
         
         function makeSMotorList(s)
-            %MAKESMOTORLIST fills stepper motor list
+            % MAKESMOTORLIST fills stepper motor list
             
-            %delayStages
-            %s.SMotorList.EOSDelay = 
+            % delayStages
+            s.SMotorList.MDL = cStepper('XPS:LI20:MC02:M5');
+            s.SMotorList.E324Delay = cStepper('XPS:LI20:MC01:M5');
+            s.SMotorList.ShadDelay = cStepper('XPS:LI20:MC05:M6');
+            s.SMotorList.IonDelay = cStepper('XPS:LI20:MC05:M8');
+            
+            % Iris
+            s.SMotorList.LIris = cStepper('XPS:LA20:LS24:M4');
+            
+            % Laser energy
             s.SMotorList.LaserAttenuator = cStepper('XPS:LA20:LS24:M1');
             s.SMotorList.LPol = cStepper('XPS:LA20:LS24:M2');
-            s.SMotorList.LIris = cStepper('XPS:LA20:LS24:M4');
             s.SMotorList.ProbeAttenuator = cStepper('XPS:LI20:MC01:M2');
-            s.SMotorList.MDL = cStepper('XPS:LI20:MC02:M5');
+            
+            % Lens 
+            s.SMotorList.LensLong = cStepper('XPS:LI20:MC04:M1');
+            s.SMotorList.LensVert = cStepper('XPS:LI20:MC04:M2');
+            s.SMotorList.LensHor = cStepper('XPS:LI20:MC04:M3');
+            
+            % Target stage
+            s.SMotorList.TargetVert = cStepper('XPS:LI20:MC05:M1');
+            s.SMotorList.TargetHor = cStepper('XPS:LI20:MC05:M2');
+            s.SMotorList.GasJetLong = cStepper('XPS:LI20:MC05:M3');
+            
+            %USHM
+            s.SMotorList.USHM = cStepper('XPS:LI20:MC03:M1');
+            
+            % Main compressor grating
+            s.SMotorList.VacuumGrating = cStepper('XPS:LI20:MC03:M6');
+            
+            % Afterglow injector
+            s.SMotorList.AfterglowInjector = cStepper('XPS:LI20:MC01:M1');
+            
+            % EOS
+            s.SMotorList.EOSAssembly = cStepper('XPS:LI20:MC04:M4');
+            s.SMotorList.EOSCrystalSpacing = cStepper('XPS:LI20:MC04:M5');
+            s.SMotorList.EOSRot1Main = cStepper('XPS:LI20:MC04:M8');
+            s.SMotorList.EOSRot2 = cStepper('XPS:LI20:MC02:M3');
+            s.SMotorList.EOSRot3 = cStepper('XPS:LI20:MC02:M8');
+            s.SMotorList.EOSRot4 = cStepper('XPS:LI20:MC04:M7');
+            s.SMotorList.EOSCam1Translation = cStepper('XPS:LI20:MC04:M6');
+            s.SMotorList.EOSCam2Translation = cStepper('XPS:LI20:MC02:M4');
+            
+            % Ionizer
+            s.SMotorList.IonImaging = cStepper('XPS:LI20:MC05:M7');
+            
+            % Shadowgraphy
+            s.SMotorList.ShadImaging = cStepper('XPS:LI20:MC02:M1');
+            
             
         end
         
+         function updateGUImotor(s, motorName)
+            RBV = s.SMotorList.(motorName).getRBV();
+            s.GUIh.([motorName, 'RBV']).Text = sprintf('%.2f', RBV );
+            s.GUIh.([motorName, 'EditField']).Value = RBV;
+         end
+        
+    end
+    
+    %% Print methods
+    methods
         function filterListStr = printFilterList(s)
             filterListStr = s.printList(s.filterList);
         end
@@ -89,6 +143,7 @@ classdef cLCP  < handle
             end
         end
     end
+    
         
         
 end
