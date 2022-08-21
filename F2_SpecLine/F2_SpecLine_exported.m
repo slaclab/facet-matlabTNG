@@ -374,8 +374,8 @@ classdef F2_SpecLine_exported < matlab.apps.AppBase
 
             % Create mLabel_11
             app.mLabel_11 = uilabel(app.CommonZLocationsPanel);
-            app.mLabel_11.Position = [88 73 35 22];
-            app.mLabel_11.Text = '= ? m';
+            app.mLabel_11.Position = [88 73 73 22];
+            app.mLabel_11.Text = '= 2010.61 m';
 
             % Show the figure after all components are created
             app.UIFigure.Visible = 'on';
