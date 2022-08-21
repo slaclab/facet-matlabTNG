@@ -609,6 +609,62 @@ classdef F2_LCP_exported < matlab.apps.AppBase
             app.LCP.SMotorList.E324Delay.move(value);
             app.updateGUI();
         end
+
+        % Value changed function: EOSAssemblyEditField
+        function EOSAssemblyEditFieldValueChanged(app, event)
+            value = app.EOSAssemblyEditField.Value;
+            app.LCP.SMotorList.EOSAssembly.move(value);
+            app.updateGUI();
+        end
+
+        % Value changed function: EOSCrystalSpacingEditField
+        function EOSCrystalSpacingEditFieldValueChanged(app, event)
+            value = app.EOSCrystalSpacingEditField.Value;
+            app.LCP.SMotorList.EOSCrystalSpacing.move(value);
+            app.updateGUI();
+        end
+
+        % Value changed function: EOSRot3EditField
+        function EOSRot3EditFieldValueChanged(app, event)
+            value = app.EOSRot3EditField.Value;
+            app.LCP.SMotorList.EOSRot3.move(value);
+            app.updateGUI();
+        end
+
+        % Value changed function: EOSCam1EditField
+        function EOSCam1EditFieldValueChanged(app, event)
+            value = app.EOSCam1EditField.Value;
+            app.LCP.SMotorList.EOSCam1.move(value);
+            app.updateGUI();
+        end
+
+        % Value changed function: EOSRot4EditField
+        function EOSRot4EditFieldValueChanged(app, event)
+            value = app.EOSRot4EditField.Value;
+            app.LCP.SMotorList.EOSRot4.move(value);
+            app.updateGUI();
+        end
+
+        % Value changed function: EOSCam2EditField
+        function EOSCam2EditFieldValueChanged(app, event)
+            value = app.EOSCam2EditField.Value;
+            app.LCP.SMotorList.EOSCam2.move(value);
+            app.updateGUI();
+        end
+
+        % Value changed function: EOSRot1EditField
+        function EOSRot1EditFieldValueChanged(app, event)
+            value = app.EOSRot1EditField.Value;
+            app.LCP.SMotorList.EOSRot1.move(value);
+            app.updateGUI();
+        end
+
+        % Value changed function: EOSRot2EditField
+        function EOSRot2EditFieldValueChanged(app, event)
+            value = app.EOSRot2EditField.Value;
+            app.LCP.SMotorList.EOSRot2.move(value);
+            app.updateGUI();
+        end
     end
 
     % Component initialization
@@ -619,14 +675,14 @@ classdef F2_LCP_exported < matlab.apps.AppBase
 
             % Create UIFigure and hide until all components are created
             app.UIFigure = uifigure('Visible', 'off');
-            app.UIFigure.Position = [100 100 1521 763];
+            app.UIFigure.Position = [100 100 1432 760];
             app.UIFigure.Name = 'MATLAB App';
             app.UIFigure.CloseRequestFcn = createCallbackFcn(app, @UIFigureCloseRequest, true);
 
             % Create ProbeflippersPanel
             app.ProbeflippersPanel = uipanel(app.UIFigure);
             app.ProbeflippersPanel.Title = 'Probe flippers';
-            app.ProbeflippersPanel.Position = [741 546 140 192];
+            app.ProbeflippersPanel.Position = [741 543 140 192];
 
             % Create Probeline0HeNeSwitchLabel
             app.Probeline0HeNeSwitchLabel = uilabel(app.ProbeflippersPanel);
@@ -657,7 +713,7 @@ classdef F2_LCP_exported < matlab.apps.AppBase
             % Create MainflippersPanel
             app.MainflippersPanel = uipanel(app.UIFigure);
             app.MainflippersPanel.Title = 'Main flippers';
-            app.MainflippersPanel.Position = [181 487 125 251];
+            app.MainflippersPanel.Position = [181 484 125 251];
 
             % Create CompressorNFFFSwitchLabel
             app.CompressorNFFFSwitchLabel = uilabel(app.MainflippersPanel);
@@ -701,7 +757,7 @@ classdef F2_LCP_exported < matlab.apps.AppBase
             % Create LasertimingPanel
             app.LasertimingPanel = uipanel(app.UIFigure);
             app.LasertimingPanel.Title = 'Laser timing ';
-            app.LasertimingPanel.Position = [881 25 254 364];
+            app.LasertimingPanel.Position = [881 22 254 364];
 
             % Create IOnDelayLabel
             app.IOnDelayLabel = uilabel(app.LasertimingPanel);
@@ -824,7 +880,7 @@ classdef F2_LCP_exported < matlab.apps.AppBase
             % Create IonizerPanel
             app.IonizerPanel = uipanel(app.UIFigure);
             app.IonizerPanel.Title = 'Ionizer';
-            app.IonizerPanel.Position = [1046 559 107 179];
+            app.IonizerPanel.Position = [1046 556 107 179];
 
             % Create IonizerblockSwitch_2Label
             app.IonizerblockSwitch_2Label = uilabel(app.IonizerPanel);
@@ -855,7 +911,7 @@ classdef F2_LCP_exported < matlab.apps.AppBase
             % Create ShadowgraphyPanel
             app.ShadowgraphyPanel = uipanel(app.UIFigure);
             app.ShadowgraphyPanel.Title = 'Shadowgraphy';
-            app.ShadowgraphyPanel.Position = [893 488 136 250];
+            app.ShadowgraphyPanel.Position = [893 485 136 250];
 
             % Create ShadowgraphyblockSwitchLabel
             app.ShadowgraphyblockSwitchLabel = uilabel(app.ShadowgraphyPanel);
@@ -900,13 +956,13 @@ classdef F2_LCP_exported < matlab.apps.AppBase
             app.UpdateGUINotupdatingautomaticallyButton = uibutton(app.UIFigure, 'push');
             app.UpdateGUINotupdatingautomaticallyButton.ButtonPushedFcn = createCallbackFcn(app, @UpdateGUINotupdatingautomaticallyButtonPushed, true);
             app.UpdateGUINotupdatingautomaticallyButton.BackgroundColor = [0 1 0];
-            app.UpdateGUINotupdatingautomaticallyButton.Position = [36 35 124 63];
+            app.UpdateGUINotupdatingautomaticallyButton.Position = [36 32 124 63];
             app.UpdateGUINotupdatingautomaticallyButton.Text = {'Update GUI'; 'Not updating'; 'automatically'};
 
             % Create LasershuttersPanel
             app.LasershuttersPanel = uipanel(app.UIFigure);
             app.LasershuttersPanel.Title = 'Laser shutters';
-            app.LasershuttersPanel.Position = [30 484 139 254];
+            app.LasershuttersPanel.Position = [30 481 139 254];
 
             % Create HeNeflipperSwitchLabel
             app.HeNeflipperSwitchLabel = uilabel(app.LasershuttersPanel);
@@ -950,7 +1006,7 @@ classdef F2_LCP_exported < matlab.apps.AppBase
             % Create IPOTR1Panel
             app.IPOTR1Panel = uipanel(app.UIFigure);
             app.IPOTR1Panel.Title = 'IPOTR1';
-            app.IPOTR1Panel.Position = [31 210 133 188];
+            app.IPOTR1Panel.Position = [31 207 133 188];
 
             % Create IPOTR1OvensideSwitchLabel
             app.IPOTR1OvensideSwitchLabel = uilabel(app.IPOTR1Panel);
@@ -981,7 +1037,7 @@ classdef F2_LCP_exported < matlab.apps.AppBase
             % Create IPOTR2Panel
             app.IPOTR2Panel = uipanel(app.UIFigure);
             app.IPOTR2Panel.Title = 'IPOTR2';
-            app.IPOTR2Panel.Position = [180 170 118 254];
+            app.IPOTR2Panel.Position = [180 167 118 254];
 
             % Create IPOTR2ND9SwitchLabel
             app.IPOTR2ND9SwitchLabel = uilabel(app.IPOTR2Panel);
@@ -1025,19 +1081,19 @@ classdef F2_LCP_exported < matlab.apps.AppBase
             % Create PrintmotorpositionsButton
             app.PrintmotorpositionsButton = uibutton(app.UIFigure, 'push');
             app.PrintmotorpositionsButton.ButtonPushedFcn = createCallbackFcn(app, @PrintmotorpositionsButtonPushed, true);
-            app.PrintmotorpositionsButton.Position = [166 446 126 23];
+            app.PrintmotorpositionsButton.Position = [166 443 126 23];
             app.PrintmotorpositionsButton.Text = 'Print motor positions';
 
             % Create PrintflipperstatusButton
             app.PrintflipperstatusButton = uibutton(app.UIFigure, 'push');
             app.PrintflipperstatusButton.ButtonPushedFcn = createCallbackFcn(app, @PrintflipperstatusButtonPushed, true);
-            app.PrintflipperstatusButton.Position = [38 446 112 23];
+            app.PrintflipperstatusButton.Position = [38 443 112 23];
             app.PrintflipperstatusButton.Text = 'Print flipper status';
 
             % Create E320Panel
             app.E320Panel = uipanel(app.UIFigure);
             app.E320Panel.Title = 'E320';
-            app.E320Panel.Position = [1044 450 107 96];
+            app.E320Panel.Position = [1044 447 107 96];
 
             % Create MOMAGND3SwitchLabel
             app.MOMAGND3SwitchLabel = uilabel(app.E320Panel);
@@ -1055,7 +1111,7 @@ classdef F2_LCP_exported < matlab.apps.AppBase
             % Create LaserenergyPanel
             app.LaserenergyPanel = uipanel(app.UIFigure);
             app.LaserenergyPanel.Title = 'Laser energy';
-            app.LaserenergyPanel.Position = [599 28 266 361];
+            app.LaserenergyPanel.Position = [599 25 266 361];
 
             % Create LaserAttenuatorRBV
             app.LaserAttenuatorRBV = uilabel(app.LaserenergyPanel);
@@ -1192,7 +1248,7 @@ classdef F2_LCP_exported < matlab.apps.AppBase
             % Create LensmountPanel
             app.LensmountPanel = uipanel(app.UIFigure);
             app.LensmountPanel.Title = 'Lens mount';
-            app.LensmountPanel.Position = [1159 262 249 230];
+            app.LensmountPanel.Position = [1159 259 249 230];
 
             % Create LensLongLabel
             app.LensLongLabel = uilabel(app.LensmountPanel);
@@ -1267,7 +1323,7 @@ classdef F2_LCP_exported < matlab.apps.AppBase
             % Create TargetmountPanel
             app.TargetmountPanel = uipanel(app.UIFigure);
             app.TargetmountPanel.Title = 'Target mount';
-            app.TargetmountPanel.Position = [1159 508 249 230];
+            app.TargetmountPanel.Position = [1159 505 249 230];
 
             % Create TargetVertLabel
             app.TargetVertLabel = uilabel(app.TargetmountPanel);
@@ -1342,7 +1398,7 @@ classdef F2_LCP_exported < matlab.apps.AppBase
             % Create USHMPBM2Panel
             app.USHMPBM2Panel = uipanel(app.UIFigure);
             app.USHMPBM2Panel.Title = 'USHM PB M2';
-            app.USHMPBM2Panel.Position = [1159 27 251 218];
+            app.USHMPBM2Panel.Position = [1159 24 251 218];
 
             % Create USHMRBV
             app.USHMRBV = uilabel(app.USHMPBM2Panel);
@@ -1397,7 +1453,7 @@ classdef F2_LCP_exported < matlab.apps.AppBase
             % Create EOSPanel
             app.EOSPanel = uipanel(app.UIFigure);
             app.EOSPanel.Title = 'EOS';
-            app.EOSPanel.Position = [322 127 249 611];
+            app.EOSPanel.Position = [322 124 249 611];
 
             % Create EOSRot1Label
             app.EOSRot1Label = uilabel(app.EOSPanel);
@@ -1407,6 +1463,7 @@ classdef F2_LCP_exported < matlab.apps.AppBase
 
             % Create EOSRot1EditField
             app.EOSRot1EditField = uieditfield(app.EOSPanel, 'numeric');
+            app.EOSRot1EditField.ValueChangedFcn = createCallbackFcn(app, @EOSRot1EditFieldValueChanged, true);
             app.EOSRot1EditField.Position = [104 179 58 22];
 
             % Create EOSRot1LimitLabel
@@ -1450,6 +1507,7 @@ classdef F2_LCP_exported < matlab.apps.AppBase
 
             % Create EOSRot2EditField
             app.EOSRot2EditField = uieditfield(app.EOSPanel, 'numeric');
+            app.EOSRot2EditField.ValueChangedFcn = createCallbackFcn(app, @EOSRot2EditFieldValueChanged, true);
             app.EOSRot2EditField.Enable = 'off';
             app.EOSRot2EditField.Position = [104 123 58 22];
 
@@ -1472,6 +1530,7 @@ classdef F2_LCP_exported < matlab.apps.AppBase
 
             % Create EOSRot3EditField
             app.EOSRot3EditField = uieditfield(app.EOSPanel, 'numeric');
+            app.EOSRot3EditField.ValueChangedFcn = createCallbackFcn(app, @EOSRot3EditFieldValueChanged, true);
             app.EOSRot3EditField.Position = [104 416 58 22];
 
             % Create EOSRot3LimitLabel
@@ -1491,6 +1550,7 @@ classdef F2_LCP_exported < matlab.apps.AppBase
 
             % Create EOSRot4EditField
             app.EOSRot4EditField = uieditfield(app.EOSPanel, 'numeric');
+            app.EOSRot4EditField.ValueChangedFcn = createCallbackFcn(app, @EOSRot4EditFieldValueChanged, true);
             app.EOSRot4EditField.Position = [104 296 58 22];
 
             % Create EOSRot4LimitLabel
@@ -1510,6 +1570,7 @@ classdef F2_LCP_exported < matlab.apps.AppBase
 
             % Create EOSAssemblyEditField
             app.EOSAssemblyEditField = uieditfield(app.EOSPanel, 'numeric');
+            app.EOSAssemblyEditField.ValueChangedFcn = createCallbackFcn(app, @EOSAssemblyEditFieldValueChanged, true);
             app.EOSAssemblyEditField.Position = [104 537 58 22];
 
             % Create EOSAssemblyLimitLabel
@@ -1529,6 +1590,7 @@ classdef F2_LCP_exported < matlab.apps.AppBase
 
             % Create EOSCrystalSpacingEditField
             app.EOSCrystalSpacingEditField = uieditfield(app.EOSPanel, 'numeric');
+            app.EOSCrystalSpacingEditField.ValueChangedFcn = createCallbackFcn(app, @EOSCrystalSpacingEditFieldValueChanged, true);
             app.EOSCrystalSpacingEditField.Position = [104 481 58 22];
 
             % Create EOSCrystalSpacingLimitLabel
@@ -1549,6 +1611,7 @@ classdef F2_LCP_exported < matlab.apps.AppBase
 
             % Create EOSCam1EditField
             app.EOSCam1EditField = uieditfield(app.EOSPanel, 'numeric');
+            app.EOSCam1EditField.ValueChangedFcn = createCallbackFcn(app, @EOSCam1EditFieldValueChanged, true);
             app.EOSCam1EditField.Enable = 'off';
             app.EOSCam1EditField.Position = [104 363 58 22];
 
@@ -1571,6 +1634,7 @@ classdef F2_LCP_exported < matlab.apps.AppBase
 
             % Create EOSCam2EditField
             app.EOSCam2EditField = uieditfield(app.EOSPanel, 'numeric');
+            app.EOSCam2EditField.ValueChangedFcn = createCallbackFcn(app, @EOSCam2EditFieldValueChanged, true);
             app.EOSCam2EditField.Enable = 'off';
             app.EOSCam2EditField.Position = [104 239 58 22];
 
