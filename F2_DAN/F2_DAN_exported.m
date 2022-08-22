@@ -460,9 +460,9 @@ classdef F2_DAN_exported < matlab.apps.AppBase
         % Button pushed function: BoostmotivationButton
         function BoostmotivationButtonPushed(app, event)
             disp("I'm sorry Dave, I'm afraid I can't do that.");
-            val = lcaGet('SIOC:SYS1:ML03:AO551');
+            val = lcaGetSmart('SIOC:SYS1:ML03:AO551');
             val = val - 3;
-            lcaPut('SIOC:SYS1:ML03:AO551',val);
+            lcaPutSmart('SIOC:SYS1:ML03:AO551',val);
             app.MotivationIndicatorAirspeedIndicator.Value = val;
             
         end
@@ -552,7 +552,7 @@ classdef F2_DAN_exported < matlab.apps.AppBase
 
             % Create expDropDown
             app.expDropDown = uidropdown(app.dataSet);
-            app.expDropDown.Items = {'TEST', 'E300', 'E305', 'E308', 'E320', 'E325', 'E326', 'E327', 'E332'};
+            app.expDropDown.Items = {'TEST', 'E300', 'E305', 'E308', 'E320', 'E325', 'E326', 'E327', 'E331', 'E332'};
             app.expDropDown.Position = [98 335 124 22];
             app.expDropDown.Value = 'TEST';
 
@@ -839,6 +839,7 @@ classdef F2_DAN_exported < matlab.apps.AppBase
             title(app.ImageAxes, 'Title')
             xlabel(app.ImageAxes, 'X')
             ylabel(app.ImageAxes, 'Y')
+            app.ImageAxes.FontSize = 14;
             app.ImageAxes.Position = [363 409 803 509];
 
             % Create WaterfallplotPanel
