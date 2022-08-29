@@ -37,11 +37,22 @@ classdef F2_LAA_exported < matlab.apps.AppBase
 
     
     properties (Access = public)
-        camerapvs =  {'CAMR:LT20:0001','CAMR:LT20:0002','CAMR:LT20:0003',...
-        'CAMR:LT20:0004','CAMR:LT20:0006','CAMR:LT20:0007',...
-        'CAMR:LT20:0009','CAMR:LT20:0010','CAMR:LT20:0101',...
-        'CAMR:LT20:0102','CAMR:LT20:0103','CAMR:LT20:0104','CAMR:LT20:0105',...
-        'CAMR:LT20:0106','CAMR:LT20:0107'};% S20 Camera PVs
+        camerapvs =  {'CAMR:LT20:100', ... % old 'CAMR:LT20:0001' S20RegenOut
+            'CAMR:LT20:101', ...           % old: 'CAMR:LT20:0002' S20PulsePicker
+            'CAMR:LT20:102', ...           % old: 'CAMR:LT20:0003' S20PreampNear
+            'CAMR:LT20:103', ...           % old: 'CAMR:LT20:0004' S20PreampFar
+            'CAMR:LT20:105', ...           % old: 'CAMR:LT20:0006' S20MPANear
+            'CAMR:LT20:106', ...           % old: 'CAMR:LT20:0007' S20MPAFar
+            'CAMR:LT20:200', ...           % old: 'CAMR:LT20:0009' HeNeNear
+            'CAMR:LT20:201', ...           % old: 'CAMR:LT20:0010' HeNeFar
+            'CAMR:LT20:202', ...           % old: 'CAMR:LT20:0101' B0
+            'CAMR:LT20:203', ...           % old: 'CAMR:LT20:0102' B1
+            'CAMR:LT20:204', ...           % old: 'CAMR:LT20:0103' B2
+            'CAMR:LT20:205', ...           % old: 'CAMR:LT20:0104' B3
+            'CAMR:LT20:206', ...           % old: 'CAMR:LT20:0105' B4
+            'CAMR:LT20:207', ...           % old: 'CAMR:LT20:0106' B5
+            'CAMR:LT20:208', ...           % old: 'CAMR:LT20:0107' B6
+            };% S20 Camera PVs
             
         motorpvs = {'MOTR:LI20:MC06:S3','MOTR:LI20:MC06:M0','MOTR:LI20:MC06:S6',...
         'MOTR:LI20:MC06:S4','MOTR:LI20:MC06:S5','MOTR:LI20:MC07:M0',...

@@ -1,6 +1,6 @@
 function [newlaserCentroids,mirrorMovements,laserOffset] = alignLaserToSetpoint(dataStruct,requestedSetpoint,calibrationMatrix,k_p,k_i,app)
 % Note - This does not include the integral term for the feedback
-if regexp(dataStruct.camerapvs{1},'CAMR:LT20:0006')% Special case for MPA near and far
+if regexp(dataStruct.camerapvs{1},'CAMR:LT20:105')% Special case for MPA near and far
     nshots = 20;% Average over many shots for MPA near and far
 else
     nshots = 3;% set number of shots for averaging 
@@ -49,7 +49,7 @@ end
 %         tols(1+2*(jj-1))=app.refCamSettings.ROIsizeX(idx)<0.5*abs(laserOffset(1+2*(jj-1))); 
 %         tols(2*jj)=app.refCamSettings.ROIsizeY(idx)<0.5*abs(laserOffset(2*jj));
 %     end
-    if regexp(dataStruct.camerapvs{1},'CAMR:LT20:0006')% Special case for MPA near and far
+    if regexp(dataStruct.camerapvs{1},'CAMR:LT20:105')% Special case for MPA near and far
         tols = any(abs(laserOffset)>app.MPANearFarmaxMisalignmentTolerance); % Average over many shots for MPA near and far
     else
         tols = any(abs(laserOffset)>app.maxMisalignmentTolerance); 
