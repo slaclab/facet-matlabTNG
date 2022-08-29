@@ -13,7 +13,8 @@ switch whichLaser
     
     case 'S10'
         cameraPVs={'CAMR:LT10:500','CAMR:LT10:600','CAMR:LT10:800',...
-     'CAMR:LT10:700','CAMR:LT10:200','CAMR:LT10:380','CAMR:LT10:900'};
+     'CAMR:LT10:700','CAMR:LT10:200','CAMR:LT10:380','CAMR:LT10:900',...
+     'CTHD:IN10:111'};
  
     case 'S20LaserRoom'
         cameraPVs = {'CAMR:LT20:0001','CAMR:LT20:0002','CAMR:LT20:0003',...
