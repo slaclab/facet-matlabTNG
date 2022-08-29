@@ -1,0 +1,1093 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>Form</class>
+ <widget class="QWidget" name="Form">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>1498</width>
+    <height>896</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Form</string>
+  </property>
+  <layout class="QHBoxLayout" name="horizontalLayout">
+   <item>
+    <layout class="QGridLayout" name="gridLayout_3">
+     <item row="3" column="0">
+      <layout class="QHBoxLayout" name="horizontalLayout_4">
+       <property name="topMargin">
+        <number>10</number>
+       </property>
+       <item>
+        <widget class="PyDMPushButton" name="calibrateFrontView">
+         <property name="toolTip">
+          <string>INSTRUCTIONS:
+
+Alignment LASER: ON
+Set Vertical 80
+Insert Foil -125
+DSOTR Ladder: OUT
+HeNe Mirror: IN
+
+Calibrate FrontView</string>
+         </property>
+         <property name="accessibleDescription">
+          <string>INSTRUCTIONS:
+
+Alignment LASER: ON
+Set Vertical 80
+Insert Foil -125
+DSOTR Ladder: OUT
+HeNe Mirror: IN
+
+Calibrate FrontView</string>
+         </property>
+         <property name="text">
+          <string>Calibrate Front View</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="PyDMPushButton" name="calibrateDSOTR">
+         <property name="toolTip">
+          <string>INSTRUCTIONS:
+
+Alignment LASER: ON
+Extract Foil -150
+DSOTR Ladder: 300 um Foil
+HeNe Mirror: Inserted
+
+Calibrate DSOTR</string>
+         </property>
+         <property name="accessibleDescription">
+          <string>INSTRUCTIONS:
+
+Alignment LASER: ON
+Extract Foil -150
+DSOTR Ladder: 300 um Foil
+HeNe Mirror: Inserted
+
+Calibrate DSOTR</string>
+         </property>
+         <property name="text">
+          <string>Calibrate DSOTR</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="PyDMPushButton" name="pos_FV">
+         <property name="toolTip">
+          <string/>
+         </property>
+         <property name="text">
+          <string>Get FrontView center</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="PyDMPushButton" name="pos_DSOTR">
+         <property name="toolTip">
+          <string/>
+         </property>
+         <property name="text">
+          <string>Get DSOTR center</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="PyDMPushButton" name="posChange">
+         <property name="toolTip">
+          <string/>
+         </property>
+         <property name="text">
+          <string>Calc position change (4x4)</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="PyDMPushButton" name="align">
+         <property name="toolTip">
+          <string/>
+         </property>
+         <property name="text">
+          <string>Auto Align GreeNe</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="PyDMPushButton" name="alignStop">
+         <property name="toolTip">
+          <string/>
+         </property>
+         <property name="text">
+          <string>STOP Auto-alignment</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </item>
+     <item row="0" column="0">
+      <layout class="QHBoxLayout" name="horizontalLayout_2">
+       <item>
+        <layout class="QGridLayout" name="gridLayout">
+         <item row="1" column="0">
+          <widget class="PyDMImageView" name="imageView">
+           <property name="toolTip">
+            <string/>
+           </property>
+           <property name="alarmSensitiveContent" stdset="0">
+            <bool>false</bool>
+           </property>
+           <property name="alarmSensitiveBorder" stdset="0">
+            <bool>true</bool>
+           </property>
+           <property name="channel" stdset="0">
+            <string/>
+           </property>
+           <property name="colorMap" stdset="0">
+            <enum>PyDMImageView::Jet</enum>
+           </property>
+           <property name="autoDownsample" stdset="0">
+            <bool>true</bool>
+           </property>
+           <property name="imageWidth" stdset="0">
+            <number>0</number>
+           </property>
+           <property name="normalizeData" stdset="0">
+            <bool>true</bool>
+           </property>
+           <property name="readingOrder" stdset="0">
+            <enum>PyDMImageView::Clike</enum>
+           </property>
+           <property name="imageChannel" stdset="0">
+            <string>ca://CAMR:LI20:208:Image:ArrayData</string>
+           </property>
+           <property name="widthChannel" stdset="0">
+            <string>ca://CAMR:LI20:208:Image:ArraySize0_RBV</string>
+           </property>
+           <property name="maxRedrawRate" stdset="0">
+            <number>30</number>
+           </property>
+           <property name="showAxes" stdset="0">
+            <bool>true</bool>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="0">
+          <layout class="QVBoxLayout" name="verticalLayout_3">
+           <property name="spacing">
+            <number>0</number>
+           </property>
+           <property name="topMargin">
+            <number>0</number>
+           </property>
+           <property name="bottomMargin">
+            <number>0</number>
+           </property>
+           <item>
+            <widget class="QLabel" name="lbl_blobs">
+             <property name="text">
+              <string/>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLabel" name="label_3">
+             <property name="styleSheet">
+              <string notr="true">QLabel {
+    qproperty-alignment: AlignCenter;
+    border: 1px solid #FF17365D;
+    border-top-left-radius: 15px;
+    border-top-right-radius: 15px;
+    background-color: #FF17365D;
+    padding: 5px 0px;
+    color: rgb(255, 255, 255);
+    max-height: 25px;
+    font-size: 14px;
+}</string>
+             </property>
+             <property name="text">
+              <string>Controls (FrontView)</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QFrame" name="frame">
+             <property name="minimumSize">
+              <size>
+               <width>0</width>
+               <height>70</height>
+              </size>
+             </property>
+             <property name="styleSheet">
+              <string notr="true">QFrame#frame{
+    border: 1px solid #FF17365D;
+    border-bottom-left-radius: 15px;
+    border-bottom-right-radius: 15px;
+}</string>
+             </property>
+             <property name="frameShape">
+              <enum>QFrame::StyledPanel</enum>
+             </property>
+             <property name="frameShadow">
+              <enum>QFrame::Raised</enum>
+             </property>
+             <layout class="QVBoxLayout" name="verticalLayout_4">
+              <property name="spacing">
+               <number>0</number>
+              </property>
+              <property name="leftMargin">
+               <number>0</number>
+              </property>
+              <property name="topMargin">
+               <number>0</number>
+              </property>
+              <property name="rightMargin">
+               <number>0</number>
+              </property>
+              <property name="bottomMargin">
+               <number>0</number>
+              </property>
+              <item>
+               <widget class="PyDMEmbeddedDisplay" name="PyDMEmbeddedDisplay">
+                <property name="minimumSize">
+                 <size>
+                  <width>0</width>
+                  <height>35</height>
+                 </size>
+                </property>
+                <property name="toolTip">
+                 <string/>
+                </property>
+                <property name="macros" stdset="0">
+                 <string>{&quot;MOTOR&quot;: &quot;MOTR:LI20:MC09:S7:CH1:MOTOR&quot;}</string>
+                </property>
+                <property name="filename" stdset="0">
+                 <string>inline_motor.ui</string>
+                </property>
+                <property name="loadWhenShown" stdset="0">
+                 <bool>true</bool>
+                </property>
+                <property name="disconnectWhenHidden" stdset="0">
+                 <bool>true</bool>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="PyDMEmbeddedDisplay" name="PyDMEmbeddedDisplay_2">
+                <property name="minimumSize">
+                 <size>
+                  <width>0</width>
+                  <height>35</height>
+                 </size>
+                </property>
+                <property name="toolTip">
+                 <string/>
+                </property>
+                <property name="macros" stdset="0">
+                 <string>{&quot;MOTOR&quot;: &quot;MOTR:LI20:MC09:S7:CH2:MOTOR&quot;}</string>
+                </property>
+                <property name="filename" stdset="0">
+                 <string>inline_motor.ui</string>
+                </property>
+                <property name="loadWhenShown" stdset="0">
+                 <bool>true</bool>
+                </property>
+                <property name="disconnectWhenHidden" stdset="0">
+                 <bool>true</bool>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </widget>
+           </item>
+           <item>
+            <widget class="PyDMRelatedDisplayButton" name="PyDMRelatedDisplayButton">
+             <property name="toolTip">
+              <string/>
+             </property>
+             <property name="text">
+              <string>View All Motors</string>
+             </property>
+             <property name="filenames" stdset="0">
+              <stringlist>
+               <string>all_motors.py</string>
+              </stringlist>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <layout class="QGridLayout" name="gridLayout_8">
+             <property name="topMargin">
+              <number>0</number>
+             </property>
+             <item row="0" column="0">
+              <widget class="PyDMCheckbox" name="bm_FrontView">
+               <property name="toolTip">
+                <string/>
+               </property>
+               <property name="text">
+                <string>Show BM (FrontView)</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </item>
+          </layout>
+         </item>
+         <item row="0" column="0">
+          <widget class="QLabel" name="label">
+           <property name="styleSheet">
+            <string notr="true">QLabel {
+    qproperty-alignment: AlignCenter;
+    border: 1px solid #FF17365D;
+    border-top-left-radius: 15px;
+    border-top-right-radius: 15px;
+    background-color: #FF17365D;
+    padding: 5px 0px;
+    color: rgb(255, 255, 255);
+    max-height: 25px;
+    font-size: 14px;
+}</string>
+           </property>
+           <property name="text">
+            <string>Beam Alignment (FrontView)</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+       <item>
+        <layout class="QGridLayout" name="gridLayout_2">
+         <item row="1" column="0">
+          <widget class="PyDMImageView" name="imageView_2">
+           <property name="toolTip">
+            <string/>
+           </property>
+           <property name="alarmSensitiveContent" stdset="0">
+            <bool>false</bool>
+           </property>
+           <property name="alarmSensitiveBorder" stdset="0">
+            <bool>true</bool>
+           </property>
+           <property name="channel" stdset="0">
+            <string/>
+           </property>
+           <property name="colorMap" stdset="0">
+            <enum>PyDMImageView::Jet</enum>
+           </property>
+           <property name="autoDownsample" stdset="0">
+            <bool>true</bool>
+           </property>
+           <property name="imageWidth" stdset="0">
+            <number>0</number>
+           </property>
+           <property name="normalizeData" stdset="0">
+            <bool>true</bool>
+           </property>
+           <property name="readingOrder" stdset="0">
+            <enum>PyDMImageView::Clike</enum>
+           </property>
+           <property name="imageChannel" stdset="0">
+            <string>ca://CAMR:LI20:105:Image:ArrayData</string>
+           </property>
+           <property name="widthChannel" stdset="0">
+            <string>ca://CAMR:LI20:105:Image:ArraySize0_RBV</string>
+           </property>
+           <property name="maxRedrawRate" stdset="0">
+            <number>30</number>
+           </property>
+           <property name="showAxes" stdset="0">
+            <bool>true</bool>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="0">
+          <layout class="QVBoxLayout" name="verticalLayout_5">
+           <property name="spacing">
+            <number>0</number>
+           </property>
+           <property name="topMargin">
+            <number>0</number>
+           </property>
+           <property name="bottomMargin">
+            <number>0</number>
+           </property>
+           <item>
+            <widget class="QLabel" name="lbl_blobs_2">
+             <property name="text">
+              <string/>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLabel" name="label_4">
+             <property name="styleSheet">
+              <string notr="true">QLabel {
+    qproperty-alignment: AlignCenter;
+    border: 1px solid #FF17365D;
+    border-top-left-radius: 15px;
+    border-top-right-radius: 15px;
+    background-color: #FF17365D;
+    padding: 5px 0px;
+    color: rgb(255, 255, 255);
+    max-height: 25px;
+    font-size: 14px;
+}</string>
+             </property>
+             <property name="text">
+              <string>Controls (DSOTR)</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QFrame" name="frame_2">
+             <property name="minimumSize">
+              <size>
+               <width>0</width>
+               <height>70</height>
+              </size>
+             </property>
+             <property name="styleSheet">
+              <string notr="true">QFrame#frame{
+    border: 1px solid #FF17365D;
+    border-bottom-left-radius: 15px;
+    border-bottom-right-radius: 15px;
+}</string>
+             </property>
+             <property name="frameShape">
+              <enum>QFrame::StyledPanel</enum>
+             </property>
+             <property name="frameShadow">
+              <enum>QFrame::Raised</enum>
+             </property>
+             <layout class="QVBoxLayout" name="verticalLayout_6">
+              <property name="spacing">
+               <number>0</number>
+              </property>
+              <property name="leftMargin">
+               <number>0</number>
+              </property>
+              <property name="topMargin">
+               <number>0</number>
+              </property>
+              <property name="rightMargin">
+               <number>0</number>
+              </property>
+              <property name="bottomMargin">
+               <number>0</number>
+              </property>
+              <item>
+               <widget class="PyDMEmbeddedDisplay" name="PyDMEmbeddedDisplay_3">
+                <property name="minimumSize">
+                 <size>
+                  <width>0</width>
+                  <height>35</height>
+                 </size>
+                </property>
+                <property name="toolTip">
+                 <string/>
+                </property>
+                <property name="macros" stdset="0">
+                 <string>{&quot;MOTOR&quot;: &quot;MOTR:LI20:MC09:S7:CH3:MOTOR&quot;}</string>
+                </property>
+                <property name="filename" stdset="0">
+                 <string>inline_motor.ui</string>
+                </property>
+                <property name="loadWhenShown" stdset="0">
+                 <bool>true</bool>
+                </property>
+                <property name="disconnectWhenHidden" stdset="0">
+                 <bool>true</bool>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="PyDMEmbeddedDisplay" name="PyDMEmbeddedDisplay_4">
+                <property name="minimumSize">
+                 <size>
+                  <width>0</width>
+                  <height>35</height>
+                 </size>
+                </property>
+                <property name="toolTip">
+                 <string/>
+                </property>
+                <property name="macros" stdset="0">
+                 <string>{&quot;MOTOR&quot;: &quot;MOTR:LI20:MC09:S7:CH4:MOTOR&quot;}</string>
+                </property>
+                <property name="filename" stdset="0">
+                 <string>inline_motor.ui</string>
+                </property>
+                <property name="loadWhenShown" stdset="0">
+                 <bool>true</bool>
+                </property>
+                <property name="disconnectWhenHidden" stdset="0">
+                 <bool>true</bool>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </widget>
+           </item>
+           <item>
+            <widget class="PyDMRelatedDisplayButton" name="PyDMRelatedDisplayButton_2">
+             <property name="toolTip">
+              <string/>
+             </property>
+             <property name="text">
+              <string>View All Motors</string>
+             </property>
+             <property name="filenames" stdset="0">
+              <stringlist>
+               <string>all_motors.py</string>
+              </stringlist>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <layout class="QGridLayout" name="gridLayout_10">
+             <property name="topMargin">
+              <number>0</number>
+             </property>
+             <item row="0" column="0">
+              <widget class="PyDMCheckbox" name="bm_DSOTR">
+               <property name="toolTip">
+                <string/>
+               </property>
+               <property name="text">
+                <string>Show BM (DSOTR)</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </item>
+          </layout>
+         </item>
+         <item row="0" column="0">
+          <widget class="QLabel" name="label_2">
+           <property name="styleSheet">
+            <string notr="true">QLabel {
+    qproperty-alignment: AlignCenter;
+    border: 1px solid #FF17365D;
+    border-top-left-radius: 15px;
+    border-top-right-radius: 15px;
+    background-color: #FF17365D;
+    padding: 5px 0px;
+    color: rgb(255, 255, 255);
+    max-height: 25px;
+    font-size: 14px;
+}</string>
+           </property>
+           <property name="text">
+            <string>Beam Alignment (DSOTR)</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+      </layout>
+     </item>
+     <item row="2" column="0">
+      <layout class="QHBoxLayout" name="horizontalLayout_3">
+       <property name="topMargin">
+        <number>0</number>
+       </property>
+       <property name="bottomMargin">
+        <number>0</number>
+       </property>
+       <item>
+        <layout class="QGridLayout" name="gridLayout_11">
+         <property name="leftMargin">
+          <number>25</number>
+         </property>
+         <property name="topMargin">
+          <number>5</number>
+         </property>
+         <property name="rightMargin">
+          <number>25</number>
+         </property>
+         <property name="bottomMargin">
+          <number>5</number>
+         </property>
+         <item row="2" column="0">
+          <widget class="PyDMPushButton" name="PyDMPushButton_4">
+           <property name="toolTip">
+            <string/>
+           </property>
+           <property name="text">
+            <string>Insert Foil -95 rev (M2)</string>
+           </property>
+           <property name="channel" stdset="0">
+            <string>ca://XPS:LI20:MC05:M2.VAL</string>
+           </property>
+           <property name="pressValue" stdset="0">
+            <string>-95</string>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="0">
+          <widget class="PyDMLabel" name="PyDMLabel_8">
+           <property name="toolTip">
+            <string/>
+           </property>
+           <property name="styleSheet">
+            <string notr="true">QLabel {
+    qproperty-alignment: AlignCenter;
+    border: 1px solid #FF17365D;
+    border-top-left-radius: 15px;
+    border-top-right-radius: 15px;
+    background-color: #FF17365D;
+    padding: 5px 0px;
+    color: rgb(255, 255, 255);
+    max-height: 25px;
+    font-size: 14px;
+}</string>
+           </property>
+           <property name="text">
+            <string>FrontView Foil</string>
+           </property>
+          </widget>
+         </item>
+         <item row="4" column="0">
+          <layout class="QHBoxLayout" name="horizontalLayout_6">
+           <property name="topMargin">
+            <number>0</number>
+           </property>
+           <item>
+            <widget class="PyDMLabel" name="PyDMLabel_11">
+             <property name="toolTip">
+              <string/>
+             </property>
+             <property name="text">
+              <string>M2 RBV:</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="PyDMLabel" name="FV_M2_RBV">
+             <property name="toolTip">
+              <string/>
+             </property>
+             <property name="text">
+              <string>######</string>
+             </property>
+             <property name="channel" stdset="0">
+              <string>ca://XPS:LI20:MC05:M2.RBV</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+         <item row="3" column="0">
+          <widget class="PyDMPushButton" name="PyDMPushButton_5">
+           <property name="toolTip">
+            <string/>
+           </property>
+           <property name="text">
+            <string>Extract Foil -150 rev (M2)</string>
+           </property>
+           <property name="channel" stdset="0">
+            <string>ca://XPS:LI20:MC05:M2.VAL</string>
+           </property>
+           <property name="pressValue" stdset="0">
+            <string>-150</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="0">
+          <widget class="PyDMPushButton" name="PyDMPushButton_3">
+           <property name="toolTip">
+            <string/>
+           </property>
+           <property name="text">
+            <string>Set Vertical 80 rev (M1)</string>
+           </property>
+           <property name="channel" stdset="0">
+            <string>ca://XPS:LI20:MC05:M1.VAL</string>
+           </property>
+           <property name="pressValue" stdset="0">
+            <string>80</string>
+           </property>
+          </widget>
+         </item>
+         <item row="6" column="0">
+          <layout class="QHBoxLayout" name="horizontalLayout_7">
+           <property name="topMargin">
+            <number>0</number>
+           </property>
+           <item>
+            <widget class="PyDMLabel" name="PyDMLabel_12">
+             <property name="toolTip">
+              <string/>
+             </property>
+             <property name="text">
+              <string>M1 RBV:</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="PyDMLabel" name="FV_M1_RBV">
+             <property name="toolTip">
+              <string/>
+             </property>
+             <property name="text">
+              <string>######</string>
+             </property>
+             <property name="channel" stdset="0">
+              <string>ca://XPS:LI20:MC05:M1.RBV</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+        </layout>
+       </item>
+       <item>
+        <layout class="QGridLayout" name="gridLayout_5">
+         <property name="leftMargin">
+          <number>25</number>
+         </property>
+         <property name="topMargin">
+          <number>5</number>
+         </property>
+         <property name="rightMargin">
+          <number>25</number>
+         </property>
+         <property name="bottomMargin">
+          <number>5</number>
+         </property>
+         <item row="2" column="0">
+          <widget class="PyDMPushButton" name="ladderIn_DSOTR">
+           <property name="toolTip">
+            <string/>
+           </property>
+           <property name="styleSheet">
+            <string notr="true"/>
+           </property>
+           <property name="text">
+            <string>300 um Foil</string>
+           </property>
+          </widget>
+         </item>
+         <item row="3" column="0">
+          <widget class="PyDMLabel" name="PyDMLabel_6">
+           <property name="toolTip">
+            <string/>
+           </property>
+           <property name="channel" stdset="0">
+            <string>ca://OTRS:LI20:3206:MOTR.RBV</string>
+           </property>
+           <property name="displayFormat" stdset="0">
+            <enum>PyDMLabel::Decimal</enum>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="0">
+          <widget class="PyDMLabel" name="PyDMLabel">
+           <property name="toolTip">
+            <string/>
+           </property>
+           <property name="styleSheet">
+            <string notr="true">QLabel {
+    qproperty-alignment: AlignCenter;
+    border: 1px solid #FF17365D;
+    border-top-left-radius: 15px;
+    border-top-right-radius: 15px;
+    background-color: #FF17365D;
+    padding: 5px 0px;
+    color: rgb(255, 255, 255);
+    max-height: 25px;
+    font-size: 14px;
+}</string>
+           </property>
+           <property name="text">
+            <string>DSOTR Ladder</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="0">
+          <widget class="PyDMPushButton" name="ladderOut_DSOTR">
+           <property name="toolTip">
+            <string/>
+           </property>
+           <property name="text">
+            <string>OUT</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+       <item>
+        <layout class="QGridLayout" name="gridLayout_4">
+         <property name="leftMargin">
+          <number>25</number>
+         </property>
+         <property name="topMargin">
+          <number>5</number>
+         </property>
+         <property name="rightMargin">
+          <number>25</number>
+         </property>
+         <property name="bottomMargin">
+          <number>5</number>
+         </property>
+         <item row="1" column="0">
+          <widget class="PyDMEnumButton" name="lampUSOTR">
+           <property name="toolTip">
+            <string/>
+           </property>
+           <property name="alarmSensitiveContent" stdset="0">
+            <bool>false</bool>
+           </property>
+           <property name="channel" stdset="0">
+            <string>ca://OTRS:LI20:3158:TGT_LAMP_PWR</string>
+           </property>
+           <property name="items" stdset="0">
+            <stringlist>
+             <string>ON</string>
+             <string>OFF</string>
+            </stringlist>
+           </property>
+           <property name="invertOrder" stdset="0">
+            <bool>false</bool>
+           </property>
+           <property name="widgetType" stdset="0">
+            <enum>PyDMEnumButton::RadioButton</enum>
+           </property>
+           <property name="orientation" stdset="0">
+            <enum>Qt::Vertical</enum>
+           </property>
+           <property name="marginTop" stdset="0">
+            <number>9</number>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="0">
+          <widget class="PyDMLabel" name="PyDMLabel_3">
+           <property name="toolTip">
+            <string/>
+           </property>
+           <property name="styleSheet">
+            <string notr="true">QLabel {
+    qproperty-alignment: AlignCenter;
+    border: 1px solid #FF17365D;
+    border-top-left-radius: 15px;
+    border-top-right-radius: 15px;
+    background-color: #FF17365D;
+    padding: 5px 0px;
+    color: rgb(255, 255, 255);
+    max-height: 25px;
+    font-size: 14px;
+}</string>
+           </property>
+           <property name="text">
+            <string>USOTR Lamp</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+       <item>
+        <layout class="QGridLayout" name="gridLayout_6">
+         <property name="leftMargin">
+          <number>25</number>
+         </property>
+         <property name="topMargin">
+          <number>5</number>
+         </property>
+         <property name="rightMargin">
+          <number>25</number>
+         </property>
+         <property name="bottomMargin">
+          <number>5</number>
+         </property>
+         <item row="1" column="0">
+          <widget class="PyDMCheckbox" name="heneMirror">
+           <property name="font">
+            <font>
+             <weight>75</weight>
+             <bold>true</bold>
+            </font>
+           </property>
+           <property name="toolTip">
+            <string/>
+           </property>
+           <property name="autoFillBackground">
+            <bool>false</bool>
+           </property>
+           <property name="text">
+            <string>Insert</string>
+           </property>
+           <property name="tristate">
+            <bool>false</bool>
+           </property>
+           <property name="alarmSensitiveContent" stdset="0">
+            <bool>false</bool>
+           </property>
+           <property name="alarmSensitiveBorder" stdset="0">
+            <bool>true</bool>
+           </property>
+           <property name="channel" stdset="0">
+            <string>ca://OTRS:LI20:3158:PNEUMATIC</string>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="0">
+          <widget class="PyDMLabel" name="PyDMLabel_4">
+           <property name="toolTip">
+            <string/>
+           </property>
+           <property name="styleSheet">
+            <string notr="true">QLabel {
+    qproperty-alignment: AlignCenter;
+    border: 1px solid #FF17365D;
+    border-top-left-radius: 15px;
+    border-top-right-radius: 15px;
+    background-color: #FF17365D;
+    padding: 5px 0px;
+    color: rgb(255, 255, 255);
+    max-height: 25px;
+    font-size: 14px;
+}</string>
+           </property>
+           <property name="text">
+            <string>HeNe Mirror</string>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="0">
+          <widget class="PyDMLabel" name="PyDMLabel_7">
+           <property name="toolTip">
+            <string/>
+           </property>
+           <property name="channel" stdset="0">
+            <string>ca://OTRS:LI20:3158:TGT_STS</string>
+           </property>
+           <property name="displayFormat" stdset="0">
+            <enum>PyDMLabel::String</enum>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+       <item>
+        <layout class="QGridLayout" name="gridLayout_9">
+         <property name="leftMargin">
+          <number>25</number>
+         </property>
+         <property name="topMargin">
+          <number>25</number>
+         </property>
+         <property name="rightMargin">
+          <number>25</number>
+         </property>
+         <property name="bottomMargin">
+          <number>25</number>
+         </property>
+         <item row="1" column="0">
+          <widget class="PyDMPushButton" name="PyDMPushButton">
+           <property name="toolTip">
+            <string/>
+           </property>
+           <property name="text">
+            <string>laser OFF</string>
+           </property>
+           <property name="channel" stdset="0">
+            <string>ACSW:LI20:NW05:13POWEROFF</string>
+           </property>
+           <property name="pressValue" stdset="0">
+            <string>1</string>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="0">
+          <widget class="PyDMLabel" name="PyDMLabel_5">
+           <property name="toolTip">
+            <string/>
+           </property>
+           <property name="styleSheet">
+            <string notr="true">QLabel {
+    qproperty-alignment: AlignCenter;
+    border: 1px solid #FF17365D;
+    border-top-left-radius: 15px;
+    border-top-right-radius: 15px;
+    background-color: #FF17365D;
+    padding: 5px 0px;
+    color: rgb(255, 255, 255);
+    max-height: 25px;
+    font-size: 14px;
+}</string>
+           </property>
+           <property name="text">
+            <string>Alignment LASER</string>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="0">
+          <widget class="PyDMPushButton" name="PyDMPushButton_2">
+           <property name="toolTip">
+            <string/>
+           </property>
+           <property name="text">
+            <string>laser ON</string>
+           </property>
+           <property name="channel" stdset="0">
+            <string>ACSW:LI20:NW05:13POWERON</string>
+           </property>
+           <property name="pressValue" stdset="0">
+            <string>1</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+      </layout>
+     </item>
+    </layout>
+   </item>
+  </layout>
+ </widget>
+ <customwidgets>
+  <customwidget>
+   <class>PyDMLabel</class>
+   <extends>QLabel</extends>
+   <header>pydm.widgets.label</header>
+  </customwidget>
+  <customwidget>
+   <class>PyDMCheckbox</class>
+   <extends>QCheckBox</extends>
+   <header>pydm.widgets.checkbox</header>
+  </customwidget>
+  <customwidget>
+   <class>PyDMEmbeddedDisplay</class>
+   <extends>QFrame</extends>
+   <header>pydm.widgets.embedded_display</header>
+  </customwidget>
+  <customwidget>
+   <class>PyDMEnumButton</class>
+   <extends>QWidget</extends>
+   <header>pydm.widgets.enum_button</header>
+  </customwidget>
+  <customwidget>
+   <class>PyDMImageView</class>
+   <extends>QWidget</extends>
+   <header>pydm.widgets.image</header>
+  </customwidget>
+  <customwidget>
+   <class>PyDMPushButton</class>
+   <extends>QPushButton</extends>
+   <header>pydm.widgets.pushbutton</header>
+  </customwidget>
+  <customwidget>
+   <class>PyDMRelatedDisplayButton</class>
+   <extends>QPushButton</extends>
+   <header>pydm.widgets.related_display_button</header>
+  </customwidget>
+ </customwidgets>
+ <resources/>
+ <connections/>
+</ui>
