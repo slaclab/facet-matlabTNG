@@ -42,6 +42,7 @@ classdef cLCP  < handle
             
             s.filterList.Probeline0HeNe = cFlipper('APC:LI20:EX02:24VOUT_7',-1);
             s.filterList.E320MOMAG = cFlipper('APC:LI20:EX02:24VOUT_8',1);
+            s.filterList.E320MOMAG2 = cFlipper('APC:LI20:EX02:24VOUT_13',-1);
             
             s.filterList.PBNFF = cFlipper('APC:LI20:EX02:24VOUT_1',1);
             s.filterList.CompNFF = cFlipper('APC:LI20:EX02:24VOUT_18',1);
@@ -51,7 +52,7 @@ classdef cLCP  < handle
             s.filterList.IPOTR2ND2 = cFlipper('APC:LI20:EX02:24VOUT_6',1);
             s.filterList.IPOTR2Blue = cFlipper('APC:LI20:EX02:24VOUT_5',-1);
             s.filterList.IPOTR1ND9 = cFlipper('APC:LI20:EX02:24VOUT_14',1);
-            s.filterList.IPOTR1P = cFlipper('APC:LI20:EX02:24VOUT_13',1);
+            
             
             
             

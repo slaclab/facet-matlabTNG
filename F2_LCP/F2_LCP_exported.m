@@ -60,8 +60,6 @@ classdef F2_LCP_exported < matlab.apps.AppBase
         EPSShutterSwitchLabel           matlab.ui.control.Label
         EPSShutterSwitch                matlab.ui.control.Switch
         IPOTR1Panel                     matlab.ui.container.Panel
-        IPOTR1OvensideSwitchLabel       matlab.ui.control.Label
-        IPOTR1OvensideSwitch            matlab.ui.control.Switch
         IPOTR1ND9SwitchLabel            matlab.ui.control.Label
         IPOTR1ND9Switch                 matlab.ui.control.Switch
         IPOTR2Panel                     matlab.ui.container.Panel
@@ -76,6 +74,8 @@ classdef F2_LCP_exported < matlab.apps.AppBase
         E320Panel                       matlab.ui.container.Panel
         MOMAGND3SwitchLabel             matlab.ui.control.Label
         MOMAGND3Switch                  matlab.ui.control.Switch
+        MOMAGND2SwitchLabel             matlab.ui.control.Label
+        MOMAGND2Switch                  matlab.ui.control.Switch
         LaserenergyPanel                matlab.ui.container.Panel
         LaserAttenuatorRBV              matlab.ui.control.Label
         LaserAttenuatorLabel            matlab.ui.control.Label
@@ -246,7 +246,7 @@ classdef F2_LCP_exported < matlab.apps.AppBase
             app.HeNeflipperSwitch.Value = app.LCP.blockList.HeNe.getState();
             
             %Compressor block
-            app.CompressorBeamBlockSwitch.Value = app.LCP.blockList.Comp.getState();
+            %app.CompressorBeamBlockSwitch.Value = app.LCP.blockList.Comp.getState();
             
             %EPSShutter 
             app.EPSShutterSwitch.Value = app.LCP.blockList.EPSShutter.getState();
@@ -262,6 +262,7 @@ classdef F2_LCP_exported < matlab.apps.AppBase
             
             %E320
             app.MOMAGND3Switch.Value = app.LCP.filterList.E320MOMAG.getState();
+            app.MOMAGND2Switch.Value  = app.LCP.filterList.E320MOMAG2.getState();
             
             %Ionizer
             app.IonizerblockSwitch_2.Value = app.LCP.blockList.ionizer.getState();
@@ -278,7 +279,6 @@ classdef F2_LCP_exported < matlab.apps.AppBase
             
             %IPOTRs
             app.IPOTR1ND9Switch.Value = app.LCP.filterList.IPOTR1ND9.getState();
-            app.IPOTR1OvensideSwitch.Value  = app.LCP.filterList.IPOTR1P.getState();
             
             app.IPOTR2ND9Switch.Value  = app.LCP.filterList.IPOTR2ND9.getState();
             app.IPOTR2ND2Switch.Value  = app.LCP.filterList.IPOTR2ND2.getState();
@@ -420,16 +420,16 @@ classdef F2_LCP_exported < matlab.apps.AppBase
             app.updateGUI();
         end
 
-        % Value changed function: IPOTR1OvensideSwitch
-        function IPOTR1OvensideSwitchValueChanged(app, event)
-            app.LCP.filterList.IPOTR1P.flip();
+        % Value changed function: MOMAGND2Switch
+        function MOMAGND2SwitchValueChanged(app, event)
+            app.LCP.filterList.E320MOMAG2.flip();
             app.updateGUI();
         end
 
         % Value changed function: CompressorBeamBlockSwitch
         function CompressorBeamBlockSwitchValueChanged(app, event)
-            app.LCP.blockList.Comp.flip();
-            app.updateGUI();
+            %app.LCP.blockList.Comp.flip();
+            %app.updateGUI();
         end
 
         % Value changed function: MOMAGND3Switch
@@ -744,6 +744,7 @@ classdef F2_LCP_exported < matlab.apps.AppBase
             % Create CompressorBeamBlockSwitchLabel
             app.CompressorBeamBlockSwitchLabel = uilabel(app.MainflippersPanel);
             app.CompressorBeamBlockSwitchLabel.HorizontalAlignment = 'center';
+            app.CompressorBeamBlockSwitchLabel.Enable = 'off';
             app.CompressorBeamBlockSwitchLabel.Position = [22 184 75 30];
             app.CompressorBeamBlockSwitchLabel.Text = {'Compressor '; 'Beam Block'};
 
@@ -751,6 +752,7 @@ classdef F2_LCP_exported < matlab.apps.AppBase
             app.CompressorBeamBlockSwitch = uiswitch(app.MainflippersPanel, 'slider');
             app.CompressorBeamBlockSwitch.Items = {'In', 'Out'};
             app.CompressorBeamBlockSwitch.ValueChangedFcn = createCallbackFcn(app, @CompressorBeamBlockSwitchValueChanged, true);
+            app.CompressorBeamBlockSwitch.Enable = 'off';
             app.CompressorBeamBlockSwitch.Position = [35 161 45 20];
             app.CompressorBeamBlockSwitch.Value = 'In';
 
@@ -1008,19 +1010,6 @@ classdef F2_LCP_exported < matlab.apps.AppBase
             app.IPOTR1Panel.Title = 'IPOTR1';
             app.IPOTR1Panel.Position = [31 207 133 188];
 
-            % Create IPOTR1OvensideSwitchLabel
-            app.IPOTR1OvensideSwitchLabel = uilabel(app.IPOTR1Panel);
-            app.IPOTR1OvensideSwitchLabel.HorizontalAlignment = 'center';
-            app.IPOTR1OvensideSwitchLabel.Position = [16 131 106 22];
-            app.IPOTR1OvensideSwitchLabel.Text = 'IPOTR1 Oven side';
-
-            % Create IPOTR1OvensideSwitch
-            app.IPOTR1OvensideSwitch = uiswitch(app.IPOTR1Panel, 'slider');
-            app.IPOTR1OvensideSwitch.Items = {'In', 'Out'};
-            app.IPOTR1OvensideSwitch.ValueChangedFcn = createCallbackFcn(app, @IPOTR1OvensideSwitchValueChanged, true);
-            app.IPOTR1OvensideSwitch.Position = [45 100 45 20];
-            app.IPOTR1OvensideSwitch.Value = 'In';
-
             % Create IPOTR1ND9SwitchLabel
             app.IPOTR1ND9SwitchLabel = uilabel(app.IPOTR1Panel);
             app.IPOTR1ND9SwitchLabel.HorizontalAlignment = 'center';
@@ -1093,20 +1082,33 @@ classdef F2_LCP_exported < matlab.apps.AppBase
             % Create E320Panel
             app.E320Panel = uipanel(app.UIFigure);
             app.E320Panel.Title = 'E320';
-            app.E320Panel.Position = [1044 447 107 96];
+            app.E320Panel.Position = [626 543 107 190];
 
             % Create MOMAGND3SwitchLabel
             app.MOMAGND3SwitchLabel = uilabel(app.E320Panel);
             app.MOMAGND3SwitchLabel.HorizontalAlignment = 'center';
-            app.MOMAGND3SwitchLabel.Position = [9.5 46 82 22];
+            app.MOMAGND3SwitchLabel.Position = [10 140 82 22];
             app.MOMAGND3SwitchLabel.Text = 'MO MAG ND3';
 
             % Create MOMAGND3Switch
             app.MOMAGND3Switch = uiswitch(app.E320Panel, 'slider');
             app.MOMAGND3Switch.Items = {'In', 'Out'};
             app.MOMAGND3Switch.ValueChangedFcn = createCallbackFcn(app, @MOMAGND3SwitchValueChanged, true);
-            app.MOMAGND3Switch.Position = [27 15 45 20];
+            app.MOMAGND3Switch.Position = [27 109 45 20];
             app.MOMAGND3Switch.Value = 'In';
+
+            % Create MOMAGND2SwitchLabel
+            app.MOMAGND2SwitchLabel = uilabel(app.E320Panel);
+            app.MOMAGND2SwitchLabel.HorizontalAlignment = 'center';
+            app.MOMAGND2SwitchLabel.Position = [11 66 82 22];
+            app.MOMAGND2SwitchLabel.Text = 'MO MAG ND2';
+
+            % Create MOMAGND2Switch
+            app.MOMAGND2Switch = uiswitch(app.E320Panel, 'slider');
+            app.MOMAGND2Switch.Items = {'In', 'Out'};
+            app.MOMAGND2Switch.ValueChangedFcn = createCallbackFcn(app, @MOMAGND2SwitchValueChanged, true);
+            app.MOMAGND2Switch.Position = [28 35 45 20];
+            app.MOMAGND2Switch.Value = 'In';
 
             % Create LaserenergyPanel
             app.LaserenergyPanel = uipanel(app.UIFigure);
