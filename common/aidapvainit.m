@@ -3,7 +3,7 @@ aidapva;
 
 if isempty(aidapvainitdone)
     setupjavapath('/usr/local/facet/tools/matlabTNG/common/aida-pva-client.jar')
-    %setupjavapath('/home/fphysics/whitegr/matlabTNG/common/aida-pva-client.jar')
+%     setupjavapath('/home/fphysics/whitegr/matlabTNG/common/aida-pva-client.jar')
     
     % aida-pva-client imports - imports all methods but not enums, so we need to add enums indivudually later
 %     import('edu.stanford.slac.aida.client.AidaPvaClientUtils.*');

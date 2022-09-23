@@ -56,6 +56,8 @@ classdef F2_bpms < handle & matlab.mixin.Copyable
     moninames_tmit string
     usebacq logical = false
     MonitorList string
+    asynwait logical = false % asyn call to readbuffer with no result yet if true
+    asynbuilder % builder object for AIDA buffered acq
   end
   methods
     function obj = F2_bpms(LM)
@@ -254,9 +256,19 @@ classdef F2_bpms < handle & matlab.mixin.Copyable
       end
         
     end
-    function readbuffer(obj,npulse)
+    function isresult = readbuffer(obj,npulse,asyn)
       %READBUFFER get buffered BPM data
-      %readbpms(npulse)
+      %  isresult = readbpms(npulse [,asyn])
+      %    isresult=true when data read
+      %    if asyn=1, then use repeated readbuffer commands and wait for isresult=true when data ready
+      persistent aida_pid aida_x aida_y aida_tmit
+      
+      % Asyn request?
+      if ~exist('asyn','var') || isempty(asyn)
+        asyn=false;
+      end
+      
+      isresult=false;
       
       % Reset any stored data
       obj.usebacq=true;
@@ -276,7 +288,7 @@ classdef F2_bpms < handle & matlab.mixin.Copyable
       else
         npe=npulse;
       end
-      if any(selepics)
+      if any(selepics) && ~obj.asynwait
         lcaPutNoWait(sprintf('EDEF:SYS1:%d:MEASCNT ',obj.edef),npe);
         if ~obj.moniedef
           lcaSetMonitor(edefpv);
@@ -287,27 +299,55 @@ classdef F2_bpms < handle & matlab.mixin.Copyable
       % Get SCP buffered data through AIDA
       if any(selaida)
         aidapva;
-        builder = pvaRequest('FACET-II:BUFFACQ');
-        builder.with('BPMD', 57);
-        builder.with('NRPOS', npulse);
-        builder.timeout(180);
-        abpmnames={};
-        for ibpm=find(selaida)'
-          name = regexp(obj.bpmnames(ibpm),"(\S+):(\S+):(\d+)",'tokens','once') ;
-          abpmnames{end+1} = char(name(2)+":"+name(1)+":"+name(3)) ;
+        mstruct=[];
+        if ~obj.asynwait
+          builder = pvaRequest('FACET-II:BUFFACQ');
+          builder.with('BPMD', 57);
+          builder.with('NRPOS', npulse);
+          builder.timeout(180);
+          abpmnames={};
+          for ibpm=find(selaida)'
+            name = regexp(obj.bpmnames(ibpm),"(\S+):(\S+):(\d+)",'tokens','once') ;
+            abpmnames{end+1} = char(name(2)+":"+name(1)+":"+name(3)) ;
+          end
+          builder.with('BPMS', abpmnames) ;
+          if asyn
+            obj.asynbuilder = builder.asynchGet() ; % launch asyn call
+            obj.asynwait = true ;
+            return
+          else
+            mstruct = ML(builder.get()) ;
+          end
+        elseif ~obj.asynbuilder.isReady()  % Check if asyn bufferacq call finished
+          return
+        elseif ~isempty(obj.asynbuilder) % Get data from asyn call
+          obj.asynwait=false;
+          mstruct = ML(obj.asynbuilder.getResponse()) ;
+          obj.asynbuilder=[];
         end
-        builder.with('BPMS', abpmnames) ;
-        mstruct = ML(builder.get()) ;
-        aida_pid = mstruct.values.id ; aida_pid=reshape(aida_pid,npulse,sum(selaida))'; aida_pid=aida_pid(1,:);
-        aida_x = mstruct.values.x ; aida_x=reshape(aida_x,npulse,sum(selaida))' ;
-        aida_y = mstruct.values.y ; aida_y=reshape(aida_y,npulse,sum(selaida))' ;
-        aida_tmit = mstruct.values.tmits ; aida_tmit=reshape(aida_tmit,npulse,sum(selaida))' ;
+        if ~isempty(mstruct)
+          aida_pid = mstruct.values.id ; aida_pid=reshape(aida_pid,npulse,sum(selaida))'; aida_pid=aida_pid(1,:);
+          aida_x = mstruct.values.x ; aida_x=reshape(aida_x,npulse,sum(selaida))' ;
+          aida_y = mstruct.values.y ; aida_y=reshape(aida_y,npulse,sum(selaida))' ;
+          aida_tmit = mstruct.values.tmits ; aida_tmit=reshape(aida_tmit,npulse,sum(selaida))' ;
+        end
+      elseif asyn
+        obj.asynwait=true;
+        return;
       end
-      % Wait for EPICS data to finish, then grab it
+      % Wait for EPICS data to finish (or if asyn request then return if no data available), then grab it
       if any(selepics)
         cv=lcaGet(edefpv);
         if string(cv{1})~="OFF"
-          lcaNewMonitorWait(edefpv);
+          if obj.asynwait
+            if ~all(lcaNewMonitorValue(edefpv))
+              return
+            else
+              obj.asynwait=false;
+            end
+          else
+            lcaNewMonitorWait(edefpv);
+          end
         end
         epics_x = lcaGet(cellstr(obj.bpmnames(selepics)+":XHST"+obj.edef),npe) ;
         epics_y = lcaGet(cellstr(obj.bpmnames(selepics)+":YHST"+obj.edef),npe) ;
@@ -376,6 +416,8 @@ classdef F2_bpms < handle & matlab.mixin.Copyable
         obj.xdat(cut) = nan ;
         obj.ydat(cut) = nan ;
       end
+      
+      isresult = true ;
     end
     function LoadData(obj,xdat_new,ydat_new,tmit_new)
       if exist('xdat_new','var') && ~isempty(xdat_new)
