@@ -4,7 +4,7 @@ classdef SCP_FB < handle
   %
   % >> FB=SCP_FB
   % >> FB.name = "TRANS_LI11" | "TRANS_LI18"
-  % >> FB.state = "OFF" | "Running" | "Compute"
+  % >> FB.state = "OFF" | "Feedback" | "Compute"
   properties
     name string {mustBeMember(name,["TRANS_LI11","TRANS_LI18"])} = "TRANS_LI11"
   end
@@ -19,7 +19,7 @@ classdef SCP_FB < handle
       if ~str2double(h(7))
         st = "OFF" ;
       elseif str2double(h(8))>0
-        st = "Running" ;
+        st = "Feedback" ;
       else
         st = "Compute" ;
       end
@@ -30,7 +30,7 @@ classdef SCP_FB < handle
       switch string(st)
         case "OFF"
           h(7)='0';
-        case "Running"
+        case "Feedback"
           h(7:8)='88';
         case "Compute"
           h(7:8)='80';
