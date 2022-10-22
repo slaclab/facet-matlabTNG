@@ -110,12 +110,17 @@ if ~ishandle(varargin{1})
    drawnow;
    uiwait
    try
+     if isempty(findobj(0,'Tag','uigetdate'))
+       out=[];
+       return
+     else
       out = datenum([num2str( ...
                get(findobj(gcf,'Tag','cday'),'UserData')) '-' ...
                get(findobj(gcf,'Tag','months'),'String') '-' ...
                get(findobj(gcf,'Tag','year'),'String') ' ' ...
                get(findobj(gcf,'Tag','time'),'String') ':00']);
-      delete(findobj(0,'Tag','uigetdate'))                       
+      delete(findobj(0,'Tag','uigetdate'))  
+     end
    catch
       out = [];
 %       closereq
