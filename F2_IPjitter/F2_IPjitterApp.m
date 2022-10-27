@@ -37,8 +37,8 @@ classdef F2_IPjitterApp < handle
       obj.BPMS=F2_bpms(obj.LLM.LM);
       obj.BPMS.UseRegion=[0 0 0 0 0 0 0 0 0 1 1];
       obj.BPMS.BufferLen = obj.npulses;
-      % Use M5FF/M0EX BPMs by defaults
-      obj.bpmid = [find(obj.BPMS.modelnames=="M5FF") find(obj.BPMS.modelnames=="M0EX")] ;
+      % Use M5FF/M1EX BPMs by defaults
+      obj.bpmid = [find(obj.BPMS.modelnames=="M5FF") find(obj.BPMS.modelnames=="M1EX")] ;
       % Setup BPM lists in GUI
       if ~isempty(obj.guihan)
         obj.guihan.BPMS1.Items = obj.BPMS.modelnames + " / " + obj.BPMS.bpmnames ;
