@@ -16,7 +16,7 @@ classdef F2_IPjitterApp < handle
     adate
   end
   properties(SetObservable)
-    npulses uint16 {mustPositive,mustBeLessThan(npulses,10000)} = 20
+    npulses uint16 {mustBePositive,mustBeLessThan(npulses,10000)} = 50
     bpmid(1,2) uint8
   end
   methods
@@ -32,8 +32,8 @@ classdef F2_IPjitterApp < handle
         obj.LLM=F2_LiveModelApp;
       end
       % Initialize model elements (use S20 FFS and Dump regions)
-      obj.LLM.Mags.UseSector=[0 0 0 0 1];
-      obj.LLM.Mags.autoupdate=true;
+      obj.LLM.LEM.Mags.UseSector=[0 0 0 0 1];
+      obj.LLM.LEM.Mags.autoupdate=true;
       obj.BPMS=F2_bpms(obj.LLM.LM);
       obj.BPMS.UseRegion=[0 0 0 0 0 0 0 0 0 1 1];
       obj.BPMS.BufferLen = obj.npulses;
@@ -59,38 +59,40 @@ classdef F2_IPjitterApp < handle
         error('No BPM data taken, or procdata not called');
       end
       g=obj.guihan;
-      histogram(g.xax,obj.ipdat.xpos.*1e3);
-      histogram(g.xpax,obj.ipdat.xang.*1e3);
-      histogram(g.yax,obj.ipdat.ypos.*1e3);
-      histogram(g.ypax,obj.ipdat.yang.*1e3);
-      plot(g.xyax,obj.ipdat.xpos.*1e3,obj.ipdat.ypos.*1e3,'.');
-      plot(g.xpypax,obj.ipdat.xang.*1e3,obj.ipdat.yang.*1e3,'.');
-      plot(g.sxax.*1e3,obj.ipdat.zpos-1000,obj.ipdat.xstd); ax=axis(g.sxax);
-      line(g.sxax,ones(1,2)*obj.ipdat.xstd(obj.ipdat.izwaist(1))*1e3,ax(3:4),'LineStyle','--','Color','r');
-      plot(g.syax.*1e3,obj.ipdat,zpos-1000,obj.ipdat.ystd); ax=axis(g.syax);
-      line(g.syax,ones(1,2)*obj.ipdat.ystd(obj.ipdat.izwaist(2))*1e3,ax(3:4),'LineStyle','--','Color','r');
+      d=obj.ipdat; id=d.izwaist;
+      histogram(g.xax,d.xpos(id(1),:).*1e3);
+      histogram(g.xpax,d.xang.*1e3);
+      histogram(g.yax,d.ypos(id(2),:).*1e3);
+      histogram(g.ypax,d.yang.*1e3);
+      plot(g.xyax,d.xpos(id(1),:).*1e3,d.ypos(id(2),:).*1e3,'.');
+      plot(g.xpypax,d.xang.*1e3,d.yang.*1e3,'.');
+      cla(g.sxax);
+      plot(g.sxax,d.zpos,d.xstd.*1000); ax=axis(g.sxax); ax(1:2)=[min(d.zpos),max(d.zpos)];axis(g.sxax,ax);
+      line(g.sxax,ones(1,2)*d.zpos(id(1)),ax(3:4),'LineStyle','--','Color','r');
+      cla(g.syax);
+      plot(g.syax,d.zpos,d.ystd.*1000); ax=axis(g.syax); ax(1:2)=[min(d.zpos),max(d.zpos)];axis(g.syax,ax);
+      line(g.syax,ones(1,2)*d.zpos(id(2)),ax(3:4),'LineStyle','--','Color','r');
       if ~isempty(obj.adate)
         txt="BPM data from archiver: " + datestr(obj.adate) ;
       else
-        txt="Live BPM data (N pulses = " + length(obj.ipdat.xpos) + ")";
+        txt="Live BPM data (N pulses = " + length(d.xpos) + ")";
       end
       zall=arrayfun(@(x) BEAMLINE{x}.Coordi(3),1:length(BEAMLINE));
-      dzx = zall-obj.ipdat.zpos(obj.ipdat.izwaist(1)) ;
-      dzy = zall-obj.ipdat.zpos(obj.ipdat.izwaist(2)) ;
+      dzx = zall-d.zpos(id(1)) ;
+      dzy = zall-d.zpos(id(2)) ;
       [~,inearestx] = min(abs(dzx)) ; dzx = dzx(inearestx) ;
       [~,inearesty] = min(abs(dzy)) ; dzy = dzy(inearesty) ;
-      txt=sprintf("%s\nIP X waist fit @ Z=%.3f (m), nearest model element = %s [dz=%.1f (mm)]",...
-        txt,obj.ipdat.zpos(obj.ipdat.izwaist(1)),BEAMLINE{inearestx}.Name,dzx*1e3) ;
-      txt=sprintf("%s\nIP Y waist fit @ Z=%.3f (m), nearest model element = %s [dz=%.1f (mm)]",...
-        txt,obj.ipdat.zpos(obj.ipdat.izwaist(2)),BEAMLINE{inearesty}.Name,dzy*1e3) ;
+      txt=sprintf("%s\nIP X waist fit @ Z=%.3f (m) = %s %+.1f mm",txt,d.zpos(id(1)),BEAMLINE{inearestx}.Name,dzx*1e3) ;
+      txt=sprintf("%s\nIP Y waist fit @ Z=%.3f (m) = %s %+.1f mm",...
+        txt,d.zpos(id(2)),BEAMLINE{inearesty}.Name,dzy*1e3) ;
       txt=sprintf("%s\nRMS X Position jitter @ IP Waist = %.2f (um) = %.2f (sigma)",...
-        txt,obj.ipdat.xstd(obj.ipdat.izwaist(1))*1e3,obj.ipdat.xstd(obj.ipdat.izwaist(1))*1e3/obj.designsigma(1));
+        txt,d.xstd(id(1))*1e3,d.xstd(id(1))*1e3/obj.designsigma(1));
       txt=sprintf("%s\nRMS Y Position jitter @ IP Waist = %.2f (um) = %.2f (sigma)",...
-        txt,obj.ipdat.ystd(obj.ipdat.izwaist(2))*1e3,obj.ipdat.ystd(obj.ipdat.izwaist(2))*1e3/obj.designsigma(2));
-      txt=sprintf("%s\nRMS X Angle jitter @ IP Waist = %.2f (urad) = %.2f (sigma')",...
-        txt,obj.ipdat.xpstd(obj.ipdat.izwaist(1))*1e3,obj.ipdat.xpstd(obj.ipdat.izwaist(1))*1e3/obj.designdivergence(1));
-      txt=sprintf("%s\nRMS Y Angle jitter @ IP Waist = %.2f (urad) = %.2f (sigma')",...
-        txt,obj.ipdat.ypstd(obj.ipdat.izwaist(2))*1e3,obj.ipdat.ypstd(obj.ipdat.izwaist(2))*1e3/obj.designdivergence(2));
+        txt,d.ystd(id(2))*1e3,d.ystd(id(2))*1e3/obj.designsigma(2));
+      txt=sprintf("%s\nRMS X Angle jitter = %.2f (urad) = %.2f (sigma')",...
+        txt,d.xpstd*1e3,d.xpstd*1e3/obj.designdivergence(1));
+      txt=sprintf("%s\nRMS Y Angle jitter = %.2f (urad) = %.2f (sigma')",...
+        txt,d.ypstd*1e3,d.ypstd*1e3/obj.designdivergence(2));
       g.fitinfo.Value = txt ;
     end
     function procdata(obj)
@@ -128,8 +130,8 @@ classdef F2_IPjitterApp < handle
       obj.ipdat.ypos = X0(3,:) + X0(4,:).*(zdat(:)-zdat(1)) ;
       obj.ipdat.yang = X0(4,:) ;
       obj.ipdat.zpos = zdat ;
-      obj.ipdat.xstd = std(obj.ipdat.xpos) ;
-      obj.ipdat.ystd = std(obj.ipdat.ypos) ;
+      obj.ipdat.xstd = std(obj.ipdat.xpos,[],2) ;
+      obj.ipdat.ystd = std(obj.ipdat.ypos,[],2) ;
       obj.ipdat.xpstd = std(obj.ipdat.xang) ;
       obj.ipdat.ypstd = std(obj.ipdat.yang) ;
       [~,iwx] = min(obj.ipdat.xstd) ;
@@ -144,8 +146,17 @@ classdef F2_IPjitterApp < handle
       obj.ipdat=[];
       if exist('archivedate','var')
         obj.adate=archivedate;
+        obj.LLM.LEM.Mags.autoupdate=false;
+        obj.LLM.ArchiveDate=archivedate;
+        obj.LLM.ModelSource="Archive";
+%         obj.LLM.UpdateModel();
         obj.BPMS.readnp(obj.npulses,archivedate);
       else
+        if ~obj.LLM.LEM.Mags.autoupdate
+          obj.LLM.ModelSource="Live";
+          obj.LLM.UpdateModel();
+          obj.LLM.LEM.Mags.autoupdate=true;
+        end
         obj.adate=[];
         obj.BPMS.readbuffer(obj.npulses);
       end
