@@ -15,6 +15,7 @@ classdef F2_CamCheck < handle
         objhan
         freerun
         DAQ_Cams
+        camStructs
     end
     properties(Hidden)
         listeners
@@ -96,7 +97,6 @@ classdef F2_CamCheck < handle
             
             obj.sioc_list = {'cpu-lr10-pm01',       'SIOC:LR10:PM01';
                              'cpu-in10-pm01',       'SIOC:IN10:PM01';
-                             %'cpu-in10-ls01',       'SIOC:IN10:LS01';
                              'cpu-li10-pm01',       'SIOC:LI10:PM02';
                              'cpu-li14-pm01',       'SIOC:LI14:PM01';
                              'cpu-li15-pm01',       'SIOC:LI15:PM01';
@@ -104,15 +104,10 @@ classdef F2_CamCheck < handle
                              'cpu-li20-pm02',       'SIOC:LI20:PM02';
                              'cpu-li20-pm03',       'SIOC:LI20:PM03';
                              'cpu-li20-pm04',       'SIOC:LI20:PM04';
-                             'facet-li20-pm01',     'SIOC:LI20:PM20';
-                             'facet-li20-pm02',     'SIOC:LI20:PM21';
-                             'facet-li20-pm03',     'SIOC:LI20:PM22';
-                             'facet-li20-pm04',     'SIOC:LI20:PM23';
                              'cpu-li20-pm05',       'SIOC:LI20:PM05';
                              'cpu-li20-pm06',       'SIOC:LI20:PM06';
-                             %'facet-b244-cs01',     'SIOC:LI20:CS01';
-                             %'facet-b244-cs02',     'SIOC:LI20:CS02';
-                             %'facet-b244-cs03',     'SIOC:LI20:CS03';
+                             'cpu-li20-pm07',       'SIOC:LI20:PM07';
+                             'cpu-li20-pm08',       'SIOC:LI20:PM08';
                              };
             
             obj.siocs = cell(size(obj.camera_info(:,5)));
@@ -198,6 +193,18 @@ classdef F2_CamCheck < handle
                 cam_stat = lcaGet(connect_pvs,0,'DBF_ENUM');
                 bad_cam = cam_stat ~= 1;
             end
+        end
+        
+        function getCamStructs(obj)
+            obj.checkIOCs();
+            obj.camStructs = {};
+            
+            for i = 1:numel(obj.camPVs)
+    
+                obj.camStructs{i} = get_cam_info(obj.camPVs{i});
+    
+            end
+            
         end
                         
         

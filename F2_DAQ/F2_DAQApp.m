@@ -1,6 +1,8 @@
 classdef F2_DAQApp < handle
+    % F2_DAQApp is responsible for taking the parameters from the GUI
+    % interface and translating them into a structured input to the DAQ
     events
-        PVUpdated % PV object list notifies this event after each set of monitored PVs have finished updating
+        PVUpdated 
     end
     properties
         pvlist PV
@@ -34,7 +36,7 @@ classdef F2_DAQApp < handle
             diary('/u1/facet/physics/log/matlab/F2_DAQ.log');
             
             % initialize object and add PVs to be monitored
-            context = PV.Initialize(PVtype.EPICS_labca) ;
+            context = PV.Initialize(PVtype.EPICS) ;
             obj.pvlist=[...
                 PV(context,'name',"GUI_Instance",'pvname',"SIOC:SYS1:ML02:AO351",'mode',"rw",'monitor',true); % Number of times GUI is run
                 PV(context,'name',"DAQ_Instance",'pvname',"SIOC:SYS1:ML02:AO400",'mode',"rw",'monitor',true); % Number of times DAQ is run
@@ -106,6 +108,7 @@ classdef F2_DAQApp < handle
             obj.DAQ_params.n_shot     = obj.guihan.ShotsperstepEditField.Value;
             obj.DAQ_params.print2elog = obj.guihan.PrinttoeLogCheckBox.Value;
             obj.DAQ_params.saveBG     = obj.guihan.SavebackgroundCheckBox.Value;
+            obj.DAQ_params.laserBG    = obj.guihan.SaveLaserBGCheckBox.Value;
             obj.DAQ_params.nBG        = obj.guihan.BackgroundshotsEditField.Value;
             
             % Get camera info
