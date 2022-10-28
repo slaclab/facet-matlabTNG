@@ -44,7 +44,6 @@ classdef F2_IPjitter_exported < matlab.apps.AppBase
   
   properties (Access = public)
     aobj % F2_IPjitterApp object
-    E0 = 10 % Design beam energy in GeV
   end
   
   properties (Access = private)
@@ -54,11 +53,11 @@ classdef F2_IPjitter_exported < matlab.apps.AppBase
   methods (Access = private)
     
     function OpticsCalc(app)
-      gamma = app.Optics_E/0.511e-3;
-      emitx = 1e-6*app.Optics_nemitx / gamma ;
-      emity = 1e-6*app.Optics_nemity / gamma ;
-      betax = 1e-2*app.Optics_betax ;
-      betay = 1e-2*app.Optics_betay ;
+      gamma = app.Optics_E.Value/0.511e-3;
+      emitx = 1e-6*app.Optics_nemitx.Value / gamma ;
+      emity = 1e-6*app.Optics_nemity.Value / gamma ;
+      betax = 1e-2*app.Optics_betax.Value ;
+      betay = 1e-2*app.Optics_betay.Value ;
       app.Optics_sigmax.Value = sqrt(emitx*betax)*1e6;
       app.Optics_sigmay.Value = sqrt(emity*betay)*1e6;
       app.Optics_divx.Value = sqrt(emitx/betax)*1e6;
@@ -87,7 +86,7 @@ classdef F2_IPjitter_exported < matlab.apps.AppBase
       if value>=app.BPMS2.Value
         app.BPMS1.Value=app.BPMS2.Value-1;
       end
-      app.aobj.bpmid=[app.BPM1.Value app.BPM2.Value];
+      app.aobj.bpmid=[app.BPMS1.Value app.BPMS2.Value];
     end
 
     % Value changed function: BPMS2
@@ -96,7 +95,7 @@ classdef F2_IPjitter_exported < matlab.apps.AppBase
       if value<=app.BPMS1.Value
         app.BPMS2.Value=app.BPMS1.Value+1;
       end
-      app.aobj.bpmid=[app.BPM1.Value app.BPM2.Value];
+      app.aobj.bpmid=[app.BPMS1.Value app.BPMS2.Value];
     end
 
     % Value changed function: npulse
@@ -114,7 +113,7 @@ classdef F2_IPjitter_exported < matlab.apps.AppBase
       end
       if ~isempty(d)
         app.lastdate=d;
-        app.fitinfo.Value = "Fetching Archive BPM data..." ;
+        app.fitinfo.Value = "Fetching Archive BPM and magnet data..." ;
         drawnow;
         app.aobj.GetBPMS(datevec(d)) ;
         app.fitinfo.Value = "Processing Archive BPM data..." ;
@@ -153,10 +152,10 @@ classdef F2_IPjitter_exported < matlab.apps.AppBase
     function Optics_sigmaxValueChanged(app, event)
       value = app.Optics_sigmax.Value;
       app.aobj.designsigma(1) = value ;
-      gamma = app.Optics_E/0.511e-3;
-      emitx = (value*1e-6)^2 / app.Optics_betax*1e-2 ;
+      gamma = app.Optics_E.Value/0.511e-3;
+      emitx = (value*1e-6)^2 / (app.Optics_betax.Value*1e-2) ;
       app.Optics_nemitx.Value = gamma * emitx * 1e6 ;
-      app.Optics_divx.Value = 1e6 * sqrt(emitx/(app.Optics_betax*1e-2)) ;
+      app.Optics_divx.Value = 1e6 * sqrt(emitx/(app.Optics_betax.Value*1e-2)) ;
       app.aobj.designdivergence(1) = app.Optics_divx.Value ;
     end
 
@@ -164,10 +163,10 @@ classdef F2_IPjitter_exported < matlab.apps.AppBase
     function Optics_sigmayValueChanged(app, event)
       value = app.Optics_sigmay.Value;
       app.aobj.designsigma(2) = value ;
-      gamma = app.Optics_E/0.511e-3;
-      emity = (value*1e-6)^2 / app.Optics_betay*1e-2 ;
+      gamma = app.Optics_E.Value/0.511e-3;
+      emity = (value*1e-6)^2 / (app.Optics_betay.Value*1e-2) ;
       app.Optics_nemity.Value = gamma * emity * 1e6 ;
-      app.Optics_divy.Value = 1e6 * sqrt(emity/(app.Optics_betay*1e-2)) ;
+      app.Optics_divy.Value = 1e6 * sqrt(emity/(app.Optics_betay.Value*1e-2)) ;
       app.aobj.designdivergence(2) = app.Optics_divy.Value ;
     end
 
@@ -175,10 +174,10 @@ classdef F2_IPjitter_exported < matlab.apps.AppBase
     function Optics_divxValueChanged(app, event)
       value = app.Optics_divx.Value;
       app.aobj.designdivergence(1) = value ;
-      gamma = app.Optics_E/0.511e-3;
-      emitx = (value*1e-6)^2 * app.Optics_betax*1e-2 ;
+      gamma = app.Optics_E.Value/0.511e-3;
+      emitx = (value*1e-6)^2 * (app.Optics_betax.Value*1e-2) ;
       app.Optics_nemitx.Value = gamma * emitx * 1e6 ;
-      app.Optics_sigmax.Value = 1e6 * sqrt(emitx*app.Optcs_betax*1e-2) ;
+      app.Optics_sigmax.Value = 1e6 * sqrt(emitx*app.Optics_betax.Value*1e-2) ;
       app.aobj.designsigma(1) = app.Optics_sigmax.Value ;
     end
 
@@ -186,10 +185,10 @@ classdef F2_IPjitter_exported < matlab.apps.AppBase
     function Optics_divyValueChanged(app, event)
       value = app.Optics_divy.Value;
       app.aobj.designdivergence(2) = value ;
-      gamma = app.Optics_E/0.511e-3;
-      emity = (value*1e-6)^2 * app.Optics_betay*1e-2 ;
+      gamma = app.Optics_E.Value/0.511e-3;
+      emity = (value*1e-6)^2 * (app.Optics_betay.Value*1e-2) ;
       app.Optics_nemity.Value = gamma * emity * 1e6 ;
-      app.Optics_sigmay.Value = 1e6 * sqrt(emity*app.Optcs_betay*1e-2) ;
+      app.Optics_sigmay.Value = 1e6 * sqrt(emity*app.Optics_betay.Value*1e-2) ;
       app.aobj.designsigma(2) = app.Optics_sigmay.Value ;
     end
 
@@ -451,7 +450,7 @@ classdef F2_IPjitter_exported < matlab.apps.AppBase
       app.npulse.ValueChangedFcn = createCallbackFcn(app, @npulseValueChanged, true);
       app.npulse.Interruptible = 'off';
       app.npulse.Position = [7 10 120 22];
-      app.npulse.Value = 20;
+      app.npulse.Value = 50;
 
       % Create BPMSPanel
       app.BPMSPanel = uipanel(app.F2_IPjitterUIFigure);
