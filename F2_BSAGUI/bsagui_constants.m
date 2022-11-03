@@ -41,7 +41,7 @@ classdef bsagui_constants < handle
              obj.defaultPlotVars.dev = {'Time', 'Index', 'PSD', 'Histogram', 'All Z', 'Z PSD', 'Jitter Pie'};
              obj.defaultPlotVars.CU = {'Time', 'Index', 'PSD', 'Histogram', 'All Z', 'Z PSD', 'Jitter Pie', 'Z RMS'};
              obj.defaultPlotVars.SC = {'Time', 'Index', 'PSD', 'Histogram', 'All Z', 'Z PSD'};
-             obj.defaultPlotVars.facet = {'Time', 'Index', 'PSD', 'Histogram'};
+             obj.defaultPlotVars.facet = {'Time', 'Index', 'PSD', 'Histogram', 'Z RMS'};
         end
         
         function setValidEDefs(obj)
