@@ -307,7 +307,7 @@ classdef F2_bpms < handle & matlab.mixin.Copyable
           end
           builder.with('BPMS', abpmnames) ;
           if asyn
-            obj.asynbuilder = builder.asynchGet() ; % launch asyn call
+            obj.asynbuilder = builder.asyncGet() ; % launch asyn call
             obj.asynwait = true ;
             return
           else
@@ -536,6 +536,11 @@ classdef F2_bpms < handle & matlab.mixin.Copyable
     end
     function beamrate = get.beamrate(obj)
       beamrate = obj.f2c.beamrate ;
+    end
+    function SetData(obj,xdat,ydat,tmit)
+      obj.xdat=xdat;
+      obj.ydat=ydat;
+      obj.tmit=tmit;
     end
   end
 end

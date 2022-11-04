@@ -138,6 +138,29 @@ classdef F2_IPjitterApp < handle
       [~,iwy] = min(obj.ipdat.ystd) ;
       obj.ipdat.izwaist = [iwx iwy] ;
     end
+    function GetBPMS_sim(obj,nsig,nemit)
+      %GetBPMS_sim Simulate BPM readings with nsig incoming jitter
+      global BEAMLINE
+      id=obj.BPMS.modelID;
+      B=MakeBeam6DGauss(obj.LLM.Initial,double(obj.npulses),1);
+      B.Bunch.x(1:5,:)=0;
+      B.Bunch.x(6,:)=BEAMLINE{id(1)}.P;
+      emit=nemit/(BEAMLINE{id(1)}.P/0.511e-3);
+      bx0=obj.LLM.DesignTwiss.betax(id(1)); by0=obj.LLM.DesignTwiss.betay(id(1));
+      ax0=obj.LLM.DesignTwiss.alphax(id(1)); ay0=obj.LLM.DesignTwiss.alphay(id(1));
+      gx0=(1+ax0^2)/bx0; gy0=(1+ay0^2)/by0;
+      sig=[sqrt(bx0*emit) sqrt(by0*emit)];
+      sigp=[sqrt(gx0*emit) sqrt(gy0*emit)];
+      xdat=zeros(length(id),obj.npulses); ydat=xdat;
+      tmit=ones(size(xdat))*1.2e10;
+      B.Bunch.x(1:4,:) = randn(4,obj.npulses).*[sig(1);sigp(1);sig(2);sigp(2)].*nsig;
+      for ibpm=1:length(id)
+        [~,bo]=TrackThru(id(1),id(ibpm),B,1,1);
+        xdat(ibpm,:)=bo.Bunch.x(1,:);
+        ydat(ibpm,:)=bo.Bunch.x(3,:);
+      end
+      obj.BPMS.SetData(xdat,ydat,tmit);
+    end
     function GetBPMS(obj,archivedate)
       %GETBPMS Get new BPM data
       %GetBPMS([archivedate])
