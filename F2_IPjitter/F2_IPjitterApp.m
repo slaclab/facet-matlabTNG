@@ -38,7 +38,7 @@ classdef F2_IPjitterApp < handle
       obj.BPMS.UseRegion=[0 0 0 0 0 0 0 0 0 1 1];
       obj.BPMS.BufferLen = obj.npulses;
       % Use M5FF/M1EX BPMs by defaults
-      obj.bpmid = [find(obj.BPMS.modelnames=="M5FF") find(obj.BPMS.modelnames=="M1EX")] ;
+      obj.bpmid = [find(obj.BPMS.modelnames=="M5FF") find(obj.BPMS.modelnames=="M0EX")] ;
       % Setup BPM lists in GUI
       if ~isempty(obj.guihan)
         obj.guihan.BPMS1.Items = obj.BPMS.modelnames + " / " + obj.BPMS.bpmnames ;
@@ -58,7 +58,14 @@ classdef F2_IPjitterApp < handle
       if isempty(obj.ipdat)
         error('No BPM data taken, or procdata not called');
       end
+      
       g=obj.guihan;
+      
+      g.sxax.reset; g.syax.reset;
+      g.sxax.Title.String="\sigma_x vs. z"; g.syax.Title.String="\sigma_y vs. z";
+      g.sxax.XLabel.String="Z / m - 1000"; g.sxax.YLabel.String="\sigma_x / \mum";
+      g.syax.XLabel.String="Z / m - 1000"; g.syax.YLabel.String="\sigma_y / \mum";
+      
       d=obj.ipdat; id=d.izwaist;
       histogram(g.xax,d.xpos(id(1),:).*1e3);
       histogram(g.xpax,d.xang.*1e3);
@@ -75,7 +82,7 @@ classdef F2_IPjitterApp < handle
       if ~isempty(obj.adate)
         txt="BPM data from archiver: " + datestr(obj.adate) ;
       else
-        txt="Live BPM data (N pulses = " + length(d.xpos) + ")";
+        txt="Live BPM data (N pulses = " + length(d.xang) + ")";
       end
       zall=arrayfun(@(x) BEAMLINE{x}.Coordi(3),1:length(BEAMLINE));
       dzx = zall-d.zpos(id(1)) ;
