@@ -215,13 +215,13 @@ classdef F2_Wirescan_exported < matlab.apps.AppBase
       title(app.UIAxes,'Scan Progress...');
       text(app.UIAxes,max([0 0/100-0.1]),0.5,sprintf('%.1f %%',0));
       drawnow
-%       try
+      try
         app.aobj.StartScan ;
-%       catch ME
-%         errordlg("Scan failed - see xterm window","Scan Failed");
-%         eDefRelease(app.aobj.edef);
-%         throw(ME);
-%       end
+      catch ME
+        errordlg("Scan failed - see xterm window","Scan Failed");
+        eDefRelease(app.aobj.edef);
+        throw(ME);
+      end
     end
 
     % Button pushed function: AbortScanButton
