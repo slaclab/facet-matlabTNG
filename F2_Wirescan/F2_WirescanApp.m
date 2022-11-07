@@ -54,8 +54,10 @@ classdef F2_WirescanApp < handle
     aidabpms logical = [0          1         1           1          1          1         1          1            1          0           0     ]
     wires string = ["IN10:561" "LI11:444" "LI11:614" "LI11:744" "LI12:214" "LI18:944" "LI19:144" "LI19:244" "LI19:344" "LI20:3179" "LI20:3206"]
     wiremodel string = ["WS10561" "WS11444" "WS11614" "WS11744" "WS12214" "WS18944" "WS19144" "WS19244" "WS19344" "IPWS1" "IPWS3"]
-    pmts string = ["IN10:561" "LI11:444" "LI11:614" "LI11:744" "LI12:214" "LI18:944" "LI19:144" "LI19:244" "LI19:344" "LI20:3060" "LI20:3070" "LI20:3179" "LI20:3350" "LI20:3360"]
-    tors string = ["IN10:591" "LI11:360" "LI14:890" "LI20:1988" "LI20:2040" "LI20:2452" "LI20:3163" "LI20:3255"]
+%     pmts string = ["IN10:561" "LI11:444" "LI11:614" "LI11:744" "LI12:214" "LI18:944" "LI19:144" "LI19:244" "LI19:344" "LI20:3060" "LI20:3070" "LI20:3179" "LI20:3350" "LI20:3360"]
+    pmts string = ["IN10:561" "LI11:444" "LI11:614" "LI11:744" "LI12:214" "LI18:944" "LI19:144" "LI19:244" "LI19:344"]
+%     tors string = ["IN10:591" "LI11:360" "LI14:890" "LI20:1988" "LI20:2040" "LI20:2452" "LI20:3163" "LI20:3255"]
+    tors string = ["IN10:591" "LI11:360" "LI14:890"]
     blms string = ["LI11:359" "LI14:888" "LI20:3014"]
     BeamRatePV string = "EVNT:SYS1:1:INJECTRATE"
   end
@@ -201,15 +203,15 @@ classdef F2_WirescanApp < handle
       
       % If there AIDA BPMs, get buffered data whilst scan is happening
       mstruct=[];
-      if obj.aidabpms(obj.wiresel) && obj.jittercor
+      if obj.aidabpms(obj.wiresel)
         aidapva;
         builder = pvaRequest('FACET-II:BUFFACQ');
         builder.with('BPMD', 57);
-        builder.with('NRPOS', double(obj.npulses+50));
+        builder.with('NRPOS', double(scanWireBufferNum));
         builder.timeout(180);
         builder.with('BPMS', cellstr(obj.bpms(obj.bpmsel))) ;
         try 
-          mstruct = ML(builder.get()) ;
+          abuilder = builder.asyncGet() ;
         catch
           fprintf(2,'Failed to get AIDA BPMs, probably asking for too many pulses, try reducing pulses or increasing beam rate\n');
           mstruct = [];
@@ -255,25 +257,32 @@ classdef F2_WirescanApp < handle
       
       % Get BSA data
       if obj.scansuccess
+        % - Wait for AIDA BPM buffered data if needed 
+        if obj.aidabpms(obj.wiresel)
+          while ~abuilder.isReady()
+            pause(0.2);
+          end
+          mstruct =  ML(abuilder.getResponse()) ;
+        end
         pidpv=sprintf('PATT:SYS1:1:PULSEIDHST%d',obj.edef);
         obj.data.pid=lcaGet(pidpv,scanWireBufferNum);
         obj.data.pos=lcaGet(char(obj.wirename+":POSNHST"+obj.edef),scanWireBufferNum).*1e-6;
         obj.data.pmt=lcaGet(cellstr("PMT:"+obj.pmts(:)+":QDCRAWHST"+obj.edef),scanWireBufferNum) ;
-        obj.data.toro = lcaGet(cellstr("TORO:"+obj.tors(:)+":0:TMITHST"+obj.edef),scanWireBufferNum) ;
+        obj.data.toro = lcaGet(cellstr("TORO:"+obj.tors(:)+":TMITHST"+obj.edef),scanWireBufferNum) ;
         if ~isempty(obj.bpms)
           if obj.aidabpms(obj.wiresel) && ~isempty(mstruct) % align bpm data with pulse IDs
-            nameid1 = ismember( string(mstruct.name) , obj.bpms(obj.bpmsel(1)) ) ;
-            nameid2 = ismember( string(mstruct.name) , obj.bpms(obj.bpmsel(2)) ) ;
-            id1 = mstruct.id(nameid1) ; id2 = mstruct.id(nameid2) ;
-            x1 = mstruct.x(nameid1) ; x2 = mstruct.x(nameid2) ;
-            y1 = mstruct.y(nameid1) ; y2 = mstruct.y(nameid2) ;
+            nameid1 = ismember( string(mstruct.values.name) , obj.bpms(obj.bpmsel(1)) ) ;
+            nameid2 = ismember( string(mstruct.values.name) , obj.bpms(obj.bpmsel(2)) ) ;
+            id1 = mstruct.values.id(nameid1) ; id2 = mstruct.values.id(nameid2) ;
+            x1 = mstruct.values.x(nameid1)*1e-3 ; x2 = mstruct.values.x(nameid2)*1e-3 ;
+            y1 = mstruct.values.y(nameid1)*1e-3 ; y2 = mstruct.values.y(nameid2)*1e-3 ;
             [pidmatch1,pid1] = ismember(id1,obj.data.pid) ;
             [pidmatch2,pid2] = ismember(id2,obj.data.pid) ;
+            obj.data.xbpm1 = zeros(1,scanWireBufferNum) ;
+            obj.data.xbpm2 = obj.data.xbpm1;
+            obj.data.ybpm1 = obj.data.xbpm1 ;
+            obj.data.ybpm2 = obj.data.xbpm2 ;
             if sum(pidmatch1) < obj.npulses || sum(pidmatch2) < obj.npulses
-              obj.data.xbpm1 = zeros(size(obj.data.toro)) ;
-              obj.data.xbpm2 = obj.data.xbpm1;
-              obj.data.ybpm1 = obj.data.xbpm1 ;
-              obj.data.ybpm2 = obj.data.xbpm2 ;
               fprintf(2,'No overlap found between AIDA BPMs and wirescanner data\n');
             else
               obj.data.xbpm1(pid1(pid1>0)) = x1(pidmatch1) ;
@@ -835,12 +844,12 @@ classdef F2_WirescanApp < handle
       obj.wiresel=wsel;
     end
     function set.jittercor(obj,sel)
-      if sel && ~obj.usejit(obj.wiresel)
-        obj.jittercor=false;
-        warning('Unable to process orbit jitter for %s',obj.wirename);
-      else
+%       if sel && ~obj.usejit(obj.wiresel)
+%         obj.jittercor=false;
+%         warning('Unable to process orbit jitter for %s',obj.wirename);
+%       else
         obj.jittercor=sel;
-      end
+%       end
       obj.confsave;
     end
     function set.wiresel(obj,sel)
