@@ -49,6 +49,7 @@ classdef BSA_GUI_model < handle
         facetBR
         acqSCP = 0
         isSCP
+        hasSCP
         bufferRatesText % string to display buffer rates of current machine
         
         idxA % indices of ROOT_NAME  subsetted by search A
