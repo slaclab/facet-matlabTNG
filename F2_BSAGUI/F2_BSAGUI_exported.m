@@ -237,7 +237,11 @@ classdef F2_BSAGUI_exported < matlab.apps.AppBase
             app.AcqSCPListener = addlistener(app.mdl, 'AcqSCPChanged', @(~,~)app.onAcqSCPChanged);
             app.InitListener = addlistener(app.mdl, 'Init', @(~,~)app.onInit);
             
-            mdlInit(app.mdl); % populate model with initial conditions
+            try
+                mdlInit(app.mdl); % populate model with initial conditions
+            catch ME
+                errorMessage(app, ME, 'Error initializing GUI, consider reloading.')
+            end
             
             % Time activate function to handle edit field glitch
             t = timer('TimerFcn',@(~,~)activate(app),'StartDelay',0.02,'Name','activator');
