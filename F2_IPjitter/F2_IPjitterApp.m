@@ -5,12 +5,14 @@ classdef F2_IPjitterApp < handle
     mintmit {mustBePositive} = 1 % min allowable TMIT on bpms (x 1E9)
     designsigma(1,2) = [11.3 11.3] % Design beam size [um]
     designdivergence(1,2) = [22.6 22.6] % Design divergence angle [urad]
+    usepca logical = false
   end
   properties(SetAccess=private)
     guihan
     LLM
     BPMS
     ipdat % processed data [mm,mrad for x/y; m for z]
+    ebpmid
   end
   properties(Access=private)
     adate
@@ -23,7 +25,7 @@ classdef F2_IPjitterApp < handle
     function obj = F2_IPjitterApp(apphan,LLM)
       %F2_IPJITTERAPP Get waist data in experimental region of S20
       %F2_IPjitterApp([guihandle,LucretiaLiveModelApp])
-      if exist('apphan','var')
+      if exist('apphan','var') && ~isempty(apphan)
         obj.guihan=apphan;
       end
       if exist('LLM','var')
@@ -63,8 +65,8 @@ classdef F2_IPjitterApp < handle
       
       g.sxax.reset; g.syax.reset;
       g.sxax.Title.String="\sigma_x vs. z"; g.syax.Title.String="\sigma_y vs. z";
-      g.sxax.XLabel.String="Z / m - 1000"; g.sxax.YLabel.String="\sigma_x / \mum";
-      g.syax.XLabel.String="Z / m - 1000"; g.syax.YLabel.String="\sigma_y / \mum";
+      g.sxax.XLabel.String="Z / m"; g.sxax.YLabel.String="\sigma_x / \mum";
+      g.syax.XLabel.String="Z / m"; g.syax.YLabel.String="\sigma_y / \mum";
       
       d=obj.ipdat; id=d.izwaist;
       histogram(g.xax,d.xpos(id(1),:).*1e3);
@@ -107,8 +109,16 @@ classdef F2_IPjitterApp < handle
       global BEAMLINE
       % - Get raw BPM data in x and y for selected pair of BPMS
       tok= obj.BPMS.tmit(obj.bpmid(1),:)>=obj.mintmit & obj.BPMS.tmit(obj.bpmid(2),:)>=obj.mintmit ;
-      xbpm=[obj.BPMS.xdat(obj.bpmid(1),tok); obj.BPMS.xdat(obj.bpmid(2),tok)] ;
-      ybpm=[obj.BPMS.ydat(obj.bpmid(1),tok); obj.BPMS.ydat(obj.bpmid(2),tok)] ;
+      xbpm=[obj.BPMS.xdat(obj.bpmid(1),tok); obj.BPMS.xdat(obj.bpmid(2),tok)].*1e-3 ;
+      ybpm=[obj.BPMS.ydat(obj.bpmid(1),tok); obj.BPMS.ydat(obj.bpmid(2),tok)].*1e-3 ;
+%       if obj.usepca % use pca to cut noise and energy response
+%         [coeff,~,~,~,explained,mu] = pca(xbpm');
+%         idx = find(cumsum(explained)>95,1);
+%         xbpm = (xbpm-mu)*coeff(:,1:idx); xbpm=xbpm';
+%         [coeff,~,~,~,explained,mu] = pca(ybpm');
+%         idx = find(cumsum(explained)>95,1);
+%         ybpm = (ybpm-mu)*coeff(:,1:idx); ybpm=ybpm';
+%       end
       if isempty(xbpm) || isempty(ybpm)
         error('No valid BPM data')
       end
@@ -129,13 +139,13 @@ classdef F2_IPjitterApp < handle
         [~,Rq]=RmatAtoB(i1,q1(end));
         X0 = Rq(1:4,1:4) * [x0;xp0;y0;yp0] ;
       else
-        [~,Rq]=RmatAtoB(q1(end),i1);
+        [~,Rq]=RmatAtoB(q1(end)+1,i1);
         X0 = Rq(1:4,1:4) \ [x0;xp0;y0;yp0] ;
       end
-      obj.ipdat.xpos = X0(1,:) + X0(2,:).*(zdat(:)-zdat(1)) ;
-      obj.ipdat.xang = X0(2,:) ;
-      obj.ipdat.ypos = X0(3,:) + X0(4,:).*(zdat(:)-zdat(1)) ;
-      obj.ipdat.yang = X0(4,:) ;
+      obj.ipdat.xpos = (X0(1,:) + X0(2,:).*(zdat(:)-zdat(1))).*1e3 ;
+      obj.ipdat.xang = X0(2,:).*1e3 ;
+      obj.ipdat.ypos = (X0(3,:) + X0(4,:).*(zdat(:)-zdat(1))).*1e3 ;
+      obj.ipdat.yang = X0(4,:).*1e3 ;
       obj.ipdat.zpos = zdat ;
       obj.ipdat.xstd = std(obj.ipdat.xpos,[],2) ;
       obj.ipdat.ystd = std(obj.ipdat.ypos,[],2) ;
@@ -145,28 +155,67 @@ classdef F2_IPjitterApp < handle
       [~,iwy] = min(obj.ipdat.ystd) ;
       obj.ipdat.izwaist = [iwx iwy] ;
     end
-    function GetBPMS_sim(obj,nsig,nemit)
+    function GetBPMS_sim(obj,nsig,nemit,bpmres)
       %GetBPMS_sim Simulate BPM readings with nsig incoming jitter
-      global BEAMLINE
+      % nsig: rms incoming jitter to use in beam size units
+      % nemit: normalized emittance
+      % bpmres (optional): add jitter to BPM readings (mm)
       id=obj.BPMS.modelID;
-      B=MakeBeam6DGauss(obj.LLM.Initial,double(obj.npulses),1);
-      B.Bunch.x(1:5,:)=0;
-      B.Bunch.x(6,:)=BEAMLINE{id(1)}.P;
-      emit=nemit/(BEAMLINE{id(1)}.P/0.511e-3);
-      bx0=obj.LLM.DesignTwiss.betax(id(1)); by0=obj.LLM.DesignTwiss.betay(id(1));
-      ax0=obj.LLM.DesignTwiss.alphax(id(1)); ay0=obj.LLM.DesignTwiss.alphay(id(1));
-      gx0=(1+ax0^2)/bx0; gy0=(1+ay0^2)/by0;
-      sig=[sqrt(bx0*emit) sqrt(by0*emit)];
-      sigp=[sqrt(gx0*emit) sqrt(gy0*emit)];
-      xdat=zeros(length(id),obj.npulses); ydat=xdat;
-      tmit=ones(size(xdat))*1.2e10;
-      B.Bunch.x(1:4,:) = randn(4,obj.npulses).*[sig(1);sigp(1);sig(2);sigp(2)].*nsig;
+      I = TwissToInitial(obj.LLM.DesignTwiss,id(1),obj.LLM.Initial);
+      I.x.NEmit = nemit*nsig^2; I.y.NEmit=nemit*nsig^2;
+      B=MakeBeam6DGauss(I,double(obj.npulses),1);
+      xdat=zeros(length(id),double(obj.npulses)); ydat=xdat; xpdat=xdat; ypdat=xdat;
       for ibpm=1:length(id)
         [~,bo]=TrackThru(id(1),id(ibpm),B,1,1);
-        xdat(ibpm,:)=bo.Bunch.x(1,:);
-        ydat(ibpm,:)=bo.Bunch.x(3,:);
+        xdat(ibpm,:)=bo.Bunch.x(1,:).*1e3; xpdat(ibpm,:)=bo.Bunch.x(2,:).*1e3;
+        ydat(ibpm,:)=bo.Bunch.x(3,:).*1e3; ypdat(ibpm,:)=bo.Bunch.x(4,:).*1e3;
       end
+      if exist('bpmres','var')
+        xdat=xdat+randn(size(xdat)).*bpmres ;
+        ydat=ydat+randn(size(ydat)).*bpmres ;
+      end
+      tmit=(2e-9./1.6e-19).*ones(size(xdat));
       obj.BPMS.SetData(xdat,ydat,tmit);
+    end
+    function [wx_res,wy_res,sx_ave,sy_ave,sx_res,sy_res] = simscan_bpmres(obj,res,isquad)
+      global BEAMLINE PS
+      nsim=100; nsig=0.2;
+      wx=zeros(1,nsim); wy=wx; sx=wx; sy=wx;
+      wx_res=zeros(1,length(res)); wy_res=wx_res; sx_res=wx_res; sy_res=sx_res; sx_ave=sx_res; sy_ave=sx_res;
+      q0d=findcells(BEAMLINE,'Name','Q0D'); q0d=BEAMLINE{q0d(1)}.PS;
+      for ires=1:length(res)
+        for isim=1:nsim
+          if isquad
+            PS(q0d).dAmpl=randn*res(ires);
+            obj.GetBPMS_sim(nsig,10e-6,0.002);
+          else
+            obj.GetBPMS_sim(nsig,10e-6,res(ires));
+          end
+          obj.procdata;
+          wx(isim)=obj.ipdat.zpos(obj.ipdat.izwaist(1));
+          wy(isim)=obj.ipdat.zpos(obj.ipdat.izwaist(2));
+          sx(isim) = obj.ipdat.xstd(obj.ipdat.izwaist(1));
+          sy(isim) = obj.ipdat.ystd(obj.ipdat.izwaist(2));
+        end
+        if isquad
+          PS(q0d).dAmpl=0;
+        end
+        wx_res(ires)=std(wx);
+        wy_res(ires)=std(wy);
+        sx_res(ires)=std(sx);
+        sy_res(ires)=std(sy);
+        sx_ave(ires)=mean(sx);
+        sy_ave(ires)=mean(sy);
+      end
+      figure;
+      semilogx(res.*1e3,smooth(wy_res,40,'sgolay').*1e3)
+      grid
+      xlabel('BPM Resolution [\mum]');
+      ylabel('Z Waist Reconstruction Res. [mm]');
+      yyaxis right
+      sydiff2=(sy_ave.*1e3).^2-(nsig*obj.designsigma(2)).^2; sydiff2(sydiff2<0)=0;
+      loglog(res.*1e3,smooth(sqrt(sydiff2),40,'sgolay'))
+      ylabel('\sigma^*_{err} [\mum]');
     end
     function GetBPMS(obj,archivedate)
       %GETBPMS Get new BPM data

@@ -88,13 +88,7 @@ classdef F2_mags < handle & matlab.mixin.Copyable & F2_common
       minpv = regexprep(maxpv,"(BMAX)$","BMIN") ;
       dominpv = true(size(minpv)); dominpv(contains(minpv,["QUAS","LGPS","SXTS"])) = false ;
       dominpv(~startsWith(minpv,"QUAD") & ~startsWith(minpv,"XCOR") & ~startsWith(minpv,"YCOR")) = false ;
-      try
-        obj.BMAX = lcaGet(cellstr(maxpv(:))) ;
-      catch
-        pause(1);
-        obj.BMAX = lcaGet(cellstr(maxpv(:))) ;
-        
-      end
+      obj.BMAX = lcaGet(cellstr(maxpv(:))) ;
       obj.BMIN = zeros(size(obj.BMAX)) ;
       if any(dominpv)
         obj.BMIN(dominpv) = lcaGet(cellstr(minpv(dominpv))) ;
