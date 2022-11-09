@@ -56,7 +56,7 @@ classdef F2_WirescanApp < handle
     wiremodel string = ["WS10561" "WS11444" "WS11614" "WS11744" "WS12214" "WS18944" "WS19144" "WS19244" "WS19344" "IPWS1" "IPWS3"]
     pmts string = ["IN10:561" "LI11:444" "LI11:614" "LI11:744" "LI12:214" "LI18:944" "LI19:144" "LI19:244" "LI19:344" "LI20:3060" "LI20:3070" "LI20:3179" "LI20:3350" "LI20:3360"]
 %     pmts string = ["IN10:561" "LI11:444" "LI11:614" "LI11:744" "LI12:214" "LI18:944" "LI19:144" "LI19:244" "LI19:344"]
-    tors string = ["IN10:591" "LI11:360" "LI14:890" "LI20:1988" "LI20:2040" "LI20:2452" "LI20:3163" "LI20:3255"]
+    tors string = ["IN10:591" "LI11:360" "LI14:890" "LI20:1988:0" "LI20:2040:0" "LI20:2452:0" "LI20:3163:0" "LI20:3255:0"]
 %     tors string = ["IN10:591" "LI11:360" "LI14:890"]
     blms string = ["LI11:359" "LI14:888" "LI20:3014"]
     BeamRatePV string = "EVNT:SYS1:1:INJECTRATE"

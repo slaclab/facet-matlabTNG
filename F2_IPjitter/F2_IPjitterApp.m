@@ -37,7 +37,7 @@ classdef F2_IPjitterApp < handle
       obj.LLM.LEM.Mags.UseSector=[0 0 0 0 1];
       obj.LLM.LEM.Mags.autoupdate=true;
       obj.BPMS=F2_bpms(obj.LLM.LM);
-      obj.BPMS.UseRegion=[0 0 0 0 0 0 0 0 0 1 1];
+      obj.BPMS.UseRegion=[0 0 0 0 0 0 0 0 1 1 1];
       obj.BPMS.BufferLen = obj.npulses;
       % Use M5FF/M1EX BPMs by defaults
       obj.bpmid = [find(obj.BPMS.modelnames=="M5FF") find(obj.BPMS.modelnames=="M0EX")] ;
