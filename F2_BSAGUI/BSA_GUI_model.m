@@ -413,7 +413,7 @@ classdef BSA_GUI_model < handle
             % eDef reerve nuances for different conditions
             if mdl.facet
                     mdl.beamCode = 10;
-                    mdl.eDefNumber = eDefReserve(springtf('BSA_GUI %d', uniqueNumber));
+                    mdl.eDefNumber = eDefReserve(sprintf('BSA_GUI %d', uniqueNumber));
                     eDefParams(mdl.eDefNumber, num2avg, numPoints,[],[],[],[], mdl.beamCode);
                     HS = [];
             elseif mdl.lcls
