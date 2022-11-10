@@ -142,11 +142,11 @@ try
     builder.with('BPMD', bpmd);
     builder.with('NRPOS', nPoints);
     builder.with('BPMS', aidanames);
-    builder.timeout(20)
+    builder.timeout(300)
     data = ML(builder.get());
     mdl.dataAcqStatus = 'Finished AIDA buffered acquisition';
     notify(mdl, 'AcqStatusChanged');
-catch
+catch ME
     data = [];
     mdl.status = 'FAILED: AIDA buffered acquisition';
     notify(mdl, 'StatusChanged');
@@ -182,7 +182,7 @@ if mdl.acqSCP
         case 'Yes'
             % continue as normal
         case 'Change Points'
-            nPoints = inputdlg('Number of points', 'SCP Points');
+            nPoints = str2double(inputdlg('Number of points', 'SCP Points'));
         case 'No'
             mdl.acqSCP = false;
             notify(mdl, 'AcqSCPChanged');
