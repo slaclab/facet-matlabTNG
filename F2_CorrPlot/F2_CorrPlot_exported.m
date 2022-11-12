@@ -301,7 +301,7 @@ classdef F2_CorrPlot_exported < matlab.apps.AppBase
                 
                 % Set figure background and button colors to index specific color.
                 indexId = find(strcmp(app.mdl.indexList(:,4), app.mdl.index));
-                col = gui_indexColor(app.mdl.index);
+                col = mlapp_indexColor(app.mdl.index);
                 h = findobj(app.UIFigure,'-property','BackgroundColor');
                 cal0 = round(app.UIFigure.Color, 2);
                 hc = get(h,'BackgroundColor');

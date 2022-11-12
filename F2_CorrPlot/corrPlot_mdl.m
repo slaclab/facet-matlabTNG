@@ -1333,7 +1333,7 @@ classdef corrPlot_mdl < handle
                     ctrlPVSet(mdl, 0, 1);
                 end
                 
-                % get the appropriate ctrl PV and fast ctrl PV lists 
+                % get the appropriate ctrl PV and fast ctrl PV lists
                 [slowList, fastList] = acquireGetList(mdl);
                 for jj = slowList
                     j = jj(1);
@@ -1371,7 +1371,7 @@ classdef corrPlot_mdl < handle
                     if ~mdl.acqOpt.acquireStatus, break; end
                 end
                 dataAcquire = 0;
-                % prescan modes allows user to do a successive scans with 
+                % prescan modes allows user to do a successive scans with
                 % different ctrl PV ranges
                 if prescan
                     mdl.data.prescan = 1;
@@ -1394,7 +1394,7 @@ classdef corrPlot_mdl < handle
                         ctrlPVRangeControl(mdl, lo_val, hi_val, 0);
                         dataMerge(mdl)
                     end
-                end                
+                end
             end
             if prescan
                 sortData(mdl)
@@ -1408,7 +1408,7 @@ classdef corrPlot_mdl < handle
             mdl.status = sprintf('Data acquisition complete');
             notify(mdl, 'statusChanged');
             disp(mdl.status);
-        end        
+        end
         
         function acquireCurrentGet(mdl, state, prescan)
             % acquire data for current sample index
@@ -1418,7 +1418,7 @@ classdef corrPlot_mdl < handle
                 acquireBSAControl(mdl, []);
                 lcaPut('SIOC:SYS0:ML00:AO526',mdl.eDefNumber);
             end
-               
+            
             mdl.process.saved = 0;
             readPVIdx = getLinearIdx(mdl); % identify which column of the data matrix needs to be filled in
             isQuasiBSA = strncmp(mdl.nameList.readPV,'SIOC:SYS0:ML00:FWF',18);
@@ -1953,8 +1953,14 @@ classdef corrPlot_mdl < handle
             if mdl.acqOpt.zigzagOrder
                 valLists = {slowList, fastList};
                 currentVals = [1, 1];
-                if ~isempty(mdl.ctrlPV), currentVals(1) = mdl.ctrlPV.pv.val; end
-                if ~isempty(mdl.ctrlPVFast), currentVals(2) = mdl.ctrlPVFast.pv.val; end
+                if ~isempty(mdl.ctrlPV)
+                    currentVals(1) = mdl.ctrlPV.pv.val; 
+                    valLists{1} = mdl.ctrlPV.vallist;
+                end
+                if ~isempty(mdl.ctrlPVFast)
+                    currentVals(2) = mdl.ctrlPVFast.pv.val; 
+                    valLists{2} = mdl.ctrlPVFast.vallist;
+                end
                 nmax = [length(slowList), length(fastList)];
                 for num = 1:2
                     if mod(nmax(num), 2)
@@ -2838,7 +2844,8 @@ classdef corrPlot_mdl < handle
             valid = strcmpi(pv, 'TIME');
             valid = valid || startsWith(upper(pv), 'MKB');
             if ~valid
-                [~, valid] = util_readPV(pv);
+                name = meme_names('name', pv);
+                valid = ~isempty(name);
             end
             valid = valid || isempty(pv);
         end
