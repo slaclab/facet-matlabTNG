@@ -2844,8 +2844,10 @@ classdef corrPlot_mdl < handle
             valid = strcmpi(pv, 'TIME');
             valid = valid || startsWith(upper(pv), 'MKB');
             if ~valid
-                name = meme_names('name', pv);
-                valid = ~isempty(name);
+                timeout = lcaGetTimeout;
+                lcaSetTimeout(0.1);
+                [~, valid] = util_readPV(pv);
+                lcaSetTimeout(timeout);
             end
             valid = valid || isempty(pv);
         end
