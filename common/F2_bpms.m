@@ -71,14 +71,8 @@ classdef F2_bpms < handle & matlab.mixin.Copyable
         obj.LM = copy(LM) ;
       end
       
-      % Local lists
+      % Local lists and initialize data buffers
       obj.MakeList();
-      
-      % Initialize data buffers for use with read method
-      obj.xdat=nan(length(obj.bpmnames),obj.BufferLen);
-      obj.ydat=nan(length(obj.bpmnames),obj.BufferLen);
-      obj.tmit=nan(length(obj.bpmnames),obj.BufferLen);
-      obj.pulseid=1;
       
       % LabCA warnings level
       lcaSetSeverityWarnLevel(14) ;
@@ -138,6 +132,7 @@ classdef F2_bpms < handle & matlab.mixin.Copyable
       %readnp(npulse,ArchiveDate)
       % Read npulses from archiver starting at archivedate=[yr mnth day hr min sec]
       obj.pulseid=1;
+      npulse=double(npulse);
       obj.BufferLen=npulse;
       if ~exist('archivedate','var') || isempty(archivedate)
         for ipulse=1:npulse
@@ -156,13 +151,13 @@ classdef F2_bpms < handle & matlab.mixin.Copyable
       
       % Reset data buffers if previously used buffered data aquisition method
       if obj.usebacq
-        obj.MakeList(); % Update master local lists
-        obj.xdat=nan(length(obj.bpmnames),obj.BufferLen);
-        obj.ydat=nan(length(obj.bpmnames),obj.BufferLen);
-        obj.tmit=nan(length(obj.bpmnames),obj.BufferLen);
-        obj.pulseid=1;
+        obj.MakeList(); % Update master local lists and initialize data buffers
       end
       obj.usebacq=false;
+      
+      if exist('npulse','var')
+        npulse=double(npulse);
+      end
       
       % Form PV list
       xnames = obj.epicsnames + ":X57" ;
@@ -183,7 +178,7 @@ classdef F2_bpms < handle & matlab.mixin.Copyable
       % Acquire new bpm data live or from archiver
       if exist('archivedate','var')
         
-        dat = archive_dataGet(pvs,datenum(archivedate),datenum(datetime(archivedate)+npulse*seconds(10))) ;
+        dat = archive_dataGet(pvs,datenum(archivedate),datenum(datetime(archivedate)+double(npulse)*seconds(10))) ;
         for ipv=1:length(obj.epicsnames)
           for ipulse=1:npulse
             try
@@ -267,7 +262,7 @@ classdef F2_bpms < handle & matlab.mixin.Copyable
       if ~exist('asyn','var') || isempty(asyn)
         asyn=false;
       end
-      
+      npulse=double(npulse);
       isresult=false;
       
       % Reset any stored data
@@ -312,7 +307,7 @@ classdef F2_bpms < handle & matlab.mixin.Copyable
           end
           builder.with('BPMS', abpmnames) ;
           if asyn
-            obj.asynbuilder = builder.asynchGet() ; % launch asyn call
+            obj.asynbuilder = builder.asyncGet() ; % launch asyn call
             obj.asynwait = true ;
             return
           else
@@ -482,6 +477,11 @@ classdef F2_bpms < handle & matlab.mixin.Copyable
       obj.epicsnames=regexprep(obj.bpmnames,"(LI\d+:)BPMS:(.+)","BPMS:$1$2"); obj.epicsnames=obj.epicsnames(:);
       obj.epicsonly =  startsWith(obj.bpmnames,"BPMS:") ;
       obj.monidef=false; % Update monitors on next read command call
+      % Initialize data buffers
+      obj.xdat=nan(length(obj.bpmnames),obj.BufferLen);
+      obj.ydat=nan(length(obj.bpmnames),obj.BufferLen);
+      obj.tmit=nan(length(obj.bpmnames),obj.BufferLen);
+      obj.pulseid=1;
     end
   end
   % Get/set methods
@@ -536,6 +536,11 @@ classdef F2_bpms < handle & matlab.mixin.Copyable
     end
     function beamrate = get.beamrate(obj)
       beamrate = obj.f2c.beamrate ;
+    end
+    function SetData(obj,xdat,ydat,tmit)
+      obj.xdat=xdat;
+      obj.ydat=ydat;
+      obj.tmit=tmit;
     end
   end
 end

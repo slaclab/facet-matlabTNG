@@ -1094,6 +1094,8 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
       
       % Get initial energy feedback setpoint offsets
       E_init = lcaGet(char(obj.EOffsetPV(id))) ; % MeV
+      FB11=SCP_FB; FB11.name="TRANS_LI11"; li11fbstate=FB11.state;
+      FB18=SCP_FB; FB18.name="TRANS_LI18"; li18fbstate=FB18.state;
       
       % Get energy knob to scan and desired range
       evals_s = linspace(obj.escanrange(1,id),obj.escanrange(2,id),obj.nescan(id)) ; % Delta-E (MeV)
@@ -1113,6 +1115,12 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
         end
       end
       lcaPut('SIOC:SYS1:ML00:AO856',fb_off);
+      if id<4
+        FB18.state="Compute" ;
+      end
+      if id<3
+        FB11.state="Compute" ;
+      end
       disp("Starting energy scan...");
       try
          % Status display data
@@ -1192,12 +1200,14 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
         end
       catch ME
         lcaPut('SIOC:SYS1:ML00:AO856',fb_init);
+        FB11.state=li11fbstate; FB18.state=li18fbstate;
         lcaPut(char(obj.EOffsetPV(id)),E_init) ;
         throw(ME);
       end
       disp("Re-Enable Feedbacks...");
       lcaPut('SIOC:SYS1:ML00:AO856',fb_init);
       lcaPut(char(obj.EOffsetPV(id)),E_init) ;
+      FB11.state=li11fbstate; FB18.state=li18fbstate;
       disp("Finished energy scan.");
       if ~isempty(obj.aobj)
         cla(axtop); cla(axbot); axtop.reset;axbot.reset;

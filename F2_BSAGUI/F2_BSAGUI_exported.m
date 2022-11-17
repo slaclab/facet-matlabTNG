@@ -35,7 +35,7 @@ classdef F2_BSAGUI_exported < matlab.apps.AppBase
         PlotVarXDropDown              matlab.ui.control.DropDown
         CreateNewVariableButton       matlab.ui.control.Button
         PlotButton                    matlab.ui.control.Button
-        AdvancedOptions               matlab.ui.control.Button
+        AdvancedOptionsButton         matlab.ui.control.Button
         PlotOrbitButton               matlab.ui.control.Button
         MIAButton                     matlab.ui.control.Button
         WaitEnoloadCheckBox           matlab.ui.control.CheckBox
@@ -45,20 +45,21 @@ classdef F2_BSAGUI_exported < matlab.apps.AppBase
         PulseOffsetEditFieldLabel     matlab.ui.control.Label
         OffsetEditField               matlab.ui.control.NumericEditField
         SCMPSViewerButton             matlab.ui.control.Button
-        AcquireSCP                    matlab.ui.control.CheckBox
+        AcquireSCPCheckBox            matlab.ui.control.CheckBox
     end
 
     
     properties (Access = public)
         mdl % BSA_GUI_model object containing data and app state
-        orbitPlotter
-        advancedOptionsWindow
-        MIAWindow
-        newVarWindow
-        MPSWindow
-
         fileName % name of file to save to
         
+        % child apps
+%         orbitPlotter
+%         advancedOptionsWindow
+%         MIAWindow
+%         newVarWindow
+%         MPSWindow
+
         STDERR = 2
         
         % listeners
@@ -72,10 +73,10 @@ classdef F2_BSAGUI_exported < matlab.apps.AppBase
         PVListener
         DataAcqListener
         AcqSCPListener
-        
+        InitListener
     end
     
-    methods (Access = public)
+    methods (Access = public) % VIEW
         
         function activate(app)
             %Correct bug with edit fields on window open
@@ -95,6 +96,14 @@ classdef F2_BSAGUI_exported < matlab.apps.AppBase
         function deleteWindow(app, window)
             if ~isempty(app.(window))
                 delete(app.(window));
+            end
+        end
+        
+        function onInit(app)
+            if app.mdl.dev
+                devInit(app);
+            elseif app.mdl.facet
+                facetInit(app);
             end
         end
         
@@ -163,12 +172,12 @@ classdef F2_BSAGUI_exported < matlab.apps.AppBase
         function onPVListChanged(app)
             app.PVListA.Items = app.mdl.PVListA;
             app.PVListB.Items = app.mdl.PVListB;
-            if isempty(app.mdl.PVA)
+            if isempty(app.mdl.PVA) || ~any(contains(app.mdl.PVListA, app.mdl.PVA))
                 app.PVListA.Value = {};
             else
                 app.PVListA.Value = app.mdl.PVA;
             end
-            if isempty(app.mdl.PVB)
+            if isempty(app.mdl.PVB) || ~any(contains(app.mdl.PVListB, app.mdl.PVB))
                 app.PVListB.Value = {};
             else
                 app.PVListB.Value = app.mdl.PVB;
@@ -226,8 +235,13 @@ classdef F2_BSAGUI_exported < matlab.apps.AppBase
             app.PVListener = addlistener(app.mdl, 'PVChanged', @(~,~)app.onPVChanged);
             app.DataAcqListener = addlistener(app.mdl, 'DataAcquired', @(~,~)app.onDataAcq);
             app.AcqSCPListener = addlistener(app.mdl, 'AcqSCPChanged', @(~,~)app.onAcqSCPChanged);
+            app.InitListener = addlistener(app.mdl, 'Init', @(~,~)app.onInit);
             
-            mdlInit(app.mdl); % populate model with initial conditions
+            try
+                mdlInit(app.mdl); % populate model with initial conditions
+            catch ME
+                errorMessage(app, ME, 'Error initializing GUI, consider reloading.')
+            end
             
             % Time activate function to handle edit field glitch
             t = timer('TimerFcn',@(~,~)activate(app),'StartDelay',0.02,'Name','activator');
@@ -251,8 +265,8 @@ classdef F2_BSAGUI_exported < matlab.apps.AppBase
                 drawnow
                 
                 try
-                    getData(app.mdl);
-                catch ex
+                    bsagui_getData(app.mdl);
+                catch ex                        
                     errorMessage(app, ex, 'Error acquiring data.');
                     app.DataAqText.Text = 'Error acquiring data';
                 end
@@ -261,10 +275,10 @@ classdef F2_BSAGUI_exported < matlab.apps.AppBase
             end
         end
 
-        % Button pushed function: AdvancedOptions
-        function AdvancedOptionsPushed(app, event)
+        % Button pushed function: AdvancedOptionsButton
+        function AdvancedOptionsButtonPushed(app, event)
             try
-                app.advancedOptionsWindow = AdvancedOptions_exported(app.mdl);
+                AdvancedOptions(app.mdl);
             catch ex
                 errorMessage(app, ex, 'Error launching All Z Menu.');
             end
@@ -273,7 +287,7 @@ classdef F2_BSAGUI_exported < matlab.apps.AppBase
         % Button pushed function: CreateNewVariableButton
         function CreateNewVariableButtonPushed(app, event)
             try
-                app.newVarWindow = createVar(app.mdl);
+                createVar(app.mdl);
             catch ex
                 errorMessage(app, ex, 'Error launching create variable window.');
             end
@@ -299,7 +313,7 @@ classdef F2_BSAGUI_exported < matlab.apps.AppBase
             % toggle private eDef buttons
             if isPrivate
                 app.eDefSetupButton.Visible='on';
-                if ~app.mdl.facet
+                if app.mdl.lcls
                     app.WaitEnoloadCheckBox.Visible='on';
                 end
                 app.PVListA.Items = {'Setup private eDef'};
@@ -315,7 +329,7 @@ classdef F2_BSAGUI_exported < matlab.apps.AppBase
         % Button pushed function: eDefSetupButton
         function eDefSetupButtonPushed(app, event)
             % function for setting up custom eDef
-    
+
             % check for active rates
             if app.mdl.facet
                 active = app.mdl.facetBR ~= 0;
@@ -329,7 +343,7 @@ classdef F2_BSAGUI_exported < matlab.apps.AppBase
                 end
             end
             if ~active
-                answer = questdlg('No active rates for current linac. Would you still like to configure an eDef?',...
+                answer = questdlg('No activae rates for current linac. Would you still like to configure an eDef?',...
                     'No Active Rates',...
                     'Yes', 'No', 'No');
                 if strcmp(answer, 'No')
@@ -337,7 +351,7 @@ classdef F2_BSAGUI_exported < matlab.apps.AppBase
                 end
             end
             try
-                eDefSetup_exported(app.mdl);
+                eDefSetup(app.mdl);
             catch ex
                 errorMessage(app, ex, 'Error setting up eDef.');
             end
@@ -453,7 +467,7 @@ classdef F2_BSAGUI_exported < matlab.apps.AppBase
             end
             
             % MIA current only works for CU data
-            app.MIAButton.Enable = strcmp(app.mdl.linac, 'CU');
+            %app.MIAButton.Enable = strcmp(app.mdl.linac, 'CU');
 
             app.DataAqText.Text = '';
             app.LoadDataButton.Text='...Done'; drawnow
@@ -468,7 +482,7 @@ classdef F2_BSAGUI_exported < matlab.apps.AppBase
         % Button pushed function: MIAButton
         function MIAButtonPushed(app, event)
             try
-                app.MIAWindow = MIA_GUI_exported(app.mdl);
+                MIA_GUI(app.mdl);
             catch ex
                 errorMessage(app, ex, 'Error launching MIA GUI.');
             end
@@ -501,7 +515,7 @@ classdef F2_BSAGUI_exported < matlab.apps.AppBase
         % Button pushed function: PlotOrbitButton
         function PlotOrbitButtonPushed(app, event)
             try
-                app.orbitPlotter = BPM_Orbit_exported(app.mdl);
+                BPM_Orbit(app.mdl);
             catch ex
                 errorMessage(app, ex, 'Error launching BPM orbit GUI.');
             end
@@ -520,16 +534,16 @@ classdef F2_BSAGUI_exported < matlab.apps.AppBase
                 if app.mdl.multiplot
                     yvarlist = app.PlotVarYDropDown.Items;
                     if app.mdl.multiplot_same
-                        BSA_GUI_plot(app.mdl, yvarlist, xvar);
+                        bsagui_plot(app.mdl, yvarlist, xvar);
                     else
                         for varidx = 1:length(yvarlist)
                             yvar = yvarlist{varidx};
-                            BSA_GUI_plot(app.mdl, yvar, xvar);
+                            bsagui_plot(app.mdl, yvar, xvar);
                         end
                     end
                 else
                     yvar = {app.PlotVarYDropDown.Value};
-                    BSA_GUI_plot(app.mdl, yvar, xvar);
+                    bsagui_plot(app.mdl, yvar, xvar);
                 end
 
             catch ex
@@ -682,30 +696,17 @@ classdef F2_BSAGUI_exported < matlab.apps.AppBase
         % Close request function: UIFigure
         function UIFigureCloseRequest(app, event)
             try
-                if app.mdl.have_eDef
-                    releaseeDef(app.mdl);
-                end
+                mdlClose(app.mdl);
                 t = timerfind('Name','activator');
                 if ~isempty(t)
                     delete(t);
                 end
-                lcaPutSmart('SIOC:SYS0:ML03:AO001',0);
-                deleteWindow(app, 'orbitPlotter');
-                deleteWindow(app, 'newVarWindow');
-                deleteWindow(app, 'MIAWindow');
-                deleteWindow(app, 'MPSWindow');
-                deleteWindow(app, 'advancedOptionsWindow');
                 util_mlappClose(app)
             catch ex
                 answer = questdlg(sprintf('%s%c%cWould you like to force quit?', lprintf(app.STDERR, 'Error quitting app. %s',ex.message), newline, newline),...
                     'Delete App',...
                     'Yes', 'No', 'No');
                 if strcmp(answer, 'Yes')
-                    deleteWindow(app, 'orbitPlotter');
-                    deleteWindow(app, 'newVarWindow');
-                    deleteWindow(app, 'MIAWindow');
-                    deleteWindow(app, 'MPSWindow');
-                    deleteWindow(app, 'advancedOptionsWindow');
                     delete(app);
                 end
             end
@@ -724,21 +725,21 @@ classdef F2_BSAGUI_exported < matlab.apps.AppBase
         % Button pushed function: SCMPSViewerButton
         function SCMPSViewerButtonPushed(app, event)
             try
-                app.MPSWindow = MPS_view();
+                MPS_view();
             catch ex
                 errorMessage(app, ex, 'Error launching SC MPS Viewer.');
             end
         end
 
-        % Value changed function: AcquireSCP
-        function AcquireSCPValueChanged(app, event)
-            acqSCP =  app.AcquireSCP.Value;
+        % Value changed function: AcquireSCPCheckBox
+        function AcquireSCPCheckBoxValueChanged(app, event)
+            acqSCP =  app.AcquireSCPCheckBox.Value;
             try
                 acquireSCP(app.mdl, acqSCP);
             catch ex
                 uiwait(errordlg(...
                     lprintf(app.STDERR, 'Error changing acquire SCP option. %s', ex.message)));
-                app.AcquireSCP.Value = ~acqSCP;
+                app.AcquireSCPCheckBox.Value = ~acqSCP;
             end
         end
     end
@@ -760,7 +761,7 @@ classdef F2_BSAGUI_exported < matlab.apps.AppBase
             % Create GridLayout
             app.GridLayout = uigridlayout(app.UIFigure);
             app.GridLayout.ColumnWidth = {'0.8x', '0.8x', '0.8x', '0.8x', '0x', '0.8x', '0.8x', '0.8x', '0.8x', '0.3x', '1x', '1x', '0.3x', '1x', '1x'};
-            app.GridLayout.RowHeight = {'0.5x', '0.5x', '0.5x', '0.5x', '0.5x', '0.5x', '0.5x', '0.1x', '0.5x', '0.5x', '0.5x', '0.5x', '0.5x', '0.5x', '0.5x', '0.5x', '0.5x', '0.5x', '0.5x', '0.5x', '0.5x', '0.5x', '0.5x'};
+            app.GridLayout.RowHeight = {'0.5x', '0.5x', '0.5x', '0.5x', '0.5x', '0.5x', '0.1x', '0.5x', '0.5x', '0.5x', '0.5x', '0.5x', '0.5x', '0.5x', '0.5x', '0.5x', '0.5x', '0.5x', '0.5x', '0.5x', '0.5x', '0.5x'};
             app.GridLayout.ColumnSpacing = 9.4;
             app.GridLayout.RowSpacing = 3.11111111111111;
             app.GridLayout.Padding = [9.4 3.11111111111111 9.4 3.11111111111111];
@@ -771,7 +772,7 @@ classdef F2_BSAGUI_exported < matlab.apps.AppBase
             app.PVListA.Multiselect = 'on';
             app.PVListA.ValueChangedFcn = createCallbackFcn(app, @PVListAValueChanged, true);
             app.PVListA.FontSize = 16;
-            app.PVListA.Layout.Row = [5 23];
+            app.PVListA.Layout.Row = [5 22];
             app.PVListA.Layout.Column = [1 4];
             app.PVListA.Value = {};
 
@@ -781,7 +782,7 @@ classdef F2_BSAGUI_exported < matlab.apps.AppBase
             app.PVListB.Multiselect = 'on';
             app.PVListB.ValueChangedFcn = createCallbackFcn(app, @PVListBValueChanged, true);
             app.PVListB.FontSize = 16;
-            app.PVListB.Layout.Row = [5 23];
+            app.PVListB.Layout.Row = [5 22];
             app.PVListB.Layout.Column = [6 9];
             app.PVListB.Value = {};
 
@@ -808,7 +809,7 @@ classdef F2_BSAGUI_exported < matlab.apps.AppBase
             app.eDefMenu.ValueChangedFcn = createCallbackFcn(app, @eDefMenuValueChanged, true);
             app.eDefMenu.FontSize = 16;
             app.eDefMenu.BackgroundColor = [1 1 1];
-            app.eDefMenu.Layout.Row = 7;
+            app.eDefMenu.Layout.Row = 6;
             app.eDefMenu.Layout.Column = [11 12];
             app.eDefMenu.Value = 'BR';
 
@@ -851,7 +852,7 @@ classdef F2_BSAGUI_exported < matlab.apps.AppBase
             app.PSDLow.ValueChangedFcn = createCallbackFcn(app, @PSDLowValueChanged, true);
             app.PSDLow.HorizontalAlignment = 'center';
             app.PSDLow.FontSize = 16;
-            app.PSDLow.Layout.Row = 21;
+            app.PSDLow.Layout.Row = 20;
             app.PSDLow.Layout.Column = 14;
             app.PSDLow.Value = 58;
 
@@ -860,7 +861,7 @@ classdef F2_BSAGUI_exported < matlab.apps.AppBase
             app.PSDHigh.ValueChangedFcn = createCallbackFcn(app, @PSDHighValueChanged, true);
             app.PSDHigh.HorizontalAlignment = 'center';
             app.PSDHigh.FontSize = 16;
-            app.PSDHigh.Layout.Row = 21;
+            app.PSDHigh.Layout.Row = 20;
             app.PSDHigh.Layout.Column = 15;
             app.PSDHigh.Value = 60;
 
@@ -868,7 +869,7 @@ classdef F2_BSAGUI_exported < matlab.apps.AppBase
             app.PSDRangeLabel = uilabel(app.GridLayout);
             app.PSDRangeLabel.HorizontalAlignment = 'center';
             app.PSDRangeLabel.FontSize = 16;
-            app.PSDRangeLabel.Layout.Row = 20;
+            app.PSDRangeLabel.Layout.Row = 19;
             app.PSDRangeLabel.Layout.Column = [14 15];
             app.PSDRangeLabel.Text = 'PSD Range (Hz)';
 
@@ -919,14 +920,14 @@ classdef F2_BSAGUI_exported < matlab.apps.AppBase
             app.eDefSetupButton.ButtonPushedFcn = createCallbackFcn(app, @eDefSetupButtonPushed, true);
             app.eDefSetupButton.FontSize = 16;
             app.eDefSetupButton.Visible = 'off';
-            app.eDefSetupButton.Layout.Row = 7;
+            app.eDefSetupButton.Layout.Row = 6;
             app.eDefSetupButton.Layout.Column = [14 15];
             app.eDefSetupButton.Text = 'eDef Setup';
 
             % Create Status
             app.Status = uilabel(app.GridLayout);
             app.Status.FontSize = 16;
-            app.Status.Layout.Row = [22 23];
+            app.Status.Layout.Row = [21 22];
             app.Status.Layout.Column = [11 15];
             app.Status.Text = '';
 
@@ -984,14 +985,14 @@ classdef F2_BSAGUI_exported < matlab.apps.AppBase
             app.PlotVarYDropDownLabel = uilabel(app.GridLayout);
             app.PlotVarYDropDownLabel.HorizontalAlignment = 'center';
             app.PlotVarYDropDownLabel.FontSize = 16;
-            app.PlotVarYDropDownLabel.Layout.Row = 9;
+            app.PlotVarYDropDownLabel.Layout.Row = 8;
             app.PlotVarYDropDownLabel.Layout.Column = [14 15];
             app.PlotVarYDropDownLabel.Text = 'Plot Var Y';
 
             % Create PlotVarYDropDown
             app.PlotVarYDropDown = uidropdown(app.GridLayout);
             app.PlotVarYDropDown.Items = {};
-            app.PlotVarYDropDown.Layout.Row = 10;
+            app.PlotVarYDropDown.Layout.Row = 9;
             app.PlotVarYDropDown.Layout.Column = [14 15];
             app.PlotVarYDropDown.Value = {};
 
@@ -999,7 +1000,7 @@ classdef F2_BSAGUI_exported < matlab.apps.AppBase
             app.PlotVarXDropDownLabel = uilabel(app.GridLayout);
             app.PlotVarXDropDownLabel.HorizontalAlignment = 'center';
             app.PlotVarXDropDownLabel.FontSize = 16;
-            app.PlotVarXDropDownLabel.Layout.Row = 11;
+            app.PlotVarXDropDownLabel.Layout.Row = 10;
             app.PlotVarXDropDownLabel.Layout.Column = [14 15];
             app.PlotVarXDropDownLabel.Text = 'Plot Var X';
 
@@ -1007,7 +1008,7 @@ classdef F2_BSAGUI_exported < matlab.apps.AppBase
             app.PlotVarXDropDown = uidropdown(app.GridLayout);
             app.PlotVarXDropDown.Items = {'Time', 'Index', 'PSD', 'Histogram', 'All Z', 'Z PSD', 'Jitter Pie'};
             app.PlotVarXDropDown.ValueChangedFcn = createCallbackFcn(app, @PlotVarXDropDownValueChanged, true);
-            app.PlotVarXDropDown.Layout.Row = 12;
+            app.PlotVarXDropDown.Layout.Row = 11;
             app.PlotVarXDropDown.Layout.Column = [14 15];
             app.PlotVarXDropDown.Value = 'Time';
 
@@ -1024,17 +1025,17 @@ classdef F2_BSAGUI_exported < matlab.apps.AppBase
             app.PlotButton = uibutton(app.GridLayout, 'push');
             app.PlotButton.ButtonPushedFcn = createCallbackFcn(app, @PlotButtonPushed, true);
             app.PlotButton.FontSize = 16;
-            app.PlotButton.Layout.Row = [15 16];
+            app.PlotButton.Layout.Row = [14 15];
             app.PlotButton.Layout.Column = [14 15];
             app.PlotButton.Text = 'Plot';
 
-            % Create AdvancedOptions
-            app.AdvancedOptions = uibutton(app.GridLayout, 'push');
-            app.AdvancedOptions.ButtonPushedFcn = createCallbackFcn(app, @AdvancedOptionsPushed, true);
-            app.AdvancedOptions.FontSize = 16;
-            app.AdvancedOptions.Layout.Row = 15;
-            app.AdvancedOptions.Layout.Column = [11 12];
-            app.AdvancedOptions.Text = 'Advanced Options';
+            % Create AdvancedOptionsButton
+            app.AdvancedOptionsButton = uibutton(app.GridLayout, 'push');
+            app.AdvancedOptionsButton.ButtonPushedFcn = createCallbackFcn(app, @AdvancedOptionsButtonPushed, true);
+            app.AdvancedOptionsButton.FontSize = 16;
+            app.AdvancedOptionsButton.Layout.Row = 15;
+            app.AdvancedOptionsButton.Layout.Column = [11 12];
+            app.AdvancedOptionsButton.Text = 'Advanced Options';
 
             % Create PlotOrbitButton
             app.PlotOrbitButton = uibutton(app.GridLayout, 'push');
@@ -1048,7 +1049,6 @@ classdef F2_BSAGUI_exported < matlab.apps.AppBase
             app.MIAButton = uibutton(app.GridLayout, 'push');
             app.MIAButton.ButtonPushedFcn = createCallbackFcn(app, @MIAButtonPushed, true);
             app.MIAButton.FontSize = 16;
-            app.MIAButton.Enable = 'off';
             app.MIAButton.Tooltip = {'Model independent analysis, i.e. SVD tools'};
             app.MIAButton.Layout.Row = 16;
             app.MIAButton.Layout.Column = [11 12];
@@ -1060,7 +1060,7 @@ classdef F2_BSAGUI_exported < matlab.apps.AppBase
             app.WaitEnoloadCheckBox.Visible = 'off';
             app.WaitEnoloadCheckBox.Text = 'Wait for enoload';
             app.WaitEnoloadCheckBox.FontSize = 16;
-            app.WaitEnoloadCheckBox.Layout.Row = 6;
+            app.WaitEnoloadCheckBox.Layout.Row = 5;
             app.WaitEnoloadCheckBox.Layout.Column = [14 15];
 
             % Create RateLabel
@@ -1086,13 +1086,13 @@ classdef F2_BSAGUI_exported < matlab.apps.AppBase
             app.MultiplotCheckBox.Tooltip = {'Look at "Advanced Options" for multitracing'};
             app.MultiplotCheckBox.Text = 'Multiplot';
             app.MultiplotCheckBox.FontSize = 16;
-            app.MultiplotCheckBox.Layout.Row = 13;
+            app.MultiplotCheckBox.Layout.Row = 12;
             app.MultiplotCheckBox.Layout.Column = 14;
 
             % Create PulseOffsetEditFieldLabel
             app.PulseOffsetEditFieldLabel = uilabel(app.GridLayout);
             app.PulseOffsetEditFieldLabel.FontSize = 16;
-            app.PulseOffsetEditFieldLabel.Layout.Row = 17;
+            app.PulseOffsetEditFieldLabel.Layout.Row = 16;
             app.PulseOffsetEditFieldLabel.Layout.Column = 14;
             app.PulseOffsetEditFieldLabel.Text = 'Pulse Offset:';
 
@@ -1100,7 +1100,7 @@ classdef F2_BSAGUI_exported < matlab.apps.AppBase
             app.OffsetEditField = uieditfield(app.GridLayout, 'numeric');
             app.OffsetEditField.ValueChangedFcn = createCallbackFcn(app, @OffsetEditFieldValueChanged, true);
             app.OffsetEditField.HorizontalAlignment = 'center';
-            app.OffsetEditField.Layout.Row = 17;
+            app.OffsetEditField.Layout.Row = 16;
             app.OffsetEditField.Layout.Column = 15;
 
             % Create SCMPSViewerButton
@@ -1112,13 +1112,13 @@ classdef F2_BSAGUI_exported < matlab.apps.AppBase
             app.SCMPSViewerButton.Layout.Column = [11 12];
             app.SCMPSViewerButton.Text = 'SC MPS Viewer';
 
-            % Create AcquireSCP
-            app.AcquireSCP = uicheckbox(app.GridLayout);
-            app.AcquireSCP.ValueChangedFcn = createCallbackFcn(app, @AcquireSCPValueChanged, true);
-            app.AcquireSCP.Text = 'Acquire SCP Data';
-            app.AcquireSCP.FontSize = 16;
-            app.AcquireSCP.Layout.Row = 6;
-            app.AcquireSCP.Layout.Column = [11 12];
+            % Create AcquireSCPCheckBox
+            app.AcquireSCPCheckBox = uicheckbox(app.GridLayout);
+            app.AcquireSCPCheckBox.ValueChangedFcn = createCallbackFcn(app, @AcquireSCPCheckBoxValueChanged, true);
+            app.AcquireSCPCheckBox.Text = 'Acquire SCP';
+            app.AcquireSCPCheckBox.FontSize = 16;
+            app.AcquireSCPCheckBox.Layout.Row = 8;
+            app.AcquireSCPCheckBox.Layout.Column = [11 12];
 
             % Show the figure after all components are created
             app.UIFigure.Visible = 'on';

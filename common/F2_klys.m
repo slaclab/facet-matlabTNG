@@ -197,7 +197,7 @@ classdef F2_klys < handle
         end
         for isec=1:10
           for ikly=1:8
-            obj.pvlist(end+1) = PV(context,'name',"cudstat_"+ikly+"_1"+(isec-1),'pvname',"FCUDKLYS:LI1"+(isec-1)+":"+ikly+":ONBEAM10",'monitor',true, 'pvdatatype',"float" ) ;
+            obj.pvlist(end+1) = PV(context,'name',"cudstat_"+ikly+"_1"+(isec-1),'pvname',"FCUDKLYS:LI1"+(isec-1)+":"+ikly+":ONBEAM10.RVAL",'monitor',true, 'pvdatatype',"float" ) ;
             if obj.KlysControl(ikly,isec)==1 % SLC
               obj.pvlist(end+1) = PV(context,'name',sprintf("phase_%d_1%d",ikly,isec-1),'pvname',sprintf("LI1%d:KLYS:%d1:PDES",isec-1,ikly),'monitor',true);
               obj.pvlist(end+1) = PV(context,'name',sprintf("ampl_%d_1%d",ikly,isec-1),'pvname',sprintf("LI1%d:KLYS:%d1:ENLD",isec-1,ikly),'monitor',true);

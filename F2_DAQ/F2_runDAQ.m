@@ -23,6 +23,7 @@ classdef F2_runDAQ < handle
         eDefNum
         daq_status
         camCheck
+        BG_obj
     end
     properties(Hidden)
         listeners
@@ -61,7 +62,7 @@ classdef F2_runDAQ < handle
             end
                         
             % initialize object and add PVs to be monitored
-            context = PV.Initialize(PVtype.EPICS_labca) ;
+            context = PV.Initialize(PVtype.EPICS) ;
             obj.pvlist=[...
                 PV(context,'name',"DAQ_Running",'pvname',"SIOC:SYS1:ML02:AO352",'mode',"rw",'monitor',true); % Is DAQ running?
                 PV(context,'name',"DAQ_Abort",'pvname',"SIOC:SYS1:ML02:AO353",'mode',"rw",'monitor',true); % Abort request
@@ -183,10 +184,12 @@ classdef F2_runDAQ < handle
             obj.prepCams();
             
             % Get backgrounds
+            obj.BG_obj = F2_getBG(obj);
             obj.data_struct.backgrounds = struct;
             obj.data_struct.backgrounds.getBG = obj.params.saveBG;
-            if obj.params.saveBG
-                obj.grab_BG();
+            obj.data_struct.backgrounds.laserBG = obj.params.laserBG;
+            if obj.params.saveBG || obj.params.laserBG
+                obj.data_struct.backgrounds = obj.BG_obj.getBackground();
             end
             
             %%%%%%%%%%%%%%%%%%%%
@@ -592,109 +595,6 @@ classdef F2_runDAQ < handle
             
         end
         
-        
-        function grab_BG(obj)
-            
-            % this is debugging background
-            do_shutter = true;
-            
-            nBG = obj.params.nBG;
-            obj.data_struct.backgrounds.nBG = nBG;
-            BGs = zeros(obj.params.num_CAM,obj.maxImSize,nBG);
-            
-            if do_shutter
-                shutter_state = caget(obj.pvs.MPS_Shutter);
-                caput(obj.pvs.MPS_Shutter,0);
-                obj.dispMessage('Inserting shutter for backgrounds.');
-                
-                shut_rbv = caget(obj.pvs.MPS_Shutter_RBV);
-                shut_count = 0;
-                while ~strcmp(shut_rbv,'IS_IN')
-                    shut_rbv = caget(obj.pvs.MPS_Shutter_RBV);
-                    pause(0.1);
-                    shut_count = shut_count + 1;
-                    if shut_count > 20
-                        obj.dispMessage('Warning: could not insert shutter.');
-                        break;
-                    end
-                end
-            end
-            
-            
-            for i = 1:nBG
-                %bg_ims = lcaGetSmart(obj.daq_pvs.Image_ArrayData);
-                %max_size = max(size(bg_ims));
-                
-                for j = 1:obj.params.num_CAM
-                    im = lcaGetSmart(obj.daq_pvs.Image_ArrayData{j});
-                    if isnan(sum(im(:)))
-                        pause(0.1);
-                        im = lcaGetSmart(obj.daq_pvs.Image_ArrayData{j});
-                        if isnan(sum(im(:)))
-                            obj.dispMessage(['Warning: could not get background image for camera ' obj.params.camNames{j}]);
-                            continue;
-                        end
-                    end
-                    
-                    BGs(j,1:numel(im),i) = im;
-                    
-                end
-                pause(0.1);
-            end
-                    
-                
-                
-%                 im_array = lcaGetSmart(obj.daq_pvs.Image_ArrayData);
-%                 im_check = sum(im_array,2);
-%                 bad_ims = isnan(im_check) | im_check==0;
-%                 if any(bad_ims)
-%                     also_bg_ims = lcaGetSmart(obj.daq_pvs.Image_ArrayData(bad_ims));
-%                     max_size = max(size(also_bg_ims));
-%                     %im_array(bad_ims,1:max_size) = lcaGetSmart(obj.daq_pvs.Image_ArrayData(bad_ims));
-%                     im_array(bad_ims,1:max_size) = also_bg_ims;
-%                     im_check = sum(im_array,2);
-%                     bad_ims = isnan(im_check) | im_check==0;
-%                     
-%                     % doing this again. seems dumb
-%                     if any(bad_ims)
-%                         also_bg_ims = lcaGetSmart(obj.daq_pvs.Image_ArrayData(bad_ims));
-%                         max_size = max(size(also_bg_ims));
-%                         im_array(bad_ims,1:max_size) = also_bg_ims;
-%                         im_check = sum(im_array,2);
-%                         bad_ims = isnan(im_check) | im_check==0;
-%                     
-%                         if any(bad_ims)
-%                             obj.dispMessage('Warning: could not get background images.');
-%                         end
-%                     end
-%                 end
-%                 BGs(:,1:max(size(im_array)),i) = im_array;
-%                 pause(0.1);
-%             end
-            
-            if do_shutter
-                if strcmp(shutter_state,'Yes')
-                    caput(obj.pvs.MPS_Shutter,1);
-                    obj.dispMessage('Extracting shutter.');
-                    pause(1);
-                end
-            end
-            
-            
-            for j = 1:obj.params.num_CAM
-                %bgs = squeeze(BGs(j,:,:));
-                size_x = obj.data_struct.metadata.(obj.params.camNames{j}).SizeX_RBV;
-                size_y = obj.data_struct.metadata.(obj.params.camNames{j}).SizeY_RBV;
-                bgs = squeeze(BGs(j,1:(size_x*size_y),:));
-                if nBG == 1
-                    bg_array = uint16(reshape(bgs,[size_x,size_y]));
-                else
-                    bg_array = uint16(reshape(bgs,[size_x,size_y,nBG]));
-                end
-                obj.data_struct.backgrounds.(obj.params.camNames{j}) = bg_array;
-            end
-            
-        end
         
         function setupDataStruct(obj)
             obj.data_struct.version = obj.version;
