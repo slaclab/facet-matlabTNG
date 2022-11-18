@@ -273,7 +273,7 @@ classdef F2_WirescanApp < handle
           if obj.aidabpms(obj.wiresel) && ~isempty(mstruct) % align bpm data with pulse IDs
             nameid1 = ismember( string(mstruct.values.name) , obj.bpms(obj.bpmsel(1)) ) ;
             nameid2 = ismember( string(mstruct.values.name) , obj.bpms(obj.bpmsel(2)) ) ;
-            id1 = mstruct.values.id(nameid1) ; id2 = mstruct.values.id(nameid2) ;
+            id1 = mstruct.values.pulseId(nameid1) ; id2 = mstruct.values.pulseId(nameid2) ;
             x1 = mstruct.values.x(nameid1)*1e-3 ; x2 = mstruct.values.x(nameid2)*1e-3 ;
             y1 = mstruct.values.y(nameid1)*1e-3 ; y2 = mstruct.values.y(nameid2)*1e-3 ;
             [pidmatch1,pid1] = ismember(id1,obj.data.pid) ;
