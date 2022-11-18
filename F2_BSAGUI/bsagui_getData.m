@@ -239,7 +239,7 @@ if mdl.acqSCP
     if aidaAcquired
         % pull out X, Y, and TMIT data from SCP buffered acq
         numBPM = numel(aidanames);
-        aida_pid = bpm_struct.values.id ; aida_pid = reshape(aida_pid, nPoints, numBPM)'; aida_pid = aida_pid(1,:);
+        aida_pid = bpm_struct.values.pulseId ; aida_pid = reshape(aida_pid, nPoints, numBPM)'; aida_pid = aida_pid(1,:);
         aida_x = bpm_struct.values.x ; aida_x = reshape(aida_x, nPoints, numBPM)' ;
         aida_y = bpm_struct.values.y ; aida_y = reshape(aida_y, nPoints, numBPM)' ;
         aida_tmit = bpm_struct.values.tmits ; aida_tmit = reshape(aida_tmit, nPoints, numBPM)' ;
