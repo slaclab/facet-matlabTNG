@@ -1523,7 +1523,9 @@ classdef corrPlot_mdl < handle
                     end
                     % do emittance scan
                     for j = 1:(1 + (mdl.acqOpt.numSamples - 1) * mdl.acqOpt.sampleForce)
-                        dataList(j) = emittance_gui('appRemote', 0, mdl.emitName, useType, mdl.wirePlane, mdl.index);
+                        % facet emittance gui does not take in facility
+                        % index
+                        dataList(j) = emittance_gui('appRemote', 0, mdl.emitName, useType, mdl.wirePlane);
                         pause(mdl.acqOpt.sampleDelay);
                     end
                 end
