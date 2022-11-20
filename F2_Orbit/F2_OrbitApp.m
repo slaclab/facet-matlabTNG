@@ -1178,7 +1178,7 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
           while 1
             switch obj.DispMeasMethod
               case 0
-                if obj.BPMS.pulseid<nbpm
+                if obj.BPMS.pulseid>=nbpm
                   break;
                 end
                 obj.EscanStatPlot(axtop,axbot,evals_s,cmd,cmd2,sprintf('Reading BPMs...\n( pulse %d/%d )',obj.BPMS.pulseid,nbpm)); % also does drawnow
