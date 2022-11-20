@@ -12,6 +12,10 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
     ModelMenu                      matlab.ui.container.Menu
     AutoUpdateMenu                 matlab.ui.container.Menu
     UpdateNowMenu                  matlab.ui.container.Menu
+    DispersionMenu                 matlab.ui.container.Menu
+    ScanMethodMenu                 matlab.ui.container.Menu
+    ScanMethod0                    matlab.ui.container.Menu
+    ScanMethod1                    matlab.ui.container.Menu
     BPMsPanel                      matlab.ui.container.Panel
     ListBox                        matlab.ui.control.ListBox
     PlotallCheckBox                matlab.ui.control.CheckBox
@@ -192,9 +196,9 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
       app.INJButtonValueChanged(); % Populates BPM and corrector list boxes
     end
 
-    % Value changed function: BC11Button, BC14Button, BC20Button, 
-    % DL1Button, FFSButton, INJButton, L0Button, L1Button, 
-    % L2Button, L3Button, SPECTButton
+    % Value changed function: BC11Button, BC14Button, 
+    % BC20Button, DL1Button, FFSButton, INJButton, L0Button, 
+    % L1Button, L2Button, L3Button, SPECTButton
     function INJButtonValueChanged(app, event)
       global BEAMLINE
       value = [app.INJButton.Value app.L0Button.Value app.DL1Button.Value app.L1Button.Value ...
@@ -906,6 +910,30 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
     function AbortButtonPushed(app, event)
       app.aobj.doabort=true;
     end
+
+    % Menu selected function: ScanMethodMenu
+    function ScanMethodMenuSelected(app, event)
+      
+    end
+
+    % Menu selected function: ScanMethod0
+    function ScanMethod0Selected(app, event)
+
+      if ~app.ScanMethod0.Checked
+        app.ScanMethod0.Checked=true;
+        app.ScanMethod1.Checked=false;
+        app.aobj.DispMeasMethod=0;
+      end
+    end
+
+    % Menu selected function: ScanMethod1
+    function ScanMethod1MenuSelected(app, event)
+      if ~app.ScanMethod1.Checked
+        app.ScanMethod1.Checked=true;
+        app.ScanMethod0.Checked=false;
+        app.aobj.DispMeasMethod=1;
+      end
+    end
   end
 
   % Component initialization
@@ -964,6 +992,26 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
       app.UpdateNowMenu = uimenu(app.ModelMenu);
       app.UpdateNowMenu.MenuSelectedFcn = createCallbackFcn(app, @UpdateLiveModelButtonPushed, true);
       app.UpdateNowMenu.Text = 'Update Now';
+
+      % Create DispersionMenu
+      app.DispersionMenu = uimenu(app.FACETIIOrbitToolconfignoneUIFigure);
+      app.DispersionMenu.Text = 'Dispersion';
+
+      % Create ScanMethodMenu
+      app.ScanMethodMenu = uimenu(app.DispersionMenu);
+      app.ScanMethodMenu.MenuSelectedFcn = createCallbackFcn(app, @ScanMethodMenuSelected, true);
+      app.ScanMethodMenu.Text = 'Scan Method ';
+
+      % Create ScanMethod0
+      app.ScanMethod0 = uimenu(app.ScanMethodMenu);
+      app.ScanMethod0.MenuSelectedFcn = createCallbackFcn(app, @ScanMethod0Selected, true);
+      app.ScanMethod0.Text = '0';
+
+      % Create ScanMethod1
+      app.ScanMethod1 = uimenu(app.ScanMethodMenu);
+      app.ScanMethod1.MenuSelectedFcn = createCallbackFcn(app, @ScanMethod1MenuSelected, true);
+      app.ScanMethod1.Checked = 'on';
+      app.ScanMethod1.Text = '1';
 
       % Create BPMsPanel
       app.BPMsPanel = uipanel(app.FACETIIOrbitToolconfignoneUIFigure);

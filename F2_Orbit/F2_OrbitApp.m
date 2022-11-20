@@ -40,6 +40,7 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
     escanplotorder uint8 = 1 % Polynomial order to plot (1= linear dispersion, 2=second-order disperion)
     plotallbpm logical = false 
     doabort logical = false
+    DispMeasMethod uint8 {mustBeLessThan(DispMeasMethod,2)} = 1 % 0 = use feedback setpoints and wait for capture signals (slow); 1= same as 0, no wait for capture
   end
   properties(Transient)
     BPMS % Storage for F2_bpms object
@@ -1156,7 +1157,7 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
           pause(2);
           lcaPut(char(obj.FBDeadbandPV(id)),0);
           % Get BPM data when deadband of FB reached
-          while lcaGet(char(obj.FBDeadbandPV(id)))==0
+          while obj.DispMeasMethod==0 && lcaGet(char(obj.FBDeadbandPV(id)))==0
             obj.EscanStatPlot(axtop,axbot,evals_s,cmd,cmd2,sprintf('(Meas = %.2f)',lcaGet(char(obj.EPV(id)))-E_init)); % also does drawnow
             pause(0.1);
             if obj.doabort
@@ -1167,14 +1168,30 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
             end
           end
           disp("Geting BPM data...");
-          obj.BPMS.BufferLen=nbpm;
-          obj.BPMS.resetPID();
-          while obj.BPMS.pulseid<nbpm
-            obj.EscanStatPlot(axtop,axbot,evals_s,cmd,cmd2,sprintf('Reading BPMs...\n( pulse %d/%d )',obj.BPMS.pulseid,nbpm)); % also does drawnow
-            if lcaGet(char(obj.FBDeadbandPV(id)))
-              obj.BPMS.read();
-            else
-              pause(0.1);
+          switch obj.DispMeasMethod
+            case 0
+              obj.BPMS.BufferLen=nbpm;
+              obj.BPMS.resetPID();
+            case 1
+              obj.BPMS.readbuffer(nbpm,true) ; % asyn buffer read request
+          end
+          while 1
+            switch obj.DispMeasMethod
+              case 0
+                if obj.BPMS.pulseid<nbpm
+                  break;
+                end
+                obj.EscanStatPlot(axtop,axbot,evals_s,cmd,cmd2,sprintf('Reading BPMs...\n( pulse %d/%d )',obj.BPMS.pulseid,nbpm)); % also does drawnow
+                if lcaGet(char(obj.FBDeadbandPV(id)))
+                  obj.BPMS.read();
+                else
+                  pause(0.1);
+                end
+              case 1
+                if obj.BPMS.readbuffer(nbpm,true)
+                  break;
+                end
+                obj.EscanStatPlot(axtop,axbot,evals_s,cmd,cmd2,'Reading BPMs...'); % also does drawnow
             end
             if obj.doabort
               obj.doabort=false;
@@ -1193,6 +1210,13 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
           obj.escandata{ival,5}=use;
           obj.escandata{ival,6}=orbid;
           obj.escandata{ival,7}=evals(ival);
+          if obj.DispMeasMethod>0
+            xd=nan(length(use),nbpm); yd=xd;
+            xd(ismember(obj.bpmid,obj.BPMS.modelID),1:obj.BPMS.nread) = obj.BPMS.xdat ;
+            yd(ismember(obj.bpmid,obj.BPMS.modelID),1:obj.BPMS.nread) = obj.BPMS.ydat ;
+            obj.escandata{ival,8}=xd;
+            obj.escandata{ival,9}=yd;
+          end
           % Show scan status on plot window
           if ~isempty(obj.aobj)
             obj.EscanStatPlot(axtop,axbot,evals_s,[0 0],cmd2,'');
@@ -1215,6 +1239,16 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
     end
     function dispdat = ProcEscan(obj)
       %PROCESCAN Process escan data to generate dispersion at BPMs
+      switch obj.DispMeasMethod
+        case 0
+          dispdat = obj.ProcEscan0 ;
+        case 1
+          dispdat = obj.ProcEscan1 ;
+      end
+    end
+    function dispdat = ProcEscan0(obj)
+      %PROCESCAN0 Process escan data to generate dispersion at BPMs
+      % This function used for DispMeasMethod=0
       global BEAMLINE
       if isempty(obj.escandata)
         error('No energy scan performed');
@@ -1245,6 +1279,63 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
           x = evals(sel) / (BEAMLINE{bid(n)}.P.*1000) ; y = yvals(sel,ibpm) ; dy = dyvals(sel,ibpm) ;
           dy(dy==0)=min(dy(dy>0));
           [q,dq] = noplot_polyfit(x,y,dy,double(obj.escanfitorder)) ;
+          dispy(ibpm) = q(1+obj.escanplotorder); dispy_err(ibpm) = dq(1+obj.escanplotorder) ;
+        end
+        n=n+1;
+      end
+      dispdat.ebpm=nan;
+      dispdat.usebpm=use;
+      dispdat.x=dispx;
+      dispdat.xerr=dispx_err;
+      dispdat.y=dispy;
+      dispdat.yerr=dispy_err;
+      obj.DispData = dispdat ;
+    end
+    function dispdat = ProcEscan1(obj)
+      %PROCESCAN1 Process escan data to generate dispersion at BPMs
+      % This function used for DispMeasMethod=1
+      global BEAMLINE
+      
+      if isempty(obj.escandata)
+        error('No energy scan performed');
+      end
+      
+      evals = [obj.escandata{:,7}] ; % Delta-E (MeV) - commanded energy changes
+      [~,np] = size(obj.escandata{1,8}) ;
+      xvals=nan(sum(obj.useregbpm),length(evals)*np); yvals=xvals;
+      use=obj.escandata{1,5};
+      for idat=1:length(evals)
+        use=use & obj.escandata{idat,5};
+        pid = 1 + (idat-1)*np : idat*np ; 
+        xvals(:,pid) = obj.escandata{idat,8}(use,:) ;
+        yvals(:,pid) = obj.escandata{idat,9}(use,:) ;
+      end
+      bid=obj.bpmid(use);
+      
+      % - use upstream most energy BPM for energy reference
+      for ibpm=1:length(obj.ebpms)
+        ind = findcells(BEAMLINE,'Name',char(obj.ebpms(ibpm))) ;
+        ebpm=find(double(bid)==ind,1);
+        if any(~isnan(xvals(ebpm,:)))
+          break;
+        end
+      end
+      evals = BEAMLINE{ind}.P .* ( xvals(ebpm,:) ./ obj.ebpms_disp(ibpm) ) ;
+      obj.escandata{1,10} = evals.*1000 ;
+      
+      dispx=nan(1,length(obj.bpmid)); dispx_err=dispx; dispy=dispx; dispy_err=dispx;
+      n=1;
+      for ibpm=find(use(:))'
+        sel = ~isnan(xvals(n,:)) ;
+        if sum(sel)>=3
+          x = evals(sel) / BEAMLINE{bid(n)}.P ; y = xvals(n,sel) ;
+          [q,dq] = noplot_polyfit(x,y,0,double(obj.escanfitorder)) ;
+          dispx(ibpm) = q(1+obj.escanplotorder); dispx_err(ibpm) = dq(1+obj.escanplotorder) ;
+        end
+        sel = ~isnan(yvals(n,:)) ;
+        if sum(sel)>=3
+          x = evals(sel) / BEAMLINE{bid(n)}.P ; y = yvals(n,sel) ;
+          [q,dq] = noplot_polyfit(x,y,0,double(obj.escanfitorder)) ;
           dispy(ibpm) = q(1+obj.escanplotorder); dispy_err(ibpm) = dq(1+obj.escanplotorder) ;
         end
         n=n+1;
