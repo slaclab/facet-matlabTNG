@@ -19,51 +19,42 @@ bpms.x_id = find(isBpm & isX);% & use_idx);
 bpms.y_id = find(isBpm & isY);% & use_idx);
 bpms.tmit_id = find(isBpm & isTMIT);
 
-
-if strcmp(mdl.linac, 'CU')
-    beampath = mdl.destination;
-    bpmNames = unique(names(isBpm), 'stable');
-    [bpms.etax, bpms.etay] = lclsBPMS(bpmNames, beampath);
-elseif strcmp(mdl.linac, 'SC')
-    if isempty(mdl.destination)
-        bpms = [];
-        return
+if mdl.lcls
+    if strcmp(mdl.linac, 'CU')
+        beampath = mdl.destination;
+        bpmNames = unique(names(isBpm), 'stable');
+        [bpms.etax_names, bpms.etay_names] = lclsBPMS(bpmNames, beampath);
+    elseif strcmp(mdl.linac, 'SC')
+        if isempty(mdl.destination)
+            bpms = [];
+            return
+        end
+        bpmNames = unique(names(isBpm), 'stable');
+        [bpms.etax_names, bpms.etay_names] = lclsBPMS(bpmNames, mdl.destination);
     end
-    bpmNames = unique(names(isBpm), 'stable');
-    [bpms.etax, bpms.etay] = lclsBPMS(bpmNames, mdl.destination);
 elseif mdl.facet
-    [bpms.etax, bpms.etay] = facetBPMS(names(isBpm));
+    [bpms.etax_names, bpms.etay_names] = facetBPMS(mdl);
 else
     return
 end
-for j = 1:length(bpms.etax)
-    try
-        [bpms.etax_id(j)] = find(startsWith(mdl.ROOT_NAME,bpms.etax(j,:)));
-    catch
-    end
-end
-for j = 1:length(bpms.etay)
-    try
-        [bpms.etay_id(j)] = find(startsWith(mdl.ROOT_NAME,bpms.etay(j,:)));
-    catch
-    end
-end
 
 % identify dispersion BPMS within list of all BPMS in ROOT_NAME
-for j = 1:length(bpms.etay)
-    [bpms.etay_id(j)] = find(startsWith(mdl.ROOT_NAME,bpms.etay(j,:)));
-    [bpms.etay_sub_id(j)] = find(startsWith(bpms.y,bpms.etay(j,:)));
+for j = 1:length(bpms.etay_names)
+    [bpms.etay_id(j)] = find(startsWith(mdl.ROOT_NAME,bpms.etay_names(j,:)));
+    [bpms.etay_sub_id(j)] = find(startsWith(bpms.y,bpms.etay_names(j,:)));
 end
 
-for j = 1:length(bpms.etax)
-    [bpms.etax_id(j)] = find(startsWith(mdl.ROOT_NAME,bpms.etax(j,:)));
-    [bpms.etax_sub_id(j)] = find(startsWith(bpms.x,bpms.etax(j,:)));
+for j = 1:length(bpms.etax_names)
+    [bpms.etax_id(j)] = find(startsWith(mdl.ROOT_NAME,bpms.etax_names(j,:)));
+    [bpms.etax_sub_id(j)] = find(startsWith(bpms.x,bpms.etax_names(j,:)));
 end
 
 end
 
 function [xbpms, ybpms] = lclsBPMS(bpms, beampath)
+% get lcls dispersive bpmsfrom the model
 if isempty(beampath)
+    % need to paste together SXR and HXR lines for dual energy
     [z_hxr, twiss_hxr] = model_rMatGet(bpms, [], {'TYPE=DESIGN', 'BEAMPATH=CU_HXR'}, {'Z', 'twiss'});
     [z_sxr, twiss_sxr] = model_rMatGet(bpms, [], {'TYPE=DESIGN', 'BEAMPATH=CU_SXR'}, {'Z', 'twiss'});
     etax_hxr = twiss_hxr(5,:);
@@ -105,17 +96,22 @@ ybpms = unique(ybpms(iy), 'stable');
 end
 
 function [xbpms, ybpms] = facetBPMS(mdl)
-bpmIdx = contains(mdl.LM.ControlNames, 'BPMS');
+% get facet dispersive bpms by looking at the lucretia model
+if mdl.acqSCP && (isempty(mdl.scpNames) || mdl.scpNames.getBPMS) % catch older files
+    bpmIdx = contains(mdl.LM.ControlNames, 'BPMS');
+    namelist = mdl.facetBPMS.names;
+else
+    bpmIdx = contains(mdl.LM.ControlNames, 'BPMS') & ~startsWith(mdl.LM.ControlNames, 'LI');
+    namelist = mdl.facetBPMS.names(~mdl.facetBPMS.scp_idx);
+end
 modelIdx = mdl.LM.ModelID(bpmIdx);
 etax = mdl.LM.DesignTwiss.etax(modelIdx);
 etay = mdl.LM.DesignTwiss.etay(modelIdx);
 xIdx = abs(etax) > 0.01;
 yIdx = abs(etay) > 0.01;
-namelist = mdl.facetBPMS.names;
 xnames = namelist(endsWith(namelist, ':X'));
 ynames = namelist(endsWith(namelist, ':Y'));
 xbpms = xnames(xIdx);
 ybpms = ynames(yIdx);
-disp(xbpms) ; disp(ybpms);
 
 end

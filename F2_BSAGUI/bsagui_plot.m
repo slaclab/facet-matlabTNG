@@ -648,8 +648,8 @@ else
     bpmLTU2_name = 'BPMS:LTUS:370:X';
 end
 
-bpmLTU1x = mdl.the_matrix(mdl.bpms.etax_id(strcmp(mdl.bpms.etax, bpmLTU1_name)),:);
-bpmLTU2x = mdl.the_matrix(mdl.bpms.etax_id(strcmp(mdl.bpms.etax, bpmLTU2_name)),:);
+bpmLTU1x = mdl.the_matrix(mdl.bpms.etax_id(strcmp(mdl.bpms.etax_names, bpmLTU1_name)),:);
+bpmLTU2x = mdl.the_matrix(mdl.bpms.etax_id(strcmp(mdl.bpms.etax_names, bpmLTU2_name)),:);
 
 useX = ~isnan(bpmLTU1x) & ~isnan(bpmLTU2x);
 
@@ -884,7 +884,7 @@ if isempty(mdl.z_options) || mdl.z_options.XYFactor
     addText(pos, horz, str);
 end
 
-if strcmp(mdl.linac, 'SC')
+if mdl.facet
     return;
 end
 
@@ -2527,27 +2527,50 @@ addText(pos, horz, str);
 end
 
 function jitter_pie(mdl)
-disp_bpms_idx = mdl.bpms.etax_id([1:3,length(mdl.bpms.etax_id)]);
-secn = {'DL1', 'BC1', 'BC2', 'DL2'};
-r16=[2.63 2.32 3.65 1.25];
-
-if mdl.isSxr
-    secn{4} = 'CLTS';
-    r16(4) = 2.895;
-end
+disp_bpms_idx = mdl.bpms.etax_id(1:3);
 
 notnan1 = ~isnan(mdl.the_matrix(:,10));
 notnan2 = ~isnan(mdl.the_matrix(:,20));
 use = max(notnan1, notnan2);
 
-names1 = find(endsWith(mdl.ROOT_NAME, 'ST') & use);
-names2 = find(endsWith(mdl.ROOT_NAME, 'LT') & use);
-names3part1 = endsWith(mdl.ROOT_NAME, {'A','P'});
-names3part2 = ~contains(mdl.ROOT_NAME,{':PH', 'FASTP', 'FASTA'});
-names3 = find(names3part1 & names3part2 & use);
+if mdl.lcls
+    secn = {'DL1', 'BC1', 'BC2', 'DL2'};
+    disp_bpms_idx = [disp_bpms_idx, mdl.bpms.etax_id(end)];
+    r16=[2.63 2.32 3.65 1.25];
 
-jitter_idx = [names1; names3; names2];
-short_mat = mdl.the_matrix(:, 1:2:(size(mdl.the_matrix,2)-1));
+    if mdl.isSxr
+        secn{4} = 'CLTS';
+        r16(4) = 2.895;
+    end
+    
+    names1 = find(endsWith(mdl.ROOT_NAME, 'ST') & use);
+    names2 = find(endsWith(mdl.ROOT_NAME, 'LT') & use);
+    names3part1 = endsWith(mdl.ROOT_NAME, {'A','P'});
+    names3part2 = ~contains(mdl.ROOT_NAME,{':PH', 'FASTP', 'FASTA'});
+    names3 = find(names3part1 & names3part2 & use);
+    
+    jitter_idx = [names1; names3; names2];
+    pulse_idx = 1:size(the_matrix,2);
+    
+elseif mdl.facet
+    secn = {'LO', 'L1', 'L2', 'L3'};
+    disp_bpms_idx = [disp_bpms_idx, find(contains(mdl.ROOT_NAME, 'BPMS:LI20:2050:X'))];
+    r16 = [2.63 2.51 4.37 1.2];
+    
+    names1 = find(startsWith(mdl.ROOT_NAME, 'ACCL') & use);
+    names2 = find(endsWith(mdl.ROOT_NAME, ':PHAS') & use);
+    names3 = find(startsWith(mdl.ROOT_NAME, 'KLYS') & ~endsWith(mdl.ROOT_NAME, ':PHAS') & use);
+    
+    jitter_idx = [names1; names2; names3];
+    pulse_idx = mdl.hasSCP;
+    
+else
+    return 
+end
+
+use_matrix = mdl.the_matrix(:, pulse_idx);
+
+short_mat = use_matrix(:, 1:2:(size(use_matrix,2)-1));
 ts_idx = 1:size(short_mat, 2)-1; %get points from the same timeslot
 for section = 1:4
     ref_bpm = disp_bpms_idx(section);

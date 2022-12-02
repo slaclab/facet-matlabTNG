@@ -3,6 +3,9 @@ classdef F2_BSAGUI_exported < matlab.apps.AppBase
     % Properties that correspond to app components
     properties (Access = public)
         UIFigure                      matlab.ui.Figure
+        OptionsMenu                   matlab.ui.container.Menu
+        ExporttoWorkspaceMenu         matlab.ui.container.Menu
+        CloseAllFiguresMenu           matlab.ui.container.Menu
         GridLayout                    matlab.ui.container.GridLayout
         PVListA                       matlab.ui.control.ListBox
         PVListB                       matlab.ui.control.ListBox
@@ -45,7 +48,6 @@ classdef F2_BSAGUI_exported < matlab.apps.AppBase
         PulseOffsetEditFieldLabel     matlab.ui.control.Label
         OffsetEditField               matlab.ui.control.NumericEditField
         SCMPSViewerButton             matlab.ui.control.Button
-        AcquireSCPCheckBox            matlab.ui.control.CheckBox
     end
 
     
@@ -210,11 +212,7 @@ classdef F2_BSAGUI_exported < matlab.apps.AppBase
             pause(1);
             app.AcquireNewDataButton.Text = 'Get Data...';
         end
-        
-        function onAcqSCPChanged(app)
-            app.AcquireSCP.Value = app.mdl.acqSCP;
-        end
-        
+                
     end
 
     % Callbacks that handle component events
@@ -222,7 +220,7 @@ classdef F2_BSAGUI_exported < matlab.apps.AppBase
 
         % Code that executes after component creation
         function InitializeGUI(app)
-            app.mdl = BSA_GUI_model(app); % instantiate the model
+            app.mdl = bsagui_mdl(app); % instantiate the model
             
             % add listeners
             app.StatusListener = addlistener(app.mdl, 'StatusChanged', @(~,~)app.onStatusChanged);
@@ -234,7 +232,6 @@ classdef F2_BSAGUI_exported < matlab.apps.AppBase
             app.BufferRatesListener = addlistener(app.mdl, 'BufferRatesChanged', @(~,~)app.onBufferRatesChanged);
             app.PVListener = addlistener(app.mdl, 'PVChanged', @(~,~)app.onPVChanged);
             app.DataAcqListener = addlistener(app.mdl, 'DataAcquired', @(~,~)app.onDataAcq);
-            app.AcqSCPListener = addlistener(app.mdl, 'AcqSCPChanged', @(~,~)app.onAcqSCPChanged);
             app.InitListener = addlistener(app.mdl, 'Init', @(~,~)app.onInit);
             
             try
@@ -256,7 +253,7 @@ classdef F2_BSAGUI_exported < matlab.apps.AppBase
             end
             if app.mdl.dev
                 try
-                    BSD_window(app.mdl);
+                    bsagui_BSDWindow(app.mdl);
                 catch ex
                     errorMessage(app, ex, 'Error loading BSD window.');
                 end
@@ -278,7 +275,7 @@ classdef F2_BSAGUI_exported < matlab.apps.AppBase
         % Button pushed function: AdvancedOptionsButton
         function AdvancedOptionsButtonPushed(app, event)
             try
-                AdvancedOptions(app.mdl);
+                bsagui_AdvancedOptions(app.mdl);
             catch ex
                 errorMessage(app, ex, 'Error launching All Z Menu.');
             end
@@ -287,7 +284,7 @@ classdef F2_BSAGUI_exported < matlab.apps.AppBase
         % Button pushed function: CreateNewVariableButton
         function CreateNewVariableButtonPushed(app, event)
             try
-                createVar(app.mdl);
+                bsagui_createVar(app.mdl);
             catch ex
                 errorMessage(app, ex, 'Error launching create variable window.');
             end
@@ -351,13 +348,13 @@ classdef F2_BSAGUI_exported < matlab.apps.AppBase
                 end
             end
             try
-                eDefSetup(app.mdl);
+                bsagui_eDefSetup(app.mdl);
             catch ex
                 errorMessage(app, ex, 'Error setting up eDef.');
             end
         end
 
-        % Callback function
+        % Menu selected function: ExporttoWorkspaceMenu
         function ExportToWorkspaceButtonPushed(app, event)
             try
                 exportToWorkspace(app.mdl);
@@ -515,7 +512,7 @@ classdef F2_BSAGUI_exported < matlab.apps.AppBase
         % Button pushed function: PlotOrbitButton
         function PlotOrbitButtonPushed(app, event)
             try
-                BPM_Orbit(app.mdl);
+                bsagui_BPMOrbit(app.mdl);
             catch ex
                 errorMessage(app, ex, 'Error launching BPM orbit GUI.');
             end
@@ -731,15 +728,12 @@ classdef F2_BSAGUI_exported < matlab.apps.AppBase
             end
         end
 
-        % Value changed function: AcquireSCPCheckBox
-        function AcquireSCPCheckBoxValueChanged(app, event)
-            acqSCP =  app.AcquireSCPCheckBox.Value;
+        % Menu selected function: CloseAllFiguresMenu
+        function CloseAllFiguresMenuSelected(app, event)
             try
-                acquireSCP(app.mdl, acqSCP);
+                util_closeFigs();
             catch ex
-                uiwait(errordlg(...
-                    lprintf(app.STDERR, 'Error changing acquire SCP option. %s', ex.message)));
-                app.AcquireSCPCheckBox.Value = ~acqSCP;
+                errorMessage(app, ex, 'Error closing figures.');
             end
         end
     end
@@ -757,6 +751,20 @@ classdef F2_BSAGUI_exported < matlab.apps.AppBase
             app.UIFigure.CloseRequestFcn = createCallbackFcn(app, @UIFigureCloseRequest, true);
             app.UIFigure.Scrollable = 'on';
             app.UIFigure.Tag = 'BSA_GUI';
+
+            % Create OptionsMenu
+            app.OptionsMenu = uimenu(app.UIFigure);
+            app.OptionsMenu.Text = 'Options';
+
+            % Create ExporttoWorkspaceMenu
+            app.ExporttoWorkspaceMenu = uimenu(app.OptionsMenu);
+            app.ExporttoWorkspaceMenu.MenuSelectedFcn = createCallbackFcn(app, @ExportToWorkspaceButtonPushed, true);
+            app.ExporttoWorkspaceMenu.Text = 'Export to Workspace';
+
+            % Create CloseAllFiguresMenu
+            app.CloseAllFiguresMenu = uimenu(app.OptionsMenu);
+            app.CloseAllFiguresMenu.MenuSelectedFcn = createCallbackFcn(app, @CloseAllFiguresMenuSelected, true);
+            app.CloseAllFiguresMenu.Text = 'Close All Figures';
 
             % Create GridLayout
             app.GridLayout = uigridlayout(app.UIFigure);
@@ -1108,17 +1116,9 @@ classdef F2_BSAGUI_exported < matlab.apps.AppBase
             app.SCMPSViewerButton.ButtonPushedFcn = createCallbackFcn(app, @SCMPSViewerButtonPushed, true);
             app.SCMPSViewerButton.FontSize = 16;
             app.SCMPSViewerButton.Visible = 'off';
-            app.SCMPSViewerButton.Layout.Row = 19;
+            app.SCMPSViewerButton.Layout.Row = 20;
             app.SCMPSViewerButton.Layout.Column = [11 12];
             app.SCMPSViewerButton.Text = 'SC MPS Viewer';
-
-            % Create AcquireSCPCheckBox
-            app.AcquireSCPCheckBox = uicheckbox(app.GridLayout);
-            app.AcquireSCPCheckBox.ValueChangedFcn = createCallbackFcn(app, @AcquireSCPCheckBoxValueChanged, true);
-            app.AcquireSCPCheckBox.Text = 'Acquire SCP';
-            app.AcquireSCPCheckBox.FontSize = 16;
-            app.AcquireSCPCheckBox.Layout.Row = 8;
-            app.AcquireSCPCheckBox.Layout.Column = [11 12];
 
             % Show the figure after all components are created
             app.UIFigure.Visible = 'on';

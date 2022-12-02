@@ -25,6 +25,7 @@ classdef bsagui_constants < handle
             setMenuItems(obj);
             setPlotVars(obj);
             setSIOCS(obj);
+            setValidEDefs(obj);
         end
         
         function setMenuItems(obj)
@@ -41,7 +42,7 @@ classdef bsagui_constants < handle
              obj.defaultPlotVars.dev = {'Time', 'Index', 'PSD', 'Histogram', 'All Z', 'Z PSD', 'Jitter Pie'};
              obj.defaultPlotVars.CU = {'Time', 'Index', 'PSD', 'Histogram', 'All Z', 'Z PSD', 'Jitter Pie', 'Z RMS'};
              obj.defaultPlotVars.SC = {'Time', 'Index', 'PSD', 'Histogram', 'All Z', 'Z PSD'};
-             obj.defaultPlotVars.facet = {'Time', 'Index', 'PSD', 'Histogram', 'Z RMS'};
+             obj.defaultPlotVars.facet = {'Time', 'Index', 'PSD', 'Histogram', 'All Z', 'Z RMS', 'Jitter Pie'};
         end
         
         function setValidEDefs(obj)

@@ -55,8 +55,28 @@ classdef orbit
 
         function obj = updatePulse(obj, pulsenum)
             obj.pulsenum = pulsenum; 
-        end
+        end        
         
+        function slicedOrbit = orbitSlice(obj)
+            slicedOrbit = obj;
+            
+            slicedOrbit.X.bpm_data = slicedOrbit.X.bpm_data(:, slicedOrbit.pulsenum);
+            slicedOrbit.X.mean = slicedOrbit.X.bpm_data;
+            slicedOrbit.X.rms_error = 0 * slicedOrbit.X.rms_error;
+            
+            slicedOrbit.Y.bpm_data = slicedOrbit.Y.bpm_data(:, slicedOrbit.pulsenum);
+            slicedOrbit.Y.mean = slicedOrbit.Y.bpm_data;
+            slicedOrbit.Y.rms_error = 0 * slicedOrbit.Y.rms_error;
+            
+            slicedOrbit.TMIT.bpm_data = slicedOrbit.TMIT.bpm_data(:, slicedOrbit.pulsenum);
+            slicedOrbit.TMIT.mean = slicedOrbit.TMIT.bpm_data;
+            slicedOrbit.TMIT.rms_error = 0 * slicedOrbit.TMIT.rms_error;
+            
+            slicedOrbit.time_stamps = slicedOrbit.time_stamps(slicedOrbit.pulsenum);
+            slicedOrbit.pulses = [1];
+            slicedOrbit.pulsenum = 1;
+        end
+            
     end
 end
 

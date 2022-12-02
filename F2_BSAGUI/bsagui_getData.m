@@ -1,11 +1,11 @@
-function bsagui_getData(mdl)
+function bsagui_getData(mdl, varargin)
 % Funnel to correct acquisition method for current operational mode
 
 if mdl.facet
     getDataFacet(mdl);
     return
 elseif mdl.dev
-    getFromDatastore(mdl);
+    getFromDatastore(mdl, varargin{1}, varargin{2}, varargin{3});
     return
 end
 
@@ -20,7 +20,7 @@ if CU && ~isPrivate % for calling a canned CU eDef
     
     [mdl.the_matrix, mdl.t_stamp, mdl.isPV] = lcaGetSyncHST(mdl.ROOT_NAME, mdl.numPoints_user, char(mdl.eDef));
    
-    if isempty(mdl.t_stamp)
+    if isempty(mdl.isPV)
          errTxt = "No data acquired; call to lcaGetSyncHST returns empty.";
          error("BG:ACQEMPTY", errTxt);
     end
@@ -93,7 +93,8 @@ else
     else
         timing_names = {'TPG:SYS0:1:TSL';... % nanoseconds
             'TPG:SYS0:1:TSU'}; % seconds
-        new_name = strcat(mdl.ROOT_NAME, 'HST', char(mdl.eDef));
+        numPointsSuffix = sprintf('.[-%d:]',mdl.numPoints_user);
+        new_name = strcat(mdl.ROOT_NAME, 'HST', char(mdl.eDef), numPointsSuffix);
         premessage = sprintf('Retrieving %s data', mdl.eDef);
         postmessage = sprintf('%s data retrieved', mdl.eDef);
         numacq = mdl.numPoints_user;
@@ -146,6 +147,7 @@ try
     data = ML(builder.get());
     mdl.dataAcqStatus = 'Finished AIDA buffered acquisition';
     notify(mdl, 'AcqStatusChanged');
+    pause(1)
 catch ME
     data = [];
     mdl.status = 'FAILED: AIDA buffered acquisition';
@@ -157,10 +159,7 @@ function getDataFacet(mdl)
 mdl.dataAcqStatus = '';
 notify(mdl, 'AcqStatusChanged');
 isPrivate = mdl.have_eDef;
-if isPrivate
-    new_name = strcat(mdl.ROOT_NAME(~mdl.isSCP), {'HST'}, {num2str(mdl.eDefNumber)});
-    mdl.eDef = ['HST' num2str(mdl.eDefNumber)];
-end
+
 
 if mdl.acqSCP
     % number of points receivable from SCP less than EPICS
@@ -170,10 +169,11 @@ if mdl.acqSCP
         case 10
             nPoints = 40;
         case 30
-            nPoints = 80;
+            nPoints = 60;
         otherwise
             nPoints = mdl.facetBR * 5; % A rough guesstimate of appropriate amounts. 5 seconds of data
     end
+    nPoints = min(nPoints, mdl.numPoints_user); % 11/16/22 adjust for increased bandwidth from aidapva, not sure yet what this should end up at
     % Double check with user before acquiring SCP data, as it
     % will steal rate
     answer = questdlg(sprintf('Acquiring SCP data will steal rate from other applications. %c%c Acquire %d points from SCP?',...
@@ -186,11 +186,23 @@ if mdl.acqSCP
         case 'No'
             mdl.acqSCP = false;
             notify(mdl, 'AcqSCPChanged');
+            updateRootNames(mdl);
+        otherwise
+            mdl.dataAcqStatus = 'Acquisition aborted';
+            notify(mdl, 'AcqStatusChanged');
+            return
     end
 end
+
+if isPrivate
+    new_name = strcat(mdl.ROOT_NAME(~mdl.isSCP), {'HST'}, {num2str(mdl.eDefNumber)});
+    mdl.eDef = ['HST' num2str(mdl.eDefNumber)];
+end
+
 if mdl.acqSCP
     
     aidanames = mdl.ROOT_NAME(mdl.isSCP);
+    %aidanames = aidanames(mdl.scpNames.use);
     [prim, sec, loc] = model_nameSplit(aidanames);
     aidanames = unique(strcat(prim, ':', sec, ':', loc), 'stable');
     
@@ -217,6 +229,7 @@ if mdl.acqSCP
         bpm_struct = aidaGet(mdl, aidanames, nPoints);
         mdl.dataAcqStatus = sprintf('Retrieving %s data', mdl.eDef);
         notify(mdl, 'AcqStatusChanged');
+        pause(1)
         % This acquisition should cover the time of the SCP
         % acquisition
         [epics_matrix, mdl.t_stamp, epics_isPV] = lcaGetSyncHST(new_name, mdl.numPoints_user, char(mdl.eDef));
@@ -229,7 +242,8 @@ if mdl.acqSCP
     end
     mdl.dataAcqStatus = 'Aligning EPICS and AIDA data';
     notify(mdl, 'AcqStatusChanged');
-    
+    pause(1);
+
     epics_pid = epics_matrix(contains(new_name, 'PATT:SYS1:1:PULSEID'),:);
     mdl.the_matrix = nan(length(mdl.ROOT_NAME), size(epics_matrix, 2));
     mdl.the_matrix(~mdl.isSCP, :) = epics_matrix;
@@ -238,28 +252,41 @@ if mdl.acqSCP
     
     if aidaAcquired
         % pull out X, Y, and TMIT data from SCP buffered acq
-        numBPM = numel(aidanames);
-        aida_pid = bpm_struct.values.pulseId ; aida_pid = reshape(aida_pid, nPoints, numBPM)'; aida_pid = aida_pid(1,:);
-        aida_x = bpm_struct.values.x ; aida_x = reshape(aida_x, nPoints, numBPM)' ;
-        aida_y = bpm_struct.values.y ; aida_y = reshape(aida_y, nPoints, numBPM)' ;
-        aida_tmit = bpm_struct.values.tmits ; aida_tmit = reshape(aida_tmit, nPoints, numBPM)' ;
+        numAIDA = numel(aidanames);
+        bpmIdx = contains(aidanames, 'BPMS');
+        klysIdx = contains(aidanames, 'KLYS');
+        sbstIdx = contains(aidanames, 'SBST');
+        aida_pid = bpm_struct.values.pulseId ; aida_pid = reshape(aida_pid, nPoints, numAIDA)'; aida_pid = aida_pid(1,:);
+        aida_x = bpm_struct.values.x ; aida_x = reshape(aida_x, nPoints, numAIDA)' ;
+        aida_klys = aida_x(klysIdx, :); 
+        aida_sbst = aida_x(sbstIdx, :);
+        aida_x = aida_x(bpmIdx, :);
+        aida_y = bpm_struct.values.y ; aida_y = reshape(aida_y, nPoints, numAIDA)' ;
+        aida_y = aida_y(bpmIdx, :);
+        aida_tmit = bpm_struct.values.tmits ; aida_tmit = reshape(aida_tmit, nPoints, numAIDA)' ;
+        aida_tmit = aida_tmit(bpmIdx, :);
         
         % interleave SCP data with EPICS data
         
         X_idx = contains(mdl.ROOT_NAME, aidanames) & endsWith(mdl.ROOT_NAME, ':X');
         Y_idx = contains(mdl.ROOT_NAME, aidanames) & endsWith(mdl.ROOT_NAME, ':Y');
         TMIT_idx = contains(mdl.ROOT_NAME, aidanames) & endsWith(mdl.ROOT_NAME, ':TMIT');
-        [pid, ~, mdl.hasSCP] = intersect(aida_pid, epics_pid);
+        aidaKLYSIdx = contains(mdl.ROOT_NAME, aidanames) & startsWith(mdl.ROOT_NAME, 'KLYS');
+        aidaSBSTIdx = contains(mdl.ROOT_NAME, aidanames) & startsWith(mdl.ROOT_NAME, 'SBST');
+        [pid, aida_good, mdl.hasSCP] = intersect(aida_pid, epics_pid);
+        if length(pid) ~= length(aida_pid)
+          disp('AIDA and EPICS do not overlap fully');
+        end
         if ~isempty(mdl.hasSCP)
-            mdl.the_matrix(X_idx, mdl.hasSCP) = aida_x;
-            mdl.the_matrix(Y_idx, mdl.hasSCP) = aida_y;
-            mdl.the_matrix(TMIT_idx, mdl.hasSCP) = aida_tmit;
+            mdl.the_matrix(X_idx, mdl.hasSCP) = aida_x(:,aida_good);
+            mdl.the_matrix(Y_idx, mdl.hasSCP) = aida_y(:,aida_good);
+            mdl.the_matrix(TMIT_idx, mdl.hasSCP) = aida_tmit(:,aida_good);
+            mdl.the_matrix(aidaKLYSIdx, mdl.hasSCP) = aida_klys(:,aida_good);
+            mdl.the_matrix(aidaSBSTIdx,  mdl.hasSCP) = aida_sbst(:,aida_good);
             aidaFailed = 'successful';
-            disp('great success')
         else
             mdl.status = 'AIDA and EPICS data do not overlap';
             notify(mdl, 'StatusChanged');
-            disp('shame')
         end
     end
     mdl.isPV = false(length(mdl.ROOT_NAME), 1);
@@ -267,6 +294,10 @@ if mdl.acqSCP
     mdl.numPoints_acq = length(mdl.time_stamps);
     matlabTS = lca2matlabTime(mdl.time_stamps(end));
     
+    if strcmp(aidaFailed, 'successful')
+        mdl.status = '';
+        notify(mdl, 'StatusChanged');
+    end
     mdl.dataAcqStatus = 'Data retrieved';
     notify(mdl, 'AcqStatusChanged');
     fprintf('Buffer %d data retrieved: %d points\n', mdl.eDefNumber, mdl.numPoints_acq);
@@ -314,12 +345,11 @@ else
         notify(mdl, 'AcqStatusChanged');
         fprintf('%d points retrieved from %s\n', mdl.numPoints_acq, mdl.eDef);
     end
+    mdl.status = '';
+    notify(mdl, 'StatusChanged');
 end
 
 mdl.t_stamp = datestr(matlabTS);
-mdl.status = '';
-
-notify(mdl, 'StatusChanged');
 notify(mdl, 'DataAcquired');
 
 end
