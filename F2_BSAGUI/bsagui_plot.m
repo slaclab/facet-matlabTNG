@@ -2570,6 +2570,8 @@ end
 
 use_matrix = mdl.the_matrix(:, pulse_idx);
 
+polyfitFig = figure;
+
 short_mat = use_matrix(:, 1:2:(size(use_matrix,2)-1));
 ts_idx = 1:size(short_mat, 2)-1; %get points from the same timeslot
 for section = 1:4
@@ -2621,6 +2623,7 @@ for section = 1:4
                 end
             end
         end
+        figure(polyfitFig);
         [p1,~] = plot_polyfit(device_data, ref_bpm_data,1,1,[],[],'', ' mm',1);
         ref_bpm_data = ref_bpm_data - (p1(2) * device_data);
         
@@ -2645,6 +2648,7 @@ for section = 1:4
     plot_menus_BSA(mdl.app);
     text('FontSize',12,'Position', [1.4 -1.25],'HorizontalAlignment','right', 'String', datestr(mdl.t_stamp));
 end
+delete(polyfitFig);
 end
 
 function corf = corcoef(xdata, ydata)
