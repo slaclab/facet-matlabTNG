@@ -2,7 +2,7 @@ function S11_BSA_List = BSA_List_S11()
 
 S11_BSA_List = {...
 
-'TORO:LI11:360:0:TMIT';
+'TORO:LI11:360:TMIT';
 
 'BPMS:LI11:132:X';
 'BPMS:LI11:132:Y';

@@ -2,7 +2,7 @@ function S14_BSA_List = BSA_List_S14()
 
 S14_BSA_List = {...
 
-'TORO:LI14:890:0:TMIT';
+'TORO:LI14:890:TMIT';
 
 'BPMS:LI14:701:X';
 'BPMS:LI14:701:Y';
