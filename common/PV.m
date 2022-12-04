@@ -410,7 +410,7 @@ classdef PV < handle
               end
               on=nan(1,nvals);
               for ival=1:nvals
-                if strcmpi(obj.val{ival},'ON') || strcmpi(obj.val{ival},'YES') || strcmpi(obj.val{ival},'IN') || (isnumeric(obj.val{ival}) && obj.val{ival}>0)
+                if strcmpi(obj.val{ival},'ON') || strcmpi(obj.val{ival},'YES') || strcmpi(obj.val{ival},'RUNNING') || strcmpi(obj.val{ival},'IN') || (isnumeric(obj.val{ival}) && obj.val{ival}>0)
                   on(ival)=1;
                 elseif strcmpi(obj.val{ival},'OFF') || strcmpi(obj.val{ival},'NO') || strcmpi(obj.val{ival},'OUT') || ~(isnumeric(obj.val{ival}) && obj.val{ival}>0)
                   on(ival)=0;

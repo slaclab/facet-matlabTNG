@@ -27,6 +27,7 @@ classdef F2_WirescanApp < handle
     fitdata
     scansuccess logical = false
     scanstatus string
+    initstate logical = true
   end
   properties(SetAccess=private,Transient,Hidden)
     LLM % Lucretia Live model storage
@@ -74,13 +75,13 @@ classdef F2_WirescanApp < handle
       else
         obj.LLM = F2_LiveModelApp ;
       end
-      if exist('iwire','var') && ~isempty(iwire)
-        obj.wiresel=iwire;
-      end
       if exist('dim','var') && ~isempty(dim)
         obj.plane=dim;
       end
-      
+      if exist('iwire','var') && ~isempty(iwire)
+        obj.wiresel=iwire;
+      end
+      obj.initstate = false ;
       obj.confload;
     end
     function LoadData(obj,data,fitdata)
@@ -408,6 +409,9 @@ classdef F2_WirescanApp < handle
       else
         pos = pos(~bad) ;
       end
+      if all(bad)
+        error('No good data');
+      end
       ydat=ydat(~bad); qdat=qdat(~bad);
       
       Q=mean(qdat)*physConsts.eQ;
@@ -650,6 +654,10 @@ classdef F2_WirescanApp < handle
       name = "PMT:"+obj.pmts(obj.pmtsel) ;
     end
     function set.plane(obj,pl)
+      if obj.initstate
+        obj.plane=pl;
+        return
+      end
       fprintf('Set plane %c -> %c...\n',obj.plane,pl);
       % Call upstream app to let it know data is updated
       if ~isempty(obj.UpdateObj)
@@ -855,6 +863,10 @@ classdef F2_WirescanApp < handle
     function set.wiresel(obj,sel)
       if sel<1 || sel>length(obj.wires)
         error('No corresponding wire to selection')
+      end
+      if obj.initstate
+        obj.wiresel = sel ;
+        return
       end
       % Call upstream app to let it know data is updated
       if ~isempty(obj.UpdateObj)

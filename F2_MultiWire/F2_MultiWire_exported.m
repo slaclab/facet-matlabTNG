@@ -95,7 +95,9 @@ classdef F2_MultiWire_exported < matlab.apps.AppBase
           app.WS3Axes.Title.String = 'WIRE:LI19:244' ;
           app.WS4Axes.Title.String = 'WIRE:LI19:344' ;
       end
-      app.UpdateObj.(app.UpdateMethod) ;
+      if ~isempty(app.UpdateObj)
+        app.UpdateObj.(app.UpdateMethod) ;
+      end
     end
     
     function ScanWire(app,iwire)
@@ -109,9 +111,10 @@ classdef F2_MultiWire_exported < matlab.apps.AppBase
         else
           app.WS(iwire).StartScan(app.(sprintf("WS%dAxes",iwire))) ;
         end
-      catch
+      catch ME
         app.(sprintf("ScanW%d",iwire)).Enable=true;
         errordlg(sprintf('Wirescanner %d failure',iwire),'Wirescan Failed');
+        throw(ME);
       end
       app.(sprintf("ScanW%d",iwire)).Enable=true;
       drawnow
@@ -132,6 +135,11 @@ classdef F2_MultiWire_exported < matlab.apps.AppBase
       end
     end
     
+    
+    function UpdatePlane(app)
+      %UPDATEPLANE Call after changing measurement plane remotely
+      app.ButtonGroupSelectionChanged;
+    end
   end
   
 
@@ -160,6 +168,11 @@ classdef F2_MultiWire_exported < matlab.apps.AppBase
         delete(app.WS);
       end
       path(path,'../F2_Wirescan');
+      for iws=1:4
+        if length(app.WS)>=iws
+          delete(app.WS);
+        end
+      end
       switch value
         case "L2"
           app.WS1Axes.Title.String = 'WIRE:LI11:444' ; 
@@ -329,6 +342,7 @@ classdef F2_MultiWire_exported < matlab.apps.AppBase
       % Create ScanAllButton
       app.ScanAllButton = uibutton(app.F2_MultiWireUIFigure, 'push');
       app.ScanAllButton.ButtonPushedFcn = createCallbackFcn(app, @ScanAllButtonPushed, true);
+      app.ScanAllButton.Interruptible = 'off';
       app.ScanAllButton.Position = [528 804 100 23];
       app.ScanAllButton.Text = 'Scan All';
 
@@ -341,6 +355,7 @@ classdef F2_MultiWire_exported < matlab.apps.AppBase
       % Create ScanW1
       app.ScanW1 = uibutton(app.F2_MultiWireUIFigure, 'push');
       app.ScanW1.ButtonPushedFcn = createCallbackFcn(app, @ScanW1ButtonPushed, true);
+      app.ScanW1.Interruptible = 'off';
       app.ScanW1.Position = [70 418 100 23];
       app.ScanW1.Text = 'Scan';
 
@@ -370,6 +385,7 @@ classdef F2_MultiWire_exported < matlab.apps.AppBase
       % Create ScanW2
       app.ScanW2 = uibutton(app.F2_MultiWireUIFigure, 'push');
       app.ScanW2.ButtonPushedFcn = createCallbackFcn(app, @ScanW2ButtonPushed, true);
+      app.ScanW2.Interruptible = 'off';
       app.ScanW2.Position = [506 418 100 23];
       app.ScanW2.Text = 'Scan';
 
@@ -387,6 +403,7 @@ classdef F2_MultiWire_exported < matlab.apps.AppBase
       % Create ScanW3
       app.ScanW3 = uibutton(app.F2_MultiWireUIFigure, 'push');
       app.ScanW3.ButtonPushedFcn = createCallbackFcn(app, @ScanW3ButtonPushed, true);
+      app.ScanW3.Interruptible = 'off';
       app.ScanW3.Position = [70 24 100 23];
       app.ScanW3.Text = 'Scan';
 
@@ -404,6 +421,7 @@ classdef F2_MultiWire_exported < matlab.apps.AppBase
       % Create ScanW4
       app.ScanW4 = uibutton(app.F2_MultiWireUIFigure, 'push');
       app.ScanW4.ButtonPushedFcn = createCallbackFcn(app, @ScanW4ButtonPushed, true);
+      app.ScanW4.Interruptible = 'off';
       app.ScanW4.Position = [506 24 100 23];
       app.ScanW4.Text = 'Scan';
 
@@ -442,6 +460,7 @@ classdef F2_MultiWire_exported < matlab.apps.AppBase
       % Create Button
       app.Button = uibutton(app.F2_MultiWireUIFigure, 'push');
       app.Button.ButtonPushedFcn = createCallbackFcn(app, @ButtonPushed, true);
+      app.Button.Interruptible = 'off';
       app.Button.Icon = 'logbook.gif';
       app.Button.Position = [838 797 40 40];
       app.Button.Text = '';

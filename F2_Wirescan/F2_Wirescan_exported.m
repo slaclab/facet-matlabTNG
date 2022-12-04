@@ -464,6 +464,7 @@ classdef F2_Wirescan_exported < matlab.apps.AppBase
       % Create AbortScanButton
       app.AbortScanButton = uibutton(app.MeasurementPanel, 'push');
       app.AbortScanButton.ButtonPushedFcn = createCallbackFcn(app, @AbortScanButtonPushed, true);
+      app.AbortScanButton.Interruptible = 'off';
       app.AbortScanButton.BackgroundColor = [0.851 0.3255 0.098];
       app.AbortScanButton.FontWeight = 'bold';
       app.AbortScanButton.Position = [14 7 229 30];
@@ -746,6 +747,7 @@ classdef F2_Wirescan_exported < matlab.apps.AppBase
       % Create Button
       app.Button = uibutton(app.RightPanel, 'push');
       app.Button.ButtonPushedFcn = createCallbackFcn(app, @ButtonPushed, true);
+      app.Button.Interruptible = 'off';
       app.Button.Icon = 'logbook.gif';
       app.Button.Position = [616 11 61 64];
       app.Button.Text = '';

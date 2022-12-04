@@ -622,6 +622,7 @@ classdef F2_Matching_exported < matlab.apps.AppBase
           app.WSApp.UpdateMethod = "UpdateMWDataFromApp" ;
         else
           app.WSApp.(upper(plane)+"Button").Value=true;
+          app.WSApp.UpdatePlane() ;
           app.WSApp.LinacDropDown.Value = app.LinacDropDown.Value ;
           drawnow;
           app.WSApp.RemoteSet() ;
@@ -1062,6 +1063,7 @@ classdef F2_Matching_exported < matlab.apps.AppBase
       % Create SCANButton
       app.SCANButton = uibutton(app.MultiWireEmittanceTab, 'push');
       app.SCANButton.ButtonPushedFcn = createCallbackFcn(app, @SCANButtonPushed, true);
+      app.SCANButton.Interruptible = 'off';
       app.SCANButton.Position = [610 188 108 31];
       app.SCANButton.Text = 'SCAN';
 
@@ -1200,6 +1202,7 @@ classdef F2_Matching_exported < matlab.apps.AppBase
       % Create Button
       app.Button = uibutton(app.FACETIIOpticsMatchingUIFigure, 'push');
       app.Button.ButtonPushedFcn = createCallbackFcn(app, @ButtonPushed, true);
+      app.Button.Interruptible = 'off';
       app.Button.Icon = 'logbook.gif';
       app.Button.Position = [11 9 68 69];
       app.Button.Text = '';

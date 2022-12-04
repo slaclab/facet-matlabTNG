@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg width="50.389" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" height="50.307">
+ <defs>
+  <filter id="filter6084">
+   <feGaussianBlur id="feGaussianBlur6086" stdDeviation="1.54827"/>
+  </filter>
+  <linearGradient id="linearGradient5037">
+   <stop id="stop5039" stop-color="#fff" offset="0"/>
+   <stop id="stop5041" stop-color="#fff" stop-opacity="0" offset="1"/>
+  </linearGradient>
+  <linearGradient id="linearGradient10617" y2="-.017949" x2=".49957" y1="1.0345" x1=".49957">
+   <stop id="stop10613" stop-color="#286a27" offset="0"/>
+   <stop id="stop10615" stop-color="#264826" offset="1"/>
+  </linearGradient>
+  <linearGradient id="linearGradient9542" y2=".35876" xlink:href="#linearGradient5037" x2=".56406" y1="0.945" x1=".67218"/>
+  <linearGradient id="linearGradient9540" y2="1" xlink:href="#linearGradient5037" x2="0.5" x1="0.5"/>
+  <radialGradient id="radialGradient9538" gradientUnits="userSpaceOnUse" cy="-27.632" cx="531.04" gradientTransform="matrix(.87056 0 0 .87056 68.738 -5.1012)" r="37.709">
+   <stop id="stop5006" stop-color="#8fe68c" offset="0"/>
+   <stop id="stop5008" stop-color="#29902b" offset="1"/>
+  </radialGradient>
+ </defs>
+ <a id="svg_1" xlink:href="http://www.youtube.com/watch?v=UePtoxDhJSw">
+  <g id="layer1">
+   <g id="Play" stroke-linejoin="round" stroke-linecap="round" transform="matrix(.67755 0 0 .67640 -394.66 131.97)">
+    <path id="path9472" d="m655.38-157.92c-0.000183 19.65-15.876 35.607-35.525 35.708-19.649 0.10106-35.688-15.692-35.891-35.341-0.20239-19.649 15.508-35.769 35.155-36.072 19.647-0.30359 35.848 15.323 36.253 34.969" stroke="url(#linearGradient10617)" stroke-width="2.954" fill="url(#radialGradient9538)"/>
+    <g id="g9474" stroke-width="3.076">
+     <path id="path9476" opacity=".5" d="m607.08-175.69v38.325l32.937-19.016-32.937-19.309z" filter="url(#filter6084)" stroke="#000"/>
+     <path id="path9478" d="m605.32-177.46v38.325l32.937-19.016-32.937-19.309z" stroke="#33543c" fill="#d6ffdc"/>
+    </g>
+    <path id="path9480" d="m643.71-172.41c0 10.251-10.764 18.562-24.042 18.562s-24.042-8.3103-24.042-18.562c0-10.251 10.764-18.562 24.042-18.562s24.042 8.3103 24.042 18.562z" stroke-width="4" fill="url(#linearGradient9540)"/>
+    <path id="path9482" d="m589.94-143.5c7.1012 15.798 25.442 23.423 41.753 17.048 16.302-6.3715 24.612-24.397 19.136-40.816-4.4241 11.106-13.274 20.411-25.278 25.103-12.016 4.6965-24.822 3.8409-35.611-1.3348z" stroke-width="4" fill="url(#linearGradient9542)"/>
+   </g>
+  </g>
+ </a>
+</svg>

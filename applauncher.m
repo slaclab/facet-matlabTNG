@@ -22,7 +22,7 @@ portno=str2double(portno);
 wID=regexp(wIDtxt,'^\S+','match','once');
 
 % List of apps which need Live Model
-LLM_apps = ["F2_LEM" "F2_LiveModel" "F2_Matching" "F2_MultiWire" "F2_Orbit" "F2_Wirescan" "F2_OrbitBump"] ;
+LLM_apps = ["F2_LEM" "F2_LiveModel" "F2_Matching" "F2_MultiWire" "F2_Orbit" "F2_Wirescan" "F2_OrbitBump" "F2_IPJitter"] ;
 
 % generate instance of LiveModel
 disp('Generating instance of LiveModel...');
