@@ -513,7 +513,7 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
       modeamp_x = dat.xd*dat.Vtx(imode,:)' ;
       Y = fft(modeamp_x) ;
       L = length(modeamp_x);
-      freq_x = obj.BPMS.beamrate*(0:(L/2))/L;
+      freq_x = double(obj.BPMS.beamrate)*(0:(L/2))/L;
       P2 = abs(Y/L);
       P1 = P2(1:L/2+1);
       P1(2:end-1) = 2*P1(2:end-1);
@@ -521,7 +521,7 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
       modeamp_y = dat.yd*dat.Vty(imode,:)' ;
       Y = fft(modeamp_y) ;
       L = length(modeamp_y);
-      freq_y = obj.BPMS.beamrate*(0:(L/2))/L;
+      freq_y = double(obj.BPMS.beamrate)*(0:(L/2))/L;
       P2 = abs(Y/L);
       P1 = P2(1:L/2+1);
       P1(2:end-1) = 2*P1(2:end-1);
@@ -870,16 +870,16 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
       dat.Uy=Uy; dat.Sy=Sy; dat.Vty=Vty;
       dat.svals=svals; dat.dof=dof;
       dat.xd=xd; dat.yd=yd;
-      if ~isempty(obj.aobj)
-        obj.aobj.DropDown.Items = "Mode " + string(1:length(svals)) ;
-        obj.aobj.NmodesEditField.Limits=[1,length(svals)];
-        if obj.aobj.NmodesEditField.Value > length(svals)
-          obj.aobj.NmodesEditField.Value = length(svals) ;
-        end
-        if ~ismember(obj.aobj.DropDown.Value,obj.aobj.DropDown.Items)
-          obj.aobj.DropDown.Value = obj.aobj.DropDown.Items(1) ;
-        end
-      end
+%       if ~isempty(obj.aobj) && obj.aobj.TabGroup.SelectedTab == obj.aobj.MIATab
+%         obj.aobj.DropDown_3.Items = "Mode " + string(1:length(svals)) ;
+%         obj.aobj.NmodesEditField.Limits=[1,length(svals)];
+%         if obj.aobj.NmodesEditField.Value > length(svals)
+%           obj.aobj.NmodesEditField.Value = length(svals) ;
+%         end
+%         if ~ismember(obj.aobj.DropDown_3.Value,obj.aobj.DropDown_3.Items)
+%           obj.aobj.DropDown_3.Value = obj.aobj.DropDown_3.Items(1) ;
+%         end
+%       end
     end
     function [X0,X1] = orbitfit(obj)
       %ORBITFIT Fit an orbit to selected location
@@ -1631,44 +1631,50 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
           pl.DataTipTemplate.DataTipRows(2).Label = 'Y Mode Amp' ;
         case "EigenVector"
           id=ismember(obj.BPMS.modelID,obj.bpmid(obj.usebpm));
-          z=arrayfun(@(x) BEAMLINE{x}.Coordi(x),obj.BPMS.modelID(id));
-          pl=plot(ahan(1),z,dat.Vtx(nmode,id)); xlabel(ahan(1),'Z [m]'); ylabel(ahan(1),'X Eigenvector Amplitude');
+          z=arrayfun(@(x) BEAMLINE{x}.Coordi(3),obj.BPMS.modelID(id));
+          pl=plot(ahan(1),z,dat.Vtx(id,nmode)); xlabel(ahan(1),'Z [m]'); ylabel(ahan(1),'X Eigenvector Amplitude'); grid(ahan(1),'on');
           pl.DataTipTemplate.DataTipRows(1).Label = 'Linac Z (m)' ;
           pl.DataTipTemplate.DataTipRows(2).Label = 'X Mode Amp' ;
           pl.DataTipTemplate.DataTipRows(end+1) = dataTipTextRow('Name',obj.BPMS.modelnames(id));
-          pl=plot(ahan(2),z,dat.Vty(nmode,id)); xlabel(ahan(2),'Z [m]'); ylabel(ahan(2),'Y Eigenvector Amplitude');
+          pl=plot(ahan(2),z,dat.Vty(id,nmode)); xlabel(ahan(2),'Z [m]'); ylabel(ahan(2),'Y Eigenvector Amplitude'); grid(ahan(2),'on');
           pl.DataTipTemplate.DataTipRows(1).Label = 'Linac Z (m)' ;
           pl.DataTipTemplate.DataTipRows(2).Label = 'Y Mode Amp' ;
           pl.DataTipTemplate.DataTipRows(end+1) = dataTipTextRow('Name',obj.BPMS.modelnames(id));
+          % Plot magnet bar
+          F2_common.AddMagnetPlotZ(obj.LM.istart,obj.LM.iend,ahan(1)) ;
+          F2_common.AddMagnetPlotZ(obj.LM.istart,obj.LM.iend,ahan(2)) ;
         case "FFT"
           [freq_x,fft_x,freq_y,fft_y]=obj.svdfft(nmode);
           plot(ahan(1),freq_x,fft_x); xlabel(ahan(1),'f [Hz]'); ylabel(ahan(1),'|P1(f)| (X Mode)'); grid(ahan(1),'on');
           plot(ahan(2),freq_y,fft_y); xlabel(ahan(2),'f [Hz]'); ylabel(ahan(2),'|P1(f)| (Y Mode)'); grid(ahan(2),'on');
         case "DoF"
           id=ismember(obj.BPMS.modelID,obj.bpmid(obj.usebpm));
-          z=obj.BPMS.modelZ;
-          pl=plot(ahan(1),z,dat.dof{1}(id,1:nmode)); xlabel(ahan(1),'Z [m]'); grid(ahan(1),'on'); ylabel(ahan(1),'');
-          pl.DataTipTemplate.DataTipRows(1).Label = 'Linac Z (m)' ;
-          pl.DataTipTemplate.DataTipRows(2).Label = 'X Mode Amp' ;
-          pl.DataTipTemplate.DataTipRows(end+1) = dataTipTextRow('Name',obj.BPMS.modelnames(id));
-          pl=plot(ahan(2),z,dat.dof{2}(id,1:nmode)); xlabel(ahan(2),'Z [m]'); grid(ahan(2),'on'); ylabel(ahan(2),'');
-          pl.DataTipTemplate.DataTipRows(1).Label = 'Linac Z (m)' ;
-          pl.DataTipTemplate.DataTipRows(2).Label = 'Y Mode Amp' ;
-          pl.DataTipTemplate.DataTipRows(end+1) = dataTipTextRow('Name',obj.BPMS.modelnames(id));
+          z=obj.BPMS.modelZ(id)'; z=repmat(z,nmode,1);
+          plot(ahan(1),z',dat.dof{1}(1:nmode,id)'); xlabel(ahan(1),'Z [m]'); grid(ahan(1),'on'); ylabel(ahan(1),'');
+%           pl.DataTipTemplate.DataTipRows(1).Label = 'Linac Z (m)' ;
+%           pl.DataTipTemplate.DataTipRows(2).Label = 'X Mode Amp' ;
+%           pl.DataTipTemplate.DataTipRows(end+1) = dataTipTextRow('Name',obj.BPMS.modelnames(id));
+          plot(ahan(2),z',dat.dof{2}(1:nmode,id)'); xlabel(ahan(2),'Z [m]'); grid(ahan(2),'on'); ylabel(ahan(2),'');
+%           pl.DataTipTemplate.DataTipRows(1).Label = 'Linac Z (m)' ;
+%           pl.DataTipTemplate.DataTipRows(2).Label = 'Y Mode Amp' ;
+%           pl.DataTipTemplate.DataTipRows(end+1) = dataTipTextRow('Name',obj.BPMS.modelnames(id));
+          % Plot magnet bar
+          F2_common.AddMagnetPlotZ(obj.LM.istart,obj.LM.iend,ahan(1)) ;
+          F2_common.AddMagnetPlotZ(obj.LM.istart,obj.LM.iend,ahan(2)) ;
         case "KickAnalysis"
-          id=ismember(obj.BPMS.modelID,obj.bpmid(obj.usebpm));
-          z=obj.BPMS.modelZ;
+          id=find(ismember(obj.BPMS.modelID,obj.bpmid(obj.usebpm)));
+          z=obj.BPMS.modelZ(id);
           if length(id)<3
             return
           end
-          gx = dat.xd*dat.Vtx(nmode,id)' ;
-          gy = dat.yd*dat.Vty(nmode,id)' ;
+          gx = dat.xd(:,id)*dat.Vtx(nmode,id)' ;
+          gy = dat.yd(:,id)*dat.Vty(nmode,id)' ;
           kickx = zeros(1,length(id)); kicky=kickx;
           for ibpm=3:length(id)
             a = gx(ibpm-2); b = gx(ibpm-1); c=gx(ibpm);
-            [~,R]=RmatAtoB(id(ibpm-2),id(ibpm-1)); r11_12=R(1,1); r12_12=R(1,2); r33_12=R(3,3); r34_12=R(3,4);
+            [~,R]=RmatAtoB(obj.BPMS.modelID(id(ibpm-2)),obj.BPMS.modelID(id(ibpm-1))); r11_12=R(1,1); r12_12=R(1,2); r33_12=R(3,3); r34_12=R(3,4);
             alpha = (b-a*r11_12)/r12_12 ;
-            [~,R]=RmatAtoB(id(ibpm-2),id(ibpm)); r11_13=R(1,1); r12_13=R(1,2); r33_13=R(3,3); r34_13=R(3,4);
+            [~,R]=RmatAtoB(obj.BPMS.modelID(id(ibpm-2)),obj.BPMS.modelID(id(ibpm-1))); r11_13=R(1,1); r12_13=R(1,2); r33_13=R(3,3); r34_13=R(3,4);
             c_pred = a*r11_13+alpha*r12_13;
             kickx(ibpm) = (c-c_pred)/c_pred;
             a = gy(ibpm-2); b = gy(ibpm-1); c=gy(ibpm);
@@ -1684,6 +1690,9 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
           pl.DataTipTemplate.DataTipRows(1).Label = 'Linac Z (m)' ;
           pl.DataTipTemplate.DataTipRows(2).Label = 'Y Kick' ;
           pl.DataTipTemplate.DataTipRows(end+1) = dataTipTextRow('Name',obj.BPMS.modelnames(id));
+          % Plot magnet bar
+          F2_common.AddMagnetPlotZ(obj.LM.istart,obj.LM.iend,ahan(1)) ;
+          F2_common.AddMagnetPlotZ(obj.LM.istart,obj.LM.iend,ahan(2)) ;
       end
     end
     function plotcor(obj,ahan,showmax,unitsBDES)

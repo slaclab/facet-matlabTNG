@@ -1591,7 +1591,7 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
 
       % Create DropDown_2
       app.DropDown_2 = uidropdown(app.PlotOptionPanel);
-      app.DropDown_2.Items = {'SingularValues', 'EigenValue', 'EigenVector', 'FFT', 'DofF', 'KickAnalysis'};
+      app.DropDown_2.Items = {'SingularValues', 'EigenValue', 'EigenVector', 'FFT', 'DoF', 'KickAnalysis'};
       app.DropDown_2.ValueChangedFcn = createCallbackFcn(app, @DropDown_2ValueChanged, true);
       app.DropDown_2.Position = [9 46 124 22];
       app.DropDown_2.Value = 'SingularValues';
@@ -1618,6 +1618,7 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
       % Create DropDown_3
       app.DropDown_3 = uidropdown(app.CorrelatePanel);
       app.DropDown_3.Items = {'E_DL1', 'E_BC11', 'E_BC14', 'E_BC20'};
+      app.DropDown_3.Enable = 'off';
       app.DropDown_3.Position = [14 136 113 22];
       app.DropDown_3.Value = 'E_DL1';
 
@@ -1646,6 +1647,7 @@ classdef F2_Orbit_exported < matlab.apps.AppBase
       % Create PlotButton
       app.PlotButton = uibutton(app.CorrelatePanel, 'push');
       app.PlotButton.ButtonPushedFcn = createCallbackFcn(app, @PlotButtonPushed, true);
+      app.PlotButton.Enable = 'off';
       app.PlotButton.Position = [26 10 100 23];
       app.PlotButton.Text = 'Plot';
 

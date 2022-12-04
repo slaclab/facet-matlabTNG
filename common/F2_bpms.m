@@ -23,6 +23,7 @@ classdef F2_bpms < handle & matlab.mixin.Copyable
     epicsnames string % corresponding epics names
     stuckbpms logical % non-updating bpms list
     UpdateTimer
+    edef % epics event definition for buffered acq
   end
   properties(Dependent)
     beamrate uint8 % Active beam rate [Hz]
@@ -42,7 +43,6 @@ classdef F2_bpms < handle & matlab.mixin.Copyable
   end
   properties(Constant)
     badbpms string = ["BPM10781" "BPM19851"] % model names of BPMS with missing controls or known bad (excludes from master lists)
-    edef=3 % epics event definition for buffered acq
   end
   properties(SetAccess=private)
     f2c F2_common
@@ -275,7 +275,6 @@ classdef F2_bpms < handle & matlab.mixin.Copyable
       % Breakdown of BPM lists into those that need epics or aida and make edef pv name
       selaida=startsWith(obj.bpmnames,"LI") ;
       selepics=startsWith(obj.bpmnames,"BPMS:") ;
-      edefpv=sprintf('EDEF:SYS1:%d:CTRL',obj.edef);
       
       % Command EPICS channels to gather buffered data
       if any(selepics) && any(selaida) % get more EPICS data if need to overlap AIDA and EPICS
@@ -284,11 +283,18 @@ classdef F2_bpms < handle & matlab.mixin.Copyable
         npe=npulse;
       end
       if any(selepics) && ~obj.asynwait
-        lcaPutNoWait(sprintf('EDEF:SYS1:%d:MEASCNT ',obj.edef),npe);
+        if ~isempty(obj.edef) % if failed to release last time (code crashed), do so now
+          eDefRelease(obj.edef);
+        end
+        obj.edef = eDefReserve('F2_bpms') ;
+        eDefParams(obj.edef, 1, npe) ;
+        edefpv=sprintf('EDEF:SYS1:%d:CTRL',obj.edef);
+%         lcaPutNoWait(sprintf('EDEF:SYS1:%d:MEASCNT ',obj.edef),npe);
         if ~obj.moniedef
           lcaSetMonitor(edefpv);
           obj.moniedef=true;
         end
+        eDefOn(obj.edef);
         lcaPutNoWait(edefpv,1) ;
       end
       % Get SCP buffered data through AIDA
@@ -348,6 +354,9 @@ classdef F2_bpms < handle & matlab.mixin.Copyable
         epics_y = lcaGet(cellstr(obj.bpmnames(selepics)+":YHST"+obj.edef),npe) ;
         epics_tmit = lcaGet(cellstr(obj.bpmnames(selepics)+":TMITHST"+obj.edef),npe) ;
         epics_pid = lcaGet(sprintf('PATT:SYS1:1:PULSEID%d',obj.edef)) ; % Pulse ID of last data
+        % Release Edef
+        eDefRelease(obj.edef);
+        obj.edef=[];
       end
       % If both SCP and EPICS BPM data, then align using pulse ID
       if any(selepics) && any(selaida)
