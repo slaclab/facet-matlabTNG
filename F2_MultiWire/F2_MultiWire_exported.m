@@ -148,14 +148,14 @@ classdef F2_MultiWire_exported < matlab.apps.AppBase
 
     % Code that executes after component creation
     function startupFcn(app, LLM, linac, dim)
-      if exist('linac','var')
-        app.LinacDropDown.Value = linac ;
-        app.plane=dim;
-      end
       if exist('LLM','var')
         app.LLM=LLM;
       else
         app.LLM=F2_LiveModelApp;
+      end
+      if exist('linac','var')
+        app.LinacDropDown.Value = linac ;
+        app.plane=dim;
       end
       drawnow;
       app.LinacDropDownValueChanged;

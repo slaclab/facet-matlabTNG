@@ -625,7 +625,7 @@ classdef F2_Matching_exported < matlab.apps.AppBase
           app.WSApp.UpdateMethod = "UpdateMWDataFromApp" ;
         else
           app.WSApp.(upper(plane)+"Button").Value=true;
-          app.WSApp.UpdatePlane() ;
+%           app.WSApp.UpdatePlane() ;
           app.WSApp.LinacDropDown.Value = app.LinacDropDown.Value ;
           drawnow;
           app.WSApp.RemoteSet() ;
