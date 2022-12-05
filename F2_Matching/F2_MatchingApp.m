@@ -3,7 +3,7 @@ classdef F2_MatchingApp < handle & F2_common
     guihan
     QuadScanData
     TwissFitSource string {mustBeMember(TwissFitSource,["Model","Analytic"])} = "Model"
-    ProfFitMethod string {mustBeMember(ProfFitMethod,["Gaussian","Asymmetric"])} = "Asymmetric"
+    ProfFitMethod string {mustBeMember(ProfFitMethod,["Gaussian","Asymmetric","Super","RMS","RMS_CutPeak","RMS_CutArea"])} = "Asymmetric"
     LiveModel
     Optimizer string {mustBeMember(Optimizer,["fminsearch","lsqnonlin"])} = "lsqnonlin"
     DimSelect string {mustBeMember(DimSelect,["X" "Y" "XY"])} = "XY"
@@ -381,7 +381,7 @@ classdef F2_MatchingApp < handle & F2_common
         obj.QuadScanData.QuadVal = dat.data.quadVal(stat) ;
       end
       obj.QuadScanData.nscan = sum(stat) ;
-      fitm=["Gaussian" "Asymmetric"];
+      fitm=["Gaussian" "Asymmetric" "Super" "RMS" "RMS_CutPeak" "RMS_CutArea"];
       if iscorplot
         sz=size(dat.data.beam);
       else
@@ -407,7 +407,7 @@ classdef F2_MatchingApp < handle & F2_common
           drawnow
         end
       end
-      for ii=1:2
+      for ii=1:6
         if iscorplot
           if contains(obj.DimSelect,"X")
             xdat = reshape([dat.data.beam(stat,:,ii).xStat],5,sum(stat),sz(2)) ;

@@ -42,6 +42,7 @@ classdef F2_Matching_exported < matlab.apps.AppBase
     ProfileFitMethodButtonGroup     matlab.ui.container.ButtonGroup
     GaussianButton                  matlab.ui.control.RadioButton
     AsymmetricGaussianButton        matlab.ui.control.RadioButton
+    RMSButton                       matlab.ui.control.RadioButton
     OpticsPlotTab                   matlab.ui.container.Tab
     UIAxes2                         matlab.ui.control.UIAxes
     UIAxes2_2                       matlab.ui.control.UIAxes
@@ -416,6 +417,8 @@ classdef F2_Matching_exported < matlab.apps.AppBase
           app.aobj.ProfFitMethod="Gaussian";
         case app.AsymmetricGaussianButton
           app.aobj.ProfFitMethod="Asymmetric";
+        case app.RMSButton
+          app.aobj.ProfFitMethod="RMS_CutArea";
       end
       app.message("Re-fitting data...");
       drawnow
@@ -814,7 +817,7 @@ classdef F2_Matching_exported < matlab.apps.AppBase
       % Create YAnalyticFitemitbmagPanel
       app.YAnalyticFitemitbmagPanel = uipanel(app.QuadScanFitTab);
       app.YAnalyticFitemitbmagPanel.Title = 'Y Analytic Fit (emit/bmag)';
-      app.YAnalyticFitemitbmagPanel.Position = [575 111 164 66];
+      app.YAnalyticFitemitbmagPanel.Position = [582 85 164 66];
 
       % Create GridLayout_3
       app.GridLayout_3 = uigridlayout(app.YAnalyticFitemitbmagPanel);
@@ -839,7 +842,7 @@ classdef F2_Matching_exported < matlab.apps.AppBase
       % Create YModelFitemitbmagPanel_2
       app.YModelFitemitbmagPanel_2 = uipanel(app.QuadScanFitTab);
       app.YModelFitemitbmagPanel_2.Title = 'Y Model Fit (emit/bmag)';
-      app.YModelFitemitbmagPanel_2.Position = [576 29 164 66];
+      app.YModelFitemitbmagPanel_2.Position = [580 11 164 66];
 
       % Create GridLayout_4
       app.GridLayout_4 = uigridlayout(app.YModelFitemitbmagPanel_2);
@@ -865,18 +868,23 @@ classdef F2_Matching_exported < matlab.apps.AppBase
       app.ProfileFitMethodButtonGroup = uibuttongroup(app.QuadScanFitTab);
       app.ProfileFitMethodButtonGroup.SelectionChangedFcn = createCallbackFcn(app, @ProfileFitMethodButtonGroupSelectionChanged, true);
       app.ProfileFitMethodButtonGroup.Title = 'Profile Fit Method';
-      app.ProfileFitMethodButtonGroup.Position = [576 188 164 75];
+      app.ProfileFitMethodButtonGroup.Position = [576 161 164 102];
 
       % Create GaussianButton
       app.GaussianButton = uiradiobutton(app.ProfileFitMethodButtonGroup);
       app.GaussianButton.Text = 'Gaussian';
-      app.GaussianButton.Position = [11 29 74 22];
+      app.GaussianButton.Position = [11 52 74 22];
 
       % Create AsymmetricGaussianButton
       app.AsymmetricGaussianButton = uiradiobutton(app.ProfileFitMethodButtonGroup);
       app.AsymmetricGaussianButton.Text = 'Asymmetric Gaussian';
-      app.AsymmetricGaussianButton.Position = [11 7 140 22];
+      app.AsymmetricGaussianButton.Position = [11 29 140 22];
       app.AsymmetricGaussianButton.Value = true;
+
+      % Create RMSButton
+      app.RMSButton = uiradiobutton(app.ProfileFitMethodButtonGroup);
+      app.RMSButton.Text = 'RMS';
+      app.RMSButton.Position = [12 7 49 22];
 
       % Create OpticsPlotTab
       app.OpticsPlotTab = uitab(app.TabGroup);

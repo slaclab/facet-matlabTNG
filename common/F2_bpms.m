@@ -282,6 +282,7 @@ classdef F2_bpms < handle & matlab.mixin.Copyable
       else
         npe=npulse;
       end
+      edefpv=sprintf('EDEF:SYS1:%d:CTRL',obj.edef);
       if any(selepics) && ~obj.asynwait
         if ~isempty(obj.edef) % if failed to release last time (code crashed), do so now
           eDefRelease(obj.edef);
