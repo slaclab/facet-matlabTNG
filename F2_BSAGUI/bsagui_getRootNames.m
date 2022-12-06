@@ -6,6 +6,11 @@ if mdl.dev
     beamPath = [mdl.destination 'I'];
 elseif mdl.facet
     [root_name, z] = facetNames(mdl);
+    % JR 12/6/22 - Odd first 2 names coming up, seems to clear when
+    % recalled, not sure what is causing the issue
+    if startsWith(root_name(1), 'Gtk')
+        [root_name, z] = facetNames(mdl);
+    end
     beamPath = 'F2_ELEC';
 else  % prod, on an lcls server
     root_name = lclsNames(mdl);
