@@ -151,8 +151,13 @@ classdef corrplot_ctrlPV < handle
             if strncmp(pv,'LI',2) || strncmp(pv,'TA',2) || strncmp(pv,'DR12',4) || strncmp(pv,'MKB:VAL',7)
                 %    if strcmp(secn,'BDES') || strcmp(secn,'VDES')
                 if strcmp(secn,'BDES')
-                    control_magnetSet(strcat(micro, ':', prim, ':', unit), val);
-                    setVal = true;
+                    try
+                        control_magnetSet(strcat(micro, ':', prim, ':', unit), val);
+                        setVal = true;
+                    catch
+                        fprintf('Error setting magnet %s', pv)
+                        setVal = false; 
+                    end
                 else
                     if ~ispc
                         aidapva;
