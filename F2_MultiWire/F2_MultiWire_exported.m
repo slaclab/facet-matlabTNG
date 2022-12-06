@@ -148,6 +148,7 @@ classdef F2_MultiWire_exported < matlab.apps.AppBase
 
     % Code that executes after component creation
     function startupFcn(app, LLM, linac, dim)
+      disp('WS STartup....');
       if exist('LLM','var')
         app.LLM=LLM;
       else

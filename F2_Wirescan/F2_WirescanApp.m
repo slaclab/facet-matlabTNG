@@ -68,7 +68,7 @@ classdef F2_WirescanApp < handle
       %F2_WirescanApp([LucretiaLiveModel,WireSel,plane])
       
       warning('off','MATLAB:rankDeficientMatrix');
-      
+      try
       % Use provided Lucretia Live Model, or generate new one
       if exist('LLM','var') && ~isempty(LLM)
         obj.LLM = LLM ;
@@ -83,6 +83,9 @@ classdef F2_WirescanApp < handle
       end
       obj.initstate = false ;
       obj.confload;
+      catch ME
+        throw(ME);
+      end
     end
     function LoadData(obj,data,fitdata)
       obj.data=data; obj.fitdata=fitdata;

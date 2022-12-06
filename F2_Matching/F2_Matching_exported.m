@@ -621,6 +621,9 @@ classdef F2_Matching_exported < matlab.apps.AppBase
         if isempty(app.WSApp) || ~isprop(app.WSApp,'UpdateObj')
           addpath ../F2_MultiWire
           app.WSApp = F2_MultiWire(app.aobj.LiveModel,app.LinacDropDown.Value,plane) ;
+          if isempty(app.WSApp.LLM) % startupFcn not called from here (but is with equivalent call from workspace(!))
+            app.WSApp.RemoteInitFcn(app.aobj.LiveModel,app.LinacDropDown.Value,plane) ;
+          end
           app.WSApp.UpdateObj = app ;
           app.WSApp.UpdateMethod = "UpdateMWDataFromApp" ;
         else
@@ -1071,7 +1074,6 @@ classdef F2_Matching_exported < matlab.apps.AppBase
       % Create SCANButton
       app.SCANButton = uibutton(app.MultiWireEmittanceTab, 'push');
       app.SCANButton.ButtonPushedFcn = createCallbackFcn(app, @SCANButtonPushed, true);
-      app.SCANButton.Interruptible = 'off';
       app.SCANButton.Position = [610 188 108 31];
       app.SCANButton.Text = 'SCAN';
 
