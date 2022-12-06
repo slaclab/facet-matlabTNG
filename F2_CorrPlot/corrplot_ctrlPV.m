@@ -152,6 +152,7 @@ classdef corrplot_ctrlPV < handle
                 %    if strcmp(secn,'BDES') || strcmp(secn,'VDES')
                 if strcmp(secn,'BDES')
                     control_magnetSet(strcat(micro, ':', prim, ':', unit), val);
+                    setVal = true;
                 else
                     if ~ispc
                         aidapva;
