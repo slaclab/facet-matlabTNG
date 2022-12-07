@@ -164,6 +164,7 @@ classdef corrplot_ctrlPV < handle
                         try
                             if strncmp(pv,'MKB:VAL',7)
                                 da_mkb.set(val);
+                                setVal = true;
                             else
                                 pvaSet(strcat(prim, ':', micro, ':',unit,':',secn), val);
                                 setVal = true;
