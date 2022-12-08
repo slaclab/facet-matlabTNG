@@ -2478,7 +2478,7 @@ classdef corrPlot_mdl < handle
                 
                 if isempty(pv), continue; end
                 if relative % reset to negative of last set value
-                    PVvalList = pv.getValList();
+                    PVvalList = pv.vallist;
                     val = -PVvalList(valList(end));
                 else
                     val = pv.pv.val;
