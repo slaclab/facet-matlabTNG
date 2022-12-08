@@ -37,9 +37,9 @@ classdef F2_getBG < handle
             % initialize object and add PVs to be monitored
             context = PV.Initialize(PVtype.EPICS) ;
             obj.pvlist=[...
-                PV(context,'name',"MPS_Shutter",'pvname',"IOC:SYS1:MP01:MSHUTCTL",'mode',"rw",'monitor',true); % MPS Shutter
+                PV(context,'name',"MPS_Shutter",'pvname',"IOC:SYS1:MP01:MSHUTCTL",'mode',"rw",'monitor',true,'pvdatatype',"int"); % MPS Shutter
                 PV(context,'name',"MPS_Shutter_RBV",'pvname',"SHUT:LT10:950:IN_MPS",'mode',"r",'monitor',true); % MPS Shutter
-                PV(context,'name',"Laser_Shutter",'pvname',"DO:LA20:10:Bo1",'mode',"rw",'monitor',true); % Laser Shutter
+                PV(context,'name',"Laser_Shutter",'pvname',"DO:LA20:10:Bo1",'mode',"rw",'monitor',true,'pvdatatype',"int"); % Laser Shutter
                 PV(context,'name',"Laser_Shutter_RBV",'pvname',"ADC:LA20:10:CH11",'mode',"r",'monitor',true); % Laser Shutter
                 ] ;
             pset(obj.pvlist,'debug',0);
