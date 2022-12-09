@@ -1358,8 +1358,12 @@ classdef F2_MatchingApp < handle & F2_common
       AddMagnetPlotZ(idw(1),idw(end));
       
       if exist('writeToLog','var')
+        drawnow
+        pause 1
         util_printLog2020(fhan, 'title',sprintf('%s Multi-Wire Emittance Measurement (%c)',section,emitData.dim),'author','F2_Matching.m','text',writeToLog);
         obj.WriteEmitData(emitData.dim);
+        drawnow
+        pause 1
         close(fhan);
       end
      end
