@@ -275,10 +275,10 @@ classdef F2_MultiWire_exported < matlab.apps.AppBase
       txt = txt + ttxt{3} + " = " + app.WS3Sigma.Value + " (um)\n" + ttxt{4} + " = " + app.WS2Sigma.Value + " (um)\n";
       txt=sprintf(char(txt));
       drawnow;
-      pause 1
+      pause(1);
       util_printLog2020(fh, 'title',sprintf('%s Multi-Wire Scan (%c)',app.LinacDropDown.Value,char(app.plane)),'author','F2_MultiWire.m','text',txt);
       drawnow;
-      pause 1
+      pause(1);
       delete(fh);
     end
 
