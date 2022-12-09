@@ -41,10 +41,11 @@ classdef F2_MultiWire_exported < matlab.apps.AppBase
     plane string = "x"
     Sigma(1,4)
     SigmaErr(1,4)
+    LLM % LucretiaLiveModel obj
   end
   
   properties (Access = private)
-    LLM % LucretiaLiveModel obj
+    
   end
   
   methods (Access = public)
@@ -135,6 +136,9 @@ classdef F2_MultiWire_exported < matlab.apps.AppBase
       end
     end
     
+    function RemoteInitFcn(app,LLM,linac,dim)
+       app.startupFcn(LLM, linac, dim) ;
+    end
     
     function UpdatePlane(app)
       %UPDATEPLANE Call after changing measurement plane remotely
@@ -148,8 +152,8 @@ classdef F2_MultiWire_exported < matlab.apps.AppBase
 
     % Code that executes after component creation
     function startupFcn(app, LLM, linac, dim)
-      disp('WS STartup....');
-      if exist('LLM','var')
+      
+      if exist('LLM','var') && isempty(app.LLM)
         app.LLM=LLM;
       else
         app.LLM=F2_LiveModelApp;
@@ -270,7 +274,11 @@ classdef F2_MultiWire_exported < matlab.apps.AppBase
       txt = "Multi-Wire Measurements:\n" + ttxt{1} + " = " + app.WS1Sigma.Value + " (um)\n" + ttxt{2} + " = " + app.WS2Sigma.Value + " (um)\n" ;
       txt = txt + ttxt{3} + " = " + app.WS3Sigma.Value + " (um)\n" + ttxt{4} + " = " + app.WS2Sigma.Value + " (um)\n";
       txt=sprintf(char(txt));
+      drawnow;
+      pause 1
       util_printLog2020(fh, 'title',sprintf('%s Multi-Wire Scan (%c)',app.LinacDropDown.Value,char(app.plane)),'author','F2_MultiWire.m','text',txt);
+      drawnow;
+      pause 1
       delete(fh);
     end
 
