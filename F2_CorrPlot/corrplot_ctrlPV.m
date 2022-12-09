@@ -23,9 +23,16 @@ classdef corrplot_ctrlPV < handle
             if nargin < 2, low = 0; end
                 
             obj.name = name;
-            obj.pv = util_readPV(obj.name, 1); % read initial value of the pv
             if strcmp(obj.name, 'MKB:VAL')
-                obj.pv.val = 0;
+                pv.name = obj.name;
+                pv.val = 0;
+                [~,ts, ~] = lcaGetSmart('PATT:SYS1:1:PULSEID');
+                pv.ts = lca2matlabTime(ts);
+                pv.desc = '';
+                pv.egu = '';
+                obj.pv = pv;
+            else
+                obj.pv = util_readPV(obj.name, 1); % read initial value of the pv
             end
             obj.currentVal = obj.pv.val;
             obj.numvals = numvals;
@@ -112,7 +119,13 @@ classdef corrplot_ctrlPV < handle
         function setNewVal(obj, val)
             % update the pv with new current val and time
             if nargin < 2
-                obj.pv = util_readPV(obj.name, 1);
+                if strcmp(obj.name, 'MKB:VAL')
+                    obj.pv.val = 0;
+                    [~,ts, ~] = lcaGetSmart('PATT:SYS1:1:PULSEID');
+                    obj.pv.ts = lca2matlabTime(ts);
+                else
+                    obj.pv = util_readPV(obj.name, 1); % read initial value of the pv
+                end
             else
                 obj.pv.val = val;
             end
