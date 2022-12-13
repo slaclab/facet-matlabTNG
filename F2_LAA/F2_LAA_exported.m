@@ -329,7 +329,7 @@ classdef F2_LAA_exported < matlab.apps.AppBase
                     if evaluateExitCondition(inputDataStruct,app.refSumCts,app.refCamSettings,app.feedbackOnPVs,ij,app)
                         continue;
                     else % Run the feedback
-                     app.LogTextArea.Value =  ['Aligning on ',lcaGetSmart([inputDataStruct.camerapvs{1},':NAME']),...
+                     app.LogTextArea.Value =  [newline,'Aligning on ',lcaGetSmart([inputDataStruct.camerapvs{1},':NAME']),...
                          app.LogTextArea.Value(:)'];
                       [~,~,~] = ...
                             alignLaserToSetpoint(inputDataStruct,steeringSetpoint,...
@@ -426,26 +426,26 @@ classdef F2_LAA_exported < matlab.apps.AppBase
 
         % Button pushed function: HeNecamerasButton
         function HeNecamerasButtonPushed(app, event)
-            lcaPutSmart('CAMR:LT20:0101:AcquireTime',5e-4);
-            lcaPutSmart('CAMR:LT20:0102:AcquireTime',5e-4);
-            lcaPutSmart('CAMR:LT20:0103:AcquireTime',1e-3);
-            lcaPutSmart('CAMR:LT20:0104:AcquireTime',0.3);
-            lcaPutSmart('CAMR:LT20:0105:AcquireTime',4);
-            lcaPutSmart('CAMR:LT20:0106:AcquireTime',1);
-            lcaPutSmart('CAMR:LT20:0107:AcquireTime',2);
+            lcaPutSmart('CAMR:LT20:202:AcquireTime',5e-4); % B0 
+            lcaPutSmart('CAMR:LT20:203:AcquireTime',5e-4); % B1
+            lcaPutSmart('CAMR:LT20:204:AcquireTime',1e-3); % B2
+            lcaPutSmart('CAMR:LT20:205:AcquireTime',0.3);  % B3
+            lcaPutSmart('CAMR:LT20:206:AcquireTime',4);    % B4
+            lcaPutSmart('CAMR:LT20:207:AcquireTime',1);    % B5
+            lcaPutSmart('CAMR:LT20:208:AcquireTime',2);    % B6
             app.appendMessage('Transport cameras exposure time set');
         end
 
         % Button pushed function: AmpcamerasButton
         function AmpcamerasButtonPushed(app, event)
-            lcaPutSmart('CAMR:LT20:0001:AcquireTime',1e-4)
-            lcaPutSmart('CAMR:LT20:0002:AcquireTime',1e-4)
-            lcaPutSmart('CAMR:LT20:0003:AcquireTime',1e-4)
-            lcaPutSmart('CAMR:LT20:0004:AcquireTime',1e-4)
-            lcaPutSmart('CAMR:LT20:0006:AcquireTime',1e-4)
-            lcaPutSmart('CAMR:LT20:0007:AcquireTime',1e-4)
-            lcaPutSmart('CAMR:LT20:0009:AcquireTime',1e-4)
-            lcaPutSmart('CAMR:LT20:0010:AcquireTime',1e-4)
+            lcaPutSmart('CAMR:LT20:100:AcquireTime',1e-4) % S20RegenOut
+            lcaPutSmart('CAMR:LT20:101:AcquireTime',1e-4) % S20PulsePicker
+            lcaPutSmart('CAMR:LT20:102:AcquireTime',1e-4)% S20PreampNear
+            lcaPutSmart('CAMR:LT20:103:AcquireTime',1e-4)% S20PreampFar
+            lcaPutSmart('CAMR:LT20:105:AcquireTime',1e-4)% S20MPANear
+            lcaPutSmart('CAMR:LT20:106:AcquireTime',1e-4)% S20MPAFar
+            lcaPutSmart('CAMR:LT20:200:AcquireTime',1e-4)% HeNe Near
+            lcaPutSmart('CAMR:LT20:201:AcquireTime',1e-4)% HeNe Far
             app.appendMessage('Amp cameras exposure time set');
         end
     end
