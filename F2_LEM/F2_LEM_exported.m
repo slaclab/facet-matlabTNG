@@ -77,6 +77,7 @@ classdef F2_LEM_exported < matlab.apps.AppBase
     EditField_184              matlab.ui.control.EditField
     EditField_185              matlab.ui.control.EditField
     CHIRPMeVLabel              matlab.ui.control.Label
+    GetPhasesfromSBSTsButton   matlab.ui.control.StateButton
     MagnetsTab_2               matlab.ui.container.Tab
     MagnetReferenceSourceButtonGroup  matlab.ui.container.ButtonGroup
     UseExtantStrengthsButton   matlab.ui.control.ToggleButton
@@ -877,6 +878,13 @@ classdef F2_LEM_exported < matlab.apps.AppBase
         app.aobj.DesignPhases(3)=value;
       end
     end
+
+    % Value changed function: GetPhasesfromSBSTsButton
+    function GetPhasesfromSBSTsButtonValueChanged(app, event)
+      value = app.GetPhasesfromSBSTsButton.Value;
+      app.aobj.UseDesignPhases = ~value ;
+      app.aobj.UpdateGUI;
+    end
   end
 
   % Component initialization
@@ -1368,6 +1376,12 @@ classdef F2_LEM_exported < matlab.apps.AppBase
       app.CHIRPMeVLabel.FontWeight = 'bold';
       app.CHIRPMeVLabel.Position = [9 141 71 40];
       app.CHIRPMeVLabel.Text = {'CHIRP'; '(MeV)'};
+
+      % Create GetPhasesfromSBSTsButton
+      app.GetPhasesfromSBSTsButton = uibutton(app.RFTab, 'state');
+      app.GetPhasesfromSBSTsButton.ValueChangedFcn = createCallbackFcn(app, @GetPhasesfromSBSTsButtonValueChanged, true);
+      app.GetPhasesfromSBSTsButton.Text = 'Get Phases from SBSTs';
+      app.GetPhasesfromSBSTsButton.Position = [65 77 192 41];
 
       % Create MagnetsTab_2
       app.MagnetsTab_2 = uitab(app.TabGroup);
