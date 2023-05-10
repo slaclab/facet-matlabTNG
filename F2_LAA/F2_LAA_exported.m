@@ -75,6 +75,7 @@ classdef F2_LAA_exported < matlab.apps.AppBase
         
         maxMisalignmentTolerancePV = 'SIOC:SYS1:ML01:AO200';
         MPANearFarmaxMisalignmentTolerancePV = 'SIOC:SYS1:ML01:AO189';
+        disableTimestampCheckForCamerasPV = 'SIOC:SYS1:ML01:AO187';
         fitMethod = 2;% Centroid fit method for profmon_process
         umPerPixel ;
         setPointOption = 1;% 2 = Set desired centroid setpoint from current position, 1 uses pre-defined target position
@@ -83,6 +84,7 @@ classdef F2_LAA_exported < matlab.apps.AppBase
         k_i = 0.0;% Integral gain term is set to zero for now - can be included later
         maxMisalignmentTolerance;
         MPANearFarmaxMisalignmentTolerance;
+        disableTimestampCheckForCameras;
         refCamSettings = [];
         refSumCts = []; 
         refRMSVals = [];
@@ -296,7 +298,8 @@ classdef F2_LAA_exported < matlab.apps.AppBase
                     app.k_p = lcaGetSmart(app.gainPVs);% Update gain vals
                     app.maxMisalignmentTolerance = lcaGetSmart(app.maxMisalignmentTolerancePV);% Update max misalignment tolerance
                     app.MPANearFarmaxMisalignmentTolerance = lcaGetSmart(app.MPANearFarmaxMisalignmentTolerancePV);% Update max misalignment tolerance
-                   
+                    app.disableTimestampCheckForCameras = lcaGetSmart(app.disableTimestampCheckForCamerasPV);% Update timestamp check
+                    
                     if any(isnan(app.k_p))                     
                          app.LogTextArea.Value =  ['One or more invalid Gain values. Skipping alignment',...
                          app.LogTextArea.Value(:)'];

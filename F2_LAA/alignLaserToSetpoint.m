@@ -14,8 +14,14 @@ end
         laserCentroids(2*jj) = mean(bp(:,2));%y setpoint
         
         % Check that the camera image is not more than 10 seconds old (in case the camera has frozen)
+        % Note - this can be disabled by user in the expert panel in case
+        % we are running the laser on local timing
+        if app.disableTimestampCheckForCameras
+            str = ['Warning - timestamp check disabled for cameras by user. Go to expert panel to re-enable.'];
+            app.LogTextArea.Value =  [str,app.LogTextArea.Value(:)'];drawnow()
+        end
         tenSec = 1/360/24;
-        if abs(now-data.ts)>tenSec% 
+        if abs(now-data.ts)>tenSec && ~app.disableTimestampCheckForCameras 
             str = ['Image timestamp more than 10 s old. Alignment skipped for '...
                 ,lcaGetSmart([dataStruct.camerapvs{1},':NAME'])];
             app.LogTextArea.Value =  [str,app.LogTextArea.Value(:)'];drawnow()   
@@ -23,7 +29,9 @@ end
                 laserOffset = 0;
                 mirrorMovements = 0;
             return
-       end
+        end
+        
+        
     end
 
     for jj=1:length(laserCentroids) % Calculate beam offset from setpoint
