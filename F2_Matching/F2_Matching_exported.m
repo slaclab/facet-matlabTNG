@@ -20,7 +20,7 @@ classdef F2_Matching_exported < matlab.apps.AppBase
     OptimizerDropDown               matlab.ui.control.DropDown
     MatchingQuadsSpinnerLabel       matlab.ui.control.Label
     MatchingQuadsSpinner            matlab.ui.control.Spinner
-    QuadScanFitTab                  matlab.ui.container.Tab
+    QuadScanTab                     matlab.ui.container.Tab
     UIAxes                          matlab.ui.control.UIAxes
     UIAxes_2                        matlab.ui.control.UIAxes
     XAnalyticFitemitbmagPanel       matlab.ui.container.Panel
@@ -43,6 +43,7 @@ classdef F2_Matching_exported < matlab.apps.AppBase
     GaussianButton                  matlab.ui.control.RadioButton
     AsymmetricGaussianButton        matlab.ui.control.RadioButton
     RMSButton                       matlab.ui.control.RadioButton
+    LaucnhScanToolButton            matlab.ui.control.Button
     OpticsPlotTab                   matlab.ui.container.Tab
     UIAxes2                         matlab.ui.control.UIAxes
     UIAxes2_2                       matlab.ui.control.UIAxes
@@ -185,7 +186,7 @@ classdef F2_Matching_exported < matlab.apps.AppBase
       tab = app.aobj.TwissTable ;
       app.UITable2.Data = tab ; app.UITable2.ColumnName=tab.Properties.VariableNames;
       selectedTab = app.TabGroup.SelectedTab;
-      if selectedTab == app.QuadScanFitTab || selectedTab == app.OpticsPlotTab
+      if selectedTab == app.QuadScanTab || selectedTab == app.OpticsPlotTab
         app.TabGroupSelectionChanged;
       end
     end
@@ -194,7 +195,7 @@ classdef F2_Matching_exported < matlab.apps.AppBase
     function TabGroupSelectionChanged(app, event)
       selectedTab = app.TabGroup.SelectedTab;
       switch selectedTab
-        case app.QuadScanFitTab
+        case app.QuadScanTab
           app.aobj.PlotQuadScanData;
         case app.OpticsPlotTab
           app.aobj.PlotTwiss;
@@ -444,7 +445,7 @@ classdef F2_Matching_exported < matlab.apps.AppBase
     function DetachPlotMenuSelected(app, event)
       selectedTab = app.TabGroup.SelectedTab;
       switch selectedTab
-        case app.QuadScanFitTab
+        case app.QuadScanTab
           app.aobj.PlotQuadScanData(true);
         case app.OpticsPlotTab
           app.aobj.PlotTwiss(true);
@@ -569,8 +570,8 @@ classdef F2_Matching_exported < matlab.apps.AppBase
         case app.MagnetsTab
           pos(3:4) = app.UITable.Position(3:4);
           app.aobj.logplot("Magnets",pos,app.UITable2.Position);
-        case app.QuadScanFitTab
-          pos(3:4) = app.QuadScanFitTab.Position(3:4);
+        case app.QuadScanTab
+          pos(3:4) = app.QuadScanTab.Position(3:4);
           app.aobj.logplot("QuadScan",pos);
         case app.OpticsPlotTab
           pos(3:4) = app.OpticsPlotTab.Position(3:4);
@@ -749,28 +750,28 @@ classdef F2_Matching_exported < matlab.apps.AppBase
       app.MatchingQuadsSpinner.Position = [266 10 100 22];
       app.MatchingQuadsSpinner.Value = 4;
 
-      % Create QuadScanFitTab
-      app.QuadScanFitTab = uitab(app.TabGroup);
-      app.QuadScanFitTab.Title = 'Quad Scan Fit';
+      % Create QuadScanTab
+      app.QuadScanTab = uitab(app.TabGroup);
+      app.QuadScanTab.Title = 'Quad Scan';
 
       % Create UIAxes
-      app.UIAxes = uiaxes(app.QuadScanFitTab);
+      app.UIAxes = uiaxes(app.QuadScanTab);
       title(app.UIAxes, '')
       xlabel(app.UIAxes, 'X')
       ylabel(app.UIAxes, 'Y')
       app.UIAxes.Position = [10 225 557 214];
 
       % Create UIAxes_2
-      app.UIAxes_2 = uiaxes(app.QuadScanFitTab);
+      app.UIAxes_2 = uiaxes(app.QuadScanTab);
       title(app.UIAxes_2, '')
       xlabel(app.UIAxes_2, 'X')
       ylabel(app.UIAxes_2, 'Y')
       app.UIAxes_2.Position = [10 8 557 211];
 
       % Create XAnalyticFitemitbmagPanel
-      app.XAnalyticFitemitbmagPanel = uipanel(app.QuadScanFitTab);
+      app.XAnalyticFitemitbmagPanel = uipanel(app.QuadScanTab);
       app.XAnalyticFitemitbmagPanel.Title = 'X Analytic Fit (emit/bmag)';
-      app.XAnalyticFitemitbmagPanel.Position = [575 353 164 66];
+      app.XAnalyticFitemitbmagPanel.Position = [579 322 164 66];
 
       % Create GridLayout
       app.GridLayout = uigridlayout(app.XAnalyticFitemitbmagPanel);
@@ -793,9 +794,9 @@ classdef F2_Matching_exported < matlab.apps.AppBase
       app.EditField_2.Layout.Column = 1;
 
       % Create XModelFitemitbmagPanel
-      app.XModelFitemitbmagPanel = uipanel(app.QuadScanFitTab);
+      app.XModelFitemitbmagPanel = uipanel(app.QuadScanTab);
       app.XModelFitemitbmagPanel.Title = 'X Model Fit (emit/bmag)';
-      app.XModelFitemitbmagPanel.Position = [576 271 164 66];
+      app.XModelFitemitbmagPanel.Position = [579 252 164 66];
 
       % Create GridLayout_2
       app.GridLayout_2 = uigridlayout(app.XModelFitemitbmagPanel);
@@ -818,9 +819,9 @@ classdef F2_Matching_exported < matlab.apps.AppBase
       app.EditField_4.Layout.Column = 1;
 
       % Create YAnalyticFitemitbmagPanel
-      app.YAnalyticFitemitbmagPanel = uipanel(app.QuadScanFitTab);
+      app.YAnalyticFitemitbmagPanel = uipanel(app.QuadScanTab);
       app.YAnalyticFitemitbmagPanel.Title = 'Y Analytic Fit (emit/bmag)';
-      app.YAnalyticFitemitbmagPanel.Position = [582 85 164 66];
+      app.YAnalyticFitemitbmagPanel.Position = [579 75 164 66];
 
       % Create GridLayout_3
       app.GridLayout_3 = uigridlayout(app.YAnalyticFitemitbmagPanel);
@@ -843,9 +844,9 @@ classdef F2_Matching_exported < matlab.apps.AppBase
       app.EditField_6.Layout.Column = 1;
 
       % Create YModelFitemitbmagPanel_2
-      app.YModelFitemitbmagPanel_2 = uipanel(app.QuadScanFitTab);
+      app.YModelFitemitbmagPanel_2 = uipanel(app.QuadScanTab);
       app.YModelFitemitbmagPanel_2.Title = 'Y Model Fit (emit/bmag)';
-      app.YModelFitemitbmagPanel_2.Position = [580 11 164 66];
+      app.YModelFitemitbmagPanel_2.Position = [577 6 164 66];
 
       % Create GridLayout_4
       app.GridLayout_4 = uigridlayout(app.YModelFitemitbmagPanel_2);
@@ -868,10 +869,10 @@ classdef F2_Matching_exported < matlab.apps.AppBase
       app.EditField_8.Layout.Column = 1;
 
       % Create ProfileFitMethodButtonGroup
-      app.ProfileFitMethodButtonGroup = uibuttongroup(app.QuadScanFitTab);
+      app.ProfileFitMethodButtonGroup = uibuttongroup(app.QuadScanTab);
       app.ProfileFitMethodButtonGroup.SelectionChangedFcn = createCallbackFcn(app, @ProfileFitMethodButtonGroupSelectionChanged, true);
       app.ProfileFitMethodButtonGroup.Title = 'Profile Fit Method';
-      app.ProfileFitMethodButtonGroup.Position = [576 161 164 102];
+      app.ProfileFitMethodButtonGroup.Position = [579 145 164 102];
 
       % Create GaussianButton
       app.GaussianButton = uiradiobutton(app.ProfileFitMethodButtonGroup);
@@ -888,6 +889,12 @@ classdef F2_Matching_exported < matlab.apps.AppBase
       app.RMSButton = uiradiobutton(app.ProfileFitMethodButtonGroup);
       app.RMSButton.Text = 'RMS';
       app.RMSButton.Position = [12 7 49 22];
+
+      % Create LaucnhScanToolButton
+      app.LaucnhScanToolButton = uibutton(app.QuadScanTab, 'push');
+      app.LaucnhScanToolButton.Enable = 'off';
+      app.LaucnhScanToolButton.Position = [579 400 164 34];
+      app.LaucnhScanToolButton.Text = 'Laucnh Scan Tool';
 
       % Create OpticsPlotTab
       app.OpticsPlotTab = uitab(app.TabGroup);
@@ -1093,7 +1100,7 @@ classdef F2_Matching_exported < matlab.apps.AppBase
 
       % Create DropDown
       app.DropDown = uidropdown(app.ProfileMeasurementDevicePanel);
-      app.DropDown.Items = {'<Select From Below>', 'WIRE:IN10:561', 'PROF:IN10:571', 'PROF:LI11:335', 'PROF:LI11:375', 'WIRE:LI11:444', 'WIRE:LI11:614', 'WIRE:LI11:744', 'WIRE:LI12:214', 'WIRE:LI18:944', 'WIRE:LI19:144', 'WIRE:LI19:244', 'WIRE:LI19:344', 'WIRE:LI20:3179', 'WIRE:LI20:3229'};
+      app.DropDown.Items = {'<Select From Below>', 'WIRE:IN10:561', 'PROF:IN10:465', 'PROF:IN10:471', 'PROF:IN10:571', 'PROF:LI11:335', 'PROF:LI11:375', 'WIRE:LI11:444', 'WIRE:LI11:614', 'WIRE:LI11:744', 'WIRE:LI12:214', 'WIRE:LI18:944', 'WIRE:LI19:144', 'WIRE:LI19:244', 'WIRE:LI19:344', 'WIRE:LI20:3179', 'WIRE:LI20:3229'};
       app.DropDown.ValueChangedFcn = createCallbackFcn(app, @DropDownValueChanged, true);
       app.DropDown.Interruptible = 'off';
       app.DropDown.Position = [13 3 214 22];
