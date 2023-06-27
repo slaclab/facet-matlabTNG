@@ -1,5 +1,5 @@
 classdef AppSupportTemplate < handle
-    % This file is a template for the Summer Example App tutorial.
+    % This file is a template for the MATLAB GUI tutorial.
     % Fill in the script to create an App that plots Process Variables
     % from EPICS.
     
@@ -20,7 +20,7 @@ classdef AppSupportTemplate < handle
     end
     
     properties (Constant)
-        numPlotPts = 50;
+        numPlotPts = 50
     end
     
     methods
@@ -65,7 +65,7 @@ classdef AppSupportTemplate < handle
         function loop(obj)
             % The app will loop through this function every 0.1 s.
             
-            % Get the PV values and assign them to a variable
+            % Get the current PV values and assign them to a variable
             PV1_val = obj.pvs.GaugePV1.val{1};
             PV2_val = obj.pvs.GaugePV2.val{1};
             
@@ -73,8 +73,8 @@ classdef AppSupportTemplate < handle
             % PV array:
             
             
-            % Add a switch that plots a different PV depending on what the
-            % Plot Option State is
+            % Add a switch that plots a different PV depending on the
+            % Plot Option State (ignore until Step 4)
             switch % Switch variable here
                 case % Case where PV1 is chosen
                     % Plot PV1 values:
@@ -112,6 +112,7 @@ classdef AppSupportTemplate < handle
         
         function clearPV(obj)
             % This function stops pvlist.
+            Cleanup(obj.pvlist);
             stop(obj.pvlist);
         end
     end
