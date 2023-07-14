@@ -77,7 +77,6 @@ classdef Camera < handle
         end
         
         function setStatus(cameraInstance)
-%             cameraInstance.PreviousState = cameraInstance.pvs.State.val{1};
             switch cameraInstance.pvs.Connection.val{1}
                 case 'Connect'
                     switch cameraInstance.pvs.Acquisition.val{1}
