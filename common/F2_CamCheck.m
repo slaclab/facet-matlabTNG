@@ -16,6 +16,9 @@ classdef F2_CamCheck < handle
         freerun
         DAQ_Cams
         camStructs
+        badIOCs
+        badCams
+        badINDs
     end
     properties(Hidden)
         listeners
@@ -68,7 +71,7 @@ classdef F2_CamCheck < handle
             obj.checkIOCs();
             
             % Get live camera names
-            obj.getLiveNames();
+            if obj.DAQ_bool; obj.getLiveNames(); end
             
         end
         
@@ -125,21 +128,25 @@ classdef F2_CamCheck < handle
                 status = lcaGetSmart([obj.siocs{i} ':HEARTBEATSUM'],0,'DBF_ENUM');
                 if status ~= 0
                     obj.dispMessage(['Warning: IOC ' obj.siocs{i} ' serving camera ' obj.camNames{i} ' is down.']);
-                    if obj.DAQ_bool
-                        obj.dispMessage(['Removing camera ' obj.camNames{i} ' from DAQ.']);
-                        bad_inds(i) = true;
-                    end
+                    bad_inds(i) = true;
                 end
             end
             
-            obj.camera_info(bad_inds,:) = [];
-            obj.camNames(bad_inds) = [];
-            obj.camPVs(bad_inds) = [];
-            obj.regions(bad_inds) = [];
-            obj.camTrigs(bad_inds) = [];
-            obj.camPower(bad_inds) = [];
-            obj.siocs(bad_inds) = [];
+            obj.badIOCs = obj.siocs(bad_inds);
+            obj.badCams = obj.camPVs(bad_inds);
+            obj.badINDs = bad_inds;
             
+            if obj.DAQ_bool
+                obj.dispMessage(['Removing camera ' obj.camNames{i} ' from DAQ.']);
+                obj.camera_info(bad_inds,:) = [];
+                obj.camNames(bad_inds) = [];
+                obj.camPVs(bad_inds) = [];
+                obj.regions(bad_inds) = [];
+                obj.camTrigs(bad_inds) = [];
+                obj.camPower(bad_inds) = [];
+                obj.siocs(bad_inds) = [];
+            end
+
             
         end
         
