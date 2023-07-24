@@ -32,6 +32,7 @@ classdef corrplot_ctrlPV < handle
                 pv.egu = '';
                 obj.pv = pv;
             else
+                lcaSetTimeout(0.05); %JR added 7/24/23 to reduce slow acquisition
                 obj.pv = util_readPV(obj.name, 1); % read initial value of the pv
             end
             obj.currentVal = obj.pv.val;
