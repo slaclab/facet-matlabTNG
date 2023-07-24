@@ -192,6 +192,7 @@ classdef corrplot_ctrlPV < handle
                     end
                 end
             else
+                lcaSetTimeout(0.05); %JR added 7/24/23 to reduce slow acquisition
                 lcaPutSmart(pv,val);
                 setVal = true;
                 if strcmp(pv,'SIOC:SYS0:ML00:AO9999') %Test input
