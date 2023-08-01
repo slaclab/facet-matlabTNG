@@ -309,12 +309,14 @@ classdef F2_SchottkyScan_exported < matlab.apps.AppBase
             % Create SlowFeedbackSwitchLabel
             app.SlowFeedbackSwitchLabel = uilabel(app.DevicePanel);
             app.SlowFeedbackSwitchLabel.HorizontalAlignment = 'center';
+            app.SlowFeedbackSwitchLabel.Enable = 'off';
             app.SlowFeedbackSwitchLabel.Position = [309 51 89 22];
             app.SlowFeedbackSwitchLabel.Text = 'Slow Feedback';
 
             % Create SlowFeedbackSwitch
             app.SlowFeedbackSwitch = uiswitch(app.DevicePanel, 'slider');
             app.SlowFeedbackSwitch.ItemsData = {'0', '1'};
+            app.SlowFeedbackSwitch.Enable = 'off';
             app.SlowFeedbackSwitch.FontSize = 10;
             app.SlowFeedbackSwitch.Position = [331 72 45 20];
             app.SlowFeedbackSwitch.Value = '0';
@@ -322,11 +324,13 @@ classdef F2_SchottkyScan_exported < matlab.apps.AppBase
             % Create ChargeFeedbackSwitchLabel
             app.ChargeFeedbackSwitchLabel = uilabel(app.DevicePanel);
             app.ChargeFeedbackSwitchLabel.HorizontalAlignment = 'center';
+            app.ChargeFeedbackSwitchLabel.Enable = 'off';
             app.ChargeFeedbackSwitchLabel.Position = [302 6 103 22];
             app.ChargeFeedbackSwitchLabel.Text = 'Charge Feedback';
 
             % Create ChargeFeedbackSwitch
             app.ChargeFeedbackSwitch = uiswitch(app.DevicePanel, 'slider');
+            app.ChargeFeedbackSwitch.Enable = 'off';
             app.ChargeFeedbackSwitch.FontSize = 10;
             app.ChargeFeedbackSwitch.Position = [331 27 45 20];
 
@@ -367,7 +371,7 @@ classdef F2_SchottkyScan_exported < matlab.apps.AppBase
             app.PhaseStartEditField = uieditfield(app.ScanPanel, 'numeric');
             app.PhaseStartEditField.ValueChangedFcn = createCallbackFcn(app, @StepsEditFieldValueChanged, true);
             app.PhaseStartEditField.Position = [83 86 50 22];
-            app.PhaseStartEditField.Value = 20;
+            app.PhaseStartEditField.Value = -60;
 
             % Create PhaseEndEditFieldLabel
             app.PhaseEndEditFieldLabel = uilabel(app.ScanPanel);
@@ -379,7 +383,7 @@ classdef F2_SchottkyScan_exported < matlab.apps.AppBase
             app.PhaseEndEditField = uieditfield(app.ScanPanel, 'numeric');
             app.PhaseEndEditField.ValueChangedFcn = createCallbackFcn(app, @StepsEditFieldValueChanged, true);
             app.PhaseEndEditField.Position = [220 86 50 22];
-            app.PhaseEndEditField.Value = 80;
+            app.PhaseEndEditField.Value = 60;
 
             % Create StepsEditFieldLabel
             app.StepsEditFieldLabel = uilabel(app.ScanPanel);

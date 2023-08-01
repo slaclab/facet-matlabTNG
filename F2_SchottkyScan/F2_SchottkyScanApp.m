@@ -148,6 +148,7 @@ classdef F2_SchottkyScanApp < handle
                     
                 case "PHASE_SETTING" % Waiting for Klystron (PDES - PHAS) < tol 
                     
+                    
                     %if abs(obj.machine_state.pdes - obj.pvs.KLYS_21_PDES.val{1}) > obj.machine_state.phas_tol
                     if abs(obj.machine_state.klys_pdes - obj.pvs.KLYS_21_PDES.val{1}) > obj.machine_state.phas_tol
                         
@@ -171,14 +172,18 @@ classdef F2_SchottkyScanApp < handle
                         
                         %lastPHAS = obj.pvs.KLYS_21_PHAS.val{1};
                         lastPHAS = obj.pvs.GUN_21_PHAS.val{1};
+                        %disp(lastPHAS);
             
                         %delta = abs(obj.pvs.KLYS_21_PHAS.val{1} - obj.pvs.KLYS_21_PDES.val{1});
-                        if lastPHAS < 0
-                            gun_phase = lastPHAS + 360;
-                        else
-                            gun_phase = lastPHAS;
-                        end
+%                         if lastPHAS < 0
+%                             gun_phase = lastPHAS + 360;
+%                         else
+%                             gun_phase = lastPHAS;
+%                         end
+                        gun_phase = lastPHAS;
+                        %disp(obj.scan_param.step_vals(obj.scan_param.step));
                         delta = abs(gun_phase - obj.scan_param.step_vals(obj.scan_param.step));
+                        %disp(delta);
                         
 %                         if obj.count == 0
 %                             obj.guihan.SettingPhaseLamp.Enable = ~obj.guihan.SettingPhaseLamp.Enable; % flashing lamp
@@ -201,9 +206,9 @@ classdef F2_SchottkyScanApp < handle
                     
                         obj.data.Measurements(obj.scan_param.shot,obj.scan_param.step) = obj.data.conv*obj.pvs.(obj.data.devStr).val{1};
                         gun_phase = obj.pvs.GUN_21_PHAS.val{1};
-                        if gun_phase < 0
-                            gun_phase = gun_phase + 360;
-                        end
+%                         if gun_phase < 0
+%                             gun_phase = gun_phase + 360;
+%                         end
                         obj.data.GunPhases(obj.scan_param.shot,obj.scan_param.step) = gun_phase;
                         if obj.data.devInd == 2
                             obj.data.QEs(obj.scan_param.shot,obj.scan_param.step) = obj.pvs.QE.val{1};
