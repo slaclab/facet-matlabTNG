@@ -456,6 +456,7 @@ classdef F2_DAQ_exported < matlab.apps.AppBase
             app.FastDAQCheckBox = uicheckbox(app.DAQSettingsPanel);
             app.FastDAQCheckBox.Text = 'Fast DAQ';
             app.FastDAQCheckBox.Position = [176 21 74 22];
+            app.FastDAQCheckBox.Value = true;
 
             % Create RateDropDownLabel
             app.RateDropDownLabel = uilabel(app.DAQSettingsPanel);
@@ -465,7 +466,7 @@ classdef F2_DAQ_exported < matlab.apps.AppBase
 
             % Create RateDropDown
             app.RateDropDown = uidropdown(app.DAQSettingsPanel);
-            app.RateDropDown.Items = {'Beam', '10 Hz', '1 Hz'};
+            app.RateDropDown.Items = {'Beam', '10 Hz', '5 Hz', '1 Hz', '0.5 Hz'};
             app.RateDropDown.Tooltip = {'Beam rate may be any value. Select a different rate to limit the rate of the DAQ.'};
             app.RateDropDown.Position = [88 157 71 22];
             app.RateDropDown.Value = 'Beam';

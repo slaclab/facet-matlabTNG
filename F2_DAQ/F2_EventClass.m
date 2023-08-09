@@ -1,44 +1,68 @@
 classdef F2_EventClass < handle
+    % sgess 2023: if this isn't working, and you can't get a hold of me,
+    % ask Nate Lipkowitz
 
     properties
-        INCL_NAME
-        INCL_UNIQ
+
         INCL_VALS
-        INCL_VAL0
-        EXCL_NAME
-        EXCL_UNIQ
+        INCL_NAME
+        INCL_STOP_VALS        
+        EXCL_NAME        
         EXCL_VALS
-        EXCL_VAL0
+
         
-        RATE
+        RATE = 'BEAM'
     end
 
     properties(Constant)
-        %INCL_BIT_NAMES = {'TS5','FFTB_ext','MPS_POCKCELL'}
-        %INCL_BIT_ENUMS = {'I'  ,'J'       ,'M'           }
-        %INCL_BIT_VALUE = {0x10 ,0x400000  ,0x100000      }
         
-        INCL_BIT_NAMES = {'TS5','FFTB_ext'}
-        INCL_BIT_ENUMS = {'I'  ,'J'       }
-        INCL_BIT_VALUE = {0x10 ,0x400000  }
         
-        EXCL_BIT_NAMES = {'BCSFAULT','NO_GUN_PERM','TS1','TS2','TS3','TS4','TS6'}
-        EXCL_BIT_ENUMS = {'N'       ,'N'          ,'N'  ,'N'  ,'N'  ,'N'  ,'N'  }
-        EXCL_BIT_VALUE = {0x8000    ,0x100000     ,0x1  ,0x2  ,0x4  ,0x8  ,0x20 }
-        
+        % This is from original FACET and we are using it to turn DAQ rate on and off
         STOP_BIT_NAME  = 'DUMP_2_9'
         STOP_BIT_ENUM  = 'I'
         STOP_BIT_VAL   = 0x4000
         
-        RATE_BIT_NAMES = {'TEN_HERTZ','FIVE_HERTZ','ONE_HERTZ','HALF_HERTZ','ASSET'} % asset is 0.2 Hz
-        RATE_BIT_ENUMS = {'J'        ,'J'         ,'I'        ,'I'         ,'J'    }
-        RATE_BIT_VALUE = {0x400      ,0x10000     ,0x1000000  ,0x20000     ,0x40000}
+        % These are the suffixes for the mod bit PVs
+        INCL_ENUMS = {'I','J','K','L','M'};
+        EXCL_ENUMS = {'N','O','P','Q','R'};
         
+        % These are modifer INCL/EXCL bit vals for BEAM, 10 Hz, and 1 Hz
+        MODIFIER_INCL_BEAM = [0x10u32 0x400000u32 0x0u32 0x0u32 0x0u32]; % modifiers for 203
+        MODIFIER_EXCL_BEAM = [0x10802Fu32 0x0u32 0x0u32 0x0u32 0x0u32]; % modifiers for 203
+        
+        MODIFIER_INCL_10HZ = [0x10u32 0x400u32 0x0u32 0x0u32 0x0u32]; % modifiers for 223
+        MODIFIER_EXCL_10HZ = [0x2Fu32 0x0u32 0x0u32 0x0u32 0x0u32]; % modifiers for 223
+        
+        MODIFIER_INCL_5HZ = [0x10u32 0x10000u32 0x0u32 0x0u32 0x0u32]; % modifiers for 224
+        MODIFIER_EXCL_5HZ = [0x2Fu32 0x0u32 0x0u32 0x0u32 0x0u32]; % modifiers for 224
+        
+        MODIFIER_INCL_1HZ = [0x1000010u32 0x0u32 0x0u32 0x0u32 0x0u32]; % modifiers for 225
+        MODIFIER_EXCL_1HZ = [0x2Fu32 0x0u32 0x0u32 0x0u32 0x0u32]; % modifiers for 225
+        
+        MODIFIER_INCL_05HZ = [0x20010u32 0x0u32 0x0u32 0x0u32 0x0u32]; % modifiers for 226
+        MODIFIER_EXCL_05HZ = [0x2Fu32 0x0u32 0x0u32 0x0u32 0x0u32]; % modifiers for 226
+        
+        % These are modifer INCL/EXCL bit vals when 2-9 stop bit is used
+        MODIFIER_INCL_BEAM_STOP = [0x4010u32 0x400000u32 0x0u32 0x0u32 0x0u32]; % modifiers for 203 with 2-9
+        MODIFIER_INCL_10HZ_STOP = [0x4010u32 0x400u32 0x0u32 0x0u32 0x0u32]; % modifiers for 223 with 2-9
+        MODIFIER_INCL_5HZ_STOP = [0x4010u32 0x10000u32 0x0u32 0x0u32 0x0u32]; % modifiers for 224 with 2-9
+        MODIFIER_INCL_1HZ_STOP = [0x1004010u32 0x0u32 0x0u32 0x0u32 0x0u32]; % modifiers for 225 with 2-9
+        MODIFIER_INCL_05HZ_STOP = [0x24010u32 0x0u32 0x0u32 0x0u32 0x0u32]; % modifiers for 226 with 2-9
+        
+        
+        % This just returns event code (214)
         DAQ_EVNT_PV    = 'EVNT:SYS1:1:PMAQCHCK' % EC 214
         
-        BEAM_RATE_PV    = 'EVNT:SYS1:1:BEAMRATE' % EC 203
-        DAQ_RATE_PV   = 'EVNT:SYS1:1:PMAQRATE' % EC 214
+        % These return event rates
+        BEAM_RATE_PV   = 'EVNT:SYS1:1:BEAMRATE' % EC 203
+        DAQ_RATE_PV    = 'EVNT:SYS1:1:PMAQRATE' % EC 214
         
+        TENH_RATE_PV   = 'EVNT:SYS1:1:TS5_TE_RATE' % EC 223
+        FIVH_RATE_PV   = 'EVNT:SYS1:1:TS5_FV_RATE' % EC 224
+        ONEH_RATE_PV   = 'EVNT:SYS1:1:TS5_ON_RATE' % EC 225
+        HLFH_RATE_PV   = 'EVNT:SYS1:1:TS5_HF_RATE' % EC 226
+        
+        % These return pulse IDs
         BEAM_PID_PV    = 'PATT:SYS1:1:PULSEIDBR';
         ONEH_PID_PV    = 'PATT:SYS1:1:PULSEID1H';
         TENH_PID_PV    = 'PATT:SYS1:1:PULSEIDTH';
@@ -48,55 +72,80 @@ classdef F2_EventClass < handle
         
         function obj = F2_EventClass()
             
-            % First, set up default bits
-            obj.INCL_UNIQ = unique(obj.INCL_BIT_ENUMS);
-            obj.INCL_VAL0 = zeros(1,numel(obj.INCL_UNIQ),'uint32');
-            for i = 1:numel(obj.INCL_BIT_ENUMS)
-                ind = find(strcmp(obj.INCL_BIT_ENUMS{i},obj.INCL_UNIQ));
-                obj.INCL_VAL0(ind) = obj.INCL_VAL0(ind) + uint32(obj.INCL_BIT_VALUE{i});
-            end
-            obj.INCL_VALS = obj.INCL_VAL0;
-            obj.INCL_NAME = obj.INCL_BIT_NAMES;
+            % Set up default inclusion bits for beam rate
+            obj.INCL_VALS = obj.MODIFIER_INCL_BEAM;
+            obj.EXCL_VALS = obj.MODIFIER_EXCL_BEAM;
+            obj.INCL_STOP_VALS = obj.MODIFIER_INCL_BEAM_STOP;
+            obj.INCL_NAME = obj.INCL_ENUMS;
+            obj.EXCL_NAME = obj.EXCL_ENUMS;
             
-            obj.EXCL_UNIQ = unique(obj.EXCL_BIT_ENUMS);
-            obj.EXCL_VAL0 = zeros(1,numel(obj.EXCL_UNIQ),'uint32');
-            for i = 1:numel(obj.EXCL_BIT_ENUMS)
-                ind = find(strcmp(obj.EXCL_BIT_ENUMS{i},obj.EXCL_UNIQ));
-                obj.EXCL_VAL0(ind) = obj.EXCL_VAL0(ind) + uint32(obj.EXCL_BIT_VALUE{i});
-            end
-            obj.EXCL_VALS = obj.EXCL_VAL0;
-            obj.EXCL_NAME = obj.EXCL_BIT_NAMES;
+            
             
         end
         
         function stop_event(obj)
             % This includes DUMP_2_9 which sets rate to 0
-            ind = find(strcmp(obj.STOP_BIT_ENUM,obj.INCL_UNIQ));
-            obj.INCL_VALS(ind) = obj.INCL_VALS(ind) + uint32(obj.STOP_BIT_VAL);
-            lcaPut([obj.DAQ_EVNT_PV '.' obj.STOP_BIT_ENUM], double(obj.INCL_VALS(ind)));
+            % This affects the 'I' bit with index 1 in our list
+            lcaPut([obj.DAQ_EVNT_PV '.' obj.STOP_BIT_ENUM], double(obj.INCL_STOP_VALS(1)));
         end
         
         function start_event(obj)
             % This removes DUMP_2_9 which enables rate
-            ind = find(strcmp(obj.STOP_BIT_ENUM,obj.INCL_UNIQ));
-            obj.INCL_VALS(ind) = obj.INCL_VALS(ind) - uint32(obj.STOP_BIT_VAL);
-            lcaPut([obj.DAQ_EVNT_PV '.' obj.STOP_BIT_ENUM], double(obj.INCL_VALS(ind)));
+            % This affects the 'I' bit with index 1 in our list
+            lcaPut([obj.DAQ_EVNT_PV '.' obj.STOP_BIT_ENUM], double(obj.INCL_VALS(1)));
         end
         
-        function set_default(obj)
-            obj.INCL_NAME = obj.INCL_BIT_NAMES;
-            obj.INCL_VALS = obj.INCL_VAL0;
-            for i = 1:numel(obj.INCL_UNIQ)
-                lcaPut([obj.DAQ_EVNT_PV '.' obj.INCL_UNIQ{i}], double(obj.INCL_VALS(i)));
+        function set_default(obj) % default = beam
+            % This function loops over bits and sets them to desired value
+            % for beam rate
+            
+            obj.INCL_VALS = obj.MODIFIER_INCL_BEAM;
+            for i = 1:numel(obj.INCL_VALS)
+                lcaPut([obj.DAQ_EVNT_PV '.' obj.INCL_NAME{i}], double(obj.INCL_VALS(i)));
             end
             
-            obj.EXCL_NAME = obj.EXCL_BIT_NAMES;
-            obj.EXCL_VALS = obj.EXCL_VAL0;
-            for i = 1:numel(obj.EXCL_UNIQ)
-                lcaPut([obj.DAQ_EVNT_PV '.' obj.EXCL_UNIQ{i}], double(obj.EXCL_VALS(i)));
+            obj.EXCL_VALS = obj.MODIFIER_EXCL_BEAM;
+            for i = 1:numel(obj.EXCL_VALS)
+                lcaPut([obj.DAQ_EVNT_PV '.' obj.EXCL_NAME{i}], double(obj.EXCL_VALS(i)));
             end
+            
+            obj.INCL_STOP_VALS = obj.MODIFIER_INCL_BEAM_STOP;
             
             obj.RATE = 'BEAM';
+        end
+        
+        function set_fixed(obj,rate)
+            
+            if strcmp(rate,'TEN_HERTZ')
+                obj.INCL_VALS = obj.MODIFIER_INCL_10HZ;
+                obj.EXCL_VALS = obj.MODIFIER_EXCL_10HZ;
+                obj.INCL_STOP_VALS = obj.MODIFIER_INCL_10HZ_STOP;
+            elseif strcmp(rate,'FIVE_HERTZ')
+                obj.INCL_VALS = obj.MODIFIER_INCL_5HZ;
+                obj.EXCL_VALS = obj.MODIFIER_EXCL_5HZ;
+                obj.INCL_STOP_VALS = obj.MODIFIER_INCL_5HZ_STOP;
+            elseif strcmp(rate,'ONE_HERTZ')
+                obj.INCL_VALS = obj.MODIFIER_INCL_1HZ;
+                obj.EXCL_VALS = obj.MODIFIER_EXCL_1HZ;
+                obj.INCL_STOP_VALS = obj.MODIFIER_INCL_1HZ_STOP;
+            elseif strcmp(rate,'HALF_HERTZ')
+                obj.INCL_VALS = obj.MODIFIER_INCL_05HZ;
+                obj.EXCL_VALS = obj.MODIFIER_EXCL_05HZ;
+                obj.INCL_STOP_VALS = obj.MODIFIER_INCL_05HZ_STOP;
+            else
+                error(['Rate ' rate ' not recognized.']);
+            end
+     
+            
+            for i = 1:numel(obj.INCL_VALS)
+                lcaPut([obj.DAQ_EVNT_PV '.' obj.INCL_NAME{i}], double(obj.INCL_VALS(i)));
+            end
+
+            for i = 1:numel(obj.EXCL_VALS)
+                lcaPut([obj.DAQ_EVNT_PV '.' obj.EXCL_NAME{i}], double(obj.EXCL_VALS(i)));
+            end
+            
+            obj.RATE = rate;
         end
         
         function select_rate(obj,rate)
@@ -104,21 +153,8 @@ classdef F2_EventClass < handle
             if strcmp(rate,'BEAM')
                 obj.set_default();
             else
-                try
-                    obj.set_default();
-                    
-                    ind  = find(strcmp(rate,obj.RATE_BIT_NAMES));
-                    enum = obj.RATE_BIT_ENUMS{ind};
-                    val  = obj.RATE_BIT_VALUE{ind};
-                    
-                    obj.INCL_NAME = [obj.INCL_BIT_NAMES {rate}];
-                    
-                    ind = find(strcmp(enum,obj.INCL_UNIQ));
-                    obj.INCL_VALS(ind) = obj.INCL_VAL0(ind) + uint32(val);
-                    lcaPut([obj.DAQ_EVNT_PV '.' enum], double(obj.INCL_VALS(ind)));
-                    
-                    obj.RATE = rate;
-               
+                try                    
+                    obj.set_fixed(rate);
                 catch
                     
                     error('Invalid rate modifier.');
@@ -141,19 +177,29 @@ classdef F2_EventClass < handle
             event_info.ratePV = obj.DAQ_RATE_PV;
             event_info.beamRatePV = obj.BEAM_RATE_PV;
             
+            if strcmp(obj.RATE,'BEAM')
+                event_info.PID_PV = obj.BEAM_PID_PV;
+                event_info.ratePV = obj.BEAM_RATE_PV;
+            elseif strcmp(obj.RATE,'HALF_HERTZ')
+                event_info.PID_PV = obj.BEAM_PID_PV;
+                event_info.ratePV = obj.HLFH_RATE_PV;
+            elseif strcmp(obj.RATE,'ONE_HERTZ')
+                event_info.PID_PV = obj.ONEH_PID_PV;
+                event_info.ratePV = obj.ONEH_RATE_PV;
+            elseif strcmp(obj.RATE,'FIVE_HERTZ')
+                event_info.PID_PV = obj.BEAM_PID_PV;
+                event_info.ratePV = obj.FIVH_RATE_PV;
+            elseif strcmp(obj.RATE,'TEN_HERTZ')
+                event_info.PID_PV = obj.TENH_PID_PV;
+                event_info.ratePV = obj.TENH_RATE_PV;
+            else
+                error('Invalid rate modifier.');
+            end
+            
             event_info.liveRate = lcaGet(event_info.ratePV);
             event_info.beamRate = lcaGet(event_info.beamRatePV);
             event_info.rateRatio = event_info.beamRate/event_info.liveRate;
             
-            if strcmp(obj.RATE,'BEAM')
-                event_info.PID_PV = obj.BEAM_PID_PV;
-            elseif strcmp(obj.RATE,'ONE_HERTZ')
-                event_info.PID_PV = obj.ONEH_PID_PV;
-            elseif strcmp(obj.RATE,'TEN_HERTZ')
-                event_info.PID_PV = obj.TENH_PID_PV;
-            else
-                error('Invalid rate modifier.');
-            end
         end
 
             

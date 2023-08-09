@@ -29,6 +29,10 @@ classdef F2_DAQApp < handle
         
         function obj = F2_DAQApp(apph)
             
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            %%% This block is Glen's boiler plate %%%
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            
             % Associate class with GUI
             obj.guihan=apph;
             
@@ -52,7 +56,13 @@ classdef F2_DAQApp < handle
             obj.nMsg = 0;
             obj.addMessage(sprintf('Started GUI instance %d.',inst+1));
             
-            % Initialize camera list
+            
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            %%% This block is helper functions for finding %%%
+            %%% cameras, PV lists, and scan functions      %%%
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            
+            % Initialize camera list, CamCheck has info on cameras and IOCs
             obj.camCheck = F2_CamCheck(true,obj);
             obj.initCameras();
             
@@ -69,7 +79,9 @@ classdef F2_DAQApp < handle
         
         function resetDAQ(obj)
             
+            % this indicates daq not in use
             caput(obj.pvs.Reset,0);
+            
             % this indicates data taking has ended
             caput(obj.pvs.DAQ_DataOn,0);
             obj.addMessage('DAQ reset.');
@@ -94,6 +106,10 @@ classdef F2_DAQApp < handle
             
             obj.DAQ_params.experiment = obj.guihan.ExperimentDropDown.Value;
             
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            %%% Beam rate and associated event code %%%
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            
             rv = obj.guihan.RateDropDown.Value;
             
             obj.DAQ_params.rate = obj.rates{strcmp(rv,obj.rate_names)};
@@ -104,6 +120,10 @@ classdef F2_DAQApp < handle
                 obj.DAQ_params.EC = 222;
             end
             
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            %%% parameters and flags %%%
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            
             obj.DAQ_params.comment    = obj.guihan.CommentTextArea.Value;
             obj.DAQ_params.n_shot     = obj.guihan.ShotsperstepEditField.Value;
             obj.DAQ_params.print2elog = obj.guihan.PrinttoeLogCheckBox.Value;
@@ -111,7 +131,11 @@ classdef F2_DAQApp < handle
             obj.DAQ_params.laserBG    = obj.guihan.SaveLaserBGCheckBox.Value;
             obj.DAQ_params.nBG        = obj.guihan.BackgroundshotsEditField.Value;
             
-            % Get camera info
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            %%% Get the cameras, metadata, %%%
+            %%% settings and triggers      %%%
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            
             [~,ia,~] = intersect(obj.camCheck.camNames,obj.guihan.ListBox.Items);
             list_bool = false(size(obj.camCheck.camNames));
             list_bool(ia) = true;
@@ -124,7 +148,9 @@ classdef F2_DAQApp < handle
             obj.DAQ_params.num_CAM  = numel(obj.DAQ_params.camNames);
             obj.checkTrigStat();
             
-            
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            %%% BSA and non-BSA PV lists %%%
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             
             % Scalar data lists
             obj.DAQ_params.BSA_list = obj.guihan.ListBoxBSA.Items;
@@ -135,8 +161,11 @@ classdef F2_DAQApp < handle
                 obj.loadnonBSA_ArrayLists();
             else
                 obj.DAQ_params.include_nonBSA_arrays = false;
-            end
-                
+            end     
+            
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            %%% Setup the scan parameters %%%
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             
             scan_type = obj.guihan.ScanTypeDropDown.Value;
             switch scan_type
@@ -158,8 +187,6 @@ classdef F2_DAQApp < handle
             % This array is used for flattening the scan
             obj.DAQ_params.stepsAll = [];
             obj.DAQ_params.totalSteps = 0;
-            
-            
             
             if obj.DAQ_params.scanDim > 0
                 obj.DAQ_params.scanFuncs{1} = obj.guihan.ScanfunctionDropDown.Value;
@@ -196,6 +223,10 @@ classdef F2_DAQApp < handle
                 end
             end
             
+            %%%%%%%%%%%%%%%%%%%%
+            %%% Run the DAQ! %%%
+            %%%%%%%%%%%%%%%%%%%%
+            
             obj.addMessage('DAQ parameters set.');
             if obj.guihan.FastDAQCheckBox.Value
                 obj.DAQ_obj = F2_fastDAQ(obj.DAQ_params,obj);
@@ -205,6 +236,11 @@ classdef F2_DAQApp < handle
             
             
         end
+        
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %%% Everything below is a helper function %%%
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        
         
         function initCameras(obj)
         % Gets list of FACET cameras and adds it to DAQ GUI 

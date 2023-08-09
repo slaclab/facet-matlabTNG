@@ -50,6 +50,11 @@ classdef F2_fastDAQ < handle
             
             obj.params = DAQ_params;
             
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            %%% This block is Glen's boiler plate.                    %%%
+            %%% 'apph' determines if DAQ was called by GUI or script. %%%
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            
             % Check if DAQ called by GUI
             if exist('apph','var')
                 obj.objhan=apph;
@@ -80,6 +85,10 @@ classdef F2_fastDAQ < handle
             pset(obj.pvlist,'debug',0);
             obj.pvs = struct(obj.pvlist);
             
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            %%% Final checks and setup before running the DAQ %%%
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            
             % Check if DAQ is running
             running = caget(obj.pvs.DAQ_Running);
             if running
@@ -100,7 +109,7 @@ classdef F2_fastDAQ < handle
             caput(obj.pvs.DAQ_Instance,obj.Instance);
             obj.dispMessage(sprintf('Started DAQ instance %d.',obj.Instance));
             
-            % Update DAQ exp
+            % Update DAQ experiment
             if strcmp(obj.params.experiment,'TEST')
                 expNum = 0;
             else
@@ -108,70 +117,30 @@ classdef F2_fastDAQ < handle
             end
             caput(obj.pvs.DAQ_Exp,expNum);
             
-            % =========================================
-            % Create Data Path on NAS drive 
-            % =========================================
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            %%% Add DAQ params, save params,  %%%
+            %%% event params, and PV metadata %%%
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            
+            % Save DAQ params to data_struct
+            obj.data_struct.params = obj.params;
+            obj.data_struct.metadata = struct();
+            
+            % Create Data Path on NAS drive and save info to data_struct
             obj.save_info = set_DAQ_filepath(obj);
             obj.data_struct.save_info = obj.save_info;
             
-            
-            % Create data object, fill in metadata
-            obj.data_struct.params = obj.params;
-            obj.data_struct.metadata = struct();
-            for i = 1:obj.params.num_CAM
-                obj.data_struct.metadata.(obj.params.camNames{i}) = get_cam_info(obj.params.camPVs{i});
-                obj.data_struct.metadata.(obj.params.camNames{i}).sioc = obj.params.camSIOCs{i};
-                obj.data_struct.metadata.(obj.params.camNames{i}).trigger = obj.params.camTrigs{i};
-            end
+            % Create EventClass for controlling global event triggers
             obj.event = F2_EventClass();
             obj.event.select_rate(obj.params.rate);
             obj.event_info = obj.event.evt_struct();
             obj.data_struct.metadata.Event = obj.event_info;
-            %disp(obj.data_struct.metadata.Event.liveRate);
-            % Fill in BSA data
-            obj.bsa_list = {obj.pulseIDPV; obj.secPV; obj.nSecPV;};
-            for i = 1:numel(obj.params.BSA_list)
-                pvList = feval(obj.params.BSA_list{i});
-                %pvDesc = lcaGetSmart(strcat(pvList,'HSTBR.DESC'));
-                pvDesc = pvList; % Temporary
-                
-                obj.data_struct.metadata.(obj.params.BSA_list{i}).PVs = pvList;
-                obj.data_struct.metadata.(obj.params.BSA_list{i}).Desc = pvDesc;
-                
-                obj.bsa_list = [obj.bsa_list; pvList];
-            end 
             
-            % Fill in non-BSA data
-            obj.nonbsa_list = {obj.pulseIDPV; obj.secPV; obj.nSecPV;};
-            for i = 1:numel(obj.params.nonBSA_list)
-                pvList = feval(obj.params.nonBSA_list{i});
-                %pvDesc = lcaGetSmart(strcat(pvList,'.DESC'));
-                pvDesc = pvList; % Temporary
-                
-                obj.data_struct.metadata.(obj.params.nonBSA_list{i}).PVs = pvList;
-                obj.data_struct.metadata.(obj.params.nonBSA_list{i}).Desc = pvDesc;
-                
-                obj.nonbsa_list = [obj.nonbsa_list; pvList];
-            end
-            obj.async_data = acq_nonBSA_data(obj.nonbsa_list,obj);
-            
-            % Fill in non-BSA arrays
-            if obj.params.include_nonBSA_arrays
-                for i = 1:numel(obj.params.nonBSA_Array_list)
-                    pvList = feval(obj.params.nonBSA_Array_list{i});
-                    pvDesc = lcaGetSmart(strcat(pvList,'.DESC'));
-                    
-                    obj.data_struct.metadata.(obj.params.nonBSA_Array_list{i}).PVs = pvList;
-                    obj.data_struct.metadata.(obj.params.nonBSA_Array_list{i}).Desc = pvDesc;
-                
-                    obj.nonbsa_array_list = [obj.nonbsa_array_list; pvList];
-                    
-                end
-            end
+            % Generate metadata for cameras and PVs
+            obj.createMetadata();
                         
-            % Fill in the rest of the data struct
+            % Fill in the rest of the data struct to prepare for data
             obj.setupDataStruct();
-            
             
             % Fill in scan functions
             obj.scanFunctions = struct();
@@ -179,6 +148,9 @@ classdef F2_fastDAQ < handle
                 obj.scanFunctions.(obj.params.scanFuncs{i}) = feval(['scanFunc_' obj.params.scanFuncs{i}],obj);
             end
             
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            %%% Camera prep and check %%%
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             
             % Get PVs for cam control
             obj.daq_pvs = camera_DAQ_PVs(obj.params.camPVs);
@@ -198,7 +170,6 @@ classdef F2_fastDAQ < handle
                 obj.data_struct.backgrounds = obj.BG_obj.getBackground();
             end
             
-            
             %%%%%%%%%%%%%%%%%%%%
             %   Run the DAQ!  %%
             %%%%%%%%%%%%%%%%%%%%
@@ -208,10 +179,13 @@ classdef F2_fastDAQ < handle
         end
         
         function status = daq_loop(obj)
+            % The meat of the matter
             
+            % Allocate BSA buffers
             obj.reserve_eDef();
             obj.event.stop_event();
             
+            % This is a "simple" DAQ
             if obj.params.scanDim == 0
                 obj.step = 1;
                 try
@@ -226,6 +200,7 @@ classdef F2_fastDAQ < handle
                 end 
             end
             
+            % This is a scan
             old_steps = nan(1,obj.params.scanDim);
             for i = 1:obj.params.totalSteps
                 obj.step = i;
@@ -683,6 +658,59 @@ classdef F2_fastDAQ < handle
                 lcaPut(obj.daq_pvs.TSS_SETEC{i},evr_setting);
             end
                 
+        end
+        
+        function createMetadata(obj)
+            
+            % loop over cameras and add metadata
+            for i = 1:obj.params.num_CAM
+                obj.data_struct.metadata.(obj.params.camNames{i}) = get_cam_info(obj.params.camPVs{i});
+                obj.data_struct.metadata.(obj.params.camNames{i}).sioc = obj.params.camSIOCs{i};
+                obj.data_struct.metadata.(obj.params.camNames{i}).trigger = obj.params.camTrigs{i};
+            end
+            
+            % Fill in BSA data
+            obj.bsa_list = {obj.pulseIDPV; obj.secPV; obj.nSecPV;};
+            for i = 1:numel(obj.params.BSA_list)
+                pvList = feval(obj.params.BSA_list{i});
+                %pvDesc = lcaGetSmart(strcat(pvList,'HSTBR.DESC'));
+                pvDesc = pvList; % Temporary
+                
+                obj.data_struct.metadata.(obj.params.BSA_list{i}).PVs = pvList;
+                obj.data_struct.metadata.(obj.params.BSA_list{i}).Desc = pvDesc;
+                
+                obj.bsa_list = [obj.bsa_list; pvList];
+            end 
+            
+            % Fill in non-BSA data
+            obj.nonbsa_list = {obj.pulseIDPV; obj.secPV; obj.nSecPV;};
+            for i = 1:numel(obj.params.nonBSA_list)
+                pvList = feval(obj.params.nonBSA_list{i});
+                %pvDesc = lcaGetSmart(strcat(pvList,'.DESC'));
+                pvDesc = pvList; % Temporary
+                
+                obj.data_struct.metadata.(obj.params.nonBSA_list{i}).PVs = pvList;
+                obj.data_struct.metadata.(obj.params.nonBSA_list{i}).Desc = pvDesc;
+                
+                obj.nonbsa_list = [obj.nonbsa_list; pvList];
+            end
+            obj.async_data = acq_nonBSA_data(obj.nonbsa_list,obj);
+            
+            % Fill in non-BSA arrays
+            if obj.params.include_nonBSA_arrays
+                for i = 1:numel(obj.params.nonBSA_Array_list)
+                    pvList = feval(obj.params.nonBSA_Array_list{i});
+                    pvDesc = lcaGetSmart(strcat(pvList,'.DESC'));
+                    
+                    obj.data_struct.metadata.(obj.params.nonBSA_Array_list{i}).PVs = pvList;
+                    obj.data_struct.metadata.(obj.params.nonBSA_Array_list{i}).Desc = pvDesc;
+                
+                    obj.nonbsa_array_list = [obj.nonbsa_array_list; pvList];
+                    
+                end
+            end
+            
+            
         end
         
         function setupDataStruct(obj)
