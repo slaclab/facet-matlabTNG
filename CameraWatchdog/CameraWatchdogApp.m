@@ -1,4 +1,4 @@
-classdef CameraWatchdog < handle
+classdef CameraWatchdogApp < handle
     events
         PVUpdated
     end
@@ -20,7 +20,7 @@ classdef CameraWatchdog < handle
     end
   
     methods
-        function watchdogInstance = CameraWatchdog()
+        function watchdogInstance = CameraWatchdogApp()
             
             context = PV.Initialize(PVtype.EPICS);
             watchdogInstance.pvlist = [...
