@@ -42,7 +42,7 @@ classdef Camera < handle
                 cameraInstance.pvlist=[...
                     PV(context,'name',"NAME",'pvname',camPV+":NAME",'mode',"r",'monitor',true);
                     PV(context,'name',"ArrayRate",'pvname',camPV+":ArrayRate_RBV",'mode',"r",'monitor',true);
-                    PV(context,'name',"Acquisition",'pvname',camPV+":Acquisition",'mode',"rw",'monitor',true);
+                    PV(context,'name',"Acquisition",'pvname',camPV+":Acquisition",'mode',"rw",'monitor',true,'alarm',1);
                     PV(context,'name',"Connection",'pvname',camPV+":AsynIO.CNCT",'mode',"r",'monitor',true);
                     PV(context,'name',"TriggerMode",'pvname',camPV+":TriggerMode",'mode',"rw",'monitor',true);
                     PV(context,'name',"TriggerModeRBV",'pvname',camPV+":TriggerMode_RBV",'mode',"rw",'monitor',true);
@@ -86,10 +86,12 @@ classdef Camera < handle
         end
         
         function loop(cameraInstance)
+            cameraInstance.setAlarm();
             if cameraInstance.Watching && cameraInstance.IsSIOCgood &&...
                     cameraInstance.IsPOEHUBgood && ~cameraInstance.Alarm
-                cameraInstance.setStatus()
+                cameraInstance.setStatus();
             elseif cameraInstance.Watching && cameraInstance.Alarm
+%                 cameraInstance.jiggle();
                 caput(cameraInstance.pvs.State,5);
             end
         end
@@ -179,6 +181,14 @@ classdef Camera < handle
             cameraInstance.IsPOEHUBgood = false;
             cameraInstance.Watching = false;
             caput(cameraInstance.pvs.State,5);
+        end
+        
+        function setAlarm(cameraInstance)
+            if strcmp(cameraInstance.pvs.Acquisition.SEVR{1},"NO_ALARM")
+                cameraInstance.Alarm = false;
+            else
+                cameraInstance.Alarm = true;
+            end
         end
         
         function stop_PV(cameraInstance)
