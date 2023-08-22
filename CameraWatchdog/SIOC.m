@@ -20,7 +20,7 @@ classdef SIOC < handle
             context = PV.Initialize(PVtype.EPICS);
             
             siocInstance.pvlist = [...
-                PV(context,'name',"SIOC_Alarm",'pvname',SIOC_PV+":HEARTBEATSUM.SEVR",'mode',"r",'monitor',true,'pvdatatype',"int");
+                PV(context,'name',"SIOC_Heartbeat",'pvname',SIOC_PV+":HEARTBEATSUM",'mode',"r",'monitor',true,'pvdatatype',"int",'alarm',1);
                 ];
             
             pset(siocInstance.pvlist,'debug',0);
@@ -34,11 +34,11 @@ classdef SIOC < handle
         end
         
         function loop(siocInstance)
-            if caget(siocInstance.pvs.SIOC_Alarm) ~= 0
+            if strcmp(siocInstance.pvs.SIOC_Heartbeat.SEVR{1},"NO_ALARM")
+                siocInstance.Alarm = false;
+            else
                 siocInstance.Alarm = true;
                 fprintf('%s SIOC %s is down.\n',datetime('now'),siocInstance.PV);
-            else
-                siocInstance.Alarm = false;
             end
         end
         
