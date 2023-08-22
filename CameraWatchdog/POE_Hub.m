@@ -36,7 +36,7 @@ classdef POE_Hub < handle
             context = PV.Initialize(PVtype.EPICS);
             
             poeHubInstance.pvlist = [...
-                PV(context,'name',"POE_Alarm",'pvname',POE_PV+":Identity.SEVR",'mode',"r",'monitor',true,'pvdatatype',"int");
+                PV(context,'name',"POE_Identity",'pvname',POE_PV+":Identity",'mode',"r",'monitor',true,'pvdatatype',"int",'alarm',1);
                 PV(context,'name',"Reboot",'pvname',poeHubInstance.PowerSwitchPV,'mode',"r",'monitor',true,'pvdatatype',"int");
                 ];
             
@@ -51,12 +51,12 @@ classdef POE_Hub < handle
         end
         
         function loop(poeHubInstance)
-            if caget(poeHubInstance.pvs.POE_Alarm) ~= 0
+            if strcmp(poeHubInstance.pvs.POE_Alarm.SEVR{1},"NO_ALARM")
+                poeHubInstance.Alarm = false;
+            else
                 poeHubInstance.Alarm = true;
 %                 poeHubInstance.rebootPOEHub();
                 fprintf('%s POE Hub %s is down.\n',datetime('now'),poeHubInstance.PV);
-            else
-                poeHubInstance.Alarm = false;
             end
         end
         

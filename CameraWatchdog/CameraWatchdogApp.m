@@ -55,7 +55,7 @@ classdef CameraWatchdogApp < handle
             % Unflag cameras that don't have alarm status for Acquisition PV
             for i = 1:numel(watchdogInstance.CameraObjs)
                 if watchdogInstance.CameraObjs(i).IsSIOCgood &&...
-                        (lcaGetSmart(watchdogInstance.CameraObjs(i).CameraPV+':Acquisition.SEVR',0,'DBF_ENUM') == 0)
+                        strcmp(watchdogInstance.pvs.Acquisition.SEVR{1},"NO_ALARM")
                     watchdogInstance.CameraObjs(i).Alarm = false;
                 end
             end
@@ -115,7 +115,9 @@ classdef CameraWatchdogApp < handle
                     server = string(watchdogInstance.SIOCList{i,1});
                     for j = 1:size(watchdogInstance.NameList,1)
                         if strcmp(watchdogInstance.NameList{j,5},server)
-                            updateSIOCstatus(watchdogInstance.CameraObjs(j));
+                            updateSIOCstatus(watchdogInstance.CameraObjs(j),false);
+                        else
+                            updateSIOCstatus(watchdogInstance.CameraObjs(j),true);
                         end
                     end
                 end
@@ -126,7 +128,9 @@ classdef CameraWatchdogApp < handle
                     for j = 1:numel(watchdogInstance.CameraObjs)
                         if ~isempty(watchdogInstance.CameraObjs(j).POE_PV) &&...
                                 contains(watchdogInstance.CameraObjs(j).POE_PV,watchdogInstance.POEHubs(i).PV)
-                            updatePOEHUBstatus(watchdogInstance.CameraObjs(j));
+                            updatePOEHUBstatus(watchdogInstance.CameraObjs(j),false);
+                        else
+                            updatePOEHUBstatus(watchdogInstance.CameraObjs(j),true);
                         end
                     end
                 end
@@ -171,11 +175,13 @@ classdef CameraWatchdogApp < handle
             
             % Save data as a table in a MAT file
             filename = "/u1/facet/physics/log/matlab/" + "CameraReport"...
-                + string(datetime('today','Format',"uuuu-MM-dd"));
+                + string(datetime('now','Format',"uuuu-MM-dd-HH-mm"));
             save(filename,"CameraData");
         end
 
         function stopWatching(watchdogInstance)
+            watchdogInstance.saveData();
+            
             for i = 1:numel(watchdogInstance.CameraObjs)
                 stop_PV(watchdogInstance.CameraObjs(i));
             end

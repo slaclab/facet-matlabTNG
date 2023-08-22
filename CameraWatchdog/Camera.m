@@ -80,8 +80,9 @@ classdef Camera < handle
                 cameraInstance.listeners = addlistener(cameraInstance,'PVUpdated',@(~,~) cameraInstance.loop);
                 run(cameraInstance.pvlist,false,cameraInstance.looptime,cameraInstance,'PVUpdated');
             end
-                        
-            diary('/u1/facet/physics/log/matlab/CameraLog.log');
+            
+            diaryLogFn = "/u1/facet/physics/log/matlab/CameraLog" + string(datetime('now','Format',"uuuu-MM-dd")) + ".log";
+            diary(diaryLogFn);
             fprintf('%s Starting Camera instance for %s.\n',datetime('now'),cameraInstance.Name);
         end
         
@@ -172,15 +173,25 @@ classdef Camera < handle
             caput(cameraInstance.pvs.ROI_EnableCallbacks,1);
         end
         
-        function updateSIOCstatus(cameraInstance)
-            cameraInstance.IsSIOCgood = false;
-            cameraInstance.Watching = false;
+        function updateSIOCstatus(cameraInstance,goodSIOC)
+            if goodSIOC
+                cameraInstance.IsSIOCgood = true;
+                cameraInstance.Watching = true;
+            else
+                cameraInstance.IsSIOCgood = false;
+                cameraInstance.Watching = false;
+            end
         end
         
-        function updatePOEHUBstatus(cameraInstance)
-            cameraInstance.IsPOEHUBgood = false;
-            cameraInstance.Watching = false;
-            caput(cameraInstance.pvs.State,5);
+        function updatePOEHUBstatus(cameraInstance,goodPOEHub)
+            if goodPOEHub
+                cameraInstance.IsPOEHUBgood = true;
+                cameraInstance.Watching = true;
+            else
+                cameraInstance.IsPOEHUBgood = false;
+                cameraInstance.Watching = false;
+                caput(cameraInstance.pvs.State,5);
+            end
         end
         
         function setAlarm(cameraInstance)
