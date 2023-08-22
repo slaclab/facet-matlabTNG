@@ -15,7 +15,7 @@ classdef scanFunc_KLYS_LI11_21_SSSB
     
     methods 
         
-        function obj = scanFunc_L0B_LI10_41_PDES(daqhandle)
+        function obj = scanFunc_KLYS_LI11_21_SSSB(daqhandle)
             
             % Check if scanfunc called by DAQ
             if exist('daqhandle','var')
