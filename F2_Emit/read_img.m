@@ -2,7 +2,7 @@ function [img, x, y, res, xmm, ymm] = read_img(data_struct,GUI, header, cam, n, 
 
 % [img, x, y, res, xmm, ymm] = read_img(data_struct, header, cam, n, doplot, isrot)
 % 
-% data_struct and header come from findDAQ function
+% data_struct and header come fromplot(Energy_wake_min(ix)) findDAQ function
 % cam is camera name, i.e. LFOV, DTOTR2, etc
 % n is index from dataset
 % doplot = 1 plots the image
