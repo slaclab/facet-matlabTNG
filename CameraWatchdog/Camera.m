@@ -11,8 +11,6 @@ classdef Camera < handle
         pvlist PV
         pvs
         PreviousState = -1
-        RebootAttempted logical = false
-        RebootCount = 0
         Watching logical = false
         CamLocation
         IsSIOCgood logical % Set by CameraWatchdog if SIOC down
@@ -51,6 +49,8 @@ classdef Camera < handle
                     PV(context,'name',"State",'pvname',camPV+":STATUS",'mode',"rw",'monitor',true,'pvdatatype',"int");
                     PV(context,'name',"DataType",'pvname',camPV+":DataType",'mode',"rw",'monitor',true,'pvdatatype',"int");
                     PV(context,'name',"ROI_EnableCallbacks",'pvname',camPV+":ROI:EnableCallbacks",'mode',"rw",'monitor',true,'pvdatatype',"int");
+                    PV(context,'name',"RebootCount",'pvname',camPV+":REBOOTCOUNT",'mode',"rw",'monitor',true,'pvdatatype',"int");
+                    PV(context,'name',"RebootAttempted",'pvname',camPV+":REBOOT",'mode',"rw",'monitor',true,'pvdatatype',"int");
                     ];
 
                 if contains(cameraInstance.POE_PV,'POE')
@@ -77,6 +77,10 @@ classdef Camera < handle
 
                 cameraInstance.Name = string(caget(cameraInstance.pvs.NAME));
                 
+                % Need to call Acquisition PV once to make sure the alarm
+                % field is not empty
+                getAlarm = caget(cameraInstance.pvs.Acquisition);
+                
                 cameraInstance.listeners = addlistener(cameraInstance,'PVUpdated',@(~,~) cameraInstance.loop);
                 run(cameraInstance.pvlist,false,cameraInstance.looptime,cameraInstance,'PVUpdated');
             end
@@ -100,11 +104,11 @@ classdef Camera < handle
         function setStatus(cameraInstance)
             switch cameraInstance.pvs.Connection.val{1}
                 case 'Connect'
-                    if cameraInstance.RebootAttempted
+                    if cameraInstance.pvs.RebootAttempted.val{1}
                         fprintf('%s Camera %s is recovered.\n',datetime('now'),cameraInstance.Name);
-%                         cameraInstance.jiggle();
+                        cameraInstance.jiggle();
                     end
-                    cameraInstance.RebootAttempted = false;
+                    caput(cameraInstance.pvs.RebootAttempted,0);
                     switch cameraInstance.pvs.Acquisition.val{1}
                         case 'Acquire'
                             if cameraInstance.pvs.ArrayRate.val{1} == 0
@@ -135,13 +139,13 @@ classdef Camera < handle
             end
             
             if cameraInstance.pvs.State.val{1} == 1
-                if cameraInstance.RebootAttempted
+                if cameraInstance.pvs.RebootAttempted.val{1}
                     fprintf('%s Camera %s already tried to reboot.\n',datetime('now'),cameraInstance.Name);
                 else
                     fprintf('%s Camera %s is Disconnected. Attempting Reboot.\n',datetime('now'),cameraInstance.Name);
-%                     caput(cameraInstance.pvs.PowerCycle,1);
-%                     cameraInstance.RebootCount = cameraInstance.RebootCount + 1;
-                    cameraInstance.RebootAttempted = true;
+                    caput(cameraInstance.pvs.PowerCycle,1);
+                    caput(cameraInstance.pvs.RebootCount,cameraInstance.pvs.RebootCount.val{1} + 1);
+                    caput(cameraInstance.pvs.RebootAttempted,1);
                 end
             end
             

@@ -42,6 +42,9 @@ classdef POE_Hub < handle
             
             pset(poeHubInstance.pvlist,'debug',0);
             poeHubInstance.pvs = struct(poeHubInstance.pvlist);
+            
+            % Call Identity PV once to make sure alarm field is not empty
+            getAlarm = caget(poeHubInstance.pvs.POE_Identity);
                         
             diary('/u1/facet/physics/log/matlab/CameraLog.log');
             fprintf('%s Starting POE Hub instance for %s.\n',datetime('now'),poeHubInstance.PV);
@@ -51,7 +54,7 @@ classdef POE_Hub < handle
         end
         
         function loop(poeHubInstance)
-            if strcmp(poeHubInstance.pvs.POE_Alarm.SEVR{1},"NO_ALARM")
+            if strcmp(poeHubInstance.pvs.POE_Identity.SEVR{1},"NO_ALARM")
                 poeHubInstance.Alarm = false;
             else
                 poeHubInstance.Alarm = true;

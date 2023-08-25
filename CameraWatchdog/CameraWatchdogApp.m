@@ -55,7 +55,7 @@ classdef CameraWatchdogApp < handle
             % Unflag cameras that don't have alarm status for Acquisition PV
             for i = 1:numel(watchdogInstance.CameraObjs)
                 if watchdogInstance.CameraObjs(i).IsSIOCgood &&...
-                        strcmp(watchdogInstance.pvs.Acquisition.SEVR{1},"NO_ALARM")
+                        strcmp(watchdogInstance.CameraObjs(i).pvs.Acquisition.SEVR{1},"NO_ALARM")
                     watchdogInstance.CameraObjs(i).Alarm = false;
                 end
             end
@@ -116,7 +116,12 @@ classdef CameraWatchdogApp < handle
                     for j = 1:size(watchdogInstance.NameList,1)
                         if strcmp(watchdogInstance.NameList{j,5},server)
                             updateSIOCstatus(watchdogInstance.CameraObjs(j),false);
-                        else
+                        end
+                    end
+                else
+                    server = string(watchdogInstance.SIOCList{i,1});
+                    for j = 1:size(watchdogInstance.NameList,1)
+                        if strcmp(watchdogInstance.NameList{j,5},server)
                             updateSIOCstatus(watchdogInstance.CameraObjs(j),true);
                         end
                     end
@@ -129,7 +134,12 @@ classdef CameraWatchdogApp < handle
                         if ~isempty(watchdogInstance.CameraObjs(j).POE_PV) &&...
                                 contains(watchdogInstance.CameraObjs(j).POE_PV,watchdogInstance.POEHubs(i).PV)
                             updatePOEHUBstatus(watchdogInstance.CameraObjs(j),false);
-                        else
+                        end
+                    end
+                else
+                    for j = 1:numel(watchdogInstance.CameraObjs)
+                        if ~isempty(watchdogInstance.CameraObjs(j).POE_PV) &&...
+                                contains(watchdogInstance.CameraObjs(j).POE_PV,watchdogInstance.POEHubs(i).PV)
                             updatePOEHUBstatus(watchdogInstance.CameraObjs(j),true);
                         end
                     end
@@ -163,8 +173,7 @@ classdef CameraWatchdogApp < handle
             Exposure(idx) = lcaGetSmart([watchdogInstance.CameraObjs(idx).CameraPV]+":AcquireTime_RBV");
             Connection(idx) = lcaGetSmart([watchdogInstance.CameraObjs(idx).CameraPV]+":AsynIO.CNCT");
             SerialNumber(idx) = string(lcaGetSmart([watchdogInstance.CameraObjs(idx).CameraPV]+":SerialNumber_RBV"));
-            
-            RebootCount(idx) = [watchdogInstance.CameraObjs(idx).RebootCount];
+            RebootCount(idx) = lcaGetSmart([watchdogInstance.CameraObjs(idx).CameraPV]+":REBOOTCOUNT");
             
             % For bad cams, label them as "SIOC down"
             Connection(~idx) = "SIOC down";
@@ -180,7 +189,7 @@ classdef CameraWatchdogApp < handle
         end
 
         function stopWatching(watchdogInstance)
-            watchdogInstance.saveData();
+            [watchdogInstance.CameraObjs.Watching] = deal(false);
             
             for i = 1:numel(watchdogInstance.CameraObjs)
                 stop_PV(watchdogInstance.CameraObjs(i));
@@ -196,6 +205,8 @@ classdef CameraWatchdogApp < handle
             
             Cleanup(watchdogInstance.pvlist);
             stop(watchdogInstance.pvlist);
+            
+            watchdogInstance.saveData();
             
             diary off
         end
