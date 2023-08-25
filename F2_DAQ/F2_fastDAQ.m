@@ -21,10 +21,11 @@ classdef F2_fastDAQ < handle
         nonbsa_list
         nonbsa_array_list
         scanFunctions
-        eDefNum
+        %eDefNum
         daq_status
         camCheck
         BG_obj
+        superfast = false
     end
     properties(Hidden)
         listeners
@@ -71,7 +72,7 @@ classdef F2_fastDAQ < handle
             end
                         
             % initialize object and add PVs to be monitored
-            context = PV.Initialize(PVtype.EPICS_labca) ;
+            context = PV.Initialize(PVtype.EPICS) ;
             obj.pvlist=[...
                 PV(context,'name',"DAQ_Running",'pvname',"SIOC:SYS1:ML02:AO352",'mode',"rw",'monitor',true); % Is DAQ running?
                 PV(context,'name',"DAQ_Abort",'pvname',"SIOC:SYS1:ML02:AO353",'mode',"rw",'monitor',true); % Abort request
@@ -157,6 +158,9 @@ classdef F2_fastDAQ < handle
             
             % Test cameras before starting
             obj.checkCams();
+            status = obj.check_abort();
+            if status; obj.end_scan(status); return; end
+            
             
             % Prep cams -> make sure they are in good state
             obj.prepCams();
@@ -181,8 +185,7 @@ classdef F2_fastDAQ < handle
         function status = daq_loop(obj)
             % The meat of the matter
             
-            % Allocate BSA buffers
-            obj.reserve_eDef();
+            % This sets EC214 and BUFFACQ rate to zero
             obj.event.stop_event();
             
             % This is a "simple" DAQ
@@ -190,12 +193,16 @@ classdef F2_fastDAQ < handle
                 obj.step = 1;
                 try
                     status = obj.daq_step();
-                    eDefRelease(obj.eDefNum);
+                    
+                    % we are done BUFFACQ eDef
+                    obj.event.release_eDef();
                     return;
                 catch
                     obj.dispMessage(sprintf('DAQ failed on step %d',obj.step));
                     status = 1;
-                    eDefRelease(obj.eDefNum);
+                    
+                    % we are done BUFFACQ eDef
+                    obj.event.release_eDef();
                     return;
                 end 
             end
@@ -220,7 +227,9 @@ classdef F2_fastDAQ < handle
                 catch ME
                     disp(ME.message);
                     obj.dispMessage(sprintf('DAQ failed on step %d',obj.step));
-                    eDefRelease(obj.eDefNum);
+                    
+                    % we are done BUFFACQ eDef
+                    obj.event.release_eDef();
                     status = 1;
                 end
                 
@@ -229,7 +238,8 @@ classdef F2_fastDAQ < handle
                 old_steps = new_steps;
             end
             
-            eDefRelease(obj.eDefNum);
+            % we are done BUFFACQ eDef
+            obj.event.release_eDef();
             
         end
         
@@ -243,15 +253,35 @@ classdef F2_fastDAQ < handle
             % setup camera saving
             lcaPut(obj.daq_pvs.TIFF_FileNumber,0);
             set_CAM_filepath(obj);
-            lcaPutNoWait(obj.daq_pvs.TIFF_Capture,1);
+            if obj.superfast
+                lcaPutNoWait(obj.daq_pvs.TIFF_Capture,1);
+            else
+                lcaPutNoWait(obj.daq_pvs.TIFF_Capture,1);
+                stat = lcaGet(obj.daq_pvs.TIFF_Capture,0,'DBF_ENUM');
+                if sum(stat) ~= obj.params.num_CAM
+                    obj.dispMessage('Attempt to set cameras to capture failed. Trying again.');
+                    lcaPutNoWait(obj.daq_pvs.TIFF_Capture,1);
+                    stat = lcaGet(obj.daq_pvs.TIFF_Capture,0,'DBF_ENUM');
+                    if sum(stat) ~= obj.params.num_CAM
+                        obj.dispMessage('Attempt to set cameras to capture failed again. Aborting.');
+                        status = 1;
+                        return;
+                    end
+                end
+            end
             
             count = 0;
             old_pid = lcaGet(obj.data_struct.metadata.Event.PID_PV);
             %rate_ratio = obj.data_struct.metadata.Event.rateRatio;
             
             % Start data
-            lcaPut(['EDEF:SYS1:' num2str(obj.eDefNum) ':CTRL'],1);
-            pause(0.1);
+            %lcaPut(['EDEF:SYS1:' num2str(obj.eDefNum) ':CTRL'],1);
+            %pause(0.1);
+            
+            % Start BUFFACQ buffer
+            obj.event.start_eDef();
+            
+            % Start EC214 for cameras
             obj.event.start_event();
             
             while count < (obj.params.n_shot+1)
@@ -271,8 +301,10 @@ classdef F2_fastDAQ < handle
             end
             
             % Stop data
-            
-            lcaPut(['EDEF:SYS1:' num2str(obj.eDefNum) ':CTRL'],0);
+            %lcaPut(['EDEF:SYS1:' num2str(obj.eDefNum) ':CTRL'],0);
+            obj.event.stop_eDef();
+            pause(0.1);
+            obj.event.stop_event();
             
             obj.dispMessage('Acquisition complete. Cameras saving data.');
             
@@ -293,12 +325,29 @@ classdef F2_fastDAQ < handle
                 save_not_done = fnum_rbv < obj.params.n_shot;
                 pause(0.01);
                 count = count+1;
-                if count > 1000 && any(fnum_rbv == 0)
-                    obj.dispMessage('Camera did not save');
-                    break;
+                if count > 200 && any(fnum_rbv == 0)
+                    obj.dispMessage('Camera did not save. Will try to jiggle');
+                    pause(2);
+                    obj.event.start_event();
+                    count = 0;
+                    while any(save_not_done)
+                        status = obj.check_abort();
+                        if status; return; end
+                        fnum_rbv = lcaGet(obj.daq_pvs.TIFF_FileNumber_RBV);
+                        save_not_done = fnum_rbv < obj.params.n_shot;
+                        pause(0.01);
+                        count = count+1;
+                        if count > 1000 && any(fnum_rbv == 0)
+                            obj.dispMessage('Camera did not save. Will abort.');
+                            obj.event.stop_event();
+                            status = 1;
+                            return;
+                        end
+                        obj.event.stop_event();
+                    end
                 end
             end
-            obj.event.stop_event();
+            
             obj.dispMessage('Data saving complete. Starting quality control.');
             
             status = obj.collectData();
@@ -309,16 +358,18 @@ classdef F2_fastDAQ < handle
             
             if status
                 obj.dispMessage('Ending failed/aborted scan.');
-                eDefOff(obj.eDefNum);
-                eDefRelease(obj.eDefNum);
+                %eDefOff(obj.eDefNum);
+                %eDefRelease(obj.eDefNum);
+                obj.event.stop_eDef();
+                obj.event.release_eDef();
                 % this indicates data taking has ended
                 caput(obj.pvs.DAQ_DataOn,0);
-                obj.event.start_event();
+                %obj.event.start_event();
             end
             
             obj.restore_trig_event(obj.params.EC);
             
-            obj.event.start_event();
+            %obj.event.start_event();
             
             if obj.params.scanDim > 0
                 
@@ -347,10 +398,10 @@ classdef F2_fastDAQ < handle
         
         function status = collectData(obj)
             
-            n_use = lcaGet(sprintf('%sHST%d.NUSE',obj.pulseIDPV,obj.eDefNum));
-            pulse_IDs = lcaGet(sprintf('%sHST%d',obj.pulseIDPV,obj.eDefNum),n_use)';
-            seconds = lcaGet(sprintf('%sHST%d',obj.secPV,obj.eDefNum),n_use)';
-            nSeconds = lcaGet(sprintf('%sHST%d',obj.nSecPV,obj.eDefNum),n_use)';
+            n_use = lcaGet(sprintf('%sHST%d.NUSE',obj.pulseIDPV,obj.event.eDefNum));
+            pulse_IDs = lcaGet(sprintf('%sHST%d',obj.pulseIDPV,obj.event.eDefNum),n_use)';
+            seconds = lcaGet(sprintf('%sHST%d',obj.secPV,obj.event.eDefNum),n_use)';
+            nSeconds = lcaGet(sprintf('%sHST%d',obj.nSecPV,obj.event.eDefNum),n_use)';
             slac_time = seconds + nSeconds/1e9;
             
             UIDs = obj.generateUIDs(pulse_IDs,obj.step);
@@ -387,7 +438,7 @@ classdef F2_fastDAQ < handle
                 
                 for j = 1:numel(obj.data_struct.metadata.(obj.params.BSA_list{i}).PVs)
                     pv = obj.data_struct.metadata.(obj.params.BSA_list{i}).PVs{j};
-                    new_vals = lcaGet([pv 'HST' num2str(obj.eDefNum)],n_use);
+                    new_vals = lcaGet([pv 'HST' num2str(obj.event.eDefNum)],n_use);
                     obj.data_struct.scalars.(obj.params.BSA_list{i}).(strrep(pv,':','_')) = ...
                         [obj.data_struct.scalars.(obj.params.BSA_list{i}).(strrep(pv,':','_')); new_vals'];
                 end
@@ -503,18 +554,18 @@ classdef F2_fastDAQ < handle
         end
         
         function save_data(obj)
-            data_struct = obj.data_struct;
+            d_struct = obj.data_struct;
             
             save_str = [obj.save_info.save_path '/' obj.params.experiment '_' num2str(obj.save_info.instance,'%05d')];
 
-            save(save_str,'data_struct');
+            save(save_str,'d_struct');
             
-            obj.dispMessage('Converting data to HDF5');
-            try
-                matlab2hdf5(data_struct,save_str);
-            catch
-                obj.dispMessage('Failed to convert to HDF5');
-            end
+%             obj.dispMessage('Converting data to HDF5');
+%             try
+%                 matlab2hdf5(d_struct,save_str);
+%             catch
+%                 obj.dispMessage('Failed to convert to HDF5');
+%             end
             
         end
         
@@ -572,30 +623,7 @@ classdef F2_fastDAQ < handle
             
             FACET_DAQ2LOG(Comment,obj);
         end
-
             
-                    
-        
-        function reserve_eDef(obj)
-            
-            nRuns = caget(obj.pvs.BSA_nRuns)+1;
-            caput(obj.pvs.BSA_nRuns,nRuns);
-            eDefString = sprintf('BUFFACQ %d',nRuns);
-            obj.eDefNum = eDefReserve(eDefString);
-            
-            while obj.eDefNum > 11
-                eDefRelease(obj.eDefNum);
-                obj.eDefNum = eDefReserve(eDefString);
-            end
-            
-            eDefParams (obj.eDefNum, 1, 2800, obj.event_info.incmSet, obj.event_info.incmReset, obj.event_info.excmSet, obj.event_info.excmReset, obj.event_info.beamcode);
-            % these two lines added because one call is not enough?
-            pause(0.5);
-            eDefParams (obj.eDefNum, 1, 2800, obj.event_info.incmSet, obj.event_info.incmReset, obj.event_info.excmSet, obj.event_info.excmReset, obj.event_info.beamcode);
-            
-        end
-            
-        
         function checkCams(obj)
             bad_cam = obj.camCheck.checkConnect(true);
             
@@ -607,7 +635,9 @@ classdef F2_fastDAQ < handle
                         case 'Wait and retry'
                             obj.checkCams();
                         case 'Abort DAQ'
-                            obj.abort()
+                            status = obj.check_abort();
+                            if status; return; end
+                            
                     end
                 end
             end
