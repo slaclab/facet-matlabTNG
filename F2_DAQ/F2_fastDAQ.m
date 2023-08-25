@@ -554,15 +554,15 @@ classdef F2_fastDAQ < handle
         end
         
         function save_data(obj)
-            d_struct = obj.data_struct;
+            data_struct = obj.data_struct;
             
             save_str = [obj.save_info.save_path '/' obj.params.experiment '_' num2str(obj.save_info.instance,'%05d')];
 
-            save(save_str,'d_struct');
+            save(save_str,'data_struct');
             
 %             obj.dispMessage('Converting data to HDF5');
 %             try
-%                 matlab2hdf5(d_struct,save_str);
+%                 matlab2hdf5(data_struct,save_str);
 %             catch
 %                 obj.dispMessage('Failed to convert to HDF5');
 %             end
