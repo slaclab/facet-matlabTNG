@@ -29,7 +29,6 @@ classdef SIOC < handle
             % Call Heartbeat PV once to make sure alarm field is not empty
             getAlarm = caget(siocInstance.pvs.SIOC_Heartbeat);
                         
-            diary('/u1/facet/physics/log/matlab/CameraLog.log');
             fprintf('%s Starting SIOC instance for %s.\n',datetime('now'),siocInstance.PV);
             
             siocInstance.listeners = addlistener(siocInstance,'PVUpdated',@(~,~) siocInstance.loop);

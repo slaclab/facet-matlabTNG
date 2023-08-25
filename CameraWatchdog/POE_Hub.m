@@ -46,7 +46,8 @@ classdef POE_Hub < handle
             % Call Identity PV once to make sure alarm field is not empty
             getAlarm = caget(poeHubInstance.pvs.POE_Identity);
                         
-            diary('/u1/facet/physics/log/matlab/CameraLog.log');
+%             diaryLogFn = "/u1/facet/physics/log/matlab/CameraLog" + string(datetime('now','Format',"uuuu-MM-dd")) + ".log";
+%             diary(diaryLogFn);
             fprintf('%s Starting POE Hub instance for %s.\n',datetime('now'),poeHubInstance.PV);
             
             poeHubInstance.listeners = addlistener(poeHubInstance,'PVUpdated',@(~,~) poeHubInstance.loop);

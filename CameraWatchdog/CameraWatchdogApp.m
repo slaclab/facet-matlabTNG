@@ -35,6 +35,9 @@ classdef CameraWatchdogApp < handle
             watchdogInstance.NameList = camCheck.camera_info;
             watchdogInstance.SIOCList = camCheck.sioc_list;
             
+            diaryLogFn = "/u1/facet/physics/log/matlab/CameraLog" + string(datetime('today','Format',"uuuu-MM-dd")) + ".log";
+            diary(diaryLogFn);
+            
             % Create Camera objects: camObj = Camera(cameraPV,SIOC_Status)
             for i = 1:size(watchdogInstance.NameList,1)
                 if ~isempty(watchdogInstance.NameList{i,7}) % skip cameras without POE (should be none)
@@ -101,10 +104,14 @@ classdef CameraWatchdogApp < handle
             
             % Once a day, create a camera report
             if isempty(lastReportTime)
-                lastReportTime = datetime('now');
+                lastReportTime = datetime('today','Format',"dd-MMM-uuuu HH:mm:ss");
             elseif (datetime('now') - lastReportTime) > hours(24)
                 watchdogInstance.saveData();
-                lastReportTime = datetime('now');
+                lastReportTime = datetime('today','Format',"dd-MMM-uuuu HH:mm:ss");
+                
+                diary off
+                diaryLogFn = "/u1/facet/physics/log/matlab/CameraLog" + string(datetime('today','Format',"uuuu-MM-dd")) + ".log";
+                diary(diaryLogFn);
             end
       
             % Loop through SIOCs and POE hubs. If alarm is on, turn off
@@ -203,11 +210,11 @@ classdef CameraWatchdogApp < handle
                 stop_PV(watchdogInstance.SIOCs(i));
             end
             
-            Cleanup(watchdogInstance.pvlist);
-            stop(watchdogInstance.pvlist);
-            
             watchdogInstance.saveData();
             
+            Cleanup(watchdogInstance.pvlist);
+            stop(watchdogInstance.pvlist);
+                        
             diary off
         end
     end

@@ -85,8 +85,8 @@ classdef Camera < handle
                 run(cameraInstance.pvlist,false,cameraInstance.looptime,cameraInstance,'PVUpdated');
             end
             
-            diaryLogFn = "/u1/facet/physics/log/matlab/CameraLog" + string(datetime('now','Format',"uuuu-MM-dd")) + ".log";
-            diary(diaryLogFn);
+%             diaryLogFn = "/u1/facet/physics/log/matlab/CameraLog" + string(datetime('now','Format',"uuuu-MM-dd")) + ".log";
+%             diary(diaryLogFn);
             fprintf('%s Starting Camera instance for %s.\n',datetime('now'),cameraInstance.Name);
         end
         
