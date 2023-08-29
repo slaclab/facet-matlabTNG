@@ -241,7 +241,8 @@ classdef corrPlot_mdl < handle
         
         function mdlInit(mdl)
             % initialize model properties based on current conditions
-            
+            cancd = mdlDataRemove(mdl);
+            if cancd, return; end
             [mdl.system, mdl.accelerator] = getSystem;
             mdl.constants = corrplot_constants();
             acquireInit(mdl);
@@ -883,6 +884,8 @@ classdef corrPlot_mdl < handle
         function dataLoad(mdl, fName)
             % load data and config into model
             prescan = 0;
+            cancd = mdlDataRemove(mdl);
+            if cancd, return; end
             if nargin == 2
                 mdl.fileName = fName;
                 data_temp = load(fName, 'data');
@@ -901,8 +904,6 @@ classdef corrPlot_mdl < handle
             mdl.data = data_temp;
             notify(mdl, 'useChanged');
             mdl.process.loading = 0;
-            %str={'*' ''};
-            %set(app.output,'Name',['Correlation Plot - [' app.fileName ']' str{app.process.saved+1}]);
             
             if isfield(mdl.data, 'prescan')
                 prescan = 1;
@@ -1066,22 +1067,26 @@ classdef corrPlot_mdl < handle
     end
     
     methods % MISC
-        
+
         function cancd = mdlDataRemove(mdl)
             % some actions require the data struct to be reset. Double
             % check with the user if they want this
-            
             cancd = 0;
             if isempty(mdl.data), return; end
             if ~isfield(mdl.data, 'status'), return; end
-            
-            if any(mdl.data.status) && ~mdl.process.saved
-                btn=questdlg('Measured Data not saved!','Unsaved Data', ...
-                    'Discard','Save','Cancel','Save');
-                if strcmp(btn,'Save')
-                    %save function;
-                end
-                if strcmp(btn,'Cancel')
+            fig = mdl.locateApp();
+            if any(mdl.data.status) && ~mdl.process.saved && ~isempty(fig)
+                title = 'Unsaved Data';
+                quest = 'Measured data not saved!';
+                pbtns = {'Discard', 'Save', 'Cancel'};
+                btn = uiconfirm(fig, quest, title, 'Options', pbtns, ...
+                                'DefaultOption', 2, 'CancelOption', 3);
+                switch btn
+                  case 'Save'
+                    dataSave(mdl, 0);
+                  case 'Discard'
+                    % move on with life
+                  otherwise
                     cancd = 1;
                     return
                 end
@@ -1287,8 +1292,19 @@ classdef corrPlot_mdl < handle
             
             % return if acquisition in progress
             if mdl.acqOpt.acquireStatus, return; end
-            cancd = acquireReset(mdl);
-            if cancd, setAcquireStatus(mdl, 0); end
+            if mdl.process.loading
+                fig = mdl.locateApp();
+                if ~isempty(fig)
+                    title = 'Loading Data';
+                    quest = 'Cannot start acquisition. Data is loading!';
+                    pbtns = {'Cancel'};
+                    btn = uiconfirm(fig, quest, title, 'Options', pbtns);
+                end
+                return;
+            end
+            cancd = mdlDataRemove(mdl);
+            if cancd, setAcquireStatus(mdl, 0); return; end
+            acquireReset(mdl);
             setAcquireStatus(mdl, 1);
             relative = 0;
             
@@ -1832,16 +1848,10 @@ classdef corrPlot_mdl < handle
             notify(mdl, 'statusChanged');
         end
         
-        function cancd = acquireReset(mdl, prescan)
+        function acquireReset(mdl, prescan)
             % reset fields in data struct that record acquisition progress,
             % thus initiating data reset downstream
             if nargin < 2, prescan = 0; end
-            if mdl.process.loading, return; end
-            cancd = 0;
-            if ~prescan
-                cancd = mdlDataRemove(mdl);
-            end
-            if cancd, return; end
             mdl.fileName = '';
             mdl.data.accelerator = mdl.accelerator;
             mdl.data.status = zeros(prod(getNumVals(mdl)), 1);
@@ -2852,6 +2862,14 @@ classdef corrPlot_mdl < handle
                 lcaSetTimeout(timeout);
             end
             valid = valid || isempty(pv);
+        end
+
+        function fig = locateApp()
+            name = 'corrPlot_guiDEV';
+            fig = findall(0, 'Tag', name);
+            if isempty(fig)
+                fig = findall(0, 'Name', name);
+            end
         end
         
     end
