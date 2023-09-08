@@ -83,7 +83,7 @@ classdef Emit_GUI_exported < matlab.apps.AppBase
         CameraDropDown_2Label           matlab.ui.control.Label
         CameraDropDown_2                matlab.ui.control.DropDown
         AcquireButton                   matlab.ui.control.Button
-        AnalyzeButton                   matlab.ui.control.Button
+        AcquireandAnalyzeButton         matlab.ui.control.Button
         PVEditFieldLabel                matlab.ui.control.Label
         PVEditField                     matlab.ui.control.EditField
         LogTextAreaLabel                matlab.ui.control.Label
@@ -103,39 +103,12 @@ classdef Emit_GUI_exported < matlab.apps.AppBase
     properties (Access = private)
         aobj % Description
         yOut % Description
-        titletext
         plots
     end
     
     methods (Access = private)
 
      
-
-
-%         function applyECal(app, dipE, dnom, Offset, Eticks)
-%                 
-%                
-%                 y = yticks(app.UIAxes);
-%                 E = abs((dipE * dnom) ./ (Offset + y));
-%                 minE = min(E);
-%                 maxE = max(E);
-%                 
-%                 step = (maxE -   minE) / (Eticks - 1);
-%                 tickPos = minE:step:maxE;
-%                 
-%                 %If you want even integer spacing on energy axis,
-%                 %uncomment roundFLipTick and replace flipTick in
-%                 %yticklabels;
-%                 roundFlipTick = round(fliplr(tickPos));
-%                 flipTick = fliplr(tickPos);
-%                 yt = interp1(E, y, flipTick);
-%                 yticks(app.UIAxes, yt);
-%                 yticklabels(app.UIAxes, num2str(flipTick'));
-%                 
-%                 
-%                 
-%  
-%         end
 
     end
     
@@ -197,6 +170,7 @@ classdef Emit_GUI_exported < matlab.apps.AppBase
                 idefCams = find(contains(Cams, defCams));
                 if ~isempty(idefCams)
                     app.SelectCameraDropDown.Value = Cams(idefCams(1));
+                    SelectCameraDropDownValueChanged(app);
                 end
 
                 app.aobj.data.exp = exp;
@@ -227,34 +201,39 @@ classdef Emit_GUI_exported < matlab.apps.AppBase
             
             switch value
                 case 'LFOV'
-                    msg = 'For selected camera; dnom = -58.1, 10 GeV Beam Position = 3.4';
                     app.NominalDispersionmmEditField.Value = -58.1;
-                    app.GeVBeamPositionmmEditField.Value = 3.4;
+                    app.GeVBeamPositionmmEditField.Value = 80;
                     app.RotatedCheckBox.Value = 0;
+                    msg = sprintf('For selected camera; dnom = %.1fmm, 10 GeV Beam Position = %.2f mm',...
+                        app.NominalDispersionmmEditField.Value, app.GeVBeamPositionmmEditField.Value);
                   
                 case 'DTOTR1'
-                    msg = 'For selected camera; dnom = -55.9, 10 GeV Beam Position =  1.3';
                     app.NominalDispersionmmEditField.Value = -55.9;
                     app.GeVBeamPositionmmEditField.Value = 3;
                     app.RotatedCheckBox.Value = 0;
+                    msg = sprintf('For selected camera; dnom = %.1fmm, 10 GeV Beam Position = %.2f mm',...
+                        app.NominalDispersionmmEditField.Value, app.GeVBeamPositionmmEditField.Value);
                     
                 case 'DTOTR2' 
-                    msg = 'For selected camera; dnom = -55.9, 10 GeV Beam Position = 17.8';
                     app.NominalDispersionmmEditField.Value = -55.9;
                     app.GeVBeamPositionmmEditField.Value = 16.5;
                     app.RotatedCheckBox.Value = 0;
+                    msg = sprintf('For selected camera; dnom = %.1fmm, 10 GeV Beam Position = %.2f mm',...
+                        app.NominalDispersionmmEditField.Value, app.GeVBeamPositionmmEditField.Value);
                     
                 case 'CHER'
-                    msg = 'For selected camera; dnom = -61.7, 10 GeV Beam Position = UPDATE';
                     app.NominalDispersionmmEditField.Value = -61.7;
-                    app.GeVBeamPositionmmEditField.Value = 3.4;
+                    app.GeVBeamPositionmmEditField.Value = 50;
                     app.RotatedCheckBox.Value = 0;
+                    msg = sprintf('For selected camera; dnom = %.1fmm, 10 GeV Beam Position = %.2f mm',...
+                        app.NominalDispersionmmEditField.Value, app.GeVBeamPositionmmEditField.Value);
                     
                 case 'PRDMP'
-                    msg = 'For selected camera; dnom = -69.5, 10 GeV Beam Position = UPDATE';
                     app.NominalDispersionmmEditField.Value = -69.5;
-                    app.GeVBeamPositionmmEditField.Value = 3.4;
+                    app.GeVBeamPositionmmEditField.Value = 60;
                     app.RotatedCheckBox.Value = 0;
+                    msg = sprintf('For selected camera; dnom = %.1fmm, 10 GeV Beam Position = %.2f mm',...
+                        app.NominalDispersionmmEditField.Value, app.GeVBeamPositionmmEditField.Value);
                    
                 otherwise
                     msg = 'For selected camera; Unknown calibration';
@@ -284,9 +263,9 @@ classdef Emit_GUI_exported < matlab.apps.AppBase
                 % Read the file
                 read_img(app.aobj, app, app.aobj.data.data_struct, app.aobj.data.header, cam, ind, isrot);
 
-                app.titletext = sprintf('DAQ %s\\_%05d, cam: %s, Index: %d', exp, dataSetID, cam, ind);
-                app.UIAxes.Title.String = app.titletext; 
-
+                app.aobj.data.titletext = sprintf('DAQ %s\\_%05d, cam: %s, Index: %d', exp, dataSetID, cam, ind);
+                app.UIAxes.Title.String = app.aobj.data.titletext; 
+                
                 %Plot it
                 plot_img(app.aobj, app);
                 
@@ -312,11 +291,12 @@ classdef Emit_GUI_exported < matlab.apps.AppBase
         % Button pushed function: AcquireButton
         function AcquireButtonPushed(app, event)
             
-            exp = 'Live';
-            dataSetID = [];
+            exp = [];
+            dataSetID = 'Live';
             cam = app.CameraDropDown_2.Value;
             ind = [];
 
+            app.aobj.data.dataSetID = dataSetID;
             app.aobj.data.cam = cam;
             app.aobj.data.ind = ind;
 
@@ -349,8 +329,8 @@ classdef Emit_GUI_exported < matlab.apps.AppBase
                 %Plot it
                 plot_img(app.aobj, app);                
                 
-                app.titletext = sprintf('ProfMon %s %s %s', campv, cam, app.aobj.data.ts)
-                app.UIAxes.Title.String = app.titletext;
+                app.aobj.data.titletext = sprintf('ProfMon %s %s %s', campv, cam, app.aobj.data.ts)
+                app.UIAxes.Title.String = app.aobj.data.titletext;
                 
                 dataInfo = {sprintf('ProfMon %s %s\nAcquired: %s', campv, cam, app.aobj.data.ts)}
                 
@@ -535,6 +515,8 @@ classdef Emit_GUI_exported < matlab.apps.AppBase
         % Button pushed function: CentroidButton
         function CentroidButtonPushed(app, event)
 
+            get_ROI(app.aobj, app);
+            
             try
                 if ~isempty(app.aobj.ROI.img)
                     Cy = sum(app.aobj.ROI.ymm.*sum(app.aobj.ROI.img, 1))/sum(sum(app.aobj.ROI.img, 1));
@@ -766,11 +748,12 @@ tic
             hold(app.UIAxes3, 'on');
             app.plots.FitPlot = plot(app.UIAxes3, E, sigma_x_fit, 'r-')
             app.UIAxes3.YLimMode = 'auto';
-          
+            yl = app.UIAxes3.YLim;
+            
             app.plots.BoundPlot = fill(app.UIAxes3, [E fliplr(E)], [sigma_x_lower_bound fliplr(sigma_x_upper_bound)], ...
                                        'r', 'EdgeColor','none', 'FaceAlpha', 0.2);
             hold(app.UIAxes3, 'off');
-
+            app.UIAxes3.YLim = yl;
 
             titletext = sprintf('Fit: ÿ_n = %.0f µm, ÿ_w = %.1f cm, Waist offset = %.1f cm', app.FitEmittanceEditField.Value, app.FitWaistBetaEditField.Value, app.FitWaistOffsetEditField.Value*100);
             title(app.UIAxes3, titletext)
@@ -786,8 +769,6 @@ tic
 
         % Button pushed function: PrinttologbookButton
         function PrinttologbookButtonPushed(app, event)
-
-
 
 
             fh = figure(199);
@@ -809,7 +790,11 @@ tic
             % Copy the image
             ax1 = nexttile([2 1]);
             copy_plot(app.aobj,app, ax1, app.UIAxes);
-            titletext = sprintf('Camera %s, index %d', app.aobj.data.cam, app.aobj.data.ind);
+            if strcmp(app.aobj.data.dataSetID,'Live')
+                titletext = sprintf('Camera %s, %s', app.aobj.data.cam, app.aobj.data.ts);
+            else
+                titletext = sprintf('Camera %s, index %d', app.aobj.data.cam, app.aobj.data.ind);
+            end
             title(ax1, titletext);
             
             % Copy the charge plot
@@ -821,8 +806,13 @@ tic
             ax4 = nexttile(6);
             axis off;
 
-            src      = string(sprintf('Data source: DAQ %s\\_%05d  ', app.aobj.data.exp, app.aobj.data.dataSetID));
-            caminfo  = string(sprintf('Camera: %s, index: %d', app.aobj.data.cam, app.aobj.data.ind));
+            if strcmp(app.aobj.data.dataSetID,'Live')
+                src      = string(sprintf('Data source: Live - %s', app.aobj.data.ts));
+                caminfo  = string(sprintf('Camera: %s', app.aobj.data.cam));
+            else
+                src      = string(sprintf('Data source: DAQ %s\\_%05d  ', app.aobj.data.exp, app.aobj.data.dataSetID));
+                caminfo  = string(sprintf('Camera: %s, index: %d', app.aobj.data.cam, app.aobj.data.ind));  
+            end
             emitinfo = string(sprintf('  Emittance,    \x03b5_n  = %.4g µm (%.4g, %.4g)', ...
                                          app.aobj.emit.emitn_fit*1e6, app.aobj.emit.emitn_CI(1)*1e6, app.aobj.emit.emitn_CI(2)*1e6));
             betainfo = string(sprintf('  Waist beta,    \x03b2_0 = %.3g cm   (%.3g, %.3g)', ...
@@ -842,12 +832,34 @@ tic
 
             tt= text(ax4, 0, 1,analysisinfo, 'VerticalAlignment', 'top', 'FontSize', 11);
 
+            
+            % save app object
+            F2_Emit_data = [];
+            F2_Emit_data.data = app.aobj.data;
+            F2_Emit_data.ROI = app.aobj.ROI;
+            F2_Emit_data.cal = app.aobj.cal;
+            F2_Emit_data.emit = app.aobj.emit;
+            F2_Emit_data.emit.text = analysisinfo;
+            F2_Emit_data.log = app.aobj.log;
+            F2_Emit_data.figure = fh;
+            
+            
+            if strcmp(app.aobj.data.dataSetID,'Live')
+                fileName = sprintf('Live_%s', app.aobj.data.cam)
+            else
+                fileName = sprintf('%s_%s_%s_ind%s', app.aobj.data.exp, app.aobj.data.dataSetID,app.aobj.data.cam, app.aobj.data.ind)
+            end
+            [fileName pathName] = util_dataSave(F2_Emit_data, 'F2_Emit', fileName, app.aobj.data.ts);
+            pathfile = strcat(pathName, '/', fileName);
+            
 
-           
+            
+           % prepare to log
             opts.text = strcat(src, caminfo, ...
                                sprintf('\nnemit_x: %.4g (%.4g, %.4g) [mm-mrad], beta_0: %.3g (%.3g, %.3g) [cm]', ...
                                    app.aobj.emit.emitn_fit*1e6, app.aobj.emit.emitn_CI(1)*1e6, app.aobj.emit.emitn_CI(2)*1e6,  ...  
-                                   app.aobj.emit.beta_0_fit*1e2, app.aobj.emit.beta_0_CI(1)*1e2, app.aobj.emit.beta_0_CI(2)*1e2))
+                                   app.aobj.emit.beta_0_fit*1e2, app.aobj.emit.beta_0_CI(1)*1e2, app.aobj.emit.beta_0_CI(2)*1e2), ...
+                               sprintf('\n\nFile: %s', pathfile));
             opts.title= 'F2_Emit: Emittance Analysis';
     
             try
@@ -892,6 +904,15 @@ tic
             title(app.UIAxes, '');
             title(app.UIAxes3, '');
             
+            
+            app.FitEmittanceEditField.Value=0;
+            app.EmitCIEditField.Value='';
+            app.FitWaistBetaEditField.Value=0;
+            app.BetaCIEditField.Value='';
+            app.FitWaistOffsetEditField.Value=0;
+            app.OffsetCIEditField.Value='';
+            app.RsquaredEditField.Value=0;
+            
         end
 
         % Value changed function: zobEditField
@@ -928,8 +949,8 @@ tic
             app.AutoPopulateButton.Visible = 'on';
         end
 
-        % Button pushed function: AnalyzeButton
-        function AnalyzeButtonPushed(app, event)
+        % Button pushed function: AcquireandAnalyzeButton
+        function AcquireandAnalyzeButtonPushed(app, event)
             
             % Toggle Ecal and press energy cal button
             app.ToggleECalButton.Value = 1;
@@ -964,15 +985,15 @@ tic
             % Create UIAxes2
             app.UIAxes2 = uiaxes(app.UIFigure);
             title(app.UIAxes2, '')
-            xlabel(app.UIAxes2, '')
-            ylabel(app.UIAxes2, 'Charge [au]')
+            xlabel(app.UIAxes2, 'y position [mm]')
+            ylabel(app.UIAxes2, 'Charge [a.u.]')
             app.UIAxes2.Position = [643 304 533 236];
 
             % Create UIAxes3
             app.UIAxes3 = uiaxes(app.UIFigure);
             title(app.UIAxes3, '')
             xlabel(app.UIAxes3, 'Beam Energy [Gev]')
-            ylabel(app.UIAxes3, 'Beam Width ')
+            ylabel(app.UIAxes3, 'Beam Width')
             app.UIAxes3.Position = [643 27 533 268];
 
             % Create SpectrometerSettingsPanel
@@ -1391,12 +1412,12 @@ tic
             app.AcquireButton.Position = [17 114 146 23];
             app.AcquireButton.Text = 'Acquire';
 
-            % Create AnalyzeButton
-            app.AnalyzeButton = uibutton(app.LiveDataTab, 'push');
-            app.AnalyzeButton.ButtonPushedFcn = createCallbackFcn(app, @AnalyzeButtonPushed, true);
-            app.AnalyzeButton.BackgroundColor = [0 1 0];
-            app.AnalyzeButton.Position = [17 81 146 23];
-            app.AnalyzeButton.Text = 'Analyze';
+            % Create AcquireandAnalyzeButton
+            app.AcquireandAnalyzeButton = uibutton(app.LiveDataTab, 'push');
+            app.AcquireandAnalyzeButton.ButtonPushedFcn = createCallbackFcn(app, @AcquireandAnalyzeButtonPushed, true);
+            app.AcquireandAnalyzeButton.BackgroundColor = [0 1 0];
+            app.AcquireandAnalyzeButton.Position = [17 81 146 23];
+            app.AcquireandAnalyzeButton.Text = 'Acquire and Analyze';
 
             % Create PVEditFieldLabel
             app.PVEditFieldLabel = uilabel(app.LiveDataTab);
