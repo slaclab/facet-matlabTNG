@@ -36,6 +36,7 @@ classdef EmitSupport < handle
             obj.data.cam = [];
             obj.data.ind = [];
             obj.data.ts = [];
+            obj.data.title = [];
             
             % Image data
             obj.data.img = [];
@@ -69,9 +70,11 @@ classdef EmitSupport < handle
             obj.emit.emitn_CI = [];
             obj.emit.beta_0_CI = [];
             obj.emit.deltaz_w_CI = [];
+            obj.emit.text = [];
 
             % log data
             obj.log = [];
+            
 
         end
         
@@ -168,6 +171,7 @@ classdef EmitSupport < handle
             obj.data.y = y;
             obj.data.xmm = xmm;
             obj.data.ymm = ymm;
+
         end 
 
         %% Read image data from profmon:
