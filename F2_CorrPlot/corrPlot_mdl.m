@@ -429,6 +429,7 @@ classdef corrPlot_mdl < handle
                     mdl.numCtrlPV = ~isempty(mdl.ctrlPV) + ~isempty(mdl.ctrlPVFast);
                 end
             end
+            plotXAxisControl(mdl, {});
             notify(mdl, 'ctrlPVChanged');
             notify(mdl, 'ctrlPVFastChanged');
         end
