@@ -7,7 +7,7 @@ requestedHour = str2num(datestr(t1,'HH'));
 disp(handles.cameraPVs)
 hh = figure;
 for jj=1:8      % S10 Cameras
-    pth = [rootPath,datestr(t1,'yyyy'),'/',datestr(t1,'yyyy-mm'),'/',datestr(t1,'yyyy-mm-dd'),'/'];                                    
+    pth = [rootPath,datestr(t1,'yyyy'),'/',datestr(t1,'yyyy-mm'),'/',datestr(t1,'yyyy-mm-dd'),'/LaserArchiverImages/'];                                    
     filelist = dir(pth);                          
     mfile = find(~cellfun(@isempty,regexp({filelist.name},handles.cameraPVs{jj})));
     files = {filelist(mfile).name};   if isempty(files);disp('No data found');continue;end
@@ -29,7 +29,7 @@ end
 clearvars theHour files
 hg = figure;
 for jj=9:length(handles.cameraPVs)      % S20 Cameras
-    pth = [rootPath,datestr(t1,'yyyy'),'/',datestr(t1,'yyyy-mm'),'/',datestr(t1,'yyyy-mm-dd'),'/'];                                    
+    pth = [rootPath,datestr(t1,'yyyy'),'/',datestr(t1,'yyyy-mm'),'/',datestr(t1,'yyyy-mm-dd'),'/LaserArchiverImages/'];                                    
     filelist = dir(pth);                          
     mfile = find(~cellfun(@isempty,regexp({filelist.name},handles.cameraPVs{jj})));
     files = {filelist(mfile).name};
