@@ -124,6 +124,46 @@ classdef F2_SpecLineApp < handle
         end
         
         
+        function z = set_Z(obj, app, dropdown)
+
+            ele = app.(dropdown).Value;
+
+            switch ele
+                case 'DTOTR'
+                    z = 2.015259850655461e+03;
+                case 'LFOV'
+                    z = 2.015629843995481e+03;
+                case 'CHER'
+                    z = 2.016220001372488e+03;
+                case 'PRDMP'
+                    z = 2.017529977792559e+03;
+                case 'EDC_SCREEN'
+                    z = 2.010499937335186e+03;
+                case 'PIC_CENT'
+                    z = 1.992820001379069e+03;
+                case 'FILS'
+                    z = 1.993273701379069e+03;
+                case 'FILG'
+                    z = 1.993221701379069e+03;
+                case 'IPOTR1P'
+                    z = 1.993740001379069e+03;
+                case 'IPOTR1'
+                    z = 1.993830001379069e+03;
+                case 'IPWS1'
+                    z = 1.993910001379069e+03;
+                case 'PENT'
+                    z = 1.993870001379069e+03;
+                case 'PEXT'
+                    z = 1.995040001379069e+03;
+                case 'IPOTR2'
+                    z = 1.995090001379069e+03;
+                case 'BEWIN2'
+                    z = 1.996100001379069e+03;
+                otherwise
+                    z = 0;                
+            end
+        end
+        
     end
     
 end
