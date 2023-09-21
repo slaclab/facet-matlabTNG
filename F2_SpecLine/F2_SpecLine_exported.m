@@ -35,7 +35,6 @@ classdef F2_SpecLine_exported < matlab.apps.AppBase
         B5DBACTField                 matlab.ui.control.NumericEditField
         B5DLGPS3330Label             matlab.ui.control.Label
         B5DBDESEditField             matlab.ui.control.NumericEditField
-        GetBACTButton                matlab.ui.control.Button
     end
 
     
@@ -71,7 +70,7 @@ classdef F2_SpecLine_exported < matlab.apps.AppBase
             end
         end
 
-        % Button pushed function: GetBACTButton
+        % Callback function
         function GetBACTButtonPushed(app, event)
             magnets={'LI20:LGPS:3141';'LI20:LGPS:3261';'LI20:LGPS:3091'; 'LGPS:LI20:3330'};
             BACT = control_magnetGet(magnets);
@@ -95,18 +94,6 @@ classdef F2_SpecLine_exported < matlab.apps.AppBase
             
             z = set_Z(app.aobj, app, 'ZimDropDown');
             lcaPutSmart('SIOC:SYS1:ML00:CALCOUT053', z);
-        end
-
-        % Value changed function: ZObjectEditField
-        function ZObjectEditFieldValueChanged(app, event)
-            value = app.ZObjectEditField.Value;
-            app.ZobDropDown.Value = 'Custom';
-        end
-
-        % Value changed function: ZImageEditField
-        function ZImageEditFieldValueChanged(app, event)
-            value = app.ZImageEditField.Value;
-            app.ZimDropDown.Value = 'Custom';
         end
     end
 
@@ -146,7 +133,6 @@ classdef F2_SpecLine_exported < matlab.apps.AppBase
             % Create ZObjectEditField
             app.ZObjectEditField = uieditfield(app.SpectrometerParametersPanel, 'numeric');
             app.ZObjectEditField.ValueDisplayFormat = '%11.4f';
-            app.ZObjectEditField.ValueChangedFcn = createCallbackFcn(app, @ZObjectEditFieldValueChanged, true);
             app.ZObjectEditField.Position = [100 241 73 22];
 
             % Create ZImagemEditFieldLabel
@@ -158,7 +144,6 @@ classdef F2_SpecLine_exported < matlab.apps.AppBase
             % Create ZImageEditField
             app.ZImageEditField = uieditfield(app.SpectrometerParametersPanel, 'numeric');
             app.ZImageEditField.ValueDisplayFormat = '%11.4f';
-            app.ZImageEditField.ValueChangedFcn = createCallbackFcn(app, @ZImageEditFieldValueChanged, true);
             app.ZImageEditField.Position = [100 207 73 22];
 
             % Create M12EditFieldLabel
@@ -290,7 +275,7 @@ classdef F2_SpecLine_exported < matlab.apps.AppBase
             app.TrimButton.FontSize = 14;
             app.TrimButton.FontWeight = 'bold';
             app.TrimButton.FontColor = [1 1 1];
-            app.TrimButton.Position = [120 62 50 24];
+            app.TrimButton.Position = [113 62 62 24];
             app.TrimButton.Text = 'Trim';
 
             % Create B5DBACTField
@@ -307,15 +292,6 @@ classdef F2_SpecLine_exported < matlab.apps.AppBase
             % Create B5DBDESEditField
             app.B5DBDESEditField = uieditfield(app.MagnetValuesPanel, 'numeric');
             app.B5DBDESEditField.Position = [120 108 47 22];
-
-            % Create GetBACTButton
-            app.GetBACTButton = uibutton(app.MagnetValuesPanel, 'push');
-            app.GetBACTButton.ButtonPushedFcn = createCallbackFcn(app, @GetBACTButtonPushed, true);
-            app.GetBACTButton.BackgroundColor = [0 1 0];
-            app.GetBACTButton.FontSize = 14;
-            app.GetBACTButton.FontWeight = 'bold';
-            app.GetBACTButton.Position = [182 62 82 24];
-            app.GetBACTButton.Text = 'Get BACT';
 
             % Show the figure after all components are created
             app.UIFigure.Visible = 'on';
