@@ -17,6 +17,8 @@ classdef F2_SpecLine_exported < matlab.apps.AppBase
         CalcButton                   matlab.ui.control.Button
         DipoleSwitchLabel            matlab.ui.control.Label
         DipoleSwitch                 matlab.ui.control.Switch
+        ZobDropDown                  matlab.ui.control.DropDown
+        ZimDropDown                  matlab.ui.control.DropDown
         MagnetValuesPanel            matlab.ui.container.Panel
         Q0DLGPS3141EditFieldLabel    matlab.ui.control.Label
         Q0DBDESEditField             matlab.ui.control.NumericEditField
@@ -33,6 +35,7 @@ classdef F2_SpecLine_exported < matlab.apps.AppBase
         B5DBACTField                 matlab.ui.control.NumericEditField
         B5DLGPS3330Label             matlab.ui.control.Label
         B5DBDESEditField             matlab.ui.control.NumericEditField
+        GetButton                    matlab.ui.control.Button
         CommonZLocationsPanel        matlab.ui.container.Panel
         PBCENTLabel                  matlab.ui.control.Label
         FILSLabel                    matlab.ui.control.Label
@@ -82,11 +85,49 @@ classdef F2_SpecLine_exported < matlab.apps.AppBase
 
         % Value changed function: DipoleSwitch
         function DipoleSwitchValueChanged(app, event)
-      if strcmp(app.DipoleSwitch.Value, 'With')
-        lcaPutSmart('SIOC:SYS1:ML00:CALCOUT056', 1);
-      else
-        lcaPutSmart('SIOC:SYS1:ML00:CALCOUT056', 0);
-      end
+            if strcmp(app.DipoleSwitch.Value, 'With')
+                lcaPutSmart('SIOC:SYS1:ML00:CALCOUT056', 1);
+            else
+                lcaPutSmart('SIOC:SYS1:ML00:CALCOUT056', 0);
+            end
+        end
+
+        % Button pushed function: GetButton
+        function GetButtonPushed(app, event)
+            magnets={'LI20:LGPS:3141';'LI20:LGPS:3261';'LI20:LGPS:3091'; 'LGPS:LI20:3330'};
+            BACT = control_magnetGet(magnets);
+            app.Q0DBACTField.Value = BACT(1);
+            app.Q1DBACTField.Value = BACT(2);
+            app.Q2DBACTField.Value = BACT(3);
+            app.B5DBACTField.Value = BACT(4);
+        end
+
+        % Value changed function: ZobDropDown
+        function ZobDropDownValueChanged(app, event)
+            value = app.ZobDropDown.Value;
+            
+            z = set_Z(app.aobj, app, 'ZobDropDown');
+            app.ZObjectEditField.Value = z;
+        end
+
+        % Value changed function: ZimDropDown
+        function ZimDropDownValueChanged(app, event)
+            value = app.ZimDropDown.Value;
+            
+            z = set_Z(app.aobj, app, 'ZimDropDown');
+            app.ZImageEditField.Value = z;
+        end
+
+        % Value changed function: ZObjectEditField
+        function ZObjectEditFieldValueChanged(app, event)
+            value = app.ZObjectEditField.Value;
+            app.ZobDropDown.Value = 'Custom';
+        end
+
+        % Value changed function: ZImageEditField
+        function ZImageEditFieldValueChanged(app, event)
+            value = app.ZImageEditField.Value;
+            app.ZimDropDown.Value = 'Custom';
         end
     end
 
@@ -109,57 +150,59 @@ classdef F2_SpecLine_exported < matlab.apps.AppBase
             % Create EnergyGeVEditFieldLabel
             app.EnergyGeVEditFieldLabel = uilabel(app.SpectrometerParametersPanel);
             app.EnergyGeVEditFieldLabel.HorizontalAlignment = 'right';
-            app.EnergyGeVEditFieldLabel.Position = [42 277 79 22];
+            app.EnergyGeVEditFieldLabel.Position = [3 277 79 22];
             app.EnergyGeVEditFieldLabel.Text = 'Energy (GeV)';
 
             % Create EnergyEditField
             app.EnergyEditField = uieditfield(app.SpectrometerParametersPanel, 'numeric');
             app.EnergyEditField.ValueDisplayFormat = '%11.4f';
-            app.EnergyEditField.Position = [146 277 73 22];
+            app.EnergyEditField.Position = [94 277 73 22];
 
             % Create ZObjectmEditFieldLabel
             app.ZObjectmEditFieldLabel = uilabel(app.SpectrometerParametersPanel);
             app.ZObjectmEditFieldLabel.HorizontalAlignment = 'right';
-            app.ZObjectmEditFieldLabel.Position = [50 242 71 22];
+            app.ZObjectmEditFieldLabel.Position = [11 242 71 22];
             app.ZObjectmEditFieldLabel.Text = 'Z Object (m)';
 
             % Create ZObjectEditField
             app.ZObjectEditField = uieditfield(app.SpectrometerParametersPanel, 'numeric');
             app.ZObjectEditField.ValueDisplayFormat = '%11.4f';
-            app.ZObjectEditField.Position = [146 242 73 22];
+            app.ZObjectEditField.ValueChangedFcn = createCallbackFcn(app, @ZObjectEditFieldValueChanged, true);
+            app.ZObjectEditField.Position = [94 242 73 22];
 
             % Create ZImagemEditFieldLabel
             app.ZImagemEditFieldLabel = uilabel(app.SpectrometerParametersPanel);
             app.ZImagemEditFieldLabel.HorizontalAlignment = 'right';
-            app.ZImagemEditFieldLabel.Position = [51 208 70 22];
+            app.ZImagemEditFieldLabel.Position = [12 208 70 22];
             app.ZImagemEditFieldLabel.Text = 'Z Image (m)';
 
             % Create ZImageEditField
             app.ZImageEditField = uieditfield(app.SpectrometerParametersPanel, 'numeric');
             app.ZImageEditField.ValueDisplayFormat = '%11.4f';
-            app.ZImageEditField.Position = [146 208 73 22];
+            app.ZImageEditField.ValueChangedFcn = createCallbackFcn(app, @ZImageEditFieldValueChanged, true);
+            app.ZImageEditField.Position = [94 208 73 22];
 
             % Create M12EditFieldLabel
             app.M12EditFieldLabel = uilabel(app.SpectrometerParametersPanel);
             app.M12EditFieldLabel.HorizontalAlignment = 'right';
-            app.M12EditFieldLabel.Position = [92 174 29 22];
+            app.M12EditFieldLabel.Position = [53 174 29 22];
             app.M12EditFieldLabel.Text = 'M12';
 
             % Create M12EditField
             app.M12EditField = uieditfield(app.SpectrometerParametersPanel, 'numeric');
             app.M12EditField.ValueDisplayFormat = '%11.4f';
-            app.M12EditField.Position = [146 174 73 22];
+            app.M12EditField.Position = [94 174 73 22];
 
             % Create M34EditFieldLabel
             app.M34EditFieldLabel = uilabel(app.SpectrometerParametersPanel);
             app.M34EditFieldLabel.HorizontalAlignment = 'right';
-            app.M34EditFieldLabel.Position = [92 140 29 22];
+            app.M34EditFieldLabel.Position = [53 140 29 22];
             app.M34EditFieldLabel.Text = 'M34';
 
             % Create M34EditField
             app.M34EditField = uieditfield(app.SpectrometerParametersPanel, 'numeric');
             app.M34EditField.ValueDisplayFormat = '%11.4f';
-            app.M34EditField.Position = [146 140 73 22];
+            app.M34EditField.Position = [94 140 73 22];
 
             % Create CalcButton
             app.CalcButton = uibutton(app.SpectrometerParametersPanel, 'push');
@@ -168,7 +211,7 @@ classdef F2_SpecLine_exported < matlab.apps.AppBase
             app.CalcButton.FontSize = 14;
             app.CalcButton.FontWeight = 'bold';
             app.CalcButton.FontColor = [1 1 1];
-            app.CalcButton.Position = [59 19 143 24];
+            app.CalcButton.Position = [58 22 143 24];
             app.CalcButton.Text = 'Calculate and Trim';
 
             % Create DipoleSwitchLabel
@@ -185,6 +228,20 @@ classdef F2_SpecLine_exported < matlab.apps.AppBase
             app.DipoleSwitch.ValueChangedFcn = createCallbackFcn(app, @DipoleSwitchValueChanged, true);
             app.DipoleSwitch.Position = [109 63 56 25];
             app.DipoleSwitch.Value = 'Without';
+
+            % Create ZobDropDown
+            app.ZobDropDown = uidropdown(app.SpectrometerParametersPanel);
+            app.ZobDropDown.Items = {'Select...', 'Custom', 'PIC_CENT', 'FILG', 'FILS', 'IPOTR1P', 'IPOTR1', 'PENT', 'IPWS1', 'PEXT', 'IPOTR2', 'BEWIN2'};
+            app.ZobDropDown.ValueChangedFcn = createCallbackFcn(app, @ZobDropDownValueChanged, true);
+            app.ZobDropDown.Position = [173 242 82 22];
+            app.ZobDropDown.Value = 'Select...';
+
+            % Create ZimDropDown
+            app.ZimDropDown = uidropdown(app.SpectrometerParametersPanel);
+            app.ZimDropDown.Items = {'Select...', 'Custom', 'EDC_SCREEN', 'DTOTR', 'LFOV', 'CHER', 'PRDMP'};
+            app.ZimDropDown.ValueChangedFcn = createCallbackFcn(app, @ZimDropDownValueChanged, true);
+            app.ZimDropDown.Position = [173 208 82 22];
+            app.ZimDropDown.Value = 'Select...';
 
             % Create MagnetValuesPanel
             app.MagnetValuesPanel = uipanel(app.UIFigure);
@@ -254,7 +311,7 @@ classdef F2_SpecLine_exported < matlab.apps.AppBase
             app.TrimButton.FontSize = 14;
             app.TrimButton.FontWeight = 'bold';
             app.TrimButton.FontColor = [1 1 1];
-            app.TrimButton.Position = [112 47 50 24];
+            app.TrimButton.Position = [127 63 50 24];
             app.TrimButton.Text = 'Trim';
 
             % Create B5DBACTField
@@ -271,6 +328,15 @@ classdef F2_SpecLine_exported < matlab.apps.AppBase
             % Create B5DBDESEditField
             app.B5DBDESEditField = uieditfield(app.MagnetValuesPanel, 'numeric');
             app.B5DBDESEditField.Position = [127 109 47 22];
+
+            % Create GetButton
+            app.GetButton = uibutton(app.MagnetValuesPanel, 'push');
+            app.GetButton.ButtonPushedFcn = createCallbackFcn(app, @GetButtonPushed, true);
+            app.GetButton.BackgroundColor = [0 1 0];
+            app.GetButton.FontSize = 14;
+            app.GetButton.FontWeight = 'bold';
+            app.GetButton.Position = [194 63 50 24];
+            app.GetButton.Text = 'Get';
 
             % Create CommonZLocationsPanel
             app.CommonZLocationsPanel = uipanel(app.UIFigure);
