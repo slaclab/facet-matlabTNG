@@ -86,7 +86,7 @@ classdef F2_SpecLine_exported < matlab.apps.AppBase
             value = app.ZobDropDown.Value;
             
             z = set_Z(app.aobj, app, 'ZobDropDown');
-            app.ZObjectEditField.Value = z;
+            lcaPutSmart('SIOC:SYS1:ML00:CALCOUT052', z);
         end
 
         % Value changed function: ZimDropDown
@@ -94,7 +94,7 @@ classdef F2_SpecLine_exported < matlab.apps.AppBase
             value = app.ZimDropDown.Value;
             
             z = set_Z(app.aobj, app, 'ZimDropDown');
-            app.ZImageEditField.Value = z;
+            lcaPutSmart('SIOC:SYS1:ML00:CALCOUT053', z);
         end
 
         % Value changed function: ZObjectEditField
