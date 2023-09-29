@@ -5,6 +5,7 @@ s10camerasSelected = find(cell2mat(s10cameraHandles(:,2)));
 s20camerasSelected = find(cell2mat(s20cameraHandles(:,2)))+numel(s10cameraHandles(:,2));
 camerasSelected = [s10camerasSelected;s20camerasSelected];
 allcameraHandles = [s10cameraHandles;s20cameraHandles];
+
 %uvcampvs = {'CAMR:LT10:200','CAMR:LT10:380','CAMR:LT10:450','CAMR:LT10:900'};% This is if u wanna plot the waveplate angle
 %camerasSelected = find(cell2mat(s10cameraHandles(:,2)));% This was for just S10 cameras
 nDataPointsPerShot = 13;% This should come straight from the dataset - fix in future releases
@@ -48,7 +49,7 @@ for n=1:length(camerasSelected)
         title(allcameraHandles(camerasSelected(n),1),'FontSize',20)
 
     hAx(3) =subplot(2,3,3);
-       p1 = plot(t,energyJitter);  ylabel('Energy Jitter [%]','interpreter','tex'); grid on    
+       p1 = plot(t,energyJitter);  ylabel('Energy Diff From Mean [%]','interpreter','tex'); grid on    
         % If this is a UV camera plot waveplate angle
        %if  contains(handles.cameraPVs{camerasSelected(n)},uvcampvs) && makeWaveplatePlot
        %    yyaxis right;plot(t,wpDataInterp);ylabel('Waveplate Angle [deg]');end
@@ -148,6 +149,7 @@ function [t,data]=fetchLaserArchiverData(t1,t2,camerasSelected,n)
         
        % If the user wants data from today            
         if datestr(t2,'yyyy-mm-dd')==datestr(now,'yyyy-mm-dd') 
+            
              todaysdata = lcaGetSmart(handles.matlabArrayPVs{camerasSelected(n)});idx = todaysdata~=0;
              rawdata = cat(2,rawdata,todaysdata(idx));
         end
