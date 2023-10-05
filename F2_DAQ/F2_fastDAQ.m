@@ -389,8 +389,10 @@ classdef F2_fastDAQ < handle
             obj.dispMessage('Saving data.');
             obj.save_data();
             
-            obj.dispMessage('Writing to eLog.');
-            obj.write2eLog(status);
+            if obj.params.print2elog
+                obj.dispMessage('Writing to eLog.');
+                obj.write2eLog(status);
+            end
             
             obj.dispMessage('Done!');
             caput(obj.pvs.DAQ_Running,0);
@@ -650,7 +652,7 @@ classdef F2_fastDAQ < handle
             lcaPut(obj.daq_pvs.TSS_SETEC,obj.params.EC);
             
             lcaPut(obj.daq_pvs.TIFF_EnableCallbacks,1);
-            lcaPut(obj.daq_pvs.TIFF_FileWriteMode,1);
+            lcaPut(obj.daq_pvs.TIFF_FileWriteMode,1); % 1=capture (slow), 2 =streaming (fast)
             lcaPut(obj.daq_pvs.TIFF_AutoIncrement,1);
             lcaPut(obj.daq_pvs.TIFF_AutoSave,1);
             lcaPut(obj.daq_pvs.TIFF_SetPort,2);

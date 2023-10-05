@@ -389,7 +389,7 @@ classdef F2_DAQ_exported < matlab.apps.AppBase
 
             % Create ExperimentDropDown
             app.ExperimentDropDown = uidropdown(app.DAQSettingsPanel);
-            app.ExperimentDropDown.Items = {'TEST', 'E300', 'E301', 'E305', 'E308', 'E320', 'E325', 'E326', 'E327', 'E331', 'E332'};
+            app.ExperimentDropDown.Items = {'TEST', 'BEAMPHYS', 'E300', 'E301', 'E305', 'E308', 'E320', 'E325', 'E326', 'E327', 'E331', 'E332'};
             app.ExperimentDropDown.Position = [88 187 71 22];
             app.ExperimentDropDown.Value = 'TEST';
 
@@ -454,6 +454,7 @@ classdef F2_DAQ_exported < matlab.apps.AppBase
 
             % Create FastDAQCheckBox
             app.FastDAQCheckBox = uicheckbox(app.DAQSettingsPanel);
+            app.FastDAQCheckBox.Enable = 'off';
             app.FastDAQCheckBox.Text = 'Fast DAQ';
             app.FastDAQCheckBox.Position = [176 21 74 22];
             app.FastDAQCheckBox.Value = true;
