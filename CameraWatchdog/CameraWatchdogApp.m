@@ -58,8 +58,10 @@ classdef CameraWatchdogApp < handle
             % Unflag cameras that don't have alarm status for Acquisition PV
             for i = 1:numel(watchdogInstance.CameraObjs)
                 if watchdogInstance.CameraObjs(i).IsSIOCgood &&...
-                        strcmp(watchdogInstance.CameraObjs(i).pvs.Acquisition.SEVR{1},"NO_ALARM")
-                    watchdogInstance.CameraObjs(i).Alarm = false;
+                        iscell(lcaGetSmart(watchdogInstance.CameraObjs(i).CameraPV+":NAME"))
+                    if strcmp(watchdogInstance.CameraObjs(i).pvs.Acquisition.SEVR{1},"NO_ALARM")
+                        watchdogInstance.CameraObjs(i).Alarm = false;
+                    end
                 end
             end
                         
