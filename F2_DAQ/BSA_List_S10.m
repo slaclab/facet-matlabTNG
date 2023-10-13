@@ -51,6 +51,9 @@ S10_BSA_List = {...
 %'BPMS:IN10:781:X';
 %'BPMS:IN10:781:Y';
 %'BPMS:IN10:781:TMIT';
+
+'PMTR:HT10:950:PWR';
+
 };
 
 
