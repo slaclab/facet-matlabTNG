@@ -41,7 +41,7 @@ classdef scanFunc_E332_TargetPosition < handle
                 daqhandle = DaqHandleMock();
             end
             
-            if isfield(daqhandle,'guihan')
+            if isprop(daqhandle,'guihan')
                 if isa(daqhandle.guihan,'F2_DAQ')
                     obj.guihan = daqhandle.guihan;
                     obj.guihan.Blockbeam.Value = true;
