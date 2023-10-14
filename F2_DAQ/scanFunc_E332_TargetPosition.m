@@ -1,7 +1,9 @@
-classdef scanFunc_E332TargetPosition < handle
+classdef scanFunc_E332_TargetPosition < handle
 %SCANFUNC_E332TARGETPOSITION DAQ scan function (class) for the E332 target
     
     properties
+        pvlist PV
+        pvs
         target
         pvEngine
         daqhandle
@@ -21,7 +23,7 @@ classdef scanFunc_E332TargetPosition < handle
     end
 
     methods
-        function obj = scanFunc_E332TargetPosition(daqhandle, pvEngine, transform)
+        function obj = scanFunc_E332_TargetPosition(daqhandle, pvEngine, transform)
             %SCANFUNC_E332TARGETPOSITION Constructor
             %   daqhandle: daqhandle provided by the DAQ
             %   pvEngine: the PV engine (wrapper) to use. Defaults to PVEngineLca()
@@ -35,6 +37,17 @@ classdef scanFunc_E332TargetPosition < handle
 
             obj.pvEngine = pvEngine;
             obj.daqhandle = daqhandle;
+            
+            context = PV.Initialize(PVtype.EPICS_labca);
+            obj.pvlist=[...
+                PV(context,'name',"control",'pvname',obj.control_PV,'mode',"rw",'monitor',true); % Control PV
+                PV(context,'name',"readback",'pvname',obj.readback_PV,'mode',"r",'monitor',true); % Readback PV
+                ];
+            pset(obj.pvlist,'debug',0);
+            obj.pvs = struct(obj.pvlist);
+            
+            %obj.initial_control = caget(obj.pvs.control);
+            %obj.initial_readback = caget(obj.pvs.readback);
             
             obj.target = E332Target(pvEngine, transform);
             obj.target.tolerance = obj.tolerance;
