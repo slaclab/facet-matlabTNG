@@ -14,15 +14,16 @@ classdef E332Target < handle
     end
 
     properties
-        %pvTargetLat = "XPS:LI20:MC05:M2"
-        %pvTargetVert = "XPS:LI20:MC05:M1"
-        %pvTargetLatRbv = "XPS:LI20:MC05:M2.RBV"
-        %pvTargetVertRbv = "XPS:LI20:MC05:M1.RBV"
+        pvTargetLat = "XPS:LI20:MC05:M2"
+        pvTargetVert = "XPS:LI20:MC05:M1"
+        pvTargetLatRbv = "XPS:LI20:MC05:M2.RBV"
+        pvTargetVertRbv = "XPS:LI20:MC05:M1.RBV"
 
-        pvTargetLat = "SIOC:SYS1:ML03:AO660"
-        pvTargetVert = "SIOC:SYS1:ML03:AO661"
-        pvTargetLatRbv = "SIOC:SYS1:ML03:AO660"
-        pvTargetVertRbv = "SIOC:SYS1:ML03:AO661"
+        %pvTargetLat = "SIOC:SYS1:ML03:AO660"
+        %pvTargetVert = "SIOC:SYS1:ML03:AO661"
+        %pvTargetLatRbv = "SIOC:SYS1:ML03:AO660"
+        %pvTargetVertRbv = "SIOC:SYS1:ML03:AO661"
+        
         tolerance = 1e-1;
     end
     

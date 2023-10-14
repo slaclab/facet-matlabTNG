@@ -7,8 +7,10 @@ classdef scanFunc_E332_TargetPosition < handle
         target
         pvEngine
         daqhandle
+        guihan
         transform
         currentPosition
+        freerun
     end
 
     properties(Constant)
@@ -23,17 +25,38 @@ classdef scanFunc_E332_TargetPosition < handle
     end
 
     methods
-        function obj = scanFunc_E332_TargetPosition(daqhandle, pvEngine, transform)
-            %SCANFUNC_E332TARGETPOSITION Constructor
+        %function obj = scanFunc_E332_TargetPosition(daqhandle, pvEngine, transform)
+        function obj = scanFunc_E332_TargetPosition(daqhandle)
+            % scanFunc_E332_TargetPosition Constructor
             %   daqhandle: daqhandle provided by the DAQ
             %   pvEngine: the PV engine (wrapper) to use. Defaults to PVEngineLca()
             %   transform: the coordinate transform to use. Defaults to
             %   RTSTransform(), which is rotation+translation+scale.
-            arguments
-                daqhandle = DaqHandleMock()
-                pvEngine (1,1) PVEngine = PVEngineLca()
-                transform (1,1) CoordinateTransform = RTSTransform()
+            
+            addpath(genpath('e332-target-positioning'));
+            
+            
+            % Check if scanfunc called by DAQ
+            if ~exist('daqhandle','var')
+                daqhandle = DaqHandleMock();
             end
+            
+            if isfield(daqhandle,'guihan')
+                if isa(daqhandle.guihan,'F2_DAQ')
+                    obj.guihan = daqhandle.guihan;
+                    obj.guihan.Blockbeam.Value = true;
+                end
+            end
+            
+            
+            pvEngine = PVEngineLca();
+            transform = RTSTransform();
+            
+%             arguments
+%                 daqhandle = DaqHandleMock()
+%                 pvEngine (1,1) PVEngine = PVEngineLca()
+%                 transform (1,1) CoordinateTransform = RTSTransform()
+%             end
 
             obj.pvEngine = pvEngine;
             obj.daqhandle = daqhandle;
@@ -60,11 +83,11 @@ classdef scanFunc_E332_TargetPosition < handle
             delta = obj.target.moveToHole(holeNumber, obj.asyncMove);
             elapsedTime = toc(timer);
             obj.pvEngine.put(obj.control_PV, holeNumber);
-            obj.daqhandle.dispMessage(sprintf("Target moved to hole %d at Lat=%.6f and Vert=%.6f in %.3f seconds.", obj.target.currentPosition.hole, obj.target.currentPosition.lat, obj.target.currentPosition.vert, elapsedTime))
+            obj.daqhandle.dispMessage(sprintf('Target moved to hole %d at Lat=%.6f and Vert=%.6f in %.3f seconds.', obj.target.currentPosition.hole, obj.target.currentPosition.lat, obj.target.currentPosition.vert, elapsedTime))
         end
 
         function restoreInitValue(obj)
-            obj.daqhandle.dispMessage("NOT Restoring initial value!");
+            obj.daqhandle.dispMessage('NOT Restoring initial value!');
         end
     end
 end

@@ -26,6 +26,7 @@ classdef F2_fastDAQ < handle
         camCheck
         BG_obj
         superfast = false
+        blockBeam = false
     end
     properties(Hidden)
         listeners
@@ -80,6 +81,7 @@ classdef F2_fastDAQ < handle
                 PV(context,'name',"DAQ_Exp",'pvname',"SIOC:SYS1:ML02:AO398",'mode',"rw",'monitor',true); % Exp number
                 PV(context,'name',"MPS_Shutter",'pvname',"IOC:SYS1:MP01:MSHUTCTL",'mode',"rw",'monitor',true); % MPS Shutter
                 PV(context,'name',"MPS_Shutter_RBV",'pvname',"SHUT:LT10:950:IN_MPS",'mode',"rw",'monitor',true); % MPS Shutter
+                PV(context,'name',"Pockels_Cell",'pvname',"TRIG:LT10:LS04:TCTL",'mode',"rw",'monitor',true); % S10 Pockels Call
                 PV(context,'name',"BSA_nRuns",'pvname',"SIOC:SYS1:ML02:AO500",'mode',"rw",'monitor',true); % BSA thing
                 PV(context,'name',"DAQ_DataOn",'pvname',"SIOC:SYS1:ML02:AO354",'mode',"rw",'monitor',true); % DAQ Data On
                 ] ;
@@ -136,6 +138,9 @@ classdef F2_fastDAQ < handle
             obj.event.select_rate(obj.params.rate);
             obj.event_info = obj.event.evt_struct();
             obj.data_struct.metadata.Event = obj.event_info;
+            
+            % Set beam blocking if requested
+            obj.blockBeam = obj.params.blockBeam;
             
             % Generate metadata for cameras and PVs
             obj.createMetadata();
@@ -219,6 +224,9 @@ classdef F2_fastDAQ < handle
                     if new_steps(j) == old_steps(j); continue; end
                     
                     obj.dispMessage(sprintf('Setting %s to %0.2f',obj.params.scanFuncs{j},obj.params.scanVals{j}(new_steps(j))));
+                    if obj.blockBeam
+                        obj.BG_obj.block_Pockels_cell()
+                    end
                     obj.scanFunctions.(obj.params.scanFuncs{j}).set_value(obj.params.scanVals{j}(new_steps(j)));
                 end
                 
@@ -284,6 +292,11 @@ classdef F2_fastDAQ < handle
             % Start EC214 for cameras
             obj.event.start_event();
             
+            % if blockBeam
+            if obj.blockBeam
+            	obj.BG_obj.enable_Pockels_cell()
+            end
+            
             while count < (obj.params.n_shot+1)
                 pause(0.01);
                 
@@ -305,6 +318,10 @@ classdef F2_fastDAQ < handle
             obj.event.stop_eDef();
             pause(0.1);
             obj.event.stop_event();
+            
+%             if obj.blockBeam
+%                 obj.BG_obj.block_Pockels_cell()
+%             end
             
             obj.dispMessage('Acquisition complete. Cameras saving data.');
             
@@ -652,7 +669,11 @@ classdef F2_fastDAQ < handle
             lcaPut(obj.daq_pvs.TSS_SETEC,obj.params.EC);
             
             lcaPut(obj.daq_pvs.TIFF_EnableCallbacks,1);
-            lcaPut(obj.daq_pvs.TIFF_FileWriteMode,1); % 1=capture (slow), 2 =streaming (fast)
+            if obj.superfast
+                lcaPut(obj.daq_pvs.TIFF_FileWriteMode,2); % 2 =streaming (fast)
+            else
+                lcaPut(obj.daq_pvs.TIFF_FileWriteMode,1); % 1=capture (slow)
+            end
             lcaPut(obj.daq_pvs.TIFF_AutoIncrement,1);
             lcaPut(obj.daq_pvs.TIFF_AutoSave,1);
             lcaPut(obj.daq_pvs.TIFF_SetPort,2);
