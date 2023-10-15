@@ -19,12 +19,22 @@ classdef E332Target < handle
         pvTargetLatRbv = "XPS:LI20:MC05:M2.RBV"
         pvTargetVertRbv = "XPS:LI20:MC05:M1.RBV"
 
+<<<<<<< HEAD
+%        pvTargetLat = "SIOC:SYS1:ML03:AO660"
+%        pvTargetVert = "SIOC:SYS1:ML03:AO661"
+%        pvTargetLatRbv = "SIOC:SYS1:ML03:AO660"
+%        pvTargetVertRbv = "SIOC:SYS1:ML03:AO661"
+=======
         %pvTargetLat = "SIOC:SYS1:ML03:AO660"
         %pvTargetVert = "SIOC:SYS1:ML03:AO661"
         %pvTargetLatRbv = "SIOC:SYS1:ML03:AO660"
         %pvTargetVertRbv = "SIOC:SYS1:ML03:AO661"
         
+>>>>>>> 4f48ea7f7e78b0628d58dd4fb06790d6eb4a7bb4
         tolerance = 1e-1;
+        
+        targetOutPosition = [-150, -50];
+        al100umPosition = [-130, -20];
     end
     
     methods
@@ -71,6 +81,18 @@ classdef E332Target < handle
             position.hole = holeNumber;
             position.lat = point(1);
             position.vert = point(2);
+        end
+        
+        function moveOut(obj)
+            % Move the assembly stage
+            obj.pvEngineMotors.put(obj.pvTargetLat, obj.targetOutPosition(1));
+            obj.pvEngineMotors.put(obj.pvTargetVert, obj.targetOutPosition(2));
+        end
+        
+        function moveToAl100um(obj)
+             % Move the assembly stage
+            obj.pvEngineMotors.put(obj.pvTargetLat, obj.al100umPosition(1));
+            obj.pvEngineMotors.put(obj.pvTargetVert, obj.al100umPosition(2));
         end
         
         function distance = moveToHole(obj, hole, async)
