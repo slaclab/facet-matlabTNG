@@ -630,6 +630,8 @@ classdef F2_fastDAQ < handle
                 end
                 mat_line   = sprintf(['| ' obj.params.camNames{i} ' | ' num2str(obj.daq_status(i,1)) ' | '...
                     num2str(tot_req) ' | ' num2str(obj.daq_status(i,3)) ' ' '\n']);
+                % add a disp message here?
+                obj.dispMessage(mat_line);
                 info_str = [info_str mat_line];
             end
             info_str = sprintf([info_str '\n' '\n']);
@@ -737,31 +739,33 @@ classdef F2_fastDAQ < handle
             
             % Fill in non-BSA data
             obj.nonbsa_list = {obj.pulseIDPV; obj.secPV; obj.nSecPV;};
-            for i = 1:numel(obj.params.nonBSA_list)
-                pvList = feval(obj.params.nonBSA_list{i});
-                %pvDesc = lcaGetSmart(strcat(pvList,'.DESC'));
-                pvDesc = pvList; % Temporary
-                
-                obj.data_struct.metadata.(obj.params.nonBSA_list{i}).PVs = pvList;
-                obj.data_struct.metadata.(obj.params.nonBSA_list{i}).Desc = pvDesc;
-                
-                obj.nonbsa_list = [obj.nonbsa_list; pvList];
-            end
             obj.async_data = acq_nonBSA_data(obj.nonbsa_list,obj);
-            
-            % Fill in non-BSA arrays
-            if obj.params.include_nonBSA_arrays
-                for i = 1:numel(obj.params.nonBSA_Array_list)
-                    pvList = feval(obj.params.nonBSA_Array_list{i});
-                    pvDesc = lcaGetSmart(strcat(pvList,'.DESC'));
-                    
-                    obj.data_struct.metadata.(obj.params.nonBSA_Array_list{i}).PVs = pvList;
-                    obj.data_struct.metadata.(obj.params.nonBSA_Array_list{i}).Desc = pvDesc;
+            for i = 1:numel(obj.params.nonBSA_list)
+                list = feval(obj.params.nonBSA_list{i});
+                list = obj.async_data.addList(list);
+                desc = obj.async_data.getDesc(list);
                 
-                    obj.nonbsa_array_list = [obj.nonbsa_array_list; pvList];
-                    
-                end
+                obj.data_struct.metadata.(obj.params.nonBSA_list{i}).PVs = list;
+                obj.data_struct.metadata.(obj.params.nonBSA_list{i}).Desc = desc;
+                
+                %obj.nonbsa_list = [obj.nonbsa_list; list];
             end
+            %obj.async_data = acq_nonBSA_data(obj.nonbsa_list,obj);
+            obj.async_data.initGet();
+            
+            % Fill in non-BSA arrays, not supported yet
+%             if obj.params.include_nonBSA_arrays
+%                 for i = 1:numel(obj.params.nonBSA_Array_list)
+%                     pvList = feval(obj.params.nonBSA_Array_list{i});
+%                     pvDesc = lcaGetSmart(strcat(pvList,'.DESC'));
+%                     
+%                     obj.data_struct.metadata.(obj.params.nonBSA_Array_list{i}).PVs = pvList;
+%                     obj.data_struct.metadata.(obj.params.nonBSA_Array_list{i}).Desc = pvDesc;
+%                 
+%                     obj.nonbsa_array_list = [obj.nonbsa_array_list; pvList];
+%                     
+%                 end
+%             end
             
             
         end
