@@ -89,4 +89,8 @@ S20_nonBSA_List = {...
 'VGCM:LI20:M3203:P';%CM Gauge 10 Torr
 'VPTM:LI20:M3202:P';%fourth gauge
 
+'SIOC:SYS1:ML00:AO011'; %Calculated L2 Egain
+'SIOC:SYS1:ML00:AO012'; %Calculated L2 Chirp
+'SIOC:SYS1:ML00:AO013'; %Calculated L2 Phase
+
 };
