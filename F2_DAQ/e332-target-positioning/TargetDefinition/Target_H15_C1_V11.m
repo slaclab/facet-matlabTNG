@@ -1,16 +1,16 @@
-classdef Target_H15_C1_V10 < TargetDefinition
+classdef Target_H15_C1_V11 < TargetDefinition
     %Target definition for the Target-H1.5-C1-V1.0 target
     
     properties (Constant)
         rowCount = 26
-        columnCount = 34
+        columnCount = 37
 
         holeSize = 1e-3
         holeDistance = 1.5e-3
     end
     
     properties(SetAccess=private, GetAccess=public)
-        numberOfHoles = Target_H15_C1_V10.rowCount * Target_H15_C1_V10.columnCount
+        numberOfHoles = Target_H15_C1_V11.rowCount * Target_H15_C1_V11.columnCount
     end
    
     methods
@@ -77,9 +77,9 @@ classdef Target_H15_C1_V10 < TargetDefinition
             %mustBeInRange(row, 1, Target_H15_C1_V10.rowCount)
             %mustBeInRange(col, 1, Target_H15_C1_V10.columnCount)
 
-            holeNumber = (col - 1) * Target_H15_C1_V10.rowCount;
+            holeNumber = (col - 1) * Target_H15_C1_V11.rowCount;
             if mod(col, 2) == 0
-                holeNumber = holeNumber + Target_H15_C1_V10.rowCount - row;
+                holeNumber = holeNumber + Target_H15_C1_V11.rowCount - row;
             else
                 holeNumber = holeNumber + row - 1;
             end
@@ -95,14 +95,14 @@ classdef Target_H15_C1_V10 < TargetDefinition
             rowChar = str{1}(1);
             row = rowChar - 'A' + 1;
             col = str2num(str{1}(2:end));
-            holeNumber = Target_H15_C1_V10.holeNumberFromRowCol(row, col);
+            holeNumber = Target_H15_C1_V11.holeNumberFromRowCol(row, col);
         end
 
         function holeString = holeStringFromNumber(holeNumber)
-            column = floor((holeNumber - 1) / Target_H15_C1_V10.rowCount);
-            row = mod(holeNumber - 1, Target_H15_C1_V10.rowCount);
+            column = floor((holeNumber - 1) / Target_H15_C1_V11.rowCount);
+            row = mod(holeNumber - 1, Target_H15_C1_V11.rowCount);
             if mod(column, 2) == 1
-               row = Target_H15_C1_V10.rowCount - row - 1; 
+               row = Target_H15_C1_V11.rowCount - row - 1; 
             end
             rowChar = 'A' + row;
             columnString = num2str(column + 1);

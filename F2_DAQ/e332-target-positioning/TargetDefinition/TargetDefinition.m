@@ -14,6 +14,23 @@ classdef (Abstract) TargetDefinition < handle
             % Returns the hole number from a string
     end
 
+    methods (Static)
+        function targetType = targetTypeByNumber(number)
+            if (number == 0)
+                targetType = Target_H15_C1_V10;
+            elseif (number == 1)
+                targetType = Target_H15_C1_V11;
+            end
+        end
+        function targetNumber = targetNumberByType(type)
+            typeStr = class(type);
+            if (typeStr == class(Target_H15_C1_V10))
+                targetNumber = 0;
+            elseif(typeStr == class(Target_H15_C1_V11))
+                targetNumber = 1;
+            end
+        end
+    end
     
 end
 

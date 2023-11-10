@@ -10,7 +10,9 @@ hold on
 plot(x, y, 'o');
 
 for j = 1:length(holes)
-    text(x(j), y(j), num2str(j));
+%    text(x(j), y(j), sprintf('%d\n%s', j, Target_H15_C1_V10.holeStringFromNumber(j)), 'fontsize', 6);
+    text(x(j), y(j), Target_H15_C1_V10.holeStringFromNumber(j), 'fontsize', 8);
+
 end
 hold off
 

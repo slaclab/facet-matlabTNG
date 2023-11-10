@@ -27,33 +27,27 @@ classdef E332Target < handle
     end
     
     methods
-        function obj = E332Target(pvEngine, coordinateTransform, targetDefinition)
+        function obj = E332Target(targetNumber, pvEngine, coordinateTransform)
             %E332TARGET Construct an instance of this class
             arguments
+                targetNumber (1,1) {mustBeNumeric} = 1;
                 pvEngine (1,1) PVEngine = PVEngineLca()
                 coordinateTransform (1,1) CoordinateTransform = RTSTransform()
-                targetDefinition (1,1) TargetDefinition = Target_H15_C1_V10()
             end
             
-            obj.targetDefinition = targetDefinition;
+            calibration = Calibration(pvEngine);
+            calibrationData = calibration.getCalibration(targetNumber);
+
+            obj.targetDefinition = TargetDefinition.targetTypeByNumber(calibrationData.targetTypeNumber);
             obj.pvEngineCalibration = pvEngine;
             obj.pvEngineMotors = pvEngine;
             obj.coordinateTransform = coordinateTransform;
             
-            if obj.coordinateTransform.requiredCalibrationCoordinates > 0
-                % Get the calibration points from PVs
-                %calPoints = GetCalibration(2, @(x)obj.pvEngineCalibration.get(x));
-                calibration = Calibration(obj.pvEngineCalibration);
-                calPoints = calibration.getCalibration(obj.coordinateTransform.requiredCalibrationCoordinates);
-                
-                % Calculate the raw hole positions for the holes in the
-                % calibration data
-                holes = [calPoints.hole]';
-                positionsCal = [calPoints.lat; calPoints.vert]';
-                positionsRaw = obj.targetDefinition.getHolePosition(holes);
-                
-                obj.coordinateTransform.calibrate(positionsRaw, positionsCal);
-            end
+            holes = [calibrationData.hole]';
+            positionsCal = [calibrationData.lat; calibrationData.vert]';
+            positionsRaw = obj.targetDefinition.getHolePosition(holes);
+            
+            obj.coordinateTransform.calibrate(positionsRaw, positionsCal);
 
             currentPosition.hole = 0;
             currentPosition.lat = obj.pvEngineMotors.get(obj.pvTargetLatRbv);
@@ -62,9 +56,17 @@ classdef E332Target < handle
 
         end
 
-        function position = getHolePosition(obj, holeNumber)
+        function position = getHolePosition(obj, hole)
             %GETHOLEPOSITION Returns the hole position.
             % Returns the position of hole with specified hole number.
+
+            % If hole is a string, convert it to the hole number.
+            if ischar(hole) || isstring(hole)
+                holeNumber = obj.targetDefinition.holeNumberFromString(hole);
+            else
+                holeNumber = hole;
+            end
+
             pointRaw = obj.targetDefinition.getHolePosition(holeNumber);
             point = obj.coordinateTransform.transform(pointRaw);
             position.hole = holeNumber;
