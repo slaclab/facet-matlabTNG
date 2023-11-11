@@ -89,7 +89,7 @@ classdef scanFunc_E332_TargetPosition < handle
             targetHoleNumber = mod(holeNumber, 1000);
             target = obj.targets{targetNumber};
             
-            offset=lcagetSmart("SIOC:SYS1:ML03:AO658");
+            offset=lcaGetSmart("SIOC:SYS1:ML03:AO658");
             delta = target.moveToHole(targetHoleNumber+offset, obj.asyncMove);
             elapsedTime = toc(timer);
             obj.pvEngine.put(obj.control_PV, holeNumber);
