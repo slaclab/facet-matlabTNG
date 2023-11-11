@@ -16,7 +16,7 @@ classdef scanFunc_waist
   
   methods
     
-    function obj = scanFunc_Spec_waist(daqhandle)
+    function obj = scanFunc_waist(daqhandle)
       
       % Check if scanfunc called by DAQ
       if exist('daqhandle','var')
