@@ -89,7 +89,8 @@ classdef scanFunc_E332_TargetPosition < handle
             targetHoleNumber = mod(holeNumber, 1000);
             target = obj.targets{targetNumber};
             
-            delta = target.moveToHole(targetHoleNumber, obj.asyncMove);
+            offset=lcagetSmart("SIOC:SYS1:ML03:AO658");
+            delta = target.moveToHole(targetHoleNumber+offset, obj.asyncMove);
             elapsedTime = toc(timer);
             obj.pvEngine.put(obj.control_PV, holeNumber);
             obj.daqhandle.dispMessage(sprintf('Target no. %i moved to hole %d at Lat=%.6f and Vert=%.6f in %.3f seconds.', targetNumber, target.currentPosition.hole, target.currentPosition.lat, target.currentPosition.vert, elapsedTime))
