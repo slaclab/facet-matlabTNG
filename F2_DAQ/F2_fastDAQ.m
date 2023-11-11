@@ -343,9 +343,11 @@ classdef F2_fastDAQ < handle
                 pause(0.01);
                 count = count+1;
                 if count > 200 && any(fnum_rbv == 0)
+                %if count > 200
                     obj.dispMessage('Camera did not save. Will try to jiggle');
-                    pause(2);
+                    
                     obj.event.start_event();
+                    pause(10);
                     count = 0;
                     while any(save_not_done)
                         status = obj.check_abort();
