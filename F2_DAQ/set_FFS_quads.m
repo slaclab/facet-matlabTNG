@@ -10,10 +10,14 @@ function [delta] = set_Quads_BDES(obj, quadPVs, values)
 %         control_magnetSet({quadPVs.control_PV0,quadPVs.control_PV1,quadPVs.control_PV2,quadPVs.control_PV3,quadPVs.control_PV4,quadPVs.control_PV5,quadPVs.control_PV_QS0,quadPVs.control_PV_QS1,quadPVs.control_PV_QS2},values,'action','TRIM');
         obj.daqhandle.dispMessage(sprintf('Setting %s %s %s %s %s %s %s %s %s to %0.2f %0.2f %0.2f %0.2f %0.2f %0.2f %0.2f %0.2f %0.2f', quadPVs.control_PV_FF0,quadPVs.control_PV_FF1,quadPVs.control_PV_FF2, quadPVs.control_PV_FF3,quadPVs.control_PV_FF4,quadPVs.control_PV_FF5,quadPVs.control_PV_QS0,quadPVs.control_PV_QS1,quadPVs.control_PV_QS2, values(1), values(2), values(3), values(4), values(5), values(6),values(7), values(8), values(9)));
 
-        current_value = control_magnetGet({quadPVs.quadPVs.readback_PV_FF0,quadPVs.readback_PV_FF1,quadPVs.readback_PV_FF2,quadPVs.readback_PV_FF1,quadPVs.readback_PV_FF2,quadPVs.readback_PV_FF3,quadPVs.readback_PV_FF4,quadPVs.readback_PV_FF5,quadPVs.control_PV_QS0,quadPVs.control_PV_QS1,quadPVs.control_PV_QS2});
-
+        current_value = control_magnetGet({quadPVs.readback_PV_FF0,quadPVs.readback_PV_FF1,quadPVs.readback_PV_FF2,...
+                                           quadPVs.readback_PV_FF3,quadPVs.readback_PV_FF4,quadPVs.readback_PV_FF5,...
+                                           quadPVs.readback_PV_QS0,quadPVs.readback_PV_QS1,quadPVs.readback_PV_QS2});
+current_value = values; %added for test        
         while max(abs(current_value - values)) > obj.tolerance
-            current_value = control_magnetGet({quadPVs.readback_PV_FF0,quadPVs.readback_PV_FF1,quadPVs.readback_PV_FF2,quadPVs.readback_PV_FF3,quadPVs.readback_PV_FF4,quadPVs.readback_PV_FF5,quadPVs.readback_PV_FF0,quadPVs.readback_PV_FF1,quadPVs.readback_PV_FF2});
+            current_value = control_magnetGet({quadPVs.readback_PV_FF0,quadPVs.readback_PV_FF1,quadPVs.readback_PV_FF2,...
+                                              quadPVs.readback_PV_FF3,quadPVs.readback_PV_FF4,quadPVs.readback_PV_FF5,...
+                                              quadPVs.readback_PV_QS0,quadPVs.readback_PV_QS1,quadPVs.readback_PV_QS2});
             pause(0.4);
         end
 
