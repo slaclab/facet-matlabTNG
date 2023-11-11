@@ -72,12 +72,12 @@ classdef scanFunc_E332_TargetPosition < handle
             
             % Find the number of installed targets
             numTargets = pvEngine.get(obj.numTargets_PV);
-            obj.daqhandle.dispMessage(sprintf('Found %i targets', numTargets)); 
+%            obj.daqhandle.dispMessage(sprintf('Found %i targets', numTargets)); 
             for i = 1:numTargets
-                target = E332Target(i, pvEngine, transform);
+                target = E332Target(i, pvEngine);
                 target.tolerance = obj.tolerance;
                 obj.targets{i} = target;
-                obj.daqhandle.dispMessage(sprintf('Loaded target number %i: %s', i, class(target.targetDefinition))); 
+%                obj.daqhandle.dispMessage(sprintf('Loaded target number %i: %s', i, class(target.targetDefinition))); 
             end
         end
         
@@ -88,7 +88,7 @@ classdef scanFunc_E332_TargetPosition < handle
             targetNumber = floor(holeNumber / 1000) + 1;
             targetHoleNumber = mod(holeNumber, 1000);
             target = obj.targets{targetNumber};
-
+            
             delta = target.moveToHole(targetHoleNumber, obj.asyncMove);
             elapsedTime = toc(timer);
             obj.pvEngine.put(obj.control_PV, holeNumber);
