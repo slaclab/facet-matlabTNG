@@ -47,8 +47,8 @@ calibration.setCalibration(targetNumber, calibrationData);
 
 % Target 3
 
-offsetX=-3.5;
-offsetY=-0.5;
+offsetX=3.5;
+offsetY=0.5;
 
 targetNumber = 3;
 targetType = Target_H15_C1_V11();
