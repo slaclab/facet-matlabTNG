@@ -9,7 +9,7 @@ classdef scanFunc_E332_TargetPosition < handle
         currentPosition
 
         pvlist PV
-
+        pvs
         guihan
         freerun
 
