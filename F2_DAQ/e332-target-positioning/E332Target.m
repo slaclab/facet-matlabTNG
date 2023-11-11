@@ -22,8 +22,8 @@ classdef E332Target < handle
 
         tolerance = 1e-1;
         
-        targetOutPosition = [-150, -50];
-        al100umPosition = [-130, -20];
+        pvsTargetOut = ["SIOC:SYS1:ML03:AO653", "SIOC:SYS1:ML03:AO654"];
+        pvsAl100Position = ["SIOC:SYS1:ML03:AO655", "SIOC:SYS1:ML03:AO656"];
     end
     
     methods
@@ -76,8 +76,9 @@ classdef E332Target < handle
         
         function moveOut(obj)
             % Move the assembly stage
-            obj.pvEngineMotors.put(obj.pvTargetLat, obj.targetOutPosition(1));
-            obj.pvEngineMotors.put(obj.pvTargetVert, obj.targetOutPosition(2));
+            lat = obj.pvEngineMotors.get(obj.pvsTargetOut(1));
+            obj.pvEngineMotors.put(obj.pvTargetLat, lat);
+            obj.pvEngineMotors.put(obj.pvTargetVert, vert);
         end
         
         function moveToAl100um(obj)
