@@ -47,6 +47,8 @@ calibration.setCalibration(targetNumber, calibrationData);
 
 % Target 3
 
+offsetX=-3.5;
+offsetY=-0.5;
 
 targetNumber = 3;
 targetType = Target_H15_C1_V11();
@@ -54,12 +56,12 @@ targetType = Target_H15_C1_V11();
 calibrationData.targetTypeNumber = TargetDefinition.targetNumberByType(targetType);
 
 calibrationData.hole(1) = targetType.holeNumberFromString("X4");
-calibrationData.lat(1) = -77.684;
-calibrationData.vert(1) = -55.52;
+calibrationData.lat(1) = -77.684+offsetX;
+calibrationData.vert(1) = -55.52+offsetY;
 
 calibrationData.hole(2) = targetType.holeNumberFromString("B31");
-calibrationData.lat(2) = -41.984;
-calibrationData.vert(2) = -87.12;
+calibrationData.lat(2) = -41.984+offsetX;
+calibrationData.vert(2) = -87.12+offsetY;
 
 calibration = Calibration(pvEngine);
 calibration.setCalibration(targetNumber, calibrationData);
