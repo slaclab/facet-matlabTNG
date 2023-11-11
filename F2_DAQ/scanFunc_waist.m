@@ -75,6 +75,8 @@ classdef scanFunc_waist
       quadPV.readback_PV_QS2  = "LGPS:LI20:3091";
       
       [delta] = set_FFS_quads(obj, quadPV,[BDES_FF0, BDES_FF1, BDES_FF2, BDES_FF3, BDES_FF4, BDES_FF5, BDES_QS0, BDES_QS1, BDES_QS2]');
+      lcaPutSmart("SIOC:SYS1:ML03:AO658",10*(value-1));
+
       
     end
     
