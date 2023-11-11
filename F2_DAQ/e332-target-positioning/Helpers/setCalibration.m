@@ -47,7 +47,7 @@ calibration.setCalibration(targetNumber, calibrationData);
 
 % Target 3
 
-offsetX=3.5;
+offsetX=7.5;
 offsetY=0.5;
 
 targetNumber = 3;
