@@ -1,3 +1,4 @@
 *.m~
 scratch
 temp
+__pycache__/
