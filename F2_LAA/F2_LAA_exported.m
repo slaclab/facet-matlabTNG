@@ -281,7 +281,7 @@ classdef F2_LAA_exported < matlab.apps.AppBase
 
         % Button pushed function: ShowTargetsButton
         function ShowTargetsButtonPushed(app, event)
-            addpath('./F2_LaserMultiProfmon/')
+            addpath('../F2_LaserMultiProfmon/')
             s20LaserTargetPositionsTable
         end
 
