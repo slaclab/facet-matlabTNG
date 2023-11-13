@@ -1,5 +1,6 @@
 import os
 import sys
+import numpy as np
 
 # Hardcode paths like a noob
 sys.path.append(os.path.realpath("/usr/local/facet/tools/pydm/display/user-facet/"))
@@ -13,6 +14,7 @@ def loadConfig():
     for name, section in AAConfig.items():
         cameraConfig = {}
         for name in section['cameras']:
+            S20Config[name]['target'] = np.array(S20Config[name]['target'], dtype='float')
             cameraConfig[name] = S20Config[name]
         section['cameras'] = cameraConfig
     del AAConfig["B0B1IR"]

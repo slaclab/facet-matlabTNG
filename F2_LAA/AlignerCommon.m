@@ -176,8 +176,8 @@ classdef AlignerCommon
                 end
                 centerX = mean(stats(:, 1)) + data.roiX;
                 centerY = mean(stats(:, 2)) + data.roiY;
-                offsets(1+2*(j-1)) = camera.target{1} - centerX;
-                offsets(2*j) = camera.target{2} - centerY;
+                offsets(1+2*(j-1)) = double(camera.target{1}) - centerX;
+                offsets(2*j) = double(camera.target{2}) - centerY;
             end
             % Round the offsets to 2 decimal places and don't do anything if the beam is less than 0.5px off
             offsets = round(offsets, 2);
