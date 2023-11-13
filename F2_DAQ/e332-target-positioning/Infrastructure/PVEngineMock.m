@@ -22,6 +22,7 @@ classdef PVEngineMock < PVEngine
         end
 
         function value = get(obj, pvName)
+            pvName = erase(pvName, '.RBV');
             idx = obj.findPv(pvName);
             if idx == -1
                 idx = obj.initPv(pvName);
@@ -30,7 +31,7 @@ classdef PVEngineMock < PVEngine
             value = obj.pvs(idx).currentValue;
 
             if obj.verbose
-                fprintf("Getting PV 'pvName': %f\n", value);
+                fprintf("Getting PV '%s': %f\n", pvName, value);
             end
         end
         function put(obj, pvName, value)
@@ -55,6 +56,7 @@ classdef PVEngineMock < PVEngine
             end
         end
         function value = readback(obj, pvName)
+            pvName = erase(pvName, '.RBV');
             idx = obj.findPv(pvName);
             if idx == -1
                 idx = obj.initPv(pvName);

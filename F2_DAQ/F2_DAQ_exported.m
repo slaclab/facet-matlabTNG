@@ -390,7 +390,7 @@ classdef F2_DAQ_exported < matlab.apps.AppBase
 
             % Create ExperimentDropDown
             app.ExperimentDropDown = uidropdown(app.DAQSettingsPanel);
-            app.ExperimentDropDown.Items = {'TEST', 'BEAMPHYS', 'E300', 'E301', 'E305', 'E308', 'E320', 'E325', 'E326', 'E327', 'E331', 'E332'};
+            app.ExperimentDropDown.Items = {'TEST', 'BEAMPHYS', 'E300', 'E301', 'E304', 'E305', 'E308', 'E320', 'E325', 'E326', 'E327', 'E331', 'E332'};
             app.ExperimentDropDown.Position = [88 187 71 22];
             app.ExperimentDropDown.Value = 'TEST';
 
