@@ -10,7 +10,7 @@ classdef scanFunc_E320_YAG_vertical
     properties(Constant)
         control_PV = "XPS:LI20:MC10:M1"
         readback_PV = "XPS:LI20:MC10:M1.RBV"
-        tolerance = 0.01;
+        tolerance = 0.0001;
     end
     
     methods 
