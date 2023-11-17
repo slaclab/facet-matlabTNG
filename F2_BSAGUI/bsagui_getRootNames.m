@@ -106,6 +106,12 @@ function [root_name, z] = facetNames(mdl)
 [~, root_name] = system('eget -ts ds -a tag=FACET.BSA.rootnames -w 20');
 root_name = splitlines(root_name);
 root_name = root_name(~cellfun(@isempty, root_name));
+%root_name = [];
+if isempty(root_name)
+    root_name = cellstr(readlines("rootnames_saved.txt"));
+else
+    writelines(root_name,"rootnames_saved.txt");
+end
 %root_name(contains(root_name, 'BPMS')) = [];
 
 if isempty(mdl.scpNames)
