@@ -130,6 +130,7 @@ classdef F2_DAQApp < handle
             obj.DAQ_params.saveBG     = obj.guihan.SavebackgroundCheckBox.Value;
             obj.DAQ_params.laserBG    = obj.guihan.SaveLaserBGCheckBox.Value;
             obj.DAQ_params.nBG        = obj.guihan.BackgroundshotsEditField.Value;
+            obj.DAQ_params.blockBeam  = obj.guihan.Blockbeam.Value;
             
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             %%% Get the cameras, metadata, %%%
@@ -320,13 +321,20 @@ classdef F2_DAQApp < handle
         end
         
         function scanFuncSelected(obj,value)
-            scanFunc = feval(['scanFunc_' value]);
+%             if strcmp(value,'Use_PV')
+%                 prompt = {'Enter PV:','Enter Readback PV (or leave empty):'};
+%                 dlgtitle = 'PV Input';
+%                 field = [1 45; 1 45];
+%                 %definput = {'',''};
+%                 answer = inputdlg(prompt,dlgtitle,field);
+%             end
+            scanFunc = feval(['scanFunc_' value],obj);
             obj.guihan.PVEditField.Value = scanFunc.control_PV;
             obj.guihan.ToleranceEditField.Value = scanFunc.tolerance;
         end
         
         function scanFuncSelected_2(obj,value)
-            scanFunc = feval(['scanFunc_' value]);
+            scanFunc = feval(['scanFunc_' value],obj);
             obj.guihan.PVEditField_2.Value = scanFunc.control_PV;
             obj.guihan.ToleranceEditField_2.Value = scanFunc.tolerance;
         end

@@ -26,6 +26,7 @@ classdef F2_fastDAQ < handle
         camCheck
         BG_obj
         superfast = false
+        blockBeam = false
     end
     properties(Hidden)
         listeners
@@ -80,6 +81,7 @@ classdef F2_fastDAQ < handle
                 PV(context,'name',"DAQ_Exp",'pvname',"SIOC:SYS1:ML02:AO398",'mode',"rw",'monitor',true); % Exp number
                 PV(context,'name',"MPS_Shutter",'pvname',"IOC:SYS1:MP01:MSHUTCTL",'mode',"rw",'monitor',true); % MPS Shutter
                 PV(context,'name',"MPS_Shutter_RBV",'pvname',"SHUT:LT10:950:IN_MPS",'mode',"rw",'monitor',true); % MPS Shutter
+                PV(context,'name',"Pockels_Cell",'pvname',"TRIG:LT10:LS04:TCTL",'mode',"rw",'monitor',true); % S10 Pockels Call
                 PV(context,'name',"BSA_nRuns",'pvname',"SIOC:SYS1:ML02:AO500",'mode',"rw",'monitor',true); % BSA thing
                 PV(context,'name',"DAQ_DataOn",'pvname',"SIOC:SYS1:ML02:AO354",'mode',"rw",'monitor',true); % DAQ Data On
                 ] ;
@@ -136,6 +138,9 @@ classdef F2_fastDAQ < handle
             obj.event.select_rate(obj.params.rate);
             obj.event_info = obj.event.evt_struct();
             obj.data_struct.metadata.Event = obj.event_info;
+            
+            % Set beam blocking if requested
+            obj.blockBeam = obj.params.blockBeam;
             
             % Generate metadata for cameras and PVs
             obj.createMetadata();
@@ -219,6 +224,9 @@ classdef F2_fastDAQ < handle
                     if new_steps(j) == old_steps(j); continue; end
                     
                     obj.dispMessage(sprintf('Setting %s to %0.2f',obj.params.scanFuncs{j},obj.params.scanVals{j}(new_steps(j))));
+                    if obj.blockBeam
+                        obj.BG_obj.block_Pockels_cell()
+                    end
                     obj.scanFunctions.(obj.params.scanFuncs{j}).set_value(obj.params.scanVals{j}(new_steps(j)));
                 end
                 
@@ -284,6 +292,11 @@ classdef F2_fastDAQ < handle
             % Start EC214 for cameras
             obj.event.start_event();
             
+            % if blockBeam
+            if obj.blockBeam
+            	obj.BG_obj.enable_Pockels_cell()
+            end
+            
             while count < (obj.params.n_shot+1)
                 pause(0.01);
                 
@@ -306,6 +319,10 @@ classdef F2_fastDAQ < handle
             pause(0.1);
             obj.event.stop_event();
             
+%             if obj.blockBeam
+%                 obj.BG_obj.block_Pockels_cell()
+%             end
+            
             obj.dispMessage('Acquisition complete. Cameras saving data.');
             
             pause(0.1);
@@ -326,9 +343,11 @@ classdef F2_fastDAQ < handle
                 pause(0.01);
                 count = count+1;
                 if count > 200 && any(fnum_rbv == 0)
+                %if count > 200
                     obj.dispMessage('Camera did not save. Will try to jiggle');
-                    pause(2);
+                    
                     obj.event.start_event();
+                    pause(10);
                     count = 0;
                     while any(save_not_done)
                         status = obj.check_abort();
@@ -389,8 +408,10 @@ classdef F2_fastDAQ < handle
             obj.dispMessage('Saving data.');
             obj.save_data();
             
-            obj.dispMessage('Writing to eLog.');
-            obj.write2eLog(status);
+            if obj.params.print2elog
+                obj.dispMessage('Writing to eLog.');
+                obj.write2eLog(status);
+            end
             
             obj.dispMessage('Done!');
             caput(obj.pvs.DAQ_Running,0);
@@ -611,6 +632,8 @@ classdef F2_fastDAQ < handle
                 end
                 mat_line   = sprintf(['| ' obj.params.camNames{i} ' | ' num2str(obj.daq_status(i,1)) ' | '...
                     num2str(tot_req) ' | ' num2str(obj.daq_status(i,3)) ' ' '\n']);
+                % add a disp message here?
+                obj.dispMessage(mat_line);
                 info_str = [info_str mat_line];
             end
             info_str = sprintf([info_str '\n' '\n']);
@@ -650,7 +673,11 @@ classdef F2_fastDAQ < handle
             lcaPut(obj.daq_pvs.TSS_SETEC,obj.params.EC);
             
             lcaPut(obj.daq_pvs.TIFF_EnableCallbacks,1);
-            lcaPut(obj.daq_pvs.TIFF_FileWriteMode,1);
+            if obj.superfast
+                lcaPut(obj.daq_pvs.TIFF_FileWriteMode,2); % 2 =streaming (fast)
+            else
+                lcaPut(obj.daq_pvs.TIFF_FileWriteMode,1); % 1=capture (slow)
+            end
             lcaPut(obj.daq_pvs.TIFF_AutoIncrement,1);
             lcaPut(obj.daq_pvs.TIFF_AutoSave,1);
             lcaPut(obj.daq_pvs.TIFF_SetPort,2);
@@ -714,31 +741,33 @@ classdef F2_fastDAQ < handle
             
             % Fill in non-BSA data
             obj.nonbsa_list = {obj.pulseIDPV; obj.secPV; obj.nSecPV;};
-            for i = 1:numel(obj.params.nonBSA_list)
-                pvList = feval(obj.params.nonBSA_list{i});
-                %pvDesc = lcaGetSmart(strcat(pvList,'.DESC'));
-                pvDesc = pvList; % Temporary
-                
-                obj.data_struct.metadata.(obj.params.nonBSA_list{i}).PVs = pvList;
-                obj.data_struct.metadata.(obj.params.nonBSA_list{i}).Desc = pvDesc;
-                
-                obj.nonbsa_list = [obj.nonbsa_list; pvList];
-            end
             obj.async_data = acq_nonBSA_data(obj.nonbsa_list,obj);
-            
-            % Fill in non-BSA arrays
-            if obj.params.include_nonBSA_arrays
-                for i = 1:numel(obj.params.nonBSA_Array_list)
-                    pvList = feval(obj.params.nonBSA_Array_list{i});
-                    pvDesc = lcaGetSmart(strcat(pvList,'.DESC'));
-                    
-                    obj.data_struct.metadata.(obj.params.nonBSA_Array_list{i}).PVs = pvList;
-                    obj.data_struct.metadata.(obj.params.nonBSA_Array_list{i}).Desc = pvDesc;
+            for i = 1:numel(obj.params.nonBSA_list)
+                list = feval(obj.params.nonBSA_list{i});
+                list = obj.async_data.addList(list);
+                desc = obj.async_data.getDesc(list);
                 
-                    obj.nonbsa_array_list = [obj.nonbsa_array_list; pvList];
-                    
-                end
+                obj.data_struct.metadata.(obj.params.nonBSA_list{i}).PVs = list;
+                obj.data_struct.metadata.(obj.params.nonBSA_list{i}).Desc = desc;
+                
+                %obj.nonbsa_list = [obj.nonbsa_list; list];
             end
+            %obj.async_data = acq_nonBSA_data(obj.nonbsa_list,obj);
+            obj.async_data.initGet();
+            
+            % Fill in non-BSA arrays, not supported yet
+%             if obj.params.include_nonBSA_arrays
+%                 for i = 1:numel(obj.params.nonBSA_Array_list)
+%                     pvList = feval(obj.params.nonBSA_Array_list{i});
+%                     pvDesc = lcaGetSmart(strcat(pvList,'.DESC'));
+%                     
+%                     obj.data_struct.metadata.(obj.params.nonBSA_Array_list{i}).PVs = pvList;
+%                     obj.data_struct.metadata.(obj.params.nonBSA_Array_list{i}).Desc = pvDesc;
+%                 
+%                     obj.nonbsa_array_list = [obj.nonbsa_array_list; pvList];
+%                     
+%                 end
+%             end
             
             
         end

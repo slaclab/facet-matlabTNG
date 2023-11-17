@@ -78,6 +78,7 @@ classdef F2_DAQ_exported < matlab.apps.AppBase
         ToleranceEditField_2           matlab.ui.control.NumericEditField
         RBVEditField_2Label            matlab.ui.control.Label
         RBVEditField_2                 matlab.ui.control.EditField
+        Blockbeam                      matlab.ui.control.CheckBox
         RunPanel                       matlab.ui.container.Panel
         RunButton                      matlab.ui.control.StateButton
         AbortButton                    matlab.ui.control.StateButton
@@ -389,7 +390,7 @@ classdef F2_DAQ_exported < matlab.apps.AppBase
 
             % Create ExperimentDropDown
             app.ExperimentDropDown = uidropdown(app.DAQSettingsPanel);
-            app.ExperimentDropDown.Items = {'TEST', 'E300', 'E301', 'E305', 'E308', 'E320', 'E325', 'E326', 'E327', 'E331', 'E332'};
+            app.ExperimentDropDown.Items = {'TEST', 'BEAMPHYS', 'E300', 'E301', 'E304', 'E305', 'E308', 'E320', 'E325', 'E326', 'E327', 'E331', 'E332'};
             app.ExperimentDropDown.Position = [88 187 71 22];
             app.ExperimentDropDown.Value = 'TEST';
 
@@ -454,6 +455,7 @@ classdef F2_DAQ_exported < matlab.apps.AppBase
 
             % Create FastDAQCheckBox
             app.FastDAQCheckBox = uicheckbox(app.DAQSettingsPanel);
+            app.FastDAQCheckBox.Enable = 'off';
             app.FastDAQCheckBox.Text = 'Fast DAQ';
             app.FastDAQCheckBox.Position = [176 21 74 22];
             app.FastDAQCheckBox.Value = true;
@@ -844,6 +846,11 @@ classdef F2_DAQ_exported < matlab.apps.AppBase
             app.RBVEditField_2 = uieditfield(app.SecondDimensionPanel, 'text');
             app.RBVEditField_2.Enable = 'off';
             app.RBVEditField_2.Position = [49 223 127 22];
+
+            % Create Blockbeam
+            app.Blockbeam = uicheckbox(app.ScanPanel);
+            app.Blockbeam.Text = 'Block beam between steps';
+            app.Blockbeam.Position = [215 372 168 22];
 
             % Create RunPanel
             app.RunPanel = uipanel(app.FACETIIDAQUIFigure);

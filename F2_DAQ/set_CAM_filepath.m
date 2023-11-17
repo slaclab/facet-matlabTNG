@@ -30,7 +30,8 @@ end
 for i=1:num_cam
     ext = lcaGet(obj.daq_pvs.TIFF_FilePathExists_RBV(i));
     if (~strcmp(ext,'Yes'))
-      error(['File path: ' path ' does not exist.']);
+        obj.dispMessage('IOC cannot access image save path. NAS might be unmounted on IOC server.');
+        error(['File path: ' path ' does not exist.']);
     end
 end
 

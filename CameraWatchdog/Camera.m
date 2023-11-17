@@ -32,7 +32,9 @@ classdef Camera < handle
             
             cameraInstance.CameraPV = string(camPV);
 
-            if cameraInstance.IsSIOCgood
+            % iscell checks if camera PV is valid: result is a cell with
+            % name value: value; result is NaN: invalid
+            if iscell(lcaGetSmart(cameraInstance.CameraPV+":NAME")) && cameraInstance.IsSIOCgood
                 POE_PV = string(lcaGet([camPV ':POE']));
                 cameraInstance.POE_PV = POE_PV;
                 
@@ -93,6 +95,7 @@ classdef Camera < handle
         function loop(cameraInstance)
             cameraInstance.setAlarm();
             if cameraInstance.Watching && cameraInstance.IsSIOCgood &&...
+                    iscell(lcaGetSmart(cameraInstance.CameraPV+":NAME")) &&...
                     cameraInstance.IsPOEHUBgood && ~cameraInstance.Alarm
                 cameraInstance.setStatus();
             elseif cameraInstance.Watching && cameraInstance.Alarm
@@ -199,10 +202,12 @@ classdef Camera < handle
         end
         
         function setAlarm(cameraInstance)
-            if strcmp(cameraInstance.pvs.Acquisition.SEVR{1},"NO_ALARM")
-                cameraInstance.Alarm = false;
-            else
-                cameraInstance.Alarm = true;
+            if iscell(lcaGetSmart(cameraInstance.CameraPV+":NAME")) && cameraInstance.IsSIOCgood
+                if strcmp(cameraInstance.pvs.Acquisition.SEVR{1},"NO_ALARM")
+                    cameraInstance.Alarm = false;
+                else
+                    cameraInstance.Alarm = true;
+                end
             end
         end
         

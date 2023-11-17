@@ -552,7 +552,7 @@ classdef F2_DAN_exported < matlab.apps.AppBase
 
             % Create expDropDown
             app.expDropDown = uidropdown(app.dataSet);
-            app.expDropDown.Items = {'TEST', 'E300', 'E305', 'E308', 'E320', 'E325', 'E326', 'E327', 'E331', 'E332'};
+            app.expDropDown.Items = {'TEST', 'E300', 'E301', 'E304', 'E305', 'E308', 'E320', 'E325', 'E326', 'E327', 'E331', 'E332'};
             app.expDropDown.Position = [98 335 124 22];
             app.expDropDown.Value = 'TEST';
 
@@ -839,7 +839,6 @@ classdef F2_DAN_exported < matlab.apps.AppBase
             title(app.ImageAxes, 'Title')
             xlabel(app.ImageAxes, 'X')
             ylabel(app.ImageAxes, 'Y')
-            app.ImageAxes.FontSize = 14;
             app.ImageAxes.Position = [363 409 803 509];
 
             % Create WaterfallplotPanel

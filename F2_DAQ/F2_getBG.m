@@ -23,6 +23,8 @@ classdef F2_getBG < handle
         laserShutterOut = 0
         MPS_ShutterIn = 0
         MPS_ShutterOut = 1
+        pockelsBlock = 'Disabled'
+        pockelsEnable = 'Enabled'
         maxImSize = 4177920
     end
     
@@ -41,6 +43,7 @@ classdef F2_getBG < handle
                 PV(context,'name',"MPS_Shutter_RBV",'pvname',"SHUT:LT10:950:IN_MPS",'mode',"r",'monitor',true); % MPS Shutter
                 PV(context,'name',"Laser_Shutter",'pvname',"DO:LA20:10:Bo1",'mode',"rw",'monitor',true,'pvdatatype',"int"); % Laser Shutter
                 PV(context,'name',"Laser_Shutter_RBV",'pvname',"ADC:LA20:10:CH11",'mode',"r",'monitor',true); % Laser Shutter
+                PV(context,'name',"Pockels_Cell",'pvname',"TRIG:LT10:LS04:TCTL",'mode',"rw",'monitor',true); % S10 Pockels Call
                 ] ;
             pset(obj.pvlist,'debug',0);
             obj.pvs = struct(obj.pvlist);
@@ -196,6 +199,12 @@ classdef F2_getBG < handle
             obj.objhan.dispMessage('Laser shutter inserted');
         end
         
+        function block_Pockels_cell(obj)
+            obj.objhan.dispMessage('Blocking S10 laser with Pockels cell');
+            caput(obj.pvs.Pockels_Cell,obj.pockelsBlock);
+            obj.objhan.dispMessage('S10 laser blocked');
+        end
+        
         
         function extract_MPS_shutter(obj)
             obj.objhan.dispMessage('Extracting MPS shutter');
@@ -232,6 +241,12 @@ classdef F2_getBG < handle
                 end
             end
             obj.objhan.dispMessage('Laser shutter extracted');
+        end
+        
+        function enable_Pockels_cell(obj)
+            obj.objhan.dispMessage('Enabling S10 laser with Pockels cell');
+            caput(obj.pvs.Pockels_Cell,obj.pockelsEnable);
+            obj.objhan.dispMessage('S10 laser enabled');
         end
     end
     
