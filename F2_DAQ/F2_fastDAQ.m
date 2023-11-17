@@ -335,8 +335,8 @@ classdef F2_fastDAQ < handle
             fnum_rbv = lcaGet(obj.daq_pvs.TIFF_FileNumber_RBV);
             save_not_done = fnum_rbv < obj.params.n_shot;
             
-            max_save_counts = 2*obj.params.n_shot; % 2 is an empiricle number
-            max_save_time = max_save_counts/10;
+            max_save_counts = 0.2*obj.params.n_shot; % 0.2 is an empiricle number
+            max_save_time = max_save_counts;
             
             if any(save_not_done)
                 obj.dispMessage(sprintf('Waiting for cameras to save. Max wait is %0.1f seconds.',max_save_time));
@@ -350,15 +350,16 @@ classdef F2_fastDAQ < handle
                 if status; return; end
                 
                 % Check if saves are inceasing with time
-                pause(0.1);
+                pause(1);
                 new_fnum_rbv = lcaGet(obj.daq_pvs.TIFF_FileNumber_RBV);
                 save_not_done = new_fnum_rbv < obj.params.n_shot;
+                change = any(fnum_rbv ~= new_fnum_rbv);
                 
                 % If we are streaming data and the saves do not increase,
                 % we should abort
                 if obj.doStream
                     if any(save_not_done)
-                        if sum(fnum_rbv == new_fnum_rbv)
+                        if ~change
                             obj.dispMessage('Cameras did not save. Will abort.');
                             obj.event.stop_event();
                             status = 1;
