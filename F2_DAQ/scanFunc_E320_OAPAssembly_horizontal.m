@@ -10,7 +10,7 @@ classdef scanFunc_E320_OAPAssembly_horizontal
     properties(Constant)
         control_PV = "XPS:LI20:MC10:M3"
         readback_PV = "XPS:LI20:MC10:M3.RBV"
-        tolerance = 0.01;
+        tolerance = 0.001;
     end
     
     methods 
