@@ -1,4 +1,4 @@
-classdef F2_RADFET_GUI < matlab.apps.AppBase
+classdef F2_RADFET_GUI_exported < matlab.apps.AppBase
 
     % Properties that correspond to app components
     properties (Access = public)
