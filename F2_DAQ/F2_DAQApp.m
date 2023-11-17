@@ -149,7 +149,7 @@ classdef F2_DAQApp < handle
             obj.DAQ_params.camSIOCs = obj.camCheck.DAQ_Cams.siocs;
             obj.DAQ_params.camTrigs = obj.camCheck.DAQ_Cams.camTrigs;
             obj.DAQ_params.num_CAM  = numel(obj.DAQ_params.camNames);
-            obj.checkTrigStat();
+            obj.camCheck.checkTrigStat();
             
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             %%% BSA and non-BSA PV lists %%%
@@ -357,45 +357,6 @@ classdef F2_DAQApp < handle
             fig = uifigure;
             uit = uitable(fig,'Data',t);
             uit.Position = [20 20 520 380];
-        end
-        
-        function checkTrigStat(obj)
-            
-            cam_trigs = obj.DAQ_params.camTrigs;
-            
-            evrSettings = zeros(obj.DAQ_params.num_CAM,1);
-            evrRoots  = cell(obj.DAQ_params.num_CAM,1);
-            evrChans  = cell(obj.DAQ_params.num_CAM,1);
-            
-            for i = 1:numel(cam_trigs)
-                
-                comps = strsplit(cam_trigs{i},':');
-                chan_str = comps{4};
-                %chan_num = str2num(comps{4});
-                
-                evr_str = ['EVR:' comps{2} ':' comps{3}];
-                evrRoots{i} = evr_str;
-                evrChans{i} = chan_str;
-                
-                evr_state = zeros(1,obj.n_ecs);
-                for j = 1:obj.n_ecs
-                    
-                    evr_state(j) = lcaGet([evr_str ':EVENT' num2str(j) 'CTRL.OUT' chan_str],0,'float');
-                    
-                end
-                
-                if sum(evr_state) ~= 1
-                    obj.addMessage(sprintf('Cannot determine EVR/Trigger state of camera %s. Aborting',obj.DAQ_params.camNames{i}));
-                    error('Cannot determine EVR/Trigger state of camera %s. Aborting',obj.DAQ_params.camNames{i});
-                end
-                
-                evrSettings(i) = obj.ecs(logical(evr_state));
-                
-            end
-            
-            obj.DAQ_params.evrSettings = evrSettings;
-            obj.DAQ_params.evrRoots = evrRoots;
-            obj.DAQ_params.evrChans = evrChans;
         end
 
         function addMessage(obj,message)

@@ -403,7 +403,7 @@ classdef F2_fastDAQ < handle
                 caput(obj.pvs.DAQ_DataOn,0);
             end
             
-            obj.restore_trig_event(obj.params.EC);
+            obj.camCheck.restore_trig_event(obj.params.EC);
                         
             if obj.params.scanDim > 0
                 
@@ -708,37 +708,8 @@ classdef F2_fastDAQ < handle
             
             lcaPutSmart(obj.daq_pvs.TIFF_NumCapture,obj.params.n_shot);
             
-            obj.set_trig_event(obj.params.EC);
+            obj.camCheck.set_trig_event(obj.params.EC);
             
-        end
-        
-        function set_trig_event(obj,EC)
-            
-            daq_ind = find(obj.ecs==EC);
-           
-            for i=1:obj.params.num_CAM
-                evr_setting = obj.params.evrSettings(i);
-                evr_ind = find(obj.ecs==evr_setting);
-                lcaPut([obj.params.evrRoots{i} ':EVENT' num2str(evr_ind) 'CTRL.OUT' obj.params.evrChans{i}],0);
-                lcaPut([obj.params.evrRoots{i} ':EVENT' num2str(daq_ind) 'CTRL.OUT' obj.params.evrChans{i}],1);
-            end
-                
-        end
-        
-        function restore_trig_event(obj,EC)
-            
-            daq_ind = find(obj.ecs==EC);
-           
-            for i=1:obj.params.num_CAM
-                lcaPut([obj.params.evrRoots{i} ':EVENT' num2str(daq_ind) 'CTRL.OUT' obj.params.evrChans{i}],0);
-                
-                evr_setting = obj.params.evrSettings(i);
-                evr_ind = find(obj.ecs==evr_setting);
-                lcaPut([obj.params.evrRoots{i} ':EVENT' num2str(evr_ind) 'CTRL.OUT' obj.params.evrChans{i}],1);
-                
-                lcaPut(obj.daq_pvs.TSS_SETEC{i},evr_setting);
-            end
-                
         end
         
         function createMetadata(obj)
