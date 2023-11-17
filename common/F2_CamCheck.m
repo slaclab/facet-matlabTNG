@@ -25,6 +25,8 @@ classdef F2_CamCheck < handle
     end
     properties(Constant)
         maxbeat=1e7 % max heartbeat count, wrap to zero
+        ecs = [201,203,213,214,222,223,224,225,226,131,53,54,55,56]
+        n_ecs = 14
     end
     
     methods
@@ -181,8 +183,73 @@ classdef F2_CamCheck < handle
             obj.DAQ_Cams.camTrigs = obj.camTrigs(ind);
             obj.DAQ_Cams.camPower = obj.camPower(ind);
             obj.DAQ_Cams.siocs = obj.siocs(ind);
+            obj.DAQ_Cams.num_CAM = sum(ind);
 
-
+        end
+        
+        % Functions for DAQ
+        function checkTrigStat(obj)
+            
+            cam_trigs = obj.DAQ_Cams.camTrigs;
+            
+            evrSettings = zeros(obj.DAQ_Cams.num_CAM,1);
+            evrRoots  = cell(obj.DAQ_Cams.num_CAM,1);
+            evrChans  = cell(obj.DAQ_Cams.num_CAM,1);
+            
+            for i = 1:numel(cam_trigs)
+                
+                comps = strsplit(cam_trigs{i},':');
+                chan_str = comps{4};
+                %chan_num = str2num(comps{4});
+                
+                evr_str = ['EVR:' comps{2} ':' comps{3}];
+                evrRoots{i} = evr_str;
+                evrChans{i} = chan_str;
+                
+                evr_state = zeros(1,obj.n_ecs);
+                for j = 1:obj.n_ecs
+                    
+                    evr_state(j) = lcaGet([evr_str ':EVENT' num2str(j) 'CTRL.OUT' chan_str],0,'float');
+                    
+                end
+                
+                if sum(evr_state) ~= 1
+                    obj.dispMessage(sprintf('Cannot determine EVR/Trigger state of camera %s. Aborting',obj.DAQ_Cams.camNames{i}));
+                    error('Cannot determine EVR/Trigger state of camera %s. Aborting',obj.DAQ_Cams.camNames{i});
+                end
+                
+                evrSettings(i) = obj.ecs(logical(evr_state));
+                
+            end
+            
+            obj.DAQ_Cams.evrSettings = evrSettings;
+            obj.DAQ_Cams.evrRoots = evrRoots;
+            obj.DAQ_Cams.evrChans = evrChans;
+        end
+                
+        function set_trig_event(obj,EC)
+            daq_ind = find(obj.ecs==EC);
+           
+            for i=1:obj.DAQ_Cams.num_CAM
+                evr_setting = obj.DAQ_Cams.evrSettings(i);
+                evr_ind = find(obj.ecs==evr_setting);
+                lcaPut([obj.DAQ_Cams.evrRoots{i} ':EVENT' num2str(evr_ind) 'CTRL.OUT' obj.DAQ_Cams.evrChans{i}],0);
+                lcaPut([obj.DAQ_Cams.evrRoots{i} ':EVENT' num2str(daq_ind) 'CTRL.OUT' obj.DAQ_Cams.evrChans{i}],1);
+            end
+        end
+        
+        function restore_trig_event(obj,EC)
+            daq_ind = find(obj.ecs==EC);
+           
+            for i=1:obj.DAQ_Cams.num_CAM
+                lcaPut([obj.DAQ_Cams.evrRoots{i} ':EVENT' num2str(daq_ind) 'CTRL.OUT' obj.DAQ_Cams.evrChans{i}],0);
+                
+                evr_setting = obj.DAQ_Cams.evrSettings(i);
+                evr_ind = find(obj.ecs==evr_setting);
+                lcaPut([obj.DAQ_Cams.evrRoots{i} ':EVENT' num2str(evr_ind) 'CTRL.OUT' obj.DAQ_Cams.evrChans{i}],1);
+                
+                lcaPut([obj.DAQ_Cams.camPVs{i} ':TSS_SETEC'],evr_setting);
+            end
         end
         
         function bad_cam = checkConnect(obj,daq_bool)
