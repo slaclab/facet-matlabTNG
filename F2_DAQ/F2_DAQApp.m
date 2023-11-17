@@ -114,11 +114,13 @@ classdef F2_DAQApp < handle
             
             obj.DAQ_params.rate = obj.rates{strcmp(rv,obj.rate_names)};
             obj.DAQ_params.rate_name = rv;
-            if obj.guihan.FastDAQCheckBox.Value
-                obj.DAQ_params.EC = 214;
-            else
-                obj.DAQ_params.EC = 222;
-            end
+            obj.DAQ_params.doStream = obj.guihan.StreamDataCheckBox.Value;
+            %if obj.guihan.FastDAQCheckBox.Value
+            %    obj.DAQ_params.EC = 214;
+            %else
+            %    obj.DAQ_params.EC = 222;
+            %end
+            obj.DAQ_params.EC = 214;
             
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%
             %%% parameters and flags %%%
@@ -182,7 +184,6 @@ classdef F2_DAQApp < handle
             obj.DAQ_params.scanPVs = {};
             obj.DAQ_params.startVals = [];
             obj.DAQ_params.stopVals = [];
-            %obj.DAQ_params.stepVals = [];
             obj.DAQ_params.scanVals = {};
             
             % This array is used for flattening the scan
@@ -229,11 +230,12 @@ classdef F2_DAQApp < handle
             %%%%%%%%%%%%%%%%%%%%
             
             obj.addMessage('DAQ parameters set.');
-            if obj.guihan.FastDAQCheckBox.Value
-                obj.DAQ_obj = F2_fastDAQ(obj.DAQ_params,obj);
-            else
-                obj.DAQ_obj = F2_runDAQ(obj.DAQ_params,obj);
-            end
+            obj.DAQ_obj = F2_fastDAQ(obj.DAQ_params,obj);
+%             if obj.guihan.FastDAQCheckBox.Value
+%                 obj.DAQ_obj = F2_fastDAQ(obj.DAQ_params,obj);
+%             else
+%                 obj.DAQ_obj = F2_runDAQ(obj.DAQ_params,obj);
+%             end
             
             
         end

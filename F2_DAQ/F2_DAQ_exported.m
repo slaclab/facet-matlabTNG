@@ -16,7 +16,7 @@ classdef F2_DAQ_exported < matlab.apps.AppBase
         LoadConfigButton               matlab.ui.control.Button
         ClearConfigButton              matlab.ui.control.Button
         SaveConfigButton               matlab.ui.control.Button
-        FastDAQCheckBox                matlab.ui.control.CheckBox
+        StreamDataCheckBox             matlab.ui.control.CheckBox
         RateDropDownLabel              matlab.ui.control.Label
         RateDropDown                   matlab.ui.control.DropDown
         SaveLaserBGCheckBox            matlab.ui.control.CheckBox
@@ -453,12 +453,11 @@ classdef F2_DAQ_exported < matlab.apps.AppBase
             app.SaveConfigButton.Position = [293 45 100 23];
             app.SaveConfigButton.Text = 'Save Config';
 
-            % Create FastDAQCheckBox
-            app.FastDAQCheckBox = uicheckbox(app.DAQSettingsPanel);
-            app.FastDAQCheckBox.Enable = 'off';
-            app.FastDAQCheckBox.Text = 'Fast DAQ';
-            app.FastDAQCheckBox.Position = [176 21 74 22];
-            app.FastDAQCheckBox.Value = true;
+            % Create StreamDataCheckBox
+            app.StreamDataCheckBox = uicheckbox(app.DAQSettingsPanel);
+            app.StreamDataCheckBox.Tooltip = {'Stream data is much faster, but works best when cameras have reduced ROI.'};
+            app.StreamDataCheckBox.Text = 'Stream Data';
+            app.StreamDataCheckBox.Position = [176 21 89 22];
 
             % Create RateDropDownLabel
             app.RateDropDownLabel = uilabel(app.DAQSettingsPanel);

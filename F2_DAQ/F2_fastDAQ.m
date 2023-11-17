@@ -25,7 +25,7 @@ classdef F2_fastDAQ < handle
         daq_status
         camCheck
         BG_obj
-        superfast = false
+        doStream = false
         blockBeam = false
     end
     properties(Hidden)
@@ -128,6 +128,9 @@ classdef F2_fastDAQ < handle
             % Save DAQ params to data_struct
             obj.data_struct.params = obj.params;
             obj.data_struct.metadata = struct();
+            
+            % Choose streaming or not
+            obj.doStream = obj.params.doStream;
             
             % Create Data Path on NAS drive and save info to data_struct
             obj.save_info = set_DAQ_filepath(obj);
@@ -254,6 +257,7 @@ classdef F2_fastDAQ < handle
         % status = 0 -> ok. status = 1 -> DAQ failed or aborted
         function status = daq_step(obj)
             
+            % waitTime isnt used but it is nice to see in display
             waitTime = obj.params.n_shot/obj.event_info.liveRate;
             
             obj.dispMessage(sprintf('Starting DAQ Step %d. Time estimate %0.1f seconds.',obj.step, waitTime));
@@ -261,30 +265,24 @@ classdef F2_fastDAQ < handle
             % setup camera saving
             lcaPut(obj.daq_pvs.TIFF_FileNumber,0);
             set_CAM_filepath(obj);
-            if obj.superfast
-                lcaPutNoWait(obj.daq_pvs.TIFF_Capture,1);
-            else
+
+            % Sometimes you can't set the TIFF_Capute PV so you try twice
+            lcaPutNoWait(obj.daq_pvs.TIFF_Capture,1);
+            stat = lcaGet(obj.daq_pvs.TIFF_Capture,0,'DBF_ENUM');
+            if sum(stat) ~= obj.params.num_CAM
+                obj.dispMessage('Attempt to set cameras to capture failed. Trying again.');
                 lcaPutNoWait(obj.daq_pvs.TIFF_Capture,1);
                 stat = lcaGet(obj.daq_pvs.TIFF_Capture,0,'DBF_ENUM');
                 if sum(stat) ~= obj.params.num_CAM
-                    obj.dispMessage('Attempt to set cameras to capture failed. Trying again.');
-                    lcaPutNoWait(obj.daq_pvs.TIFF_Capture,1);
-                    stat = lcaGet(obj.daq_pvs.TIFF_Capture,0,'DBF_ENUM');
-                    if sum(stat) ~= obj.params.num_CAM
-                        obj.dispMessage('Attempt to set cameras to capture failed again. Aborting.');
-                        status = 1;
-                        return;
-                    end
+                    obj.dispMessage('Attempt to set cameras to capture failed again. Aborting.');
+                    status = 1;
+                    return;
                 end
             end
             
+            % For counting shots while we wait for data
             count = 0;
             old_pid = lcaGet(obj.data_struct.metadata.Event.PID_PV);
-            %rate_ratio = obj.data_struct.metadata.Event.rateRatio;
-            
-            % Start data
-            %lcaPut(['EDEF:SYS1:' num2str(obj.eDefNum) ':CTRL'],1);
-            %pause(0.1);
             
             % Start BUFFACQ buffer
             obj.event.start_eDef();
@@ -297,14 +295,19 @@ classdef F2_fastDAQ < handle
             	obj.BG_obj.enable_Pockels_cell()
             end
             
+            % Get data and count shots
             while count < (obj.params.n_shot+1)
                 pause(0.01);
                 
+                % Update beamrate PID
                 try
                     new_pid = lcaGet(obj.data_struct.metadata.Event.PID_PV);
                 catch
                     continue;
                 end
+                
+                % if new_pid ~= old_pid, we have a new shot. Add non BSA
+                % frame.
                 if new_pid ~= old_pid
                     old_pid = new_pid;
                     count = count + 1;
@@ -312,64 +315,81 @@ classdef F2_fastDAQ < handle
                     obj.async_data.addDataFR();
                 end  
             end
+            % Buffers should be full
             
-            % Stop data
-            %lcaPut(['EDEF:SYS1:' num2str(obj.eDefNum) ':CTRL'],0);
+            
+            
+            % Stop buffer data
             obj.event.stop_eDef();
-            pause(0.1);
-            obj.event.stop_event();
             
-%             if obj.blockBeam
-%                 obj.BG_obj.block_Pockels_cell()
+%             % if using capture, buffer should be full
+%             if ~obj.doStream
+%                 pause(0.1);
+%                 obj.event.stop_event();
 %             end
             
             obj.dispMessage('Acquisition complete. Cameras saving data.');
             
+            % Allow 0.1 s (1 frame) for data saving to complete
             pause(0.1);
             fnum_rbv = lcaGet(obj.daq_pvs.TIFF_FileNumber_RBV);
             save_not_done = fnum_rbv < obj.params.n_shot;
-%             for c = 1:obj.params.num_CAM
-%                 if save_not_done(c)
-%                     obj.dispMessage([obj.params.camNames{c} ' saved ' num2str(fnum_rbv(c)) ' shots. Moving on.']);
-%                 end
-%             end
-                    
+            
+            max_save_counts = 2*obj.params.n_shot; % 2 is an empiricle number
+            max_save_time = max_save_counts/10;
+            
+            if any(save_not_done)
+                obj.dispMessage(sprintf('Waiting for cameras to save. Max wait is %0.1f seconds.',max_save_time));
+            end
+
+            % If data saving is not complete, run a loop to check for
+            % completion
             count = 0;
             while any(save_not_done)
                 status = obj.check_abort();
                 if status; return; end
-                fnum_rbv = lcaGet(obj.daq_pvs.TIFF_FileNumber_RBV);
-                save_not_done = fnum_rbv < obj.params.n_shot;
-                pause(0.01);
-                count = count+1;
-                if count > 200 && any(fnum_rbv == 0)
-                %if count > 200
-                    obj.dispMessage('Camera did not save. Will try to jiggle');
-                    
-                    obj.event.start_event();
-                    pause(10);
-                    count = 0;
-                    while any(save_not_done)
-                        status = obj.check_abort();
-                        if status; return; end
-                        fnum_rbv = lcaGet(obj.daq_pvs.TIFF_FileNumber_RBV);
-                        save_not_done = fnum_rbv < obj.params.n_shot;
-                        pause(0.01);
-                        count = count+1;
-                        if count > 1000 && any(fnum_rbv == 0)
-                            obj.dispMessage('Camera did not save. Will abort.');
+                
+                % Check if saves are inceasing with time
+                pause(0.1);
+                new_fnum_rbv = lcaGet(obj.daq_pvs.TIFF_FileNumber_RBV);
+                save_not_done = new_fnum_rbv < obj.params.n_shot;
+                
+                % If we are streaming data and the saves do not increase,
+                % we should abort
+                if obj.doStream
+                    if any(save_not_done)
+                        if sum(fnum_rbv == new_fnum_rbv)
+                            obj.dispMessage('Cameras did not save. Will abort.');
                             obj.event.stop_event();
                             status = 1;
                             return;
                         end
-                        obj.event.stop_event();
+                    end
+                    
+                else
+                    if any(save_not_done)
+                        count = count+1;
+                        
+
+                        % if we have waited a very long time and no saves, we abort.
+                        % 2 is an empiricle number
+                        if count > max_save_counts
+                            obj.dispMessage('Cameras did not save. Will abort.');
+                                obj.event.stop_event();
+                                status = 1;
+                                return;
+                        end
                     end
                 end
+                fnum_rbv = new_fnum_rbv;
             end
             
+            % This means that data saving is complete
+            obj.event.stop_event();
             obj.dispMessage('Data saving complete. Starting quality control.');
             
-            status = obj.collectData();
+            % Get the data
+            status = obj.collectData();    
             
         end
         
@@ -377,19 +397,14 @@ classdef F2_fastDAQ < handle
             
             if status
                 obj.dispMessage('Ending failed/aborted scan.');
-                %eDefOff(obj.eDefNum);
-                %eDefRelease(obj.eDefNum);
                 obj.event.stop_eDef();
                 obj.event.release_eDef();
                 % this indicates data taking has ended
                 caput(obj.pvs.DAQ_DataOn,0);
-                %obj.event.start_event();
             end
             
             obj.restore_trig_event(obj.params.EC);
-            
-            %obj.event.start_event();
-            
+                        
             if obj.params.scanDim > 0
                 
                 obj.dispMessage('Restoring scan functions to initial value.');
@@ -440,14 +455,11 @@ classdef F2_fastDAQ < handle
             obj.getBSAdata(n_use);
             
             disp('bop');
-            
-            %eDefRelease(obj.eDefNum);
-            
+                        
             obj.getNonBSAdata(slac_time);
             
             disp('borp');
             
-            %status = obj.getCamData();
             status = 0;
                         
             obj.dispMessage('Quality control complete.');
@@ -490,10 +502,11 @@ classdef F2_fastDAQ < handle
                 nSteps =  obj.params.totalSteps;
             end
             
+            % Loop over steps and cameras to collect list of images in save
+            % directory.
             for k = 1:nSteps
                 for i = 1:obj.params.num_CAM
                     imgs = dir([obj.save_info.cam_paths{i} '/*_data_step' num2str(k,'%02d') '*.tif']);
-                    %imgs = dir([obj.save_info.cam_paths{i} '/*_data_step*.tif']);
                     n_imgs = numel(imgs);
                     obj.daq_status(i,1) = n_imgs;
                     obj.daq_status(i,2) = obj.params.n_shot;
@@ -508,17 +521,27 @@ classdef F2_fastDAQ < handle
                     
                     disp('bleep');
                     
+                    % Add the paths of images found to 'loc'
                     locs = strcat([obj.save_info.cam_paths{i} '/'],{imgs.name}');
                     obj.data_struct.images.(obj.params.camNames{i}).loc = ...
                         [obj.data_struct.images.(obj.params.camNames{i}).loc; locs];
                     
                     disp('blop');
                     
-                    im_size = obj.data_struct.metadata.(obj.params.camNames{i}).ROI_SizeX_RBV*...
-                        obj.data_struct.metadata.(obj.params.camNames{i}).ROI_SizeY_RBV;
+                    % Notes to my future self. . .
+                    % In this step, we extract the PIDs from the TIFF file
+                    % header by knowing exactly where to look in the file.
+                    % This is a hack suggested by H. Ekerfelt and is a
+                    % major speed improvement over the previous code called
+                    % tiff_read_header(). The image saved to disk comes
+                    % from the ROI plugin. We used to use ROI_SizeX/Y_RBV
+                    % to get the image size, but this failed to account for
+                    % binning. ROI_ArraySize0/1_RBV accounts for binning.
+                    im_size = obj.data_struct.metadata.(obj.params.camNames{i}).ROI_ArraySize0_RBV*...
+                        obj.data_struct.metadata.(obj.params.camNames{i}).ROI_ArraySize1_RBV;
                     file_pos = 2*im_size+obj.offset;
-                    pid_list = zeros(n_imgs,1);
                     
+                    pid_list = zeros(n_imgs,1);
                     for j = 1:n_imgs
                         status = obj.check_abort();
                         if status; return; end
@@ -527,6 +550,7 @@ classdef F2_fastDAQ < handle
                     
                     disp('blorp');
                     
+                    % Add UIDs and PIds
                     UIDs = obj.generateUIDs(pid_list,k);
                     steps = k*ones(size(pid_list));
                     obj.data_struct.images.(obj.params.camNames{i}).pid = ...
@@ -668,21 +692,21 @@ classdef F2_fastDAQ < handle
         
         function prepCams(obj)
             
-            lcaPut(obj.daq_pvs.DataType,1);
-            lcaPut(obj.daq_pvs.ROI_EnableCallbacks,1);
-            lcaPut(obj.daq_pvs.TSS_SETEC,obj.params.EC);
+            lcaPutSmart(obj.daq_pvs.DataType,1);
+            lcaPutSmart(obj.daq_pvs.ROI_EnableCallbacks,1);
+            lcaPutSmart(obj.daq_pvs.TSS_SETEC,obj.params.EC);
             
             lcaPut(obj.daq_pvs.TIFF_EnableCallbacks,1);
-            if obj.superfast
+            if obj.doStream
                 lcaPut(obj.daq_pvs.TIFF_FileWriteMode,2); % 2 =streaming (fast)
             else
                 lcaPut(obj.daq_pvs.TIFF_FileWriteMode,1); % 1=capture (slow)
             end
-            lcaPut(obj.daq_pvs.TIFF_AutoIncrement,1);
-            lcaPut(obj.daq_pvs.TIFF_AutoSave,1);
-            lcaPut(obj.daq_pvs.TIFF_SetPort,2);
+            lcaPutSmart(obj.daq_pvs.TIFF_AutoIncrement,1);
+            lcaPutSmart(obj.daq_pvs.TIFF_AutoSave,1);
+            lcaPutSmart(obj.daq_pvs.TIFF_SetPort,2);
             
-            lcaPut(obj.daq_pvs.TIFF_NumCapture,obj.params.n_shot);
+            lcaPutSmart(obj.daq_pvs.TIFF_NumCapture,obj.params.n_shot);
             
             obj.set_trig_event(obj.params.EC);
             
