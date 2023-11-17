@@ -3,7 +3,7 @@ function [Xcentroid,Ycentroid] = displayLaserCentroidForSingleCamera(cameraPV)
 % Example:  [Xcentroid,Ycentroid] = displayLaserCentroidForSingleCamera('CAMR:LT20:100');
 
 % Get the laser centroid using the same method as the auto-aligner
-opts = struct('usemethod',2);
+opts = struct('usemethod',1);
 data = profmon_grab(cameraPV,0);    
 [img,~,~,~,~]=beamAnalysis_imgProc(data,opts);% The Auto-aligner uses the processed Image for fitting
 
