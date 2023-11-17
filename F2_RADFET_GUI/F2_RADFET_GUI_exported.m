@@ -165,7 +165,7 @@ classdef F2_RADFET_GUI_exported < matlab.apps.AppBase
     methods (Access = public)
 
         % Construct app
-        function app = F2_RADFET_GUI
+        function app = F2_RADFET_GUI_exported
 
             % Create UIFigure and components
             createComponents(app)
