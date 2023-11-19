@@ -10,7 +10,7 @@ classdef scanFunc_MasterProbeDelay
     properties(Constant)
         control_PV = "XPS:LI20:MC02:M5"
         readback_PV = "XPS:LI20:MC02:M5.RBV"
-        tolerance = 0.01;
+        tolerance = 0.001;
     end
     
     methods 
