@@ -208,6 +208,11 @@ classdef F2_DAQApp < handle
                     obj.addMessage('Cannot run scan without PV field specified.');
                     return
                 end
+                
+                if obj.DAQ_params.Tolerance{1} == 0
+                    obj.addMessage('Warning: attempting scan with tolerance = 0.');
+                end
+                
                 obj.DAQ_params.startVals(1) = obj.guihan.StartEditField.Value;
                 obj.DAQ_params.stopVals(1) = obj.guihan.StopEditField.Value;
                 obj.DAQ_params.nSteps(1) = obj.guihan.StepsEditField.Value;
@@ -247,6 +252,11 @@ classdef F2_DAQApp < handle
                     obj.addMessage('Cannot run scan without PV field specified.');
                     return
                 end
+                
+                if obj.DAQ_params.Tolerance{2} == 0
+                    obj.addMessage('Warning: attempting scan with tolerance = 0.');
+                end
+                
                 obj.DAQ_params.scanPVs{2} = obj.guihan.PVEditField_2.Value;
                 obj.DAQ_params.startVals(2) = obj.guihan.StartEditField_2.Value;
                 obj.DAQ_params.stopVals(2) = obj.guihan.StopEditField_2.Value;
@@ -361,31 +371,57 @@ classdef F2_DAQApp < handle
                 split = strsplit(split{1},'scanFunc_');
                 name_lists{end+1} = split{2};
             end
-            %name_lists = ['Use PV'; name_lists];
             
             obj.guihan.ScanfunctionDropDown.Items = name_lists;
+            obj.guihan.ScanfunctionDropDown.Value = 'Use_PV';
             obj.guihan.ScanfunctionDropDown_2.Items = name_lists;
+            obj.guihan.ScanfunctionDropDown.Value = 'Use_PV';
             
             obj.addMessage(sprintf('Loaded %d Scan functions.',numel(name_lists)));
         end
         
         function scanFuncSelected(obj,value)
+            
+            obj.guihan.PVEditField.Value = '';
+            obj.guihan.RBVEditField.Value = '';
+            obj.guihan.ToleranceEditField.Value = 0;
+            
+            obj.guihan.PVEditField.Enable = true;
+            obj.guihan.RBVEditField.Enable = true;
+            obj.guihan.ToleranceEditField.Enable = true;
 
             if ~strcmp(value,'Use_PV')
                 scanFunc = feval(['scanFunc_' value],obj);
                 obj.guihan.PVEditField.Value = scanFunc.control_PV;
                 obj.guihan.RBVEditField.Value = scanFunc.readback_PV;
                 obj.guihan.ToleranceEditField.Value = scanFunc.tolerance;
+                
+                obj.guihan.PVEditField.Enable = false;
+                obj.guihan.RBVEditField.Enable = false;
+                obj.guihan.ToleranceEditField.Enable = false;
+                
             end
         end
         
         function scanFuncSelected_2(obj,value)
+            
+            obj.guihan.PVEditField_2.Value = '';
+            obj.guihan.RBVEditField_2.Value = '';
+            obj.guihan.ToleranceEditField_2.Value = 0;
+            
+            obj.guihan.PVEditField_2.Enable = true;
+            obj.guihan.RBVEditField_2.Enable = true;
+            obj.guihan.ToleranceEditField_2.Enable = true;
             
             if ~strcmp(value,'Use_PV')
                 scanFunc = feval(['scanFunc_' value],obj);
                 obj.guihan.PVEditField_2.Value = scanFunc.control_PV;
                 obj.guihan.RBVEditField_2.Value = scanFunc.readback_PV;
                 obj.guihan.ToleranceEditField_2.Value = scanFunc.tolerance;
+                
+                obj.guihan.PVEditField_2.Enable = false;
+                obj.guihan.RBVEditField_2.Enable = false;
+                obj.guihan.ToleranceEditField_2.Enable = false;
             end
         end
             
