@@ -246,9 +246,9 @@ classdef F2_DAQ_exported < matlab.apps.AppBase
                 return
             end
             
-            if start_value == end_value
-                return
-            end
+%             if start_value == end_value
+%                 return
+%             end
             
             app.scan_vals = linspace(start_value,end_value,steps_val);
             scan_str = num2str(app.scan_vals,'%0.4f, ');
@@ -267,9 +267,9 @@ classdef F2_DAQ_exported < matlab.apps.AppBase
                 return
             end
             
-            if start_value == end_value
-                return
-            end
+%             if start_value == end_value
+%                 return
+%             end
             
             app.scan_vals2 = linspace(start_value,end_value,steps_val);
             scan_str = num2str(app.scan_vals2,'%0.4f, ');

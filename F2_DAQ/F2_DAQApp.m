@@ -208,6 +208,15 @@ classdef F2_DAQApp < handle
                     obj.addMessage('Cannot run scan with zero steps.');
                     return
                 end
+                
+                if obj.DAQ_params.startVals(1) == obj.DAQ_params.stopVals(1)
+                    answer = obj.CheckWithMax();
+                    if ~answer
+                        obj.addMessage('Try again.');
+                        return
+                    end
+                end
+                    
             end
             
             if obj.DAQ_params.scanDim > 1
@@ -225,6 +234,14 @@ classdef F2_DAQApp < handle
                 if obj.DAQ_params.totalSteps == 0
                     obj.addMessage('Cannot run scan with zero steps.');
                     return
+                end
+                
+                if obj.DAQ_params.startVals(2) == obj.DAQ_params.stopVals(2)
+                    answer = obj.CheckWithMax();
+                    if ~answer
+                        obj.addMessage('Try again.');
+                        return
+                    end
                 end
             end
             
@@ -361,6 +378,16 @@ classdef F2_DAQApp < handle
             fig = uifigure;
             uit = uitable(fig,'Data',t);
             uit.Position = [20 20 520 380];
+        end
+        
+        function answer = CheckWithMax(obj)
+            quest = 'You tried to a run scan with all the same values. Did you mean to?';
+            dlgTitle = 'Are you Max Gilljohann?';
+            btn1 = 'Yes I meant to do this.';
+            btn2 = 'Whoops! My bad.';
+            max = questdlg(quest,dlgTitle,btn1,btn2,btn2);
+            
+            answer = strcmp(max,btn1);
         end
 
         function addMessage(obj,message)
