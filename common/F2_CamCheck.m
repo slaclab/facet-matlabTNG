@@ -120,17 +120,18 @@ classdef F2_CamCheck < handle
             
             % Fill in data for each camera and add exceptions
             obj.siocs = cell(size(obj.camera_info(:,5)));
-            obj.camECs = cell(size(obj.camera_info(:,5)));
+            obj.camECs = zeros(size(obj.camera_info(:,5)));
+            cam_names = obj.camera_info(:,1);
             for i = 1:numel(obj.camera_info(:,5))
                 ind = strcmp(obj.sioc_list(:,1),obj.camera_info{i,5});
                 obj.siocs{i} = obj.sioc_list{ind,2};
-                obj.camECs{i} = obj.sioc_list{ind,3};
+                obj.camECs(i) = obj.sioc_list{ind,3};
+                
                 % Exceptions
-                cam_names = obj.camera_info(:,1);
                 if strcmp(cam_names{i},'PR10241') ||...
                    strcmp(cam_names{i},'LHUSOTR') ||...
                    strcmp(cam_names{i},'LHDSOTR')
-                    obj.camECs{i} = 201;
+                    obj.camECs(i) = 201;
                 end
             end
             
@@ -138,27 +139,8 @@ classdef F2_CamCheck < handle
                          
         end
         
-%         function add_ECs(obj)
-% %             for i = 1:size(obj.sioc_list,1)
-% %                 switch obj.sioc_list{i,2}
-% %                     case 'SIOC:IN10:PM01'
-% %                         obj.camECs{i} = [223,223,201,223,223,223,201,223,223,223,223,223,223,223];
-% %                     case 'SIOC:LI20:PM03'
-% %                         obj.camECs{i} = 223*ones
-% %                 end
-% %             end
-%             obj.camECs = zeros(size(obj.siocs));
-%             for i = 1:numel(obj.siocs)
-%                 switch obj.siocs
-%                     case 'SIOC:LR10:PM01'
-%                         obj.camECs(i) = 223;
-%                     case 'SIOC:IN10:PM01'
-%                         obj.camECs(i) = 223;
-%                     case 
-%                         
-%         end
-        
         function checkIOCs(obj)
+            % Removes cameras from the list if the IOCs are bad
             
             bad_inds = false(numel(obj.siocs),1);
             for i = 1:numel(obj.siocs)
@@ -182,6 +164,7 @@ classdef F2_CamCheck < handle
                 obj.camTrigs(bad_inds) = [];
                 obj.camPower(bad_inds) = [];
                 obj.siocs(bad_inds) = [];
+                obj.camECs(bad_inds) = [];
             end
 
             
@@ -203,14 +186,6 @@ classdef F2_CamCheck < handle
         
         function downSelect(obj,ind)
             % This function selects only the cams wanted by DAQ
-%             obj.camera_info(~ind,:) = [];
-%             obj.camNames(~ind) = [];
-%             obj.camPVs(~ind) = [];
-%             obj.regions(~ind) = [];
-%             obj.camTrigs(~ind) = [];
-%             obj.camPower(~ind) = [];
-%             obj.siocs(~ind) = [];
-
             obj.DAQ_Cams.camera_info = obj.camera_info(ind,:);
             obj.DAQ_Cams.camNames = obj.camNames(ind);
             obj.DAQ_Cams.camPVs = obj.camPVs(ind);
@@ -218,11 +193,12 @@ classdef F2_CamCheck < handle
             obj.DAQ_Cams.camTrigs = obj.camTrigs(ind);
             obj.DAQ_Cams.camPower = obj.camPower(ind);
             obj.DAQ_Cams.siocs = obj.siocs(ind);
+            obj.DAQ_Cams.camECs = obj.camECs(ind);
             obj.DAQ_Cams.num_CAM = sum(ind);
 
         end
         
-        % Functions for DAQ
+        % Functions for DAQ - Generate EVR PVs and check state
         function checkTrigStat(obj)
             % List of triggers associated with each camera
             cam_trigs = obj.DAQ_Cams.camTrigs;
@@ -243,6 +219,9 @@ classdef F2_CamCheck < handle
                 evrRoots{i} = evr_str;
                 evrChans{i} = chan_str;
                 
+                % We now implement a default EC to revert to
+                evr_default = (obj.DAQ_Cams.camECs(i) == obj.ecs);
+                
                 % Loop over event codes and find which one is set to true
                 evr_state = zeros(1,obj.n_ecs);
                 for j = 1:obj.n_ecs
@@ -258,7 +237,12 @@ classdef F2_CamCheck < handle
                     error('Cannot determine EVR/Trigger state of camera %s. Aborting',obj.DAQ_Cams.camNames{i});
                 end
                 
-                evrSettings(i) = obj.ecs(logical(evr_state));
+                % If EVR state is not he default state, issue a warning
+                if ~isequal(evr_default,evr_state)
+                    obj.dispMessage(sprintf('Warning: EVR state of camera %s does not match default state. Camera will revert to default after DAQ.',obj.DAQ_Cams.camNames{i}));
+                end
+                
+                evrSettings(i) = obj.ecs(logical(evr_default));
                 
             end
             
@@ -280,7 +264,7 @@ classdef F2_CamCheck < handle
         
         function restore_trig_event(obj,EC)
             
-            daq_ind = find(obj.ecs==EC);
+            %daq_ind = find(obj.ecs==EC);
            
             for i=1:obj.DAQ_Cams.num_CAM
                 
