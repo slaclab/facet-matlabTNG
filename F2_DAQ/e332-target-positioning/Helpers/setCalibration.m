@@ -11,7 +11,7 @@ configurationSection.targetAlPositionLat = 0;
 configurationSection.targetAlPositionVert = 5;
 PVStorage.setConfigurationSection(pvEngine, configurationSection);
 
-vertOffset = -0.2;
+vertOffset = -0.1;
 latOffset = 0;
 
 % Target 1
