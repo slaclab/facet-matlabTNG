@@ -105,6 +105,7 @@ classdef F2_DAQ_exported < matlab.apps.AppBase
         % Code that executes after component creation
         function startupFcn(app, blah)
             app.aobj=F2_DAQApp(app);
+            app.FixCamerasButton.Enable = 'off';
         end
 
         % Selection changed function: Tree
