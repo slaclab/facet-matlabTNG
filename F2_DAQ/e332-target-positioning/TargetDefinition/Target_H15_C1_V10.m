@@ -108,5 +108,8 @@ classdef Target_H15_C1_V10 < TargetDefinition
             columnString = num2str(column + 1);
             holeString = [rowChar, columnString];
         end
+        function numHoles = getNumberOfHoles()
+            numHoles = Target_H15_C1_V10.rowCount * Target_H15_C1_V10.columnCount;
+        end
     end
 end

@@ -12,6 +12,8 @@ classdef (Abstract) TargetDefinition < handle
 
         holeNumberFromString(str)
             % Returns the hole number from a string
+
+        getNumberOfHoles(obj)
     end
 
     methods (Static)

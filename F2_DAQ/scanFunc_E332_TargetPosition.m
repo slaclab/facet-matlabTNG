@@ -9,22 +9,16 @@ classdef scanFunc_E332_TargetPosition < handle
         currentPosition
 
         pvlist PV
-        pvs
+
         guihan
         freerun
 
     end
-
-    properties(Constant)
-        asyncMove = false
-    end
     
     properties(Constant)
         % Constants required by the DAQ
-        control_PV = "SIOC:SYS1:ML03:AO651"
-        readback_PV = "SIOC:SYS1:ML03:AO651"
-        numTargets_PV = "SIOC:SYS1:ML03:AO652"
-        tolerance = 1e-1
+        control_PV = "SIOC:SYS1:ML03:AO654"
+        readback_PV = "SIOC:SYS1:ML03:AO654"
     end
 
     methods
@@ -70,30 +64,32 @@ classdef scanFunc_E332_TargetPosition < handle
             obj.pvs = struct(obj.pvlist);
 
             
-            % Find the number of installed targets
-            numTargets = pvEngine.get(obj.numTargets_PV);
-%            obj.daqhandle.dispMessage(sprintf('Found %i targets', numTargets)); 
-            for i = 1:numTargets
-                target = E332Target(i, pvEngine);
-                target.tolerance = obj.tolerance;
-                obj.targets{i} = target;
-%                obj.daqhandle.dispMessage(sprintf('Loaded target number %i: %s', i, class(target.targetDefinition))); 
-            end
+%             % Find the number of installed targets
+%             numTargets = pvEngine.get(obj.numTargets_PV);
+%             for i = 1:numTargets
+%                 target = E332Target(i, pvEngine, transform);
+%                 target.tolerance = obj.tolerance;
+%                 obj.targets{i} = target;
+%             end
+            obj.targetAssembly = E332TargetAssembly(pvEngine, pvEngine);
         end
         
         function delta = set_value(obj, holeNumber)
             %SET_VALUE Moves the E332 target to a specific hole denoted by
             %the hole number
             timer = tic;
-            targetNumber = floor(holeNumber / 1000) + 1;
-            targetHoleNumber = mod(holeNumber, 1000);
-            target = obj.targets{targetNumber};
-            
-            offset=lcaGetSmart("SIOC:SYS1:ML03:AO658");
-            delta = target.moveToHole(targetHoleNumber+offset, obj.asyncMove);
+            obj.targetAssembly.moveToHole(holeNumber);
             elapsedTime = toc(timer);
-            obj.pvEngine.put(obj.control_PV, holeNumber);
-            obj.daqhandle.dispMessage(sprintf('Target no. %i moved to hole %d at Lat=%.6f and Vert=%.6f in %.3f seconds.', targetNumber, target.currentPosition.hole, target.currentPosition.lat, target.currentPosition.vert, elapsedTime))
+
+%             targetNumber = floor(holeNumber / 1000) + 1;
+%             targetHoleNumber = mod(holeNumber, 1000);
+%             target = obj.targets{targetNumber};
+% 
+%             delta = target.moveToHole(targetHoleNumber, obj.asyncMove);
+            %             obj.pvEngine.put(obj.control_PV, holeNumber);
+            %info = PVStorage.getInformationSection(pvEngine);
+
+            obj.daqhandle.dispMessage(sprintf('Target no. %i moved to hole %d in %.3f seconds.', holeNumber, elapsedTime))
         end
 
         function restoreInitValue(obj)
