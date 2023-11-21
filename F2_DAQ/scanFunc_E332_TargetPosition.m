@@ -79,7 +79,7 @@ classdef scanFunc_E332_TargetPosition < handle
             %SET_VALUE Moves the E332 target to a specific hole denoted by
             %the hole number
             timer = tic;
-            obj.targetAssembly.moveToHole(holeNumber);
+            obj.targetAssembly.moveToHole(floor(holeNumber));
             elapsedTime = toc(timer);
 
             %             targetNumber = floor(holeNumber / 1000) + 1;
