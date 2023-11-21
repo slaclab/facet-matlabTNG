@@ -7,13 +7,13 @@ classdef scanFunc_Use_PV
         initial_control
         initial_readback
         daqhandle
-        tolerance
+        tolerance = 0.01
         freerun = true
     end
     
     methods 
         
-        function obj = scanFunc_Use_PV(daqhandle,PV_name)
+        function obj = scanFunc_Use_PV(daqhandle,PV_name,RBV_name,tolerance)
             
             % Check if scanfunc called by DAQ
             if exist('daqhandle','var')
@@ -22,31 +22,9 @@ classdef scanFunc_Use_PV
             end
                         
             obj.control_PV = PV_name;
-            
-            split_pv = strsplit(PV_name,':');
-            field = split_pv{end};
-            
-            % Funky handling for XPS (there's gotta be a better way . . .)
-            if numel(field) == 2 && strcmp(field(1),'M') && str2num(field(2)) < 9
-                field = 'M';
-            end
-            
-            % Currently supporting magnets and motors
-            switch field
-                case 'BDES'
-                    obj.readback_PV = strrep(obj.control_PV,'BDES','BACT');
-                case 'BCTRL'
-                    obj.readback_PV = strrep(obj.control_PV,'BCTRL','BACT');
-                case 'MOTR'
-                    obj.readback_PV = [obj.control_PV '.RBV'];
-                case 'MOTOR'
-                    obj.readback_PV = [obj.control_PV '.RBV'];
-                case 'M'
-                    obj.readback_PV = [obj.control_PV '.RBV'];
-                otherwise
-                    obj.daqhandle.dispMessage('Cannot identify readback PV');
-                    obj.get_readbackPV();
-            end
+            obj.readback_PV = RBV_name;
+            obj.tolerance = tolerance;
+
                 
         
             context = PV.Initialize(PVtype.EPICS_labca);

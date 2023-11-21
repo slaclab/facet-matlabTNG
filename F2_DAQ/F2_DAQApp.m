@@ -194,6 +194,9 @@ classdef F2_DAQApp < handle
             obj.DAQ_params.totalSteps = 0;
             
             if obj.DAQ_params.scanDim > 0
+                % Add handling for use PV
+                % e.g: obj.checkUsePV()
+                
                 obj.DAQ_params.scanFuncs{1} = obj.guihan.ScanfunctionDropDown.Value;
                 obj.DAQ_params.scanPVs{1} = obj.guihan.PVEditField.Value;
                 obj.DAQ_params.startVals(1) = obj.guihan.StartEditField.Value;
@@ -220,6 +223,9 @@ classdef F2_DAQApp < handle
             end
             
             if obj.DAQ_params.scanDim > 1
+                % Add handling for use PV
+                % e.g: obj.checkUsePV()
+                
                 obj.DAQ_params.scanFuncs{2} = obj.guihan.ScanfunctionDropDown_2.Value;
                 obj.DAQ_params.scanPVs{2} = obj.guihan.PVEditField_2.Value;
                 obj.DAQ_params.startVals(2) = obj.guihan.StartEditField_2.Value;
@@ -344,22 +350,23 @@ classdef F2_DAQApp < handle
         end
         
         function scanFuncSelected(obj,value)
-%             if strcmp(value,'Use_PV')
-%                 prompt = {'Enter PV:','Enter Readback PV (or leave empty):'};
-%                 dlgtitle = 'PV Input';
-%                 field = [1 45; 1 45];
-%                 %definput = {'',''};
-%                 answer = inputdlg(prompt,dlgtitle,field);
-%             end
-            scanFunc = feval(['scanFunc_' value],obj);
-            obj.guihan.PVEditField.Value = scanFunc.control_PV;
-            obj.guihan.ToleranceEditField.Value = scanFunc.tolerance;
+
+            if ~strcmp(value,'Use_PV')
+                scanFunc = feval(['scanFunc_' value],obj);
+                obj.guihan.PVEditField.Value = scanFunc.control_PV;
+                obj.guihan.RBVEditField.Value = scanFunc.readback_PV;
+                obj.guihan.ToleranceEditField.Value = scanFunc.tolerance;
+            end
         end
         
         function scanFuncSelected_2(obj,value)
-            scanFunc = feval(['scanFunc_' value],obj);
-            obj.guihan.PVEditField_2.Value = scanFunc.control_PV;
-            obj.guihan.ToleranceEditField_2.Value = scanFunc.tolerance;
+            
+            if ~strcmp(value,'Use_PV')
+                scanFunc = feval(['scanFunc_' value],obj);
+                obj.guihan.PVEditField_2.Value = scanFunc.control_PV;
+                obj.guihan.RBVEditField_2.Value = scanFunc.readback_PV;
+                obj.guihan.ToleranceEditField_2.Value = scanFunc.tolerance;
+            end
         end
             
         function display_list(obj,list)
