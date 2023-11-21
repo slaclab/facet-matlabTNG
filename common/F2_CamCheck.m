@@ -8,6 +8,7 @@ classdef F2_CamCheck < handle
         camPVs
         camTrigs
         camPower
+        camECs
         regions
         siocs
         sioc_list
@@ -100,28 +101,62 @@ classdef F2_CamCheck < handle
         
         function add_SIOCs(obj)
             
-            obj.sioc_list = {'cpu-lr10-pm01',       'SIOC:LR10:PM01';
-                             'cpu-in10-pm01',       'SIOC:IN10:PM01';
-                             'cpu-li10-pm01',       'SIOC:LI10:PM02';
-                             'cpu-li14-pm01',       'SIOC:LI14:PM01';
-                             'cpu-li15-pm01',       'SIOC:LI15:PM01';
-                             'cpu-li20-pm01',       'SIOC:LI20:PM01';
-                             'cpu-li20-pm02',       'SIOC:LI20:PM02';
-                             'cpu-li20-pm03',       'SIOC:LI20:PM03';
-                             'cpu-li20-pm04',       'SIOC:LI20:PM04';
-                             'cpu-li20-pm05',       'SIOC:LI20:PM05';
-                             'cpu-li20-pm06',       'SIOC:LI20:PM06';
-                             'cpu-li20-pm07',       'SIOC:LI20:PM07';
-                             'cpu-li20-pm08',       'SIOC:LI20:PM08';
+            % Mapping of CPUs, SIOCs, and ECs
+            %                 CPU                    SIOC              EC
+            obj.sioc_list = {'cpu-lr10-pm01',       'SIOC:LR10:PM01'   223;
+                             'cpu-in10-pm01',       'SIOC:IN10:PM01'   223;
+                             'cpu-li10-pm01',       'SIOC:LI10:PM02'   201;
+                             'cpu-li14-pm01',       'SIOC:LI14:PM01'   201;
+                             'cpu-li15-pm01',       'SIOC:LI15:PM01'   201;
+                             'cpu-li20-pm01',       'SIOC:LI20:PM01'   222;
+                             'cpu-li20-pm02',       'SIOC:LI20:PM02'   222;
+                             'cpu-li20-pm03',       'SIOC:LI20:PM03'   223;
+                             'cpu-li20-pm04',       'SIOC:LI20:PM04'   222;
+                             'cpu-li20-pm05',       'SIOC:LI20:PM05'   222;
+                             'cpu-li20-pm06',       'SIOC:LI20:PM06'   222;
+                             'cpu-li20-pm07',       'SIOC:LI20:PM07'   223;
+                             'cpu-li20-pm08',       'SIOC:LI20:PM08'   223;
                              };
             
+            % Fill in data for each camera and add exceptions
             obj.siocs = cell(size(obj.camera_info(:,5)));
+            obj.camECs = cell(size(obj.camera_info(:,5)));
             for i = 1:numel(obj.camera_info(:,5))
                 ind = strcmp(obj.sioc_list(:,1),obj.camera_info{i,5});
-                obj.siocs{i} = obj.sioc_list{ind,2};                
+                obj.siocs{i} = obj.sioc_list{ind,2};
+                obj.camECs{i} = obj.sioc_list{ind,3};
+                % Exceptions
+                cam_names = obj.camera_info(:,1);
+                if strcmp(cam_names{i},'PR10241') ||...
+                   strcmp(cam_names{i},'LHUSOTR') ||...
+                   strcmp(cam_names{i},'LHDSOTR')
+                    obj.camECs{i} = 201;
+                end
             end
+            
+            
                          
         end
+        
+%         function add_ECs(obj)
+% %             for i = 1:size(obj.sioc_list,1)
+% %                 switch obj.sioc_list{i,2}
+% %                     case 'SIOC:IN10:PM01'
+% %                         obj.camECs{i} = [223,223,201,223,223,223,201,223,223,223,223,223,223,223];
+% %                     case 'SIOC:LI20:PM03'
+% %                         obj.camECs{i} = 223*ones
+% %                 end
+% %             end
+%             obj.camECs = zeros(size(obj.siocs));
+%             for i = 1:numel(obj.siocs)
+%                 switch obj.siocs
+%                     case 'SIOC:LR10:PM01'
+%                         obj.camECs(i) = 223;
+%                     case 'SIOC:IN10:PM01'
+%                         obj.camECs(i) = 223;
+%                     case 
+%                         
+%         end
         
         function checkIOCs(obj)
             
@@ -189,15 +224,17 @@ classdef F2_CamCheck < handle
         
         % Functions for DAQ
         function checkTrigStat(obj)
-            
+            % List of triggers associated with each camera
             cam_trigs = obj.DAQ_Cams.camTrigs;
             
+            % Configuration of EVR before DAQ starts
             evrSettings = zeros(obj.DAQ_Cams.num_CAM,1);
             evrRoots  = cell(obj.DAQ_Cams.num_CAM,1);
             evrChans  = cell(obj.DAQ_Cams.num_CAM,1);
             
+            % Loop over camera trigs
             for i = 1:numel(cam_trigs)
-                
+                % Create EVR PV from trigger PV
                 comps = strsplit(cam_trigs{i},':');
                 chan_str = comps{4};
                 %chan_num = str2num(comps{4});
@@ -206,6 +243,7 @@ classdef F2_CamCheck < handle
                 evrRoots{i} = evr_str;
                 evrChans{i} = chan_str;
                 
+                % Loop over event codes and find which one is set to true
                 evr_state = zeros(1,obj.n_ecs);
                 for j = 1:obj.n_ecs
                     
@@ -213,6 +251,8 @@ classdef F2_CamCheck < handle
                     
                 end
                 
+                % Process fails if none are set to true or if more than 1
+                % are set to true
                 if sum(evr_state) ~= 1
                     obj.dispMessage(sprintf('Cannot determine EVR/Trigger state of camera %s. Aborting',obj.DAQ_Cams.camNames{i}));
                     error('Cannot determine EVR/Trigger state of camera %s. Aborting',obj.DAQ_Cams.camNames{i});
@@ -239,14 +279,22 @@ classdef F2_CamCheck < handle
         end
         
         function restore_trig_event(obj,EC)
+            
             daq_ind = find(obj.ecs==EC);
            
             for i=1:obj.DAQ_Cams.num_CAM
-                lcaPut([obj.DAQ_Cams.evrRoots{i} ':EVENT' num2str(daq_ind) 'CTRL.OUT' obj.DAQ_Cams.evrChans{i}],0);
                 
+                % Reset all event codes to false
+                for j = 1:obj.n_ecs
+                    lcaPut([obj.DAQ_Cams.evrRoots{i} ':EVENT' num2str(j) 'CTRL.OUT' obj.DAQ_Cams.evrChans{i}],0,'float');
+                end
+%                 lcaPut([obj.DAQ_Cams.evrRoots{i} ':EVENT' num2str(daq_ind) 'CTRL.OUT' obj.DAQ_Cams.evrChans{i}],0);
+                
+                % Set correct event code to true
                 evr_setting = obj.DAQ_Cams.evrSettings(i);
                 evr_ind = find(obj.ecs==evr_setting);
                 lcaPut([obj.DAQ_Cams.evrRoots{i} ':EVENT' num2str(evr_ind) 'CTRL.OUT' obj.DAQ_Cams.evrChans{i}],1);
+%                 lcaPut([obj.
                 
                 lcaPut([obj.DAQ_Cams.camPVs{i} ':TSS_SETEC'],evr_setting);
             end
