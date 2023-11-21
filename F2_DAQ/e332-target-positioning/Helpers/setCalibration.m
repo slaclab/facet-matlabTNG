@@ -31,7 +31,7 @@ targetSection.point2Vert = -36.1 + vertOffset;
 
 PVStorage.setTargetSection(pvEngine, targetNumber, targetSection);
 
-% Target 1
+% Target 2
 
 targetNumber = 2;
 targetType = Target_H15_C1_V10();
@@ -40,11 +40,11 @@ targetSection.type = TargetDefinition.targetNumberByType(targetType);
 
 targetSection.point1Hole = targetType.holeNumberFromString("C2");
 targetSection.point1Lat = -49.15+ latOffset;
-targetSection.point1Vert = -35.55 + vertOffset;
+targetSection.point1Vert = -35.75 + vertOffset;
 
 targetSection.point2Hole = targetType.holeNumberFromString("Z33");
 targetSection.point2Lat = -8.95+ latOffset;
-targetSection.point2Vert = -0.2 + vertOffset;
+targetSection.point2Vert = -0.4 + vertOffset;
 
 PVStorage.setTargetSection(pvEngine, targetNumber, targetSection);
 

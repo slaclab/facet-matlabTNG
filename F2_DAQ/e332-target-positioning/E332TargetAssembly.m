@@ -104,6 +104,7 @@ classdef E332TargetAssembly < handle
             infoSection.currentTargetArea = targetArea;
             infoSection.currentHole = targetPosition.hole;
             infoSection.currentDaqHole = holeNumber;
+            PVStorage.setInformationSection(obj.pvEngineCalibration, infoSection);
         end
         function distance = moveToAreaHole(obj, targetArea, holeNumber)
             % If holeNumber == 0, use the next hole, otherwise go to
