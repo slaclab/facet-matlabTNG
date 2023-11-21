@@ -61,14 +61,14 @@ classdef E332TargetAssembly < handle
         function distance = moveToHole(obj, holeNumber)
             % First, figure out the target area
             targetArea = floor(holeNumber / 1000) + 1;
-
+            targetHoleNumber = mod(holeNumber, 1000);
             % If holeNumber == 0, use the next hole, otherwise go to
             % specified hole
-            if (holeNumber == 0)
+            if (targetHoleNumber == 0)
                 % Get current hole number
                 targetPosition = obj.targetAreas{targetArea}.getNextHolePosition();
             else
-                targetPosition = obj.targetAreas{targetArea}.getHolePosition(mod(holeNumber, 1000));
+                targetPosition = obj.targetAreas{targetArea}.getHolePosition(mod(targetHoleNumber, 1000));
             end
             obj.targetAreas{targetArea}.setLastHolePosition(targetPosition.hole);
 
