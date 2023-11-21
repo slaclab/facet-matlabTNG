@@ -335,7 +335,7 @@ classdef F2_fastDAQ < handle
             fnum_rbv = lcaGet(obj.daq_pvs.TIFF_FileNumber_RBV);
             save_not_done = fnum_rbv < obj.params.n_shot;
             
-            max_save_counts = 0.2*obj.params.n_shot; % 0.2 is an empiricle number
+            max_save_counts = 0.4*obj.params.n_shot; % 0.2 is an empiricle number
             max_save_time = max_save_counts;
             
             if any(save_not_done)
