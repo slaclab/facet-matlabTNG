@@ -154,7 +154,12 @@ classdef F2_fastDAQ < handle
             % Fill in scan functions
             obj.scanFunctions = struct();
             for i = 1:numel(obj.params.scanFuncs)
-                obj.scanFunctions.(obj.params.scanFuncs{i}) = feval(['scanFunc_' obj.params.scanFuncs{i}],obj);
+                if strcmp(obj.params.scanFuncs{i},"Use_PV")
+                    obj.scanFunctions.Use_PV = scanFunc_Use_PV(obj,...
+                        obj.params.scanPVs{i},obj.params.RBV_PVs{i},obj.params.Tolerance{i});
+                else
+                    obj.scanFunctions.(obj.params.scanFuncs{i}) = feval(['scanFunc_' obj.params.scanFuncs{i}],obj);
+                end
             end
             
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -639,8 +644,8 @@ classdef F2_fastDAQ < handle
             else
                 Scan_str = '';
                 for i=1:obj.params.scanDim
-                    scan_line = sprintf('Scan of %s from %0.2f to %0.2f in %d steps.\n',...
-                        obj.params.scanFuncs{i},obj.params.startVals(i),obj.params.stopVals(i),obj.params.nSteps(i));
+                    scan_line = sprintf('Scan of %s (PV %s) from %0.2f to %0.2f in %d steps.\n',...
+                        obj.params.scanFuncs{i},obj.params.scanPVs{i},obj.params.startVals(i),obj.params.stopVals(i),obj.params.nSteps(i));
                     Scan_str = [Scan_str scan_line];
                 end
                 sprintf(Scan_str);

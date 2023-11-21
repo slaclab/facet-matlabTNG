@@ -198,7 +198,16 @@ classdef F2_DAQApp < handle
                 % e.g: obj.checkUsePV()
                 
                 obj.DAQ_params.scanFuncs{1} = obj.guihan.ScanfunctionDropDown.Value;
-                obj.DAQ_params.scanPVs{1} = obj.guihan.PVEditField.Value;
+                if ~isempty(obj.guihan.PVEditField) &&...
+                        ~isempty(obj.guihan.RBVEditField) && ...
+                        ~isempty(obj.guihan.ToleranceEditField)
+                    obj.DAQ_params.scanPVs{1} = obj.guihan.PVEditField.Value;
+                    obj.DAQ_params.RBV_PVs{1} = obj.guihan.RBVEditField.Value;
+                    obj.DAQ_params.Tolerance{1} = obj.guihan.ToleranceEditField.Value;
+                else
+                    obj.addMessage('Cannot run scan without PV field specified.');
+                    return
+                end
                 obj.DAQ_params.startVals(1) = obj.guihan.StartEditField.Value;
                 obj.DAQ_params.stopVals(1) = obj.guihan.StopEditField.Value;
                 obj.DAQ_params.nSteps(1) = obj.guihan.StepsEditField.Value;
@@ -227,6 +236,17 @@ classdef F2_DAQApp < handle
                 % e.g: obj.checkUsePV()
                 
                 obj.DAQ_params.scanFuncs{2} = obj.guihan.ScanfunctionDropDown_2.Value;
+                % Check that PV, RBV, and Tolerance fields are filled in
+                if ~isempty(obj.guihan.PVEditField_2) &&...
+                        ~isempty(obj.guihan.RBVEditField_2) && ...
+                        ~isempty(obj.guihan.ToleranceEditField_2)
+                    obj.DAQ_params.scanPVs{2} = obj.guihan.PVEditField_2.Value;
+                    obj.DAQ_params.RBV_PVs{2} = obj.guihan.RBVEditField_2.Value;
+                    obj.DAQ_params.Tolerance{2} = obj.guihan.ToleranceEditField_2.Value;
+                else
+                    obj.addMessage('Cannot run scan without PV field specified.');
+                    return
+                end
                 obj.DAQ_params.scanPVs{2} = obj.guihan.PVEditField_2.Value;
                 obj.DAQ_params.startVals(2) = obj.guihan.StartEditField_2.Value;
                 obj.DAQ_params.stopVals(2) = obj.guihan.StopEditField_2.Value;
