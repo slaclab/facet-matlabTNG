@@ -151,6 +151,9 @@ classdef F2_DAQApp < handle
             obj.DAQ_params.num_CAM  = numel(obj.DAQ_params.camNames);
             obj.camCheck.checkTrigStat();
             
+            % Enable "Fix Cameras" button in GUI
+            obj.guihan.FixCamerasButton.Enable = 'on';
+            
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             %%% BSA and non-BSA PV lists %%%
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -231,6 +234,7 @@ classdef F2_DAQApp < handle
             
             obj.addMessage('DAQ parameters set.');
             obj.DAQ_obj = F2_fastDAQ(obj.DAQ_params,obj);
+            
 %             if obj.guihan.FastDAQCheckBox.Value
 %                 obj.DAQ_obj = F2_fastDAQ(obj.DAQ_params,obj);
 %             else
