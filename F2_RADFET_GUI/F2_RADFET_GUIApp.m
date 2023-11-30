@@ -4,16 +4,16 @@ classdef F2_RADFET_GUIApp < handle
     % cameras at the dump.
     
     properties
-        guihan
-        starttime
-        endtime
-        CamRebootPV
-        RADFETPV
-        reboot_t
-        reboot_v
-        rad_t
-        rad_v
-        figFn
+        guihan % GUI handle
+        starttime % Start time for data time range
+        endtime % End time for data time range
+        CamRebootPV % PV for camera reboot count
+        RADFETPV % PV for RADFET
+        reboot_t % Time stamps for reboot count
+        reboot_v % Values for reboot count
+        rad_t % Time stamps for RADFET
+        rad_v % Values for RADFET
+        figFn % Figure file name used for plotting to eLog
     end
       
     methods
@@ -24,6 +24,9 @@ classdef F2_RADFET_GUIApp < handle
         % Support functions
         function populateRADFET(obj)
             camera = obj.guihan.CameraDropDown.Value;
+            
+            % Based on camera chosen, auto populate the RADFET drop down
+            % value
             switch camera
                 case "LBG LFOV"
                     obj.RADFETPV = 'RADF:LI20:1:C:1:DOSE';
@@ -53,6 +56,7 @@ classdef F2_RADFET_GUIApp < handle
         end
         
         function getArchiveData(obj)
+            % Get data from archiver within selected time range
             timeRange = [obj.starttime obj.endtime];
             
             [obj.reboot_t,obj.reboot_v] = history(obj.CamRebootPV,timeRange);
@@ -60,11 +64,13 @@ classdef F2_RADFET_GUIApp < handle
         end
         
         function plotData(obj)
+            % Plot RADFET values on left axis
             yyaxis(obj.guihan.UIAxes,'left')
             plot(obj.guihan.UIAxes,obj.rad_t,obj.rad_v)
             datetick(obj.guihan.UIAxes)
             ylabel(obj.guihan.UIAxes,"RADFET (Rad)")
             
+            % Plot reboot count values on right axis
             yyaxis(obj.guihan.UIAxes,'right')
             plot(obj.guihan.UIAxes,obj.reboot_t,obj.reboot_v)
             datetick(obj.guihan.UIAxes)
@@ -74,15 +80,19 @@ classdef F2_RADFET_GUIApp < handle
         end
         
         function exportLogbook(obj)
+            % Export UI Axis content to a PNG image
             obj.figFn = 'RADFET_plot.png';
             exportgraphics(obj.guihan.UIAxes,obj.figFn)
 
+            % Open the PNG image, get figure handle, and print to eLog
             imshow(obj.figFn,'Border','tight')
             fig = gcf;
             util_printLog2020(fig,'title',...
                 "Radiation and Reboot Count for "+...
                 obj.guihan.CameraDropDown.Value,'author',...
-                'F2_CameraRebootPlotter.m')
+                'F2_RADFET_GUI.m')
+            
+            % Close image and delete file
             close(fig)
             delete(obj.figFn)
         end
