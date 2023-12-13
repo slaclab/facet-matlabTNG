@@ -287,7 +287,8 @@ classdef F2_fastDAQ < handle
             
             % For counting shots while we wait for data
             count = 0;
-            old_pid = lcaGet(obj.data_struct.metadata.Event.PID_PV);
+            %old_pid = lcaGet(obj.data_struct.metadata.Event.PID_PV);
+            old_pid = lcaGet('PATT:SYS1:1:PULSEID');
             
             % Start BUFFACQ buffer
             obj.event.start_eDef();
@@ -302,11 +303,13 @@ classdef F2_fastDAQ < handle
             
             % Get data and count shots
             while count < (obj.params.n_shot+1)
-                pause(0.01);
+                %pause(0.01);
+                pause(0.099);
                 
                 % Update beamrate PID
                 try
-                    new_pid = lcaGet(obj.data_struct.metadata.Event.PID_PV);
+                    %new_pid = lcaGet(obj.data_struct.metadata.Event.PID_PV);
+                    new_pid = lcaGet('PATT:SYS1:1:PULSEID');
                 catch
                     continue;
                 end
