@@ -202,12 +202,12 @@ classdef Camera < handle
         end
         
         function setAlarm(cameraInstance)
-            if iscell(lcaGetSmart(cameraInstance.CameraPV+":NAME")) && cameraInstance.IsSIOCgood
-                if strcmp(cameraInstance.pvs.Acquisition.SEVR{1},"NO_ALARM")
-                    cameraInstance.Alarm = false;
-                else
-                    cameraInstance.Alarm = true;
-                end
+            if ~iscell(lcaGetSmart(cameraInstance.CameraPV+":NAME")) ||...
+                    ~cameraInstance.IsSIOCgood ||...
+                    ~strcmp(cameraInstance.pvs.Acquisition.SEVR{1},"NO_ALARM")
+                cameraInstance.Alarm = true;
+            else
+                cameraInstance.Alarm = false;
             end
         end
         

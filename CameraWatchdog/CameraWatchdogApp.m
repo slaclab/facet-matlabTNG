@@ -120,15 +120,14 @@ classdef CameraWatchdogApp < handle
             % its respective camera(s) (stop looping/setting status)
             
             for i = 1:numel(watchdogInstance.SIOCs)
+                server = string(watchdogInstance.SIOCList{i,1});
                 if watchdogInstance.SIOCs(i).Alarm
-                    server = string(watchdogInstance.SIOCList{i,1});
                     for j = 1:size(watchdogInstance.NameList,1)
                         if strcmp(watchdogInstance.NameList{j,5},server)
                             updateSIOCstatus(watchdogInstance.CameraObjs(j),false);
                         end
                     end
                 else
-                    server = string(watchdogInstance.SIOCList{i,1});
                     for j = 1:size(watchdogInstance.NameList,1)
                         if strcmp(watchdogInstance.NameList{j,5},server)
                             updateSIOCstatus(watchdogInstance.CameraObjs(j),true);
