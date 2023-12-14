@@ -157,6 +157,7 @@ classdef F2_phasing_exported < matlab.apps.AppBase
             % to black or red if the station is off-beam or MNT/TBR/ARU
             lamp_color = [0.3 0.3 0.3];
             app.SCAN_READY = false;
+            
             if bitget(act, 1)
                 lamp_color = [0.0 1.0 0.0];
                 msg = 'Ready to scan %s.';
@@ -181,37 +182,15 @@ classdef F2_phasing_exported < matlab.apps.AppBase
             app.initKPHR.Value = KPHR;
         end
         
-        % check IN10 BPM to determine bunch charge
-        function update_bunch_charge(app)
-            app.N_elec = lcaGetSmart('BPMS:IN10:221:TMIT1H');
-            Q = 1.6e-19 * app.N_elec / 1e-12;
-            if isnan(Q), Q = 0; end
-            app.bunchCharge.Value = Q;
-        end
-        
-        % get beam rate from event system
-        function update_beam_rate(app)
-            f = lcaGetSmart('EVNT:SYS1:1:BEAMRATE');
-            if isnan(f), f = 0; end
-            app.beamRate.Value = f;
-        end
-        
-        % design energy for target linac from bend magnet BACT
-        % hardcoded dispersion values at BC11, BC14 and BC20 (in mm)
-        % TODO: get some values from lucretia!
-        function get_beam_energy(app)
-            app.linac.dispersion = 1000 * [-0.2511 -0.4374 0.1207];
-            for i = 1:3, app.linac.energy(i) = 1000 * lcaGetSmart(app.linac.energy_PVs(i)); end
-            app.beamEnergy.Value = app.linac.energy(app.target.linac);
-            app.bpmDispersion.Value = app.linac.dispersion(app.target.linac);
-        end
-        
         % helper to update chrge, rate energy in one line
         function update_operating_point(app)
             app.update_klys_phase_params();
-            app.update_bunch_charge();
-            app.update_beam_rate();
-            app.get_beam_energy();
+            app.N_elec              = app.S.beam.N_elec;
+            app.bunchCharge.Value   = app.S.beam.Q;
+            app.beamRate.Value      = app.S.beam.f;
+            app.beamEnergy.Value    = app.S.beam.E_design;
+            app.specBPM.Value       = app.S.beam.BPM;
+            app.bpmDispersion.Value = app.S.beam.eta;
         end
         
         % disable longitudinal feedbacks, if necessary
@@ -256,9 +235,6 @@ classdef F2_phasing_exported < matlab.apps.AppBase
         
         % populate app.S.in struct from GUI
         function get_scan_inputs(app)
-            app.S.E_design = app.linac.energy(app.target.linac);
-            app.S.eta = app.linac.dispersion(app.target.linac);
-            
             app.S.in.dPhi = app.editRange.Value;
             app.S.in.N_steps = app.editNSteps.Value;
             app.S.in.N_samples = app.editNSamples.Value;
@@ -536,8 +512,6 @@ classdef F2_phasing_exported < matlab.apps.AppBase
         function startupFcn(app)
             app.target = struct;
             app.linac = struct;
-
-            app.S.start_time = datetime('today');
             
             app.target.linac = 1;
             app.target.sector = 11;
@@ -555,14 +529,13 @@ classdef F2_phasing_exported < matlab.apps.AppBase
             app.linac.energy_PVs = [ ...
                 "BEND:LI11:331:BACT" "BEND:LI14:720:BACT" "LI20:LGPS:1990:BACT" ...
                 ];
+            % initialize scan object in case there isn't one already held
+            % TO DO: is this when to prompt user before old scan deletion ??
+            app.S = F2_phasescan(app.target.linac, app.target.sector, app.target.klys);
             
             app.construct_klys_map();
             app.update_klys_stat();
             app.update_operating_point();
-            
-            % initialize scan object in case there isn't one already held
-            % TO DO: is this when to prompt user before old scan deletion ??
-            app.S = F2_phasescan(app.target.linac, app.target.sector, app.target.klys);
             
             % re-label plot axes
             app.label_plot(app.ax);
@@ -588,12 +561,6 @@ classdef F2_phasing_exported < matlab.apps.AppBase
                 app.editRange.Value = 60;
                 app.editNSteps.Value = 9;
             end
-            
-            % set BPM + dispersion fields
-            app.specBPM.Value = app.linac.bpm_x_PVs(app.target.linac);
-            app.bpmDispersion.Value = app.linac.dispersion(app.target.linac);
-            app.beamEnergy.Value = app.linac.energy(app.target.linac);
-            
         end
 
         % Value changed function: selectSector
@@ -643,6 +610,8 @@ classdef F2_phasing_exported < matlab.apps.AppBase
             % initialize scan object in case there isn't one already held
             % TO DO: is this when to prompt user before old scan deletion ??
             app.S = F2_phasescan(app.target.linac, app.target.sector, app.target.klys);
+            
+            app.update_operating_point();
             
             % re-label plot axes
             app.label_plot(app.ax);

@@ -3,18 +3,35 @@
 
 classdef F2_phasescan < handle
     
+    properties (Constant)
+        
+        % EPICS record names for each spectrometer BPM
+        bpms = [ ...
+            "BPMS:IN10:731", "BPMS:LI11:333" "BPMS:LI14:801" "BPMS:LI20:2050" ...
+            ];
+        
+        % bend magnet BACT values for design energy milestones
+        bend_BACT_PVs = [ ...
+            "BEND:LI11:331:BACT" "BEND:LI14:720:BACT" "LI20:LGPS:1990:BACT" ...
+            ];
+        
+        % hardcoded dispersion at each BPM
+        % TO DO: grab this from the model server, once such a thing exists
+        etas = 1000 * [-0.2511 -0.4374 0.1207]
+        
+    end
+    
     properties
         linac = 0;         % linac number (1,2,3)
         sector = 10;       % sector number (10-19)
         klys = 3;          % klystron number (1-8)
         klys_str = 'ss-k'; % klystron ID string
         start_time         % scan start time
-        E_design = 0.0;    % beam design energy
-        eta = 0.0;         % dispersion at spectrometer BPM
-        f = 0.0;           % beam repetition rate
         
         SUCCESS = false;
         ABORTED = false;
+        
+        beam = struct;
 
         in = struct;
         msmt = struct;
@@ -36,6 +53,15 @@ classdef F2_phasescan < handle
             self.klys_str = sprintf('%d-%d', self.sector, self.klys);
             self.start_time = datetime('now');
             self.start_time.Format = 'dd-MMM-uuuu hh:mm:ss';
+            
+            % current beam parameters
+            self.beam.N_elec = 0.0;
+            self.beam.Q = 0.0;
+            self.beam.f = 0.0;
+            self.beam.E_design = 0.0;
+            self.beam.BPM = '';
+            self.beam.eta = 0.0;
+            self.update_beam_status();
             
             % input configuration
             self.in.range = [];
@@ -96,6 +122,34 @@ classdef F2_phasescan < handle
             self.msmt.X_err   = zeros(1, self.in.N_steps);
             self.msmt.dE      = zeros(1, self.in.N_steps);
             self.msmt.dE_err  = zeros(1, self.in.N_steps);
+        end
+   
+        function get_beam_rate(self)
+            f = lcaGetSmart('EVNT:SYS1:1:BEAMRATE');
+            if isnan(f), f = 0; end
+            self.beam.f = f;
+        end
+        
+        function get_bunch_charge(self)
+            self.beam.N_elec = lcaGetSmart('BPMS:IN10:221:TMIT1H');
+            Q = 1.6e-19 * self.beam.N_elec / 1e-12;
+            if isnan(Q), Q = 0; end
+            self.beam.Q = Q;
+        end
+        
+        function get_beam_design_energy(self)
+            E = lcaGetSmart(self.bend_BACT_PVs(self.linac+1));
+            if isnan(E), E = 0; end
+            self.beam.E_design = E;
+            self.beam.eta = self.etas(self.linac+1);
+        end
+        
+        % wrapper that grabs rep rate, bunch charge and energy
+        function update_beam_status(self)
+            self.beam.BPM = self.bpms(self.linac+1);
+            self.get_beam_rate();
+            self.get_bunch_charge();
+            self.get_beam_design_energy();
         end
         
         % compute the range of phase settings given range + N steps
