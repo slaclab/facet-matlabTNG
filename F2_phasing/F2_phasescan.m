@@ -175,6 +175,7 @@ classdef F2_phasescan < handle
                     if DL10E_on,  FB_state = bitset(FB_state, 1, 0); end
                     if BC11E_on,  FB_state = bitset(FB_state, 3, 0); end
                     if BC11BL_on, FB_state = bitset(FB_state, 4, 0); end
+                    if DL10E_on || BC11E_on || BC11BL_on, need_disable = true; end
  
                 case 1
                     if BC11E_on,  FB_state = bitset(FB_state, 3, 0); end
