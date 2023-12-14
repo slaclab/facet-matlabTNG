@@ -25,11 +25,13 @@ classdef F2_phasescan < handle
     methods
         
         % constructor
-        function self = F2_phasescan(linac, klys_str)
+        function self = F2_phasescan(linac, sector, klys)
             
             % global scan setup
             self.linac = linac;
-            self.klys_str = klys_str;
+            self.sector = sector;
+            self.klys = klys;
+            self.klys_str = sprintf('%d-%d', self.sector, self.klys);
             self.start_time = datetime('now');
             self.start_time.Format = 'dd-MMM-uuuu hh:mm:ss';
             

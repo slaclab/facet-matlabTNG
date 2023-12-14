@@ -1,4 +1,3 @@
-t status
 classdef F2_phasing_exported < matlab.apps.AppBase
 
     % Properties that correspond to app components
@@ -563,7 +562,7 @@ classdef F2_phasing_exported < matlab.apps.AppBase
             
             % initialize scan object in case there isn't one already held
             % TO DO: is this when to prompt user before old scan deletion ??
-            app.S = F2_phasescan(app.target.linac, app.target.klys_str);
+            app.S = F2_phasescan(app.target.linac, app.target.sector, app.target.klys);
             
             % re-label plot axes
             app.label_plot(app.ax);
@@ -643,7 +642,7 @@ classdef F2_phasing_exported < matlab.apps.AppBase
             
             % initialize scan object in case there isn't one already held
             % TO DO: is this when to prompt user before old scan deletion ??
-            app.S = F2_phasescan(app.target.linac, app.target.klys_str);
+            app.S = F2_phasescan(app.target.linac, app.target.sector, app.target.klys);
             
             % re-label plot axes
             app.label_plot(app.ax);
@@ -667,7 +666,7 @@ classdef F2_phasing_exported < matlab.apps.AppBase
             app.scanButton.Text = 'Scanning...';
             
             % initialize scan object
-            app.S = F2_phasescan(app.target.linac, app.target.klys_str);
+            app.S = F2_phasescan(app.target.linac, app.target.sector, app.target.klys);
             app.get_scan_inputs();
             
             % run the scan!
@@ -800,6 +799,7 @@ classdef F2_phasing_exported < matlab.apps.AppBase
             title(app.ax, 'Title')
             xlabel(app.ax, '\phi')
             ylabel(app.ax, {'\Delta x (BPMS:LI11:333:X)'; ''})
+            app.ax.FontSize = 14;
             app.ax.Position = [380 20 600 510];
 
             % Create labelTitle
