@@ -152,6 +152,50 @@ classdef F2_phasescan < handle
             self.get_beam_design_energy();
         end
         
+        % disable relevant downstream longitudinal feedbacks
+        % L0 scan: disable DL10E, BC11E, BC11BL
+        % L1 scan: disable BC11E, BC11BL
+        % L2 scan: disable BC14E, BC14BL
+        % L3 scan: disable BC20E
+        function disable_feedbacks(self)
+            need_disable = false;
+            
+            % FB on/off statuses are individual bits of overall status word
+            FB_state_PV = "SIOC:SYS1:ML00:AO856";
+            FB_state = lcaGetSmart(FB_state_PV);
+            DL10E_on  = bitget(FB_state, 1);
+            BC11E_on  = bitget(FB_state, 3);
+            BC11BL_on = bitget(FB_state, 4);
+            BC14E_on  = bitget(FB_state, 2);
+            BC14BL_on = bitget(FB_state, 6);  
+            BC20E_on  = bitget(FB_state, 5);
+            
+            switch self.linac
+                case 0
+                    if DL10E_on,  FB_state = bitset(FB_state, 1, 0); end
+                    if BC11E_on,  FB_state = bitset(FB_state, 3, 0); end
+                    if BC11BL_on, FB_state = bitset(FB_state, 4, 0); end
+ 
+                case 1
+                    if BC11E_on,  FB_state = bitset(FB_state, 3, 0); end
+                    if BC11BL_on, FB_state = bitset(FB_state, 4, 0); end
+                    if BC11E_on || BC11BL_on, need_disable = true; end
+  
+                case 2
+                    if BC14E_on,  FB_state = bitset(FB_state, 2, 0); end
+                    if BC14BL_on, FB_state = bitset(FB_state, 6, 0); end
+                    if BC14E_on || BC14BL_on, need_disable = true; end
+                    
+                case 3
+                    if BC20E_on
+                        FB_state = bitset(FB_state, 5, 0);
+                        need_disable = true;
+                    end
+            end
+            
+            if need_disable, lcaPutSmart(FB_state_PV, FB_state); end
+        end
+        
         % compute the range of phase settings given range + N steps
         function compute_scan_range(self)
             N = self.in.N_steps;
