@@ -5,6 +5,8 @@ classdef F2_phasescan < handle
     
     properties
         linac = 0;         % linac number (1,2,3)
+        sector = 10;       % sector number (10-19)
+        klys = 3;          % klystron number (1-8)
         klys_str = 'ss-k'; % klystron ID string
         start_time         % scan start time
         E_design = 0.0;    % beam design energy
