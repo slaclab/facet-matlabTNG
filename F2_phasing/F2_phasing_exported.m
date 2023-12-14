@@ -87,8 +87,6 @@ classdef F2_phasing_exported < matlab.apps.AppBase
         
         S % holds F2_phasescan obj
         
-        FB_state_PV = "SIOC:SYS1:ML00:AO856";   % state of longitudinal feedbacks
-        
         % flags for catching abort rquests
         ABORT_REQUEST = false;  
         SCAN_ABORTED = false;
@@ -191,46 +189,6 @@ classdef F2_phasing_exported < matlab.apps.AppBase
             app.beamEnergy.Value    = app.S.beam.E_design;
             app.specBPM.Value       = app.S.beam.BPM;
             app.bpmDispersion.Value = app.S.beam.eta;
-        end
-        
-        % disable longitudinal feedbacks, if necessary
-        % L1 scan: disable BC11E, BC11BL
-        % L2 scan: disable BC14E, BC14BL
-        % L3 scan: disable BC20E
-        function disable_feedbacks(app)
-            need_disable = false;
-            
-            % FB on/off statuses are individual bits of overall status word
-            FB_state = lcaGetSmart(app.FB_state_PV);
-            BC11E_on  = bitget(FB_state, 3);
-            BC11BL_on = bitget(FB_state, 4);
-            BC14E_on  = bitget(FB_state, 2);
-            BC14BL_on = bitget(FB_state, 6);
-            BC20E_on  = bitget(FB_state, 5);
-            
-            switch app.target.linac
-                case 1
-                    if BC11E_on,  FB_state = bitset(FB_state, 3, 0); end
-                    if BC11BL_on, FB_state = bitset(FB_state, 4, 0); end
-                    if BC11E_on || BC11BL_on, need_disable = true; end
-  
-                case 2
-                    if BC14E_on,  FB_state = bitset(FB_state, 2, 0); end
-                    if BC14BL_on, FB_state = bitset(FB_state, 6, 0); end
-                    if BC14E_on || BC14BL_on, need_disable = true; end
-                    
-                case 3
-                    if BC20E_on
-                        FB_state = bitset(FB_state, 5, 0);
-                        need_disable = true;
-                    end
-            end
-            
-            if need_disable
-                app.message.Text = "Disabling feedbacks...";
-                pause(1);
-                lcaPutSmart(app.FB_state_PV, FB_state);
-            end
         end
         
         % populate app.S.in struct from GUI
@@ -404,7 +362,7 @@ classdef F2_phasing_exported < matlab.apps.AppBase
             end
             
             % (3) disable relevant longitudinal feedbacks before scanning
-            if ~app.S.in.simulation, app.disable_feedbacks(); end
+            if ~app.S.in.simulation, app.S.disable_feedbacks(); end
             
             app.stage_plot();
             
