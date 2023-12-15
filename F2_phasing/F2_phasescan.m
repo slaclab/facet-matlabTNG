@@ -249,23 +249,25 @@ classdef F2_phasescan < handle
             end
         end
         
-        % subroutine to correct energy in L1 before phase scans
-        function SSSB_energy_correction(self)
+        % subroutine to correct energy in L1 after cresting the target station before phase scans
+        function L1_energy_correction(self)
+            
+            % make aboslutely sure this is an 11-1 or 11-2 phase scan
+            assert((self.linac == 1 && self.sector == 11 && self.klys < 3));
             
             pos_tolerance = 0.1;   % BPM tolerance in mm
             max_iters     = 1000;  % iteration cap to prevent runaway
             
-            if strcmp(self.klys_str, '11-1')
-                klys = 21;
-                klys_str = '11-2';
+            % fix energy with 11-2 for 11-1 scans and vice versa
+            if self.klys == 1
+                corrector_klys = 2;
             else
-                klys = 11;
-                klys_str = '11-1';
+                corrector_klys = 1;
             end
             
-            fprintf('Correcting L1 energy with %s...', klys_str);
+            fprintf('Correcting L1 energy with 11-%d...', corrector_klys);
             
-            PV_ADES = sprintf('KLYS:LI11:%d1:SSSB_ADES', klys);
+            PV_ADES = sprintf('KLYS:LI11:%d1:SSSB_ADES', corrector_klys);
             ADES_init = lcaGetSmart(PV_ADES);
             ADES_current = ADES_init;
             
