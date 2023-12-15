@@ -1,4 +1,4 @@
-% object to handle input/output/config parameters of a phase scan
+% object to handle coire actions and input/output/config parameters of a phase scan
 % author: Zack Buschmann <zack@slac.stanford.edu>
 
 classdef F2_phasescan < handle
@@ -17,7 +17,7 @@ classdef F2_phasescan < handle
         
         % hardcoded dispersion at each BPM
         % TO DO: grab this from the model server, once such a thing exists
-        etas = 1000 * [-0.10 -0.2511 -0.4374 0.1207]
+        etas = 1000 * [-0.10 -0.2511 -0.4374 0.1207];
         
     end
     
@@ -150,11 +150,7 @@ classdef F2_phasescan < handle
             self.get_beam_design_energy();
         end
         
-        % disable relevant downstream longitudinal feedbacks
-        % L0 scan: disable DL10E, BC11E, BC11BL
-        % L1 scan: disable BC11E, BC11BL
-        % L2 scan: disable BC14E, BC14BL
-        % L3 scan: disable BC20E
+        % disable relevant downstream longitudinal feedbacks for the scan
         function disable_feedbacks(self)
             need_disable = false;
             
@@ -168,6 +164,10 @@ classdef F2_phasescan < handle
             BC14BL_on = bitget(FB_state, 6);  
             BC20E_on  = bitget(FB_state, 5);
             
+            % L0 scan: disable DL10E, BC11E, BC11BL
+            % L1 scan: disable BC11E, BC11BL
+            % L2 scan: disable BC14E, BC14BL
+            % L3 scan: disable BC20E
             switch self.linac
                 case 0
                     if DL10E_on,  FB_state = bitset(FB_state, 1, 0); end
@@ -275,7 +275,7 @@ classdef F2_phasescan < handle
         
         % calculate beam phase error
         % fits BPM data to Acos(phi+psi) + B using linear least-squares
-        function self = beam_phase_fit(self)
+        function beam_phase_fit(self)
             PHI = self.msmt.PHI;
             
             M_t = [cosd(PHI); sind(PHI); ones(size(PHI))];
@@ -297,7 +297,7 @@ classdef F2_phasescan < handle
             self.fit.range = linspace(PHI(1), PHI(end), 200);
             self.fit.X = self.fit.A * cosd(self.fit.range + self.fit.phi_meas) + self.fit.B;
             
-            dE_dx = self.E_design / self.eta;
+            dE_dx = self.beam.E_design / self.eta;
             self.fit.dE = dE_dx * self.fit.X;
             self.fit.E0 = dE_dx * self.fit.A;
             self.fit.C = dE_dx * self.fit.B;
