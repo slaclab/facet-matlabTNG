@@ -215,18 +215,6 @@ classdef F2_phasing_exported < matlab.apps.AppBase
             app.S.init_msmt();
         end
         
-        % set the scan target klystron's phase to 'p'
-        % in L1 adjust KPHR directly, otherwise use PDES
-        function [PACT, phase_ok] = set_target_klys_phase(app, p)
-            if app.target.linac == 1
-                [~, phase_ok] = control_phaseSet(app.target.klys_str, p, 0,0, 'KPHR');
-                PV_KPHR = sprintf('LI%d:KLYS:%d1:KPHR', app.target.sector, app.target.klys);
-                PACT = lcaGetSmart(PV_KPHR);
-            else
-                [PACT, phase_ok] = control_phaseSet(app.target.klys_str, p, 1, 1);
-            end
-        end
-        
         % collect N samples of EPICS BPM data (x + TMIT)
         function bpm_data = collect_BPM_data(app)
             
@@ -390,7 +378,7 @@ classdef F2_phasing_exported < matlab.apps.AppBase
                     );
                 if app.S.in.simulation, pause(0.05);
                 else
-                    [PACT, OK] = app.set_target_klys_phase(phi_i);
+                    [PACT, OK] = app.S.set_phase(phi_i);
                 end
                 
                 % ABORT CHECK (2/3)
@@ -456,7 +444,7 @@ classdef F2_phasing_exported < matlab.apps.AppBase
             app.message.Text = 'Scan completed.';
             
             % (7) restore initial phase setting
-            if ~app.S.in.simulation, app.set_target_klys_phase(init_phase); end
+            if ~app.S.in.simulation, app.S.set_phase(init_phase); end
             
         end
  
@@ -641,7 +629,7 @@ classdef F2_phasing_exported < matlab.apps.AppBase
                 app.S.out.KPHR = app.in.KPHR - app.S.fit.phi_meas;
             end
             
-            app.set_target_klys_phase(phi_zero);
+            app.S.set_phase(phi_zero);
             disp('set phase');
             app.message.Text = sprintf('%s set to measured zero phase.', app.target.klys_str);
             pause(2)

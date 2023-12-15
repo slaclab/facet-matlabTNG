@@ -216,6 +216,19 @@ classdef F2_phasescan < handle
             end
         end
         
+        % set the scan target klystron's phase to 'p'
+        % in L1 adjust KPHR directly, otherwise use PDES
+        % TO DO: update for L0?
+        function [PACT, phase_ok] = set_phase(self, p)
+            if self.linac == 1
+                [~, phase_ok] = control_phaseSet(self.klys_str, p, 0,0, 'KPHR');
+                PV_KPHR = sprintf('LI%d:KLYS:%d1:KPHR', self.sector, self.klys);
+                PACT = lcaGetSmart(PV_KPHR);
+            else
+                [PACT, phase_ok] = control_phaseSet(app.target.klys_str, p, 1, 1);
+            end
+        end
+        
         % calculate beam phase error
         % fits BPM data to Acos(phi+psi) + B using linear least-squares
         function self = beam_phase_fit(self)
