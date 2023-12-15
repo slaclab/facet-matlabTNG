@@ -216,6 +216,46 @@ classdef F2_phasescan < handle
             end
         end
         
+        % subroutine to correct energy in L1 before phase scans
+        function SSSB_energy_correction(self)
+
+        	pos_tolerance = 0.1;   % BPM tolerance in mm
+        	max_iters     = 1000;  % iteration cap to prevent runaway
+            
+        	if strcmp(self.klys_str, '11-1')
+        		klys = 21;
+        		klys_str = '11-2';
+        	else
+        		klys = 11;
+        		klys_str = '11-1';
+        	end
+            
+            fprintf('Correcting L1 energy with %s...', klys_str);
+            
+        	PV_ADES = sprintf('KLYS:LI11:%d1:SSSB_ADES', klys);
+        	ADES_init = lcaGetSmart(PV_ADES);
+        	ADES_current = ADES_init;
+            
+            [xraw, ~] = self.get_BPM_data();
+            x = nanmean(xraw);
+
+            i = 0;
+        	while (i < max_iters) && (abs(x) >= pos_tolerance)
+                i = i + 1;
+                
+                % default step of 0.1MeV, 0.5MeV when further off-energy
+                % dispersion is negative at BC11, so sign(x) <-> sign(dE)
+                amp_step = 0.1;
+                if abs(x) > 1.0, amp_step = 0.5; end
+                lcaPutSmart(PV_ADES, ADES_current + sign(x)*amp_step);
+                
+                ADES_current = lcaGetSmart(PV_ADES);
+                [xraw, ~] = self.get_BPM_data();
+                x = nanmean(xraw);
+            end
+
+        end
+        
         % set the scan target klystron's phase to 'p'
         % in L1 adjust KPHR directly, otherwise use PDES
         % TO DO: update for L0?
@@ -228,6 +268,10 @@ classdef F2_phasescan < handle
                 [PACT, phase_ok] = control_phaseSet(app.target.klys_str, p, 1, 1);
             end
         end
+        
+        % collect & average self.in.N_samples of BPM data from the appropriate BPM
+        function get_bpm_data(self)
+        end 
         
         % calculate beam phase error
         % fits BPM data to Acos(phi+psi) + B using linear least-squares
