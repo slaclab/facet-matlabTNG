@@ -37,7 +37,8 @@ classdef F2_phasescan < handle
         
         SUCCESS = false;
         ABORTED = false;
-        SIMULATION = false;
+        
+        I_STEP = 0;        % phase scan step index, used to populate msmt arrays
         
         beam = struct;
         in = struct;
@@ -75,6 +76,7 @@ classdef F2_phasescan < handle
             % input configuration
             self.in.range = [];
             self.in.dPhi = 0;
+            self.in.p0 = 0;
             self.in.N_steps = 0;
             self.in.N_samples = 0;
             self.in.klys_offset = 0;
@@ -234,11 +236,11 @@ classdef F2_phasescan < handle
             dp = self.in.dPhi;
                         
             % for L1 phase scans we manipulate the KPHR directly
-            p0 = self.in.PDES;
-            if self.linac == 1, p0 = self.in.KPHR; end
+            self.in.p0 = 0;
+            if self.linac == 1, self.in.p0 = self.in.KPHR; end
 
-            self.in.range = ...
-                self.in.sbst_offset + self.in.klys_offset + linspace(p0-dp, p0+dp, N);
+            uncorrected_range = linspace(self.in.p0-dp, self.in.p0+dp, N);
+            self.in.range = self.in.sbst_offset + self.in.klys_offset + uncorrected_range;
             
             if self.in.zigzag
                 odd_steps = find(bitget(1:N, 1));
@@ -294,6 +296,10 @@ classdef F2_phasescan < handle
         % in L1 adjust KPHR directly, otherwise use PDES
         % TO DO: update for L0?
         function [PACT, phase_ok] = set_phase(self, p)
+            
+            % for simulated scans just pause and return PACT = PDES
+            if self.in.simulation, pause(0.05); PACT = p; phase_ok = true; return; end
+            
             if self.linac == 1
                 [~, phase_ok] = control_phaseSet(self.klys_str, p, 0,0, 'KPHR');
                 PV_KPHR = sprintf('LI%d:KLYS:%d1:KPHR', self.sector, self.klys);
@@ -325,7 +331,28 @@ classdef F2_phasescan < handle
                     bpm_data(i,1) = NaN;
                 end
             end
-        end 
+        end
+        
+        % get position/energy & std dev of both
+        function position_energy_msmt(self)
+            bpm_data = self.get_bpm_data();
+            
+            self.msmt.X(self.I_STEP)     = nanmean(bpm_data(:,1));
+            self.msmt.X_err(self.I_STEP) = nanstd(bpm_data(:,1));
+            self.msmt.TMIT(self.I_STEP)  = nanmean(bpm_data(:,2));
+            
+            dE_dx = self.beam.E_design / self.eta;
+            self.msmt.dE(self.I_STEP)     = dE_dx * self.msmt.X(self.I_STEP);
+            self.msmt.dE_err(self.I_STEP) = dE_dx * self.msmt.X_err(self.I_STEP);
+        end
+        
+        % sets the target klystron phase to self.in.range(I_STEP)
+        function step_phase(self)
+            [PACT, phase_ok] = self.set_phase(self.in.range(self.I_STEP));
+            
+            % subtracts off the initial KPHR value for sensible plot axes
+            self.msmt.PHI(self.I_STEP) = PACT - self.in.p0;
+        end
         
         % calculate beam phase error
         % fits BPM data to Acos(phi+psi) + B using linear least-squares
