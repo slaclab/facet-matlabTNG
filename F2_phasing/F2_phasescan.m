@@ -30,6 +30,7 @@ classdef F2_phasescan < handle
         
         SUCCESS = false;
         ABORTED = false;
+        SIMULATION = false;
         
         beam = struct;
         in = struct;
