@@ -304,6 +304,27 @@ classdef F2_phasescan < handle
         
         % collect & average self.in.N_samples of BPM data from the appropriate BPM
         function get_bpm_data(self)
+            bpm_data = zeros(self.in.N_samples, 2);
+           
+            lcaSetMonitor(self.PV_X);
+            for i = 1:self.in.N_samples
+                
+                % ABORT CHECK
+                %if app.ABORT_REQUEST, app.SCAN_ABORTED = true; break; end
+                
+                lcaNewMonitorWait(self.PV_X);
+                %pause(0.1); % maybe needed?, not clear how monitorWait plays w/ AIDA
+                xpos = lcaGetSmart(self.PV_X);
+                tmit = lcaGetSmart(self.PV_TMIT);
+                bpm_data(i,1) = xpos;
+                bpm_data(i,2) = tmit;
+                
+                % discard BPM data when TMIT is too low, unphysically high or NaN
+                if isnan(tmit) || tmit < self.msmt.TMIT_thr_lo || tmit > self.msmt.TMIT_thr_hi
+                    bpm_data(i,1) = NaN;
+                end
+
+            end
         end 
         
         % calculate beam phase error
