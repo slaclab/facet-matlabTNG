@@ -170,7 +170,7 @@ classdef F2_phasescan < handle
             self.get_beam_design_energy();
             
             self.PV_X = sprintf('%s:%s', self.BPM, 'X');
-            self.PV_TMIT = PV_TMIT = sprintf('%s:%s', self.BPM, 'TMIT');
+            self.PV_TMIT = sprintf('%s:%s', self.BPM, 'TMIT');
             
             % need to add event code '57' for SLC BPMs coming through AIDA
             if self.linac == 3, self.PV_X = sprintf('%s57', self.PV_X); end
