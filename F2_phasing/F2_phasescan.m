@@ -26,6 +26,13 @@ classdef F2_phasescan < handle
         sector = 10;       % sector number (10-19)
         klys = 3;          % klystron number (1-8)
         klys_str = 'ss-k'; % klystron ID string
+        
+        BPM = ''           % spectrometer BPM
+        eta = 0.0          % dispersion at BPM
+        
+        PV_X = ''
+        PV_TMIT = ''
+        
         start_time         % scan start time
         
         SUCCESS = false;
@@ -50,6 +57,12 @@ classdef F2_phasescan < handle
             self.sector = sector;
             self.klys = klys;
             self.klys_str = sprintf('%d-%d', self.sector, self.klys);
+            
+            self.BPM = '';
+            self.PV_X = '';
+            self.PV_TMIT = '';
+            self.eta = 0.0;
+
             self.start_time = datetime('now');
             self.start_time.Format = 'dd-MMM-uuuu hh:mm:ss';
             
@@ -58,9 +71,6 @@ classdef F2_phasescan < handle
             self.beam.Q = 0.0;
             self.beam.f = 0.0;
             self.beam.E_design = 0.0;
-            self.beam.BPM = '';
-            self.beam.eta = 0.0;
-            self.update_beam_status();
             
             % input configuration
             self.in.range = [];
@@ -91,8 +101,11 @@ classdef F2_phasescan < handle
             self.msmt.PHI = [];
             self.msmt.X = [];
             self.msmt.X_err = [];
+            self.msmt.TMIT = [];
             self.msmt.dE = [];
             self.msmt.dE_err = [];
+            self.msmt.TMIT_thr_lo = 0;
+            self.msmt.TMIT_thr_hi = 1e11;
             
             % scan outputs
             self.out.phi_meas = 0.0;
@@ -110,6 +123,8 @@ classdef F2_phasescan < handle
             self.fit.dE = [];
             self.fit.E0 = 0.0;
             self.fit.C = 0.0;
+
+            self.update_op_point();
             
         end
         
@@ -140,15 +155,32 @@ classdef F2_phasescan < handle
             E = lcaGetSmart(self.bend_BACT_PVs(self.linac+1));
             if isnan(E), E = 0; end
             self.beam.E_design = E;
-            self.beam.eta = self.etas(self.linac+1);
+        end
+
+        function get_BPM(self)
+            self.BPM = self.bpms(self.linac+1);
+            self.eta = self.etas(self.linac+1);
         end
         
-        % wrapper that grabs rep rate, bunch charge and energy
-        function update_beam_status(self)
-            self.beam.BPM = self.bpms(self.linac+1);
+        % wrapper that grabs BPM+dispersion, rep rate, bunch charge and energy
+        function update_op_point(self)
+            self.get_BPM();
             self.get_beam_rate();
             self.get_bunch_charge();
             self.get_beam_design_energy();
+            
+            self.PV_X = sprintf('%s:%s', self.BPM, 'X');
+            self.PV_TMIT = PV_TMIT = sprintf('%s:%s', self.BPM, 'TMIT');
+            
+            % need to add event code '57' for SLC BPMs coming through AIDA
+            if self.linac == 3, self.PV_X = sprintf('%s57', self.PV_X); end
+            
+            % also need to monkey these back into a cell arrays for lcaMonitor
+            self.PV_X = {sprintf('%s', self.PV_X)};
+            self.PV_TMIT = {sprintf('%s', self.PV_TMIT)};
+            
+            self.msmt.TMIT_thr_lo = 0.8 * self.beam.N_elec;
+            self.msmt.TMIT_thr_hi = 1.1 * self.beam.N_elec;
         end
         
         % disable relevant downstream longitudinal feedbacks for the scan
