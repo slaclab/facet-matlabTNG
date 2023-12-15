@@ -12,12 +12,12 @@ classdef F2_phasescan < handle
         
         % bend magnet BACT values for design energy milestones
         bend_BACT_PVs = [ ...
-            "BEND:LI11:331:BACT" "BEND:LI14:720:BACT" "LI20:LGPS:1990:BACT" ...
+            "BEND:IN10:751:BACT", "BEND:LI11:331:BACT" "BEND:LI14:720:BACT" "LI20:LGPS:1990:BACT" ...
             ];
         
         % hardcoded dispersion at each BPM
         % TO DO: grab this from the model server, once such a thing exists
-        etas = 1000 * [-0.2511 -0.4374 0.1207]
+        etas = 1000 * [-0.10 -0.2511 -0.4374 0.1207]
         
     end
     
