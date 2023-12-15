@@ -309,6 +309,22 @@ classdef F2_phasescan < handle
             end
         end
         
+        % sets the target klystron phase to self.in.range(I_STEP)
+        function step_phase(self)
+            [PACT, phase_ok] = self.set_phase(self.in.range(self.I_STEP));
+            
+            % subtracts off the initial KPHR value for sensible plot axes
+            self.msmt.PHI(self.I_STEP) = PACT - self.in.p0;
+        end
+        
+        % correct target klystron phase based on the measured error
+        function apply_phase_correction(self)
+        end
+        
+        % apply self.undo settings to revert the phase scan
+        function revert(self)
+        end
+        
         % collect & average self.in.N_samples of BPM data from the appropriate BPM
         function bpm_data = get_bpm_data(self)
             bpm_data = zeros(self.in.N_samples, 2);
@@ -344,14 +360,6 @@ classdef F2_phasescan < handle
             dE_dx = self.beam.E_design / self.eta;
             self.msmt.dE(self.I_STEP)     = dE_dx * self.msmt.X(self.I_STEP);
             self.msmt.dE_err(self.I_STEP) = dE_dx * self.msmt.X_err(self.I_STEP);
-        end
-        
-        % sets the target klystron phase to self.in.range(I_STEP)
-        function step_phase(self)
-            [PACT, phase_ok] = self.set_phase(self.in.range(self.I_STEP));
-            
-            % subtracts off the initial KPHR value for sensible plot axes
-            self.msmt.PHI(self.I_STEP) = PACT - self.in.p0;
         end
         
         % calculate beam phase error
