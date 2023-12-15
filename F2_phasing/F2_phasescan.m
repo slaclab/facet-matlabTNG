@@ -269,8 +269,8 @@ classdef F2_phasescan < handle
             ADES_init = lcaGetSmart(PV_ADES);
             ADES_current = ADES_init;
             
-            [xraw, ~] = self.get_BPM_data();
-            x = nanmean(xraw);
+            bpm_data = self.get_bpm_data();
+            x = nanmean(bpm_data(:,1));
             
             i = 0;
             while (i < max_iters) && (abs(x) >= pos_tolerance)
@@ -281,12 +281,11 @@ classdef F2_phasescan < handle
                 amp_step = 0.1;
                 if abs(x) > 1.0, amp_step = 0.5; end
                 lcaPutSmart(PV_ADES, ADES_current + sign(x)*amp_step);
-                
+ 
                 ADES_current = lcaGetSmart(PV_ADES);
-                [xraw, ~] = self.get_BPM_data();
-                x = nanmean(xraw);
+                bpm_data = self.get_bpm_data();
+                x = nanmean(bpm_data(:,1));
             end
-            
         end
         
         % set the scan target klystron's phase to 'p'
@@ -303,9 +302,9 @@ classdef F2_phasescan < handle
         end
         
         % collect & average self.in.N_samples of BPM data from the appropriate BPM
-        function get_bpm_data(self)
+        function bpm_data = get_bpm_data(self)
             bpm_data = zeros(self.in.N_samples, 2);
-           
+
             lcaSetMonitor(self.PV_X);
             for i = 1:self.in.N_samples
                 
@@ -323,7 +322,6 @@ classdef F2_phasescan < handle
                 if isnan(tmit) || tmit < self.msmt.TMIT_thr_lo || tmit > self.msmt.TMIT_thr_hi
                     bpm_data(i,1) = NaN;
                 end
-
             end
         end 
         
