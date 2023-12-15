@@ -32,15 +32,13 @@ classdef F2_phasescan < handle
         ABORTED = false;
         
         beam = struct;
-
         in = struct;
         msmt = struct;
         out = struct;
         fit = struct;
         undo = struct;
-        
     end
-    
+
     methods
         
         % constructor
@@ -250,12 +248,3 @@ classdef F2_phasescan < handle
         
     end
 end
-
-
-
-
-
-
-
-
-
