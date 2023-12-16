@@ -334,7 +334,7 @@ classdef F2_phasescan < handle
         function bpm_data = get_bpm_data(self)
             bpm_data = zeros(self.in.N_samples, 2);
             
-            if app.S.in.simulation, bpm_data = self.mock_bpm_data(); return; end
+            if self.in.simulation, bpm_data = self.mock_bpm_data(); return; end
 
             lcaSetMonitor(self.PV_X);
             for i = 1:self.in.N_samples
