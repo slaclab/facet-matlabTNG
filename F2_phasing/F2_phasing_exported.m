@@ -79,11 +79,9 @@ classdef F2_phasing_exported < matlab.apps.AppBase
 
     
     properties (Access = private)
-        N_elec % TMIT at BPM10221
         
         linac_map % array mask mapping sector,klys pairs to linac numbers
         target % struct with current linac/sector/klys params
-        linac  % struct with linac params
         
         S % holds F2_phasescan obj
         
@@ -146,10 +144,7 @@ classdef F2_phasing_exported < matlab.apps.AppBase
             
             [act, ~,~,~,~,~] = control_klysStatGet(app.target.klys_str, 10);
             % TO DO: replace with manual inspection of HSTA (?)
-            
-            disp(app.target.klys_str);
-            disp(act);
-            
+
             % enable scan button and set active light green for stations on
             % beam, otherwise leave scan button disabled and set the light
             % to black or red if the station is off-beam or MNT/TBR/ARU
@@ -183,12 +178,11 @@ classdef F2_phasing_exported < matlab.apps.AppBase
         % helper to update chrge, rate energy in one line
         function update_operating_point(app)
             app.update_klys_phase_params();
-            app.N_elec              = app.S.beam.N_elec;
             app.bunchCharge.Value   = app.S.beam.Q;
             app.beamRate.Value      = app.S.beam.f;
             app.beamEnergy.Value    = app.S.beam.E_design;
-            app.specBPM.Value       = app.S.beam.BPM;
-            app.bpmDispersion.Value = app.S.beam.eta;
+            app.specBPM.Value       = app.S.BPM;
+            app.bpmDispersion.Value = app.S.eta;
         end
         
         % populate app.S.in struct from GUI
@@ -215,44 +209,12 @@ classdef F2_phasing_exported < matlab.apps.AppBase
             app.S.init_msmt();
         end
         
-        % collect N samples of EPICS BPM data (x + TMIT)
-        function bpm_data = collect_BPM_data(app)
-            
-            N_samp = app.editNSamples.Value;
-            bpm_data = zeros(N_samp, 2);
-            PV_x = app.linac.bpm_x_PVs(app.target.linac);
-            PV_TMIT = app.linac.bpm_tmit_PVs(app.target.linac);
-
-            % need to monkey this str back into a cell array for lcaMonitor
-            PV_x = {sprintf('%s', PV_x)};
-           
-            lcaSetMonitor(PV_x);
-            for i = 1:app.editNSamples.Value
-                
-                % ABORT CHECK
-                if app.ABORT_REQUEST, app.SCAN_ABORTED = true; break; end
-                
-                %lcaNewMonitorWait(PV_x);
-                pause(0.1);
-                xpos = lcaGetSmart(PV_x);
-                tmit = lcaGetSmart(PV_TMIT);
-                bpm_data(i,2) = tmit;
-
-                % bpm data with <80% or >110% expected TMIT are discarded
-                if (tmit > 0.8*app.N_elec) && (tmit < 1.5*app.N_elec)
-                    bpm_data(i,1) = xpos;
-                else
-                    bpm_data(i,1) = NaN;
-                end
-            end
-        end
-        
         % helper to correctly label x/y axis
         function label_plot(app, axis)
             title(axis, sprintf('Phase scan: %s  %s', app.target.klys_str, app.S.start_time));
             xlabel(axis, ['\phi ' app.target.klys_str], 'Interpreter','tex')
             yyaxis(axis,'left');
-            yl = sprintf('%s [mm]', app.linac.bpm_x_PVs(app.target.linac));
+            yl = sprintf('%s [mm]', app.S.BPM);
             ylabel(axis, yl, 'Interpreter','tex');
             yyaxis(axis,'right');
             ylabel(axis, sprintf('\\Delta E [MeV]'), 'Interpreter', 'tex');
@@ -294,13 +256,7 @@ classdef F2_phasing_exported < matlab.apps.AppBase
             
             app.successful_scan = false;
             
-            init_phase = app.initPDES.Value;
-            app.S.in.phi_set = init_phase;
-            if app.target.linac == 1
-                init_phase = app.initKPHR.Value;
-            end
-            
-            % (0) verify that TD11 is in if scanning L1
+            % (0) verify that TD11 is in if scanning upstream of L2
             if app.target.linac < 2
                 TD11_in = strcmp(lcaGetSmart('DUMP:LI11:390:TGT_STS'), 'IN');
                 if ~TD11_in
@@ -309,63 +265,37 @@ classdef F2_phasing_exported < matlab.apps.AppBase
                 end
             end
             
-            % (3) disable relevant longitudinal feedbacks before scanning
-            if ~app.S.in.simulation, app.S.disable_feedbacks(); end
+            % (1) disable relevant longitudinal feedbacks before scanning
+            app.S.disable_feedbacks()
             
             app.stage_plot();
-            
-            % fake phase error & amplitude for testing
-            if app.S.in.simulation
-                err = 80.0*randn();
-                A_test = sign(app.linac.dispersion(app.target.linac)) * 5.0;
-            end
-            
-            dE_dx = app.S.E_design / app.S.eta;
-            N_steps = app.S.in.N_steps;
-                        
-            % (4) iterate over each phase setting
-            for i = 1:N_steps
+
+            % (2)iterate over phase settings
+            for i = 1:app.S.in.N_steps
+                app.S.I_STEP = i;
                 
-                step_str = sprintf('[%d/%d]', i, N_steps);
-                phi_i = app.S.in.range(i);
+                step_str = sprintf('[%d/%d]', i, app.S.in.N_steps);
                 
                 % ABORT CHECK (1/3)
                 if app.ABORT_REQUEST, app.SCAN_ABORTED = true; break; end
 
-                % (4.1) set phase
+                % (2.1) set phase
                 app.message.Text = sprintf('%s Setting %s phase = %.1f deg ...', ...
-                    step_str, app.target.klys_str, phi_i ...
+                    step_str, app.target.klys_str, app.S.in.range(i) ...
                     );
-                if app.S.in.simulation, pause(0.05);
-                else
-                    [PACT, OK] = app.S.set_phase(phi_i);
-                end
+                app.S.step_phase()
                 
                 % ABORT CHECK (2/3)
                 if app.ABORT_REQUEST, app.SCAN_ABORTED = true; break; end
                 
-                % (4.2) collect BPM data
+                % (2.2) measure beam position/energy
                 app.message.Text = sprintf('%s Collecting BPM data ...', step_str);
-                % fake data for simulation
-                if app.S.in.simulation
-                    app.S.msmt.X(i) = A_test * (cosd(phi_i - init_phase + err) + 0.02*randn());
-                    app.S.msmt.X_err(i) = 0.5*rand();
-                    app.S.msmt.PHI(i) = phi_i - init_phase;
-                else
-                    bpm_data = app.collect_BPM_data();
-                    app.S.msmt.X(i) = nanmean(bpm_data(:,1));
-                    app.S.msmt.X_err(i) = nanstd(bpm_data(:,1));
-                    app.S.msmt.PHI(i) = phi_i - init_phase;
-                end
+                app.S.position_energy_msmt();
                 
-                % (4.3) compute (estimated) energy error
-                app.S.msmt.dE(i) = dE_dx * app.S.msmt.X(i);
-                app.S.msmt.dE_err(i) = dE_dx * app.S.msmt.X_err(i);
-
                 % ABORT CHECK (3/3)
                 if app.ABORT_REQUEST, app.SCAN_ABORTED = true; break; end
                 
-                % (4.4) update plot
+                % (2.3) update plot
                 hold(app.ax,"off");
                 yyaxis(app.ax,'left');
                 errorbar(app.ax, app.S.msmt.PHI(1:i), app.S.msmt.X(1:i), app.S.msmt.X_err(1:i), ...
@@ -380,7 +310,7 @@ classdef F2_phasing_exported < matlab.apps.AppBase
             % no fitting/plotting if the scan was aborted
             if app.SCAN_ABORTED, return; end
             
-            % (5) fit BPM data and calculate beam phase error and energy
+            % (3) fit BPM data and calculate beam phase error and energy
             app.S.beam_phase_fit();
 
             app.successful_scan = true;
@@ -392,7 +322,7 @@ classdef F2_phasing_exported < matlab.apps.AppBase
             %fprintf('\n');
             %disp(app.S.fit);
             
-            % (6) plot fit and scan result
+            % (4) plot fit and scan result
             hold(app.ax,"on");
             yyaxis(app.ax,'right');
             plot(app.ax, app.S.fit.range, app.S.fit.dE, '-', 'Color',"#d95319", 'LineWidth',2);
@@ -403,7 +333,7 @@ classdef F2_phasing_exported < matlab.apps.AppBase
             
             app.message.Text = 'Scan completed.';
             
-            % (7) restore initial phase setting
+            % (5) restore initial phase setting
             if ~app.S.in.simulation, app.S.set_phase(init_phase); end
             
         end
@@ -417,24 +347,12 @@ classdef F2_phasing_exported < matlab.apps.AppBase
         % Code that executes after component creation
         function startupFcn(app)
             app.target = struct;
-            app.linac = struct;
             
             app.target.linac = 1;
             app.target.sector = 11;
             app.target.klys = 1;
             app.target.klys_str = '11-1';
             
-            % X, TMIT PVs for each spectrometer BPM
-            app.linac.bpm_x_PVs = [ ...
-                "BPMS:LI11:333:X" "BPMS:LI14:801:X" "BPMS:LI20:2050:X57" ...
-                ];
-            app.linac.bpm_tmit_PVs = [ ...
-                "BPMS:LI11:333:TMIT" "BPMS:LI14:801:TMIT" "BPMS:LI20:2050:TMIT" ...
-                ];
-            % bend magnet strength to get beam energy milestone
-            app.linac.energy_PVs = [ ...
-                "BEND:LI11:331:BACT" "BEND:LI14:720:BACT" "LI20:LGPS:1990:BACT" ...
-                ];
             % initialize scan object in case there isn't one already held
             % TO DO: is this when to prompt user before old scan deletion ??
             app.S = F2_phasescan(app.target.linac, app.target.sector, app.target.klys);
