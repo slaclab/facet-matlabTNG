@@ -30,6 +30,8 @@ classdef F2_phasescan < handle
         BPM = ''           % spectrometer BPM
         eta = 0.0          % dispersion at BPM
         
+        sim_err = 0.0;
+        
         PV_X = ''
         PV_TMIT = ''
         
@@ -127,6 +129,9 @@ classdef F2_phasescan < handle
             self.fit.C = 0.0;
 
             self.update_op_point();
+            
+            % fake phase error if this is a simulated scan
+            self.sim_err = 80.0*randn();
             
         end
         
@@ -328,6 +333,8 @@ classdef F2_phasescan < handle
         % collect & average self.in.N_samples of BPM data from the appropriate BPM
         function bpm_data = get_bpm_data(self)
             bpm_data = zeros(self.in.N_samples, 2);
+            
+            if app.S.in.simulation, bpm_data = self.mock_bpm_data(); return; end
 
             lcaSetMonitor(self.PV_X);
             for i = 1:self.in.N_samples
@@ -347,6 +354,16 @@ classdef F2_phasescan < handle
                     bpm_data(i,1) = NaN;
                 end
             end
+        end
+        
+        % fake bpm data for simulated scans
+        function bpm_data = mock_bpm_data(self)
+            A0 = sign(self.eta) * 5.0;
+            phi_i = self.in.range(self.I_STEP);
+            sim_pos = cosd(phi_i - self.in.p0 + self.sim_err);
+            jitter = 0.02*randn();
+            bpm_data(:, 1) = A0*(sim_pos + jitter);
+            bpm_data(:, 2) = 2e10;
         end
         
         % get position/energy & std dev of both
