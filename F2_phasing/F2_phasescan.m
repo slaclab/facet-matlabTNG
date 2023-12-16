@@ -192,6 +192,8 @@ classdef F2_phasescan < handle
         
         % disable relevant downstream longitudinal feedbacks for the scan
         function disable_feedbacks(self)
+            if self.in.simulation, return; end
+
             need_disable = false;
             
             % FB on/off statuses are individual bits of overall status word
@@ -258,6 +260,7 @@ classdef F2_phasescan < handle
         
         % subroutine to correct energy in L1 after cresting the target station before phase scans
         function L1_energy_correction(self)
+            if self.in.simulation, return; end
             
             % make aboslutely sure this is an 11-1 or 11-2 phase scan
             assert((self.linac == 1 && self.sector == 11 && self.klys < 3));
