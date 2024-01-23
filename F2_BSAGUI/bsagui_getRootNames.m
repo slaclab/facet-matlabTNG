@@ -1,20 +1,32 @@
 function [root_name, z] = bsagui_getRootNames(mdl)
 % returns PV names and z locations for current operational mode.
+%
+% Author: Jake Rudolph
+
+root_name_empty = false;
 
 if mdl.dev
     root_name = devNames(mdl);
     beamPath = [mdl.destination 'I'];
-elseif mdl.facet
-    [root_name, z] = facetNames(mdl);
-    % JR 12/6/22 - Odd first 2 names coming up, seems to clear when
-    % recalled, not sure what is causing the issue
-    if startsWith(root_name(1), 'Gtk')
-        [root_name, z] = facetNames(mdl);
+    if isempty(root_name)
+        root_name_empty = true;
+        root_name = cellstr(readlines('bsagui_rootnames_saved_dev.txt'));
     end
+elseif mdl.facet
+    [root_name, z, root_name_empty] = facetNames(mdl);
     beamPath = 'F2_ELEC';
 else  % prod, on an lcls server
     root_name = lclsNames(mdl);
-    beamPath = [mdl.destination 'I'];
+    if strcmp(mdl.destination, 'SC_LINAC') % SC_LINAC beampath not in the model, but devices are identical to SC_BSYD
+        beamPath = 'SC_BSYDI';
+    else
+        beamPath = [mdl.destination 'I'];
+    end
+    if isempty(root_name)
+        root_name_empty = true;
+        root_name = cellstr(readlines('bsagui_rootnames_saved_lcls.txt'));
+    end
+    
 end
 
 % Get z positions,
@@ -28,9 +40,9 @@ if mdl.lcls && ~mdl.isSxr && ~mdl.isHxr && ~strcmp(mdl.linac, 'SC')% if dual ene
     % combine zh and zs without adding together
     z(find(zh)) = zh(find(zh));
     z(~zh) = zs(~zh);
-%elseif mdl.facet
-    %nonBPMS = ~contains(root_name, 'BPMS');
-    %z(nonBPMS) = model_rMatGet(n(nonBPMS),[],{'TYPE=DESIGN',['BEAMPATH=' beamPath]},'Z');
+elseif mdl.facet
+    nonBPMS = ~contains(root_name, 'BPMS');
+    z(nonBPMS) = model_rMatGet(n(nonBPMS),[],{'TYPE=DESIGN',['BEAMPATH=' beamPath]},'Z');
 else
     z = model_rMatGet(n,[],{'TYPE=DESIGN',['BEAMPATH=' beamPath]},'Z');
 end
@@ -40,6 +52,11 @@ if mdl.facet && mdl.acqSCP
     mdl.isSCP = mdl.isSCP(I);
 end
 root_name = root_name(I);
+
+if root_name_empty
+    warningTxt = "PV names loaded from file. There may be an issue with the directory service.";
+    warndlg(warningTxt);
+end
 
 end
 
@@ -95,21 +112,31 @@ end
 function root_name = lclsNames(mdl)
 if isempty(mdl.destination)
     tag = 'LCLS.BSA.rootnames';
+elseif strcmp(mdl.destination, 'SC_LINAC') % SC_LINAC does not have its own tag, but devices are equivalent to SC_BSYD
+    tag = 'LCLS.SC_BSYD.BSA.rootnames';
 else
     tag = ['LCLS.' mdl.destination '.BSA.rootnames'];
 end
 root_name = meme_names('tag', tag, 'sort','z');
 end
 
-function [root_name, z] = facetNames(mdl)
+function [root_name, z, root_name_empty] = facetNames(mdl)
 % get directory service names, and format correctly
 [~, root_name] = system('eget -ts ds -a tag=FACET.BSA.rootnames -w 20');
 root_name = splitlines(root_name);
 root_name = root_name(~cellfun(@isempty, root_name));
-%root_name(contains(root_name, 'BPMS')) = [];
+root_name(contains(root_name, 'BPMS')) = [];
+root_name_empty = false;
+if isempty(root_name)
+    root_name_empty = true;
+    fileID = fopen('bsagui_rootnames_saved_facet.txt','r');
+    names_cell = textscan(fileID,'%s');
+    root_name = cellstr(string(names_cell{:}));
+    %root_name = cellstr(readlines('bsagui_rootnames_saved_facet.txt'));
+end
 
-if isempty(mdl.scpNames)
-    % get SCP names, if not already done
+if isempty(mdl.facetBPMS)
+    % get SCP BPM names, if not already done
     initSCPNames(mdl);
 end
 
@@ -118,15 +145,14 @@ if mdl.acqSCP
     numEPICS = length(root_name);
     z = zeros(numEPICS, 1);
     mdl.isSCP = false(numEPICS, 1);
-    useSCP = mdl.scpNames.use;
-    root_name = [root_name; mdl.scpNames.names(useSCP)];
-    z(numEPICS + 1 : length(root_name)) = mdl.scpNames.z(useSCP);
-    mdl.isSCP(numEPICS + 1 : length(root_name)) = true;
+    root_name = [root_name; mdl.facetBPMS.names];
+    z(numEPICS + 1 : length(root_name)) = mdl.facetBPMS.z;
+    mdl.isSCP(numEPICS + 1 : length(root_name)) = mdl.facetBPMS.scp_idx;
 else
     numEPICS = length(root_name);
     z = zeros(numEPICS, 1);
-    %root_name = [root_name; mdl.scpNames.names(~mdl.scpNames.scp_idx)];
-    %z(numEPICS+1:length(root_name)) = mdl.scpNames.z(~mdl.scpNames.scp_idx);
+    root_name = [root_name; mdl.facetBPMS.names(~mdl.facetBPMS.scp_idx)];
+    z(numEPICS+1:length(root_name)) = mdl.facetBPMS.z(~mdl.facetBPMS.scp_idx);
     mdl.isSCP = false(length(root_name), 1);
 end
 
@@ -139,66 +165,26 @@ function initSCPNames(mdl)
 mdl.LM = LucretiaModel(F2_common.LucretiaLattice);
 names = mdl.LM.ControlNames;
 z = mdl.LM.ModelZ;
-
-% extract BPMS names
 bpm_loc = contains(names, 'BPMS');
 bpmnames = names(bpm_loc); z_bpms = z(bpm_loc);
 scp_loc = startsWith(bpmnames, 'LI');
-scpBPMS = bpmnames(scp_loc); z_scp = z_bpms(scp_loc);
-epicsBPMS = bpmnames(~scp_loc); z_epics = z_bpms(~scp_loc);
-[sec, prim, unit] = model_nameSplit(scpBPMS);
-scpBPMS = strcat(prim, ':', sec, ':', unit);
+scpNames = bpmnames(scp_loc); z_scp = z_bpms(scp_loc);
+epicsNames = bpmnames(~scp_loc); z_epics = z_bpms(~scp_loc);
+[sec, prim, unit] = model_nameSplit(scpNames);
+scpNames = strcat(prim, ':', sec, ':', unit);
 
 % append attributes
-X_scp = strcat(scpBPMS, ':X');
-Y_scp = strcat(scpBPMS, ':Y');
-TMIT_scp = strcat(scpBPMS, ':TMIT');
-scpBPMS = [X_scp; Y_scp; TMIT_scp]; z_scp = [z_scp; z_scp; z_scp];
-X_epics = strcat(epicsBPMS, ':X');
-Y_epics = strcat(epicsBPMS, ':Y');
-TMIT_epics = strcat(epicsBPMS, ':TMIT');
-epicsBPMS = [X_epics; Y_epics; TMIT_epics]; z_epics = [z_epics; z_epics; z_epics];
-
-
-% extract klystron names
-kidx = startsWith(names, 'K');
-knames = names(kidx);
-z_klys = z(kidx);
-scpKLYS = cell(length(knames),1);
-for n = 1:length(knames)
-    name = char(knames(n));
-    if contains(name, '_')
-        sec = name(2:3);
-        unit = name(5);
-        scpKLYS{n} = sprintf('KLYS:LI%s:%s1:PHAS', sec, unit);
-    end
-end
-badname = cellfun(@isempty, scpKLYS);
-scpKLYS(badname)=[];
-z_klys(badname) = [];
-[scpKLYS, uniqueIdx] = unique(scpKLYS, 'stable');
-z_klys = z_klys(uniqueIdx);
-
-% create subbooster names
-scpSBST = cell(10, 1);
-for sec = 11:20
-    name = sprintf('SBST:LI%d:1:PHAS', sec);
-    scpSBST{sec-10} = name;
-end
-z_sbst = zeros(10,1);
-
-% struct of SCP names and relevant related data
-mdl.scpNames.names = [scpBPMS; scpKLYS; scpSBST];
-mdl.scpNames.z = [z_scp; z_klys; z_sbst];
-mdl.scpNames.use = true(length(mdl.scpNames.names), 1);
-mdl.scpNames.bpmsIdx = contains(mdl.scpNames.names, scpBPMS);
-mdl.scpNames.rfIdx = contains(mdl.scpNames.names, [scpKLYS; scpSBST]);
-mdl.scpNames.getBPMS = 1;
-mdl.scpNames.getRF = 1;
-
+X_scp = strcat(scpNames, ':X');
+Y_scp = strcat(scpNames, ':Y');
+TMIT_scp = strcat(scpNames, ':TMIT');
+scpNames = [X_scp; Y_scp; TMIT_scp]; z_scp = [z_scp; z_scp; z_scp];
+X_epics = strcat(epicsNames, ':X');
+Y_epics = strcat(epicsNames, ':Y');
+TMIT_epics = strcat(epicsNames, ':TMIT');
+epicsNames = [X_epics; Y_epics; TMIT_epics]; z_epics = [z_epics; z_epics; z_epics];
 % interleave EPICS and SCP BPMS
-names = [scpBPMS; epicsBPMS];
-scp_idx = contains(names, scpBPMS);
+names = [scpNames; epicsNames];
+scp_idx = contains(names, scpNames);
 facet_offset = 1002.1;
 z = [z_scp; z_epics]; z = z - facet_offset;
 [z, I] = sort(z);
@@ -207,7 +193,4 @@ scp_idx = scp_idx(I);
 mdl.facetBPMS.names = names;
 mdl.facetBPMS.z = z;
 mdl.facetBPMS.scp_idx = scp_idx;
-
-
-
 end
