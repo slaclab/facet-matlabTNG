@@ -127,12 +127,18 @@ root_name = splitlines(root_name);
 root_name = root_name(~cellfun(@isempty, root_name));
 root_name(contains(root_name, 'BPMS')) = [];
 root_name_empty = false;
+% update PV names cache once a month
+if day(datetime()) == 1 && ~isempty(root_name)
+    fileID = fopen('bsagui_rootnames_saved_facet.txt','w');
+    fprintf(fileID,'%s\n',string(root_name));
+    fclose(fileID);
+end
+% read from PV names cache if directory service is down
 if isempty(root_name)
     root_name_empty = true;
     fileID = fopen('bsagui_rootnames_saved_facet.txt','r');
     names_cell = textscan(fileID,'%s');
     root_name = cellstr(string(names_cell{:}));
-    %root_name = cellstr(readlines('bsagui_rootnames_saved_facet.txt'));
 end
 
 if isempty(mdl.facetBPMS)
