@@ -126,6 +126,11 @@ classdef F2_S20ConfigApp < handle & F2_common
         PV(context,'name',"WaistY_DES_Name",'pvname',"SIOC:SYS1:ML00:SO0353",'monitor',true,'mode',"rw");
         PV(context,'name',"WaistX_DES_Z",'pvname',"SIOC:SYS1:ML00:AO351");
         PV(context,'name',"WaistY_DES_Z",'pvname',"SIOC:SYS1:ML00:AO353");
+
+        PV(context,'name',"WaistName_ACT",'pvname',"SIOC:SYS1:ML00:CA902");
+        PV(context,'name',"WaistX_ACT",'pvname',"SIOC:SYS1:ML00:AO395");
+        PV(context,'name',"WaistY_ACT",'pvname',"SIOC:SYS1:ML00:AO396");
+
         ] ;
       pset(obj.pvlist,'debug',0) ;
       obj.pvs = struct(obj.pvlist) ;
@@ -589,6 +594,12 @@ classdef F2_S20ConfigApp < handle & F2_common
         fprintf(2,'Error reported from AIDA whilst trimming quads:\n');
         throw(ME);
       end
+      % write actual waist parameters after a successful trim
+      waist_str = lcaGet('SIOC:SYS1:ML00:SO0351');
+      caput(obj.pvs.WaistName_ACT, char(waist_str));
+      caput(obj.pvs.WaistX_ACT, obj.BetaMatch(1));
+      caput(obj.pvs.WaistY_ACT, obj.BetaMatch(2));
+      
       lcaPut('IOC:SYS1:MP01:MSHUTCTL',shut); % Restore original shutter state
     end
     function Twiss=TwissCalc(obj,dL)
