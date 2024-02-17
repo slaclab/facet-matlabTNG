@@ -1,4 +1,4 @@
-classdef scanFunc_espec_Q0
+classdef scanFunc_Spec_Quad_Q0
     properties
         %pvlist PV
         %pvs
@@ -15,7 +15,7 @@ classdef scanFunc_espec_Q0
     
     methods 
         
-        function obj = scanFunc_espec_Q0(daqhandle)
+        function obj = scanFunc_Spec_Quad_Q0(daqhandle)
             
             % Check if scanfunc called by DAQ
             if exist('daqhandle','var')
