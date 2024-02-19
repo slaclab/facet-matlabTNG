@@ -35,6 +35,16 @@ classdef F2_SpecLine_exported < matlab.apps.AppBase
         B5DBACTField                 matlab.ui.control.NumericEditField
         B5DLGPS3330Label             matlab.ui.control.Label
         B5DBDESEditField             matlab.ui.control.NumericEditField
+        BCALCLabel                   matlab.ui.control.Label
+        Q0DBCALCEditField            matlab.ui.control.NumericEditField
+        Q1DBCALCEditField            matlab.ui.control.NumericEditField
+        Q2DBCALCEditField            matlab.ui.control.NumericEditField
+        B5DBCALCEditField            matlab.ui.control.NumericEditField
+        PrinttoELOGButton            matlab.ui.control.Button
+        LogPanel                     matlab.ui.container.Panel
+        DisplayLogTextAreaLabel      matlab.ui.control.Label
+        LogTextArea                  matlab.ui.control.TextArea
+        ClearLogButton               matlab.ui.control.Button
     end
 
     
@@ -54,11 +64,20 @@ classdef F2_SpecLine_exported < matlab.apps.AppBase
             else
                 app.DipoleSwitch.Value = 'Without';
             end
+            
+            addpath('../');
+            LucretiaInit('/usr/local/facet/tools/Lucretia');
+            
         end
 
         % Button pushed function: CalcButton
         function CalcButtonPushed(app, event)
-            app.aobj.CalcAndTrim();
+            app.aobj.Calc(app);
+        end
+
+        % Button pushed function: TrimButton
+        function TrimButtonPushed(app, event)
+             app.aobj.Trim(app);
         end
 
         % Value changed function: DipoleSwitch
@@ -95,6 +114,63 @@ classdef F2_SpecLine_exported < matlab.apps.AppBase
             z = set_Z(app.aobj, app, 'ZimDropDown');
             lcaPutSmart('SIOC:SYS1:ML00:CALCOUT053', z);
         end
+
+        % Button pushed function: ClearLogButton
+        function ClearLogButtonPushed(app, event)
+            app.LogTextArea.Value = {' '};
+        end
+
+        % Button pushed function: PrinttoELOGButton
+        function PrinttoELOGButtonPushed(app, event)
+            
+            M = calc_TransportMatrix(app.aobj, app);
+            
+            Mtext = strcat(sprintf('\n\nTransport matrix from Zob to Zim at E = %0.2f\n', app.EnergyEditField.Value), ...
+                           sprintf('\nM = [ % 05.4f   % 05.4f         0         0\n', M(1, 1:2)),...
+                           sprintf('\n      % 05.4f   % 05.4f         0         0\n', M(2, 1:2)),...
+                           sprintf('\n            0         0   % 05.4f   % 05.4f\n', M(3, 3:4)),...
+                           sprintf('\n            0         0   % 05.4f   % 05.4f ]\n',M(4, 3:4)))
+            
+            
+            fh = figure(199);
+            clf(fh)
+            set(fh,'Position', [1   1   10   10]);
+            set(fh,'color','w');
+            
+            opts.text = strcat(sprintf('Spectrometer parameters:'), ...
+                               app.aobj.elogtext, ...
+                               sprintf('\nQ0D = %0.2f Q1D = %0.2f Q2D = %0.2f  B5D36 = %0.2f', app.Q0DBACTField.Value, app.Q1DBACTField.Value, app.Q2DBACTField.Value, app.B5DBACTField.Value), ...
+                               Mtext)
+            
+                           
+                           
+            opts.title= 'Spectrometer Config Change';
+            opts.author= 'F2_SpecLine.m';
+            
+            util_printLog(fh,opts);
+            updateLog(app.aobj, app, 'Printed to FACET elog'); 
+                
+            close(fh);
+            
+        end
+
+        % Value changed function: Q0DBCALCEditField
+        function Q0DBCALCEditFieldValueChanged(app, event)
+            value = app.Q0DBCALCEditField.Value;
+            app.aobj.elogtext = sprintf('\n\nCustom spectrometer quad settings:');
+        end
+
+        % Value changed function: Q1DBCALCEditField
+        function Q1DBCALCEditFieldValueChanged(app, event)
+            value = app.Q1DBCALCEditField.Value;
+            app.aobj.elogtext = sprintf('\n\nCustom spectrometer quad settings:');            
+        end
+
+        % Value changed function: Q2DBCALCEditField
+        function Q2DBCALCEditFieldValueChanged(app, event)
+            value = app.Q2DBCALCEditField.Value;
+            app.aobj.elogtext = sprintf('\n\nCustom spectrometer quad settings:');            
+        end
     end
 
     % Component initialization
@@ -105,13 +181,13 @@ classdef F2_SpecLine_exported < matlab.apps.AppBase
 
             % Create UIFigure and hide until all components are created
             app.UIFigure = uifigure('Visible', 'off');
-            app.UIFigure.Position = [100 100 548 332];
+            app.UIFigure.Position = [100 100 927 330];
             app.UIFigure.Name = 'MATLAB App';
 
             % Create SpectrometerParametersPanel
             app.SpectrometerParametersPanel = uipanel(app.UIFigure);
             app.SpectrometerParametersPanel.Title = 'Spectrometer Parameters';
-            app.SpectrometerParametersPanel.Position = [1 2 276 331];
+            app.SpectrometerParametersPanel.Position = [1 0 292 331];
 
             % Create EnergyGeVEditFieldLabel
             app.EnergyGeVEditFieldLabel = uilabel(app.SpectrometerParametersPanel);
@@ -175,123 +251,187 @@ classdef F2_SpecLine_exported < matlab.apps.AppBase
             app.CalcButton.FontSize = 14;
             app.CalcButton.FontWeight = 'bold';
             app.CalcButton.FontColor = [1 1 1];
-            app.CalcButton.Position = [64 21 143 24];
-            app.CalcButton.Text = 'Calculate and Trim';
+            app.CalcButton.Position = [67 21 143 24];
+            app.CalcButton.Text = 'Calculate';
 
             % Create DipoleSwitchLabel
             app.DipoleSwitchLabel = uilabel(app.SpectrometerParametersPanel);
             app.DipoleSwitchLabel.HorizontalAlignment = 'center';
             app.DipoleSwitchLabel.FontSize = 14;
             app.DipoleSwitchLabel.FontWeight = 'bold';
-            app.DipoleSwitchLabel.Position = [119 89 49 22];
+            app.DipoleSwitchLabel.Position = [122 97 49 22];
             app.DipoleSwitchLabel.Text = 'Dipole';
 
             % Create DipoleSwitch
             app.DipoleSwitch = uiswitch(app.SpectrometerParametersPanel, 'slider');
             app.DipoleSwitch.Items = {'Without', 'With'};
             app.DipoleSwitch.ValueChangedFcn = createCallbackFcn(app, @DipoleSwitchValueChanged, true);
-            app.DipoleSwitch.Position = [115 62 56 25];
+            app.DipoleSwitch.Position = [118 70 56 25];
             app.DipoleSwitch.Value = 'Without';
 
             % Create ZobDropDown
             app.ZobDropDown = uidropdown(app.SpectrometerParametersPanel);
             app.ZobDropDown.Items = {'Select...', 'Custom', 'PIC_CENT', 'FILG', 'FILS', 'IPOTR1P', 'IPOTR1', 'PENT', 'IPWS1', 'PEXT', 'IPOTR2', 'BEWIN2'};
             app.ZobDropDown.ValueChangedFcn = createCallbackFcn(app, @ZobDropDownValueChanged, true);
-            app.ZobDropDown.Position = [179 241 82 22];
+            app.ZobDropDown.Position = [185 241 82 22];
             app.ZobDropDown.Value = 'Select...';
 
             % Create ZimDropDown
             app.ZimDropDown = uidropdown(app.SpectrometerParametersPanel);
             app.ZimDropDown.Items = {'Select...', 'Custom', 'EDC_SCREEN', 'DTOTR', 'LFOV', 'CHER', 'PRDMP'};
             app.ZimDropDown.ValueChangedFcn = createCallbackFcn(app, @ZimDropDownValueChanged, true);
-            app.ZimDropDown.Position = [179 207 82 22];
+            app.ZimDropDown.Position = [185 207 82 22];
             app.ZimDropDown.Value = 'Select...';
 
             % Create MagnetValuesPanel
             app.MagnetValuesPanel = uipanel(app.UIFigure);
             app.MagnetValuesPanel.Title = 'Magnet Values';
-            app.MagnetValuesPanel.Position = [277 2 281 331];
+            app.MagnetValuesPanel.Position = [293 0 377 331];
 
             % Create Q0DLGPS3141EditFieldLabel
             app.Q0DLGPS3141EditFieldLabel = uilabel(app.MagnetValuesPanel);
             app.Q0DLGPS3141EditFieldLabel.HorizontalAlignment = 'right';
-            app.Q0DLGPS3141EditFieldLabel.Position = [8 210 104 22];
+            app.Q0DLGPS3141EditFieldLabel.Position = [22 207 104 22];
             app.Q0DLGPS3141EditFieldLabel.Text = 'Q0D (LGPS 3141)';
 
             % Create Q0DBDESEditField
             app.Q0DBDESEditField = uieditfield(app.MagnetValuesPanel, 'numeric');
-            app.Q0DBDESEditField.Position = [120 210 47 22];
+            app.Q0DBDESEditField.Editable = 'off';
+            app.Q0DBDESEditField.Position = [231 207 55 22];
 
             % Create Q0DBACTField
             app.Q0DBACTField = uieditfield(app.MagnetValuesPanel, 'numeric');
             app.Q0DBACTField.Editable = 'off';
-            app.Q0DBACTField.Position = [199 210 45 22];
+            app.Q0DBACTField.Position = [304 207 53 22];
 
             % Create BDESLabel
             app.BDESLabel = uilabel(app.MagnetValuesPanel);
             app.BDESLabel.FontWeight = 'bold';
-            app.BDESLabel.Position = [127 245 39 22];
+            app.BDESLabel.Position = [241 242 39 22];
             app.BDESLabel.Text = 'BDES';
 
             % Create BACTLabel
             app.BACTLabel = uilabel(app.MagnetValuesPanel);
             app.BACTLabel.FontWeight = 'bold';
-            app.BACTLabel.Position = [203 245 39 22];
+            app.BACTLabel.Position = [312 242 39 22];
             app.BACTLabel.Text = 'BACT';
 
             % Create Q1DLGPS3261EditFieldLabel
             app.Q1DLGPS3261EditFieldLabel = uilabel(app.MagnetValuesPanel);
             app.Q1DLGPS3261EditFieldLabel.HorizontalAlignment = 'right';
-            app.Q1DLGPS3261EditFieldLabel.Position = [8 176 104 22];
+            app.Q1DLGPS3261EditFieldLabel.Position = [22 173 104 22];
             app.Q1DLGPS3261EditFieldLabel.Text = 'Q1D (LGPS 3261)';
 
             % Create Q1DBDESEditField
             app.Q1DBDESEditField = uieditfield(app.MagnetValuesPanel, 'numeric');
-            app.Q1DBDESEditField.Position = [120 176 47 22];
+            app.Q1DBDESEditField.Editable = 'off';
+            app.Q1DBDESEditField.Position = [231 173 55 22];
 
             % Create Q1DBACTField
             app.Q1DBACTField = uieditfield(app.MagnetValuesPanel, 'numeric');
             app.Q1DBACTField.Editable = 'off';
-            app.Q1DBACTField.Position = [199 176 45 22];
+            app.Q1DBACTField.Position = [304 173 53 22];
 
             % Create Q2DLGPS3091EditFieldLabel
             app.Q2DLGPS3091EditFieldLabel = uilabel(app.MagnetValuesPanel);
             app.Q2DLGPS3091EditFieldLabel.HorizontalAlignment = 'right';
-            app.Q2DLGPS3091EditFieldLabel.Position = [8 142 104 22];
+            app.Q2DLGPS3091EditFieldLabel.Position = [22 139 104 22];
             app.Q2DLGPS3091EditFieldLabel.Text = 'Q2D (LGPS 3091)';
 
             % Create Q2DBDESEditField
             app.Q2DBDESEditField = uieditfield(app.MagnetValuesPanel, 'numeric');
-            app.Q2DBDESEditField.Position = [120 142 47 22];
+            app.Q2DBDESEditField.Editable = 'off';
+            app.Q2DBDESEditField.Position = [232 139 55 22];
 
             % Create Q2DBACTField
             app.Q2DBACTField = uieditfield(app.MagnetValuesPanel, 'numeric');
             app.Q2DBACTField.Editable = 'off';
-            app.Q2DBACTField.Position = [199 142 45 22];
+            app.Q2DBACTField.Position = [304 139 53 22];
 
             % Create TrimButton
             app.TrimButton = uibutton(app.MagnetValuesPanel, 'push');
+            app.TrimButton.ButtonPushedFcn = createCallbackFcn(app, @TrimButtonPushed, true);
             app.TrimButton.BackgroundColor = [0.6353 0.0784 0.1843];
             app.TrimButton.FontSize = 14;
             app.TrimButton.FontWeight = 'bold';
             app.TrimButton.FontColor = [1 1 1];
-            app.TrimButton.Position = [113 62 62 24];
+            app.TrimButton.Position = [152 39 62 24];
             app.TrimButton.Text = 'Trim';
 
             % Create B5DBACTField
             app.B5DBACTField = uieditfield(app.MagnetValuesPanel, 'numeric');
             app.B5DBACTField.Editable = 'off';
-            app.B5DBACTField.Position = [199 108 45 22];
+            app.B5DBACTField.Position = [304 105 53 22];
 
             % Create B5DLGPS3330Label
             app.B5DLGPS3330Label = uilabel(app.MagnetValuesPanel);
             app.B5DLGPS3330Label.HorizontalAlignment = 'right';
-            app.B5DLGPS3330Label.Position = [9 108 103 22];
+            app.B5DLGPS3330Label.Position = [23 105 103 22];
             app.B5DLGPS3330Label.Text = 'B5D (LGPS 3330)';
 
             % Create B5DBDESEditField
             app.B5DBDESEditField = uieditfield(app.MagnetValuesPanel, 'numeric');
-            app.B5DBDESEditField.Position = [120 108 47 22];
+            app.B5DBDESEditField.Editable = 'off';
+            app.B5DBDESEditField.Position = [231 105 55 22];
+
+            % Create BCALCLabel
+            app.BCALCLabel = uilabel(app.MagnetValuesPanel);
+            app.BCALCLabel.FontWeight = 'bold';
+            app.BCALCLabel.Position = [160 242 47 22];
+            app.BCALCLabel.Text = 'BCALC';
+
+            % Create Q0DBCALCEditField
+            app.Q0DBCALCEditField = uieditfield(app.MagnetValuesPanel, 'numeric');
+            app.Q0DBCALCEditField.ValueChangedFcn = createCallbackFcn(app, @Q0DBCALCEditFieldValueChanged, true);
+            app.Q0DBCALCEditField.Position = [155 207 55 22];
+
+            % Create Q1DBCALCEditField
+            app.Q1DBCALCEditField = uieditfield(app.MagnetValuesPanel, 'numeric');
+            app.Q1DBCALCEditField.ValueChangedFcn = createCallbackFcn(app, @Q1DBCALCEditFieldValueChanged, true);
+            app.Q1DBCALCEditField.Position = [155 173 55 22];
+
+            % Create Q2DBCALCEditField
+            app.Q2DBCALCEditField = uieditfield(app.MagnetValuesPanel, 'numeric');
+            app.Q2DBCALCEditField.ValueChangedFcn = createCallbackFcn(app, @Q2DBCALCEditFieldValueChanged, true);
+            app.Q2DBCALCEditField.Position = [155 139 55 22];
+
+            % Create B5DBCALCEditField
+            app.B5DBCALCEditField = uieditfield(app.MagnetValuesPanel, 'numeric');
+            app.B5DBCALCEditField.Position = [155 105 55 22];
+
+            % Create PrinttoELOGButton
+            app.PrinttoELOGButton = uibutton(app.MagnetValuesPanel, 'push');
+            app.PrinttoELOGButton.ButtonPushedFcn = createCallbackFcn(app, @PrinttoELOGButtonPushed, true);
+            app.PrinttoELOGButton.BackgroundColor = [0 1 0];
+            app.PrinttoELOGButton.FontSize = 14;
+            app.PrinttoELOGButton.FontWeight = 'bold';
+            app.PrinttoELOGButton.Position = [241 39 108 24];
+            app.PrinttoELOGButton.Text = 'Print to ELOG';
+
+            % Create LogPanel
+            app.LogPanel = uipanel(app.UIFigure);
+            app.LogPanel.Title = 'Log';
+            app.LogPanel.Position = [670 1 259 330];
+
+            % Create DisplayLogTextAreaLabel
+            app.DisplayLogTextAreaLabel = uilabel(app.LogPanel);
+            app.DisplayLogTextAreaLabel.HorizontalAlignment = 'right';
+            app.DisplayLogTextAreaLabel.Position = [13 278 68 22];
+            app.DisplayLogTextAreaLabel.Text = 'Display Log';
+
+            % Create LogTextArea
+            app.LogTextArea = uitextarea(app.LogPanel);
+            app.LogTextArea.Position = [16 55 230 247];
+
+            % Create ClearLogButton
+            app.ClearLogButton = uibutton(app.LogPanel, 'push');
+            app.ClearLogButton.ButtonPushedFcn = createCallbackFcn(app, @ClearLogButtonPushed, true);
+            app.ClearLogButton.BackgroundColor = [0.6353 0.0784 0.1843];
+            app.ClearLogButton.FontSize = 14;
+            app.ClearLogButton.FontWeight = 'bold';
+            app.ClearLogButton.FontColor = [1 1 1];
+            app.ClearLogButton.Position = [166 20 80 24];
+            app.ClearLogButton.Text = 'Clear Log';
 
             % Show the figure after all components are created
             app.UIFigure.Visible = 'on';

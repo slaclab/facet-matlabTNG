@@ -6,6 +6,7 @@ classdef F2_SpecLineApp < handle
         pvlist PV
         pvs
         guihan
+        elogtext = 'Custom Values';
     end
     properties(Hidden)
         listeners
@@ -82,15 +83,33 @@ classdef F2_SpecLineApp < handle
             
         end
         
-        function CalcAndTrim(obj)
+        function Calc(obj,app)
             
             E = caget(obj.pvs.Energy);
             Z_Obj = caget(obj.pvs.Z_Object);
             Z_Img = caget(obj.pvs.Z_Image);
             M12 = caget(obj.pvs.M12);
             M34 = caget(obj.pvs.M34);
-            %incl_dipole = caget(obj.pvs.incl_dipole);
             incl_dipole = lcaGetSmart('SIOC:SYS1:ML00:CALCOUT056');
+
+            
+            % Load the beamline map to check zob and zim positions
+            % Set dropdown to custom if it is different from the table
+            BL = IPmap(obj, app);
+            indeleZob = find(BL.z==Z_Obj,1)
+            if indeleZob~=0
+                app.ZobDropDown.Value = BL.name{indeleZob};
+            else
+                app.ZobDropDown.Value = 'Custom';
+            end
+            indeleZim = find(BL.z==Z_Img,1);
+            if indeleZim~=0
+                app.ZimDropDown.Value = BL.name{indeleZim};
+            else
+                app.ZimDropDown.Value = 'Custom';
+            end                
+            
+            
             
             DeltaE = E - obj.defaultEnergy;
             
@@ -102,67 +121,183 @@ classdef F2_SpecLineApp < handle
             disp(['M34 = ' num2str(M34)]);
             disp(['Include dipole = ' num2str(incl_dipole)]);
             
-            [isok, BDES0, BDES1, BDES2] = E300_calc_QS_3(Z_Obj, Z_Img, DeltaE, M12, M34);
+            [isok, BCALC0, BCALC1, BCALC2] = E300_calc_QS_3(Z_Obj, Z_Img, DeltaE, M12, M34);
             
             if ~isok
                 error('Not OK!');
             end
             
+            disp('Calculated magnet settings!');
+            disp(['QD0 = ' num2str(BCALC0)]);
+            disp(['QD1 = ' num2str(BCALC1)]);
+            disp(['QD2 = ' num2str(BCALC2)]);
+            
+            app.Q0DBCALCEditField.Value = BCALC0;
+            app.Q1DBCALCEditField.Value = BCALC1;
+            app.Q2DBCALCEditField.Value = BCALC2;
+            updateLog(obj, app, {' Calculated magnet settings:', ['   Q0D = ' num2str(BCALC0)], ['   Q1D = ' num2str(BCALC1)], ['   Q2D = ' num2str(BCALC2)]});
+            
+            if incl_dipole == 1
+                disp(['Dipole = ' num2str(E)]);
+                app.B5DBCALCEditField.Value = E;
+                updateLog(obj, app, {[' Dipole will be changed to ' num2str(E)]});
+            else
+                app.B5DBCALCEditField.Value = app.B5DBDESEditField.Value;
+            end
+            
+            obj.elogtext = sprintf('\n\nE = %0.2f, Zob = %s (%0.2fm), Zim = %s (%0.2fm), M12 = %0.2f, M34 = %0.2f',...
+                                   app.EnergyEditField.Value, app.ZobDropDown.Value, app.ZObjectEditField.Value, app.ZimDropDown.Value, app.ZImageEditField.Value, app.M12EditField.Value, app.M34EditField.Value);
+            
+            
+        end
+        
+        function Trim(obj,app)
+            
+            % Read the values in BCALC and trim the magnets.
+            % This allows you to enter values manually
+            
+%            incl_dipole = lcaGetSmart('SIOC:SYS1:ML00:CALCOUT056');
+            
+            E     = app.B5DBCALCEditField.Value;
+            BDES0 = app.Q0DBCALCEditField.Value;
+            BDES1 = app.Q1DBCALCEditField.Value;
+            BDES2 = app.Q2DBCALCEditField.Value;
+            
+            
+         
             disp('Setting magnets!');
             disp(['QD0 = ' num2str(BDES0)]);
             disp(['QD1 = ' num2str(BDES1)]);
             disp(['QD2 = ' num2str(BDES2)]);
+            disp(['Dipole = ' num2str(E)]);
             
-            if incl_dipole == 1
+    %        if incl_dipole == 1
+    %           disp(['Dipole = ' num2str(E)]);
+               updateLog(obj, app, {' Setting magnets:', ['   Q0D = ' num2str(BDES0)], ['   Q1D = ' num2str(BDES1)], ['   Q2D = ' num2str(BDES2)], ['   Dipole = ' num2str(E)]});
+               pause(0.1);
+               updateLog(obj, app, {'  Waiting for SLC magnet trim...'}); pause(0.1);
+               
                control_magnetSet(obj.magnets,[BDES0; BDES1; BDES2; E],'action','TRIM');
-            else
-               control_magnetSet(obj.magnets(1:3),[BDES0; BDES1; BDES2],'action','TRIM');
-            end
-            disp('Magnets set!');
-                        
+    %        else
+    %            updateLog(obj, app, {' Setting magnets:', [' Q0D = ' num2str(BDES0)], [' Q1D = ' num2str(BDES1)], [' Q2D = ' num2str(BDES2)]});
+    %            control_magnetSet(obj.magnets(1:3),[BDES0; BDES1; BDES2],'action','TRIM');
+    %        end
             
+            disp('Magnets set!');
+            updateLog(obj, app, 'Magnets set!')
+            
+        end
+        
+        function updateLog(obj, app, msg)
+           % add an entry to the end of the log
+           t = char(datetime('now','TimeZone','local','Format','dd-MMM-yyyy HH:mm:ss'));
+           
+           if iscell(msg)
+               app.LogTextArea.Value = {[t ': '], msg{:}, app.LogTextArea.Value{:}};
+           else
+            app.LogTextArea.Value = {[t ':  ' msg], app.LogTextArea.Value{:}};
+           end
+           
+           % app.LogTextArea.scroll('bottom');
+        end
+        
+            %% Calculate the transport matrices
+        function M = calc_TransportMatrix(obj, app)
+
+            zob = app.ZObjectEditField.Value;
+            zim = app.ZImageEditField.Value;
+            PS_Q0D = app.Q0DBACTField.Value;
+            PS_Q1D = app.Q1DBACTField.Value;
+            PS_Q2D = app.Q2DBACTField.Value;
+            E = app.EnergyEditField.Value;    
+            
+            
+            % Define magnet positions
+            zQ0D = 1996.98244;
+            zQ1D = 1999.20656;
+            zQ2D = 2001.43099;
+            
+            addpath('../F2_Emit');
+            load 'SpecBeamline.mat'
+            
+
+            % Find where everything is
+            Q0D =findcells(BEAMLINE,'Name','Q0D');
+            Q1D =findcells(BEAMLINE,'Name','Q1D');
+            Q2D =findcells(BEAMLINE,'Name','Q2D');
+            
+            % Adjust the positions of things, and set magnet strengths
+            BEAMLINE{1} = BEAMLINE{Q0D(1)-2}; BEAMLINE{1}.S = zob;
+            
+            BEAMLINE{2} = BEAMLINE{Q0D(1)-1};  BEAMLINE{2}.L = zQ0D-zob - 0.5;
+            BEAMLINE{3} = BEAMLINE{Q0D(1)};    BEAMLINE{3}.B = PS_Q0D/10/2;
+            BEAMLINE{4} = BEAMLINE{Q0D(2)};    BEAMLINE{4}.B = PS_Q0D/10/2;
+            
+            BEAMLINE{5} = BEAMLINE{Q1D(1)-1};  BEAMLINE{5}.L = zQ1D- zQ0D - 1;
+            BEAMLINE{6} = BEAMLINE{Q1D(1)};    BEAMLINE{6}.B = PS_Q1D/10/2;
+            BEAMLINE{7} = BEAMLINE{Q1D(2)};    BEAMLINE{7}.B = PS_Q1D/10/2;
+            
+            BEAMLINE{8} = BEAMLINE{Q2D(1)-1};  BEAMLINE{8}.L = zQ2D - zQ1D - 1;
+            BEAMLINE{9} = BEAMLINE{Q2D(1)};    BEAMLINE{9}.B = PS_Q2D/10/2;
+            BEAMLINE{10} = BEAMLINE{Q2D(2)};   BEAMLINE{10}.B = PS_Q2D/10/2;
+            
+            BEAMLINE{11} = BEAMLINE{Q2D(2)+1}; BEAMLINE{11}.L = zim - zQ2D - 0.5;
+            BEAMLINE{12} = BEAMLINE{Q2D(2)+2}; 
+            
+            % Fix all S positions
+            SetSPositions( 1, length(BEAMLINE),  BEAMLINE{1}.S);
+            
+
+
+            % Set the energy of each element
+            for i =1:length(BEAMLINE)
+                BEAMLINE{i}.P = E;
+            end
+          
+            % Calculate the transport matrix
+            [~,M]=RmatAtoB(1, length(BEAMLINE));
+        
         end
         
         
         function z = set_Z(obj, app, dropdown)
-
+            
             ele = app.(dropdown).Value;
-
-            switch ele
-                case 'DTOTR'
-                    z = 2.015259850655461e+03;
-                case 'LFOV'
-                    z = 2.015629843995481e+03;
-                case 'CHER'
-                    z = 2.016220001372488e+03;
-                case 'PRDMP'
-                    z = 2.017529977792559e+03;
-                case 'EDC_SCREEN'
-                    z = 2.010499937335186e+03;
-                case 'PIC_CENT'
-                    z = 1.992820001379069e+03;
-                case 'FILS'
-                    z = 1.993273701379069e+03;
-                case 'FILG'
-                    z = 1.993221701379069e+03;
-                case 'IPOTR1P'
-                    z = 1.993740001379069e+03;
-                case 'IPOTR1'
-                    z = 1.993830001379069e+03;
-                case 'IPWS1'
-                    z = 1.993910001379069e+03;
-                case 'PENT'
-                    z = 1.993870001379069e+03;
-                case 'PEXT'
-                    z = 1.995040001379069e+03;
-                case 'IPOTR2'
-                    z = 1.995090001379069e+03;
-                case 'BEWIN2'
-                    z = 1.996100001379069e+03;
-                otherwise
-                    z = 0;                
+            
+            % Load the beamline set_Zmap
+            beamline = IPmap(obj, app);
+            indele = find(strcmp(beamline.name, ele),1);
+            
+            if indele>0
+                z = beamline.z(indele);
+            else
+                z=0;
             end
+            
         end
+        
+        function beamline = IPmap(obj, app)
+            % Beamline map
+            
+            beamline.name = {};
+            beamline.z = [];
+            beamline.name{end+1}='DTOTR';    beamline.z(end+1) = 2.0152598e+03;
+            beamline.name{end+1}='LFOV';     beamline.z(end+1) = 2.0156298e+03;
+            beamline.name{end+1}='CHER';     beamline.z(end+1) = 2.0162200e+03;
+            beamline.name{end+1}='PRDMP';    beamline.z(end+1) = 2.0175299e+03;
+            beamline.name{end+1}='EDC_SCREEN';   beamline.z(end+1) = 2.0104999e+03;
+            beamline.name{end+1}='PIC_CENT'; beamline.z(end+1) = 1.9928200e+03;
+            beamline.name{end+1}='FILS';     beamline.z(end+1) = 1.9932737e+03;
+            beamline.name{end+1}='FILG';     beamline.z(end+1) = 1.9932217e+03;
+            beamline.name{end+1}='IPOTR1P';  beamline.z(end+1) = 1.9937400e+03;
+            beamline.name{end+1}='IPOTR1';   beamline.z(end+1) = 1.9938300e+03;
+            beamline.name{end+1}='IPWS1';    beamline.z(end+1) = 1.9939100e+03;
+            beamline.name{end+1}='PENT';     beamline.z(end+1) = 1.9938700e+03;
+            beamline.name{end+1}='PEXT';     beamline.z(end+1) = 1.9950400e+03;
+            beamline.name{end+1}='IPOTR2';   beamline.z(end+1) = 1.9950900e+03;
+            beamline.name{end+1}='BEWIN2';   beamline.z(end+1) = 1.9961000e+03;
+        end
+     
         
     end
     
