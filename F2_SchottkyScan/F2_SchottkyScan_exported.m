@@ -371,7 +371,7 @@ classdef F2_SchottkyScan_exported < matlab.apps.AppBase
             app.PhaseStartEditField = uieditfield(app.ScanPanel, 'numeric');
             app.PhaseStartEditField.ValueChangedFcn = createCallbackFcn(app, @StepsEditFieldValueChanged, true);
             app.PhaseStartEditField.Position = [83 86 50 22];
-            app.PhaseStartEditField.Value = -60;
+            app.PhaseStartEditField.Value = -50;
 
             % Create PhaseEndEditFieldLabel
             app.PhaseEndEditFieldLabel = uilabel(app.ScanPanel);
@@ -383,7 +383,7 @@ classdef F2_SchottkyScan_exported < matlab.apps.AppBase
             app.PhaseEndEditField = uieditfield(app.ScanPanel, 'numeric');
             app.PhaseEndEditField.ValueChangedFcn = createCallbackFcn(app, @StepsEditFieldValueChanged, true);
             app.PhaseEndEditField.Position = [220 86 50 22];
-            app.PhaseEndEditField.Value = 60;
+            app.PhaseEndEditField.Value = 10;
 
             % Create StepsEditFieldLabel
             app.StepsEditFieldLabel = uilabel(app.ScanPanel);
