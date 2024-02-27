@@ -6,6 +6,8 @@ classdef F2_BSAGUI_exported < matlab.apps.AppBase
         OptionsMenu                   matlab.ui.container.Menu
         ExporttoWorkspaceMenu         matlab.ui.container.Menu
         CloseAllFiguresMenu           matlab.ui.container.Menu
+        HelpMenu                      matlab.ui.container.Menu
+        PVsMenu                       matlab.ui.container.Menu
         GridLayout                    matlab.ui.container.GridLayout
         PVListA                       matlab.ui.control.ListBox
         PVListB                       matlab.ui.control.ListBox
@@ -48,6 +50,7 @@ classdef F2_BSAGUI_exported < matlab.apps.AppBase
         PulseOffsetEditFieldLabel     matlab.ui.control.Label
         OffsetEditField               matlab.ui.control.NumericEditField
         SCMPSViewerButton             matlab.ui.control.Button
+        PrinttoeLogButton             matlab.ui.control.Button
     end
 
     
@@ -736,6 +739,11 @@ classdef F2_BSAGUI_exported < matlab.apps.AppBase
                 errorMessage(app, ex, 'Error closing figures.');
             end
         end
+
+        % Button pushed function: PrinttoeLogButton
+        function PrinttoeLogButtonPushed(app, event)
+            exportToLogbook(app.mdl);
+        end
     end
 
     % Component initialization
@@ -765,6 +773,14 @@ classdef F2_BSAGUI_exported < matlab.apps.AppBase
             app.CloseAllFiguresMenu = uimenu(app.OptionsMenu);
             app.CloseAllFiguresMenu.MenuSelectedFcn = createCallbackFcn(app, @CloseAllFiguresMenuSelected, true);
             app.CloseAllFiguresMenu.Text = 'Close All Figures';
+
+            % Create HelpMenu
+            app.HelpMenu = uimenu(app.UIFigure);
+            app.HelpMenu.Text = 'Help';
+
+            % Create PVsMenu
+            app.PVsMenu = uimenu(app.HelpMenu);
+            app.PVsMenu.Text = 'PVs...';
 
             % Create GridLayout
             app.GridLayout = uigridlayout(app.UIFigure);
@@ -1119,6 +1135,15 @@ classdef F2_BSAGUI_exported < matlab.apps.AppBase
             app.SCMPSViewerButton.Layout.Row = 20;
             app.SCMPSViewerButton.Layout.Column = [11 12];
             app.SCMPSViewerButton.Text = 'SC MPS Viewer';
+
+            % Create PrinttoeLogButton
+            app.PrinttoeLogButton = uibutton(app.GridLayout, 'push');
+            app.PrinttoeLogButton.ButtonPushedFcn = createCallbackFcn(app, @PrinttoeLogButtonPushed, true);
+            app.PrinttoeLogButton.BackgroundColor = [0 1 1];
+            app.PrinttoeLogButton.FontSize = 16;
+            app.PrinttoeLogButton.Layout.Row = 19;
+            app.PrinttoeLogButton.Layout.Column = [11 12];
+            app.PrinttoeLogButton.Text = 'Print to eLog';
 
             % Show the figure after all components are created
             app.UIFigure.Visible = 'on';
