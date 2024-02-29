@@ -1,0 +1,71 @@
+2024-02-29 10:24:01.774 CARepeaterServiceInstance INFO The CA Repeater is already running on port 5069.  
+2024-02-29 10:24:01.776 CARepeaterServiceInstance INFO Possibly it was started previously by another operating system process.  
+Warning: Name is nonexistent or not a directory: /usr/local/facet/tools/matlabTNG/../F2_LEM
+> In path (line 109)
+  In addpath (line 86)
+  In F2_LiveModelApp (line 63)
+29-Feb-2024 10:24:02:
+Starting LEM Application...
+29-Feb-2024 10:24:02:
+Loading Lucretia Model...
+29-Feb-2024 10:24:08:
+Linking to EPICS PVs...
+Initial Eref:
+    0.0060    0.1251    0.3356    4.5000   10.0000
+
+29-Feb-2024 10:24:08:
+Updating with live data...
+29-Feb-2024 10:24:14 Klystron data and model updated
+2024-02-29 10:24:34.839 CARepeaterServiceInstance INFO The CA Repeater is already running on port 5069.  
+2024-02-29 10:24:34.841 CARepeaterServiceInstance INFO Possibly it was started previously by another operating system process.  
+Warning: Name is nonexistent or not a directory: /usr/local/facet/tools/matlabTNG/../F2_LEM
+> In path (line 109)
+  In addpath (line 86)
+  In F2_LiveModelApp (line 63)
+29-Feb-2024 10:24:35:
+Starting LEM Application...
+29-Feb-2024 10:24:35:
+Loading Lucretia Model...
+29-Feb-2024 10:24:41:
+Linking to EPICS PVs...
+Initial Eref:
+    0.0060    0.1251    0.3356    4.5000   10.0000
+
+29-Feb-2024 10:24:41:
+Updating with live data...
+29-Feb-2024 10:24:47 Klystron data and model updated
+    0.0060    0.1251    0.3358    4.3359    9.5889
+
+    0.0060    0.1251    0.3356    4.4499   10.1140
+
+    0.0060    0.1251    0.3356    4.4500   10.0001
+
+    0.0060    0.1251    0.3356    4.4500   10.0000
+
+29-Feb-2024 10:25:02:
+Initialization complete.
+29-Feb-2024 10:25:02:
+Getting new data from controls and updating model...
+29-Feb-2024 10:25:03 Klystron data and model updated
+29-Feb-2024 10:25:03 Klystron data and model updated
+29-Feb-2024 10:25:04 Klystron data and model updated
+29-Feb-2024 10:25:04:
+Done.
+    0.0060    0.1251    0.3358    4.3359    9.5888
+
+    0.0060    0.1251    0.3356    4.4499   10.1140
+
+    0.0060    0.1251    0.3356    4.4500   10.0001
+
+    0.0060    0.1251    0.3356    4.4500   10.0000
+
+29-Feb-2024 10:25:36:
+Initialization complete.
+29-Feb-2024 10:25:36:
+Getting new data from controls and updating model...
+29-Feb-2024 10:25:37 Klystron data and model updated
+29-Feb-2024 10:25:38 Klystron data and model updated
+29-Feb-2024 10:25:39 Klystron data and model updated
+29-Feb-2024 10:25:39:
+Done.
+2024-02-29T10:26:25.908186599 WARN pvxs.tcp.setup Server unable to bind port 5075, falling back to [::]:40218
