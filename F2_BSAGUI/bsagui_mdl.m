@@ -387,6 +387,12 @@ classdef bsagui_mdl < handle
             % 'mdl'
             assignin('base','mdl', mdl);
         end
+        
+        function exportToLogbook(mdl)
+            fig = gcf;
+            util_printLog2020(fig,'title','BSA GUI Plot','author',...
+                'F2_BSAGUI.m')
+        end
                                                 
     end
     
