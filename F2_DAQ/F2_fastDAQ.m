@@ -169,6 +169,9 @@ classdef F2_fastDAQ < handle
             % Get PVs for cam control
             obj.daq_pvs = camera_DAQ_PVs(obj.params.camPVs);
             
+            % Set DAQ_InUse PV for cameras
+            lcaPutSmart(obj.daq_pvs.DAQ_InUse,1);
+            
             % Test cameras before starting
             obj.checkCams();
             status = obj.check_abort();
@@ -439,6 +442,7 @@ classdef F2_fastDAQ < handle
             
             obj.dispMessage('Done!');
             caput(obj.pvs.DAQ_Running,0);
+            lcaPutSmart(obj.daq_pvs.DAQ_InUse,0);
         end
         
         function status = collectData(obj)

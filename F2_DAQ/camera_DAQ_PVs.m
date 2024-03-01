@@ -29,6 +29,7 @@ daq_pvs = {
     ':TIFF:NumCapture';
     ':TIFF:SetPort';
     ':DataType';
+    ':DAQ_InUse';
     };
 
 DAQPVs = struct();
