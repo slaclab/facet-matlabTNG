@@ -72,6 +72,9 @@ classdef F2_DAQApp < handle
             % Load non-BSA Lists
             obj.loadnonBSALists();
             
+            % Load non-BSA Array Lists
+            obj.loadnonBSA_ArrayLists();
+            
             % Load scan functions
             obj.loadScans();
             
@@ -359,6 +362,8 @@ classdef F2_DAQApp < handle
             end
             obj.DAQ_params.nonBSA_Array_list = name_lists;
             obj.DAQ_params.include_nonBSA_arrays = true;
+            
+            obj.guihan.nonBSADataListBox.Items = [obj.guihan.nonBSADataListBox.Items name_lists];
             
             obj.addMessage(sprintf('Loaded %d non-BSA Array Lists.',numel(name_lists)));
         end
