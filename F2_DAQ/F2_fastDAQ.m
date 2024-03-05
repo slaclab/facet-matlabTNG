@@ -182,13 +182,13 @@ classdef F2_fastDAQ < handle
             obj.prepCams();
             
             % Get backgrounds
-            %obj.BG_obj = F2_getBG(obj);
+            obj.BG_obj = F2_getBG(obj);
             obj.data_struct.backgrounds = struct;
             obj.data_struct.backgrounds.getBG = obj.params.saveBG;
             obj.data_struct.backgrounds.laserBG = obj.params.laserBG;
-            %if obj.params.saveBG || obj.params.laserBG
-            %    obj.data_struct.backgrounds = obj.BG_obj.getBackground();
-            %end
+            if obj.params.saveBG || obj.params.laserBG
+               obj.data_struct.backgrounds = obj.BG_obj.getBackground();
+            end
             
             %%%%%%%%%%%%%%%%%%%%
             %   Run the DAQ!  %%
