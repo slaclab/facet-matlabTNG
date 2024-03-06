@@ -2262,7 +2262,7 @@ end
 l = length(bpms_y_id);
 py_norm = zeros(1, l);
 for j=1:l
-    y = mdl.the_matrix(bpms_x_id(j),:);
+    y = mdl.the_matrix(bpms_y_id(j),:);
     nans = isnan(y);
     y(nans) = 0;
     [ p ] = psdint(y',beamrate, length(y),'s',0,0);
