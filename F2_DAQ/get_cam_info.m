@@ -24,6 +24,7 @@ info_pvs = {':Model_RBV';
             ':ROI:ArraySize1_RBV';
             ':X_ORIENT';
             ':Y_ORIENT';
+            ':IS_ROTATED';
             ':RESOLUTION';
             ':AcquireTime_RBV';
             ':Gain_RBV'};
