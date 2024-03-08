@@ -16,11 +16,12 @@ classdef F2_WirescanApp < handle
     bpmsel(1,2) uint8 = [1 2]
     npulses uint16 = 100
     jittercor logical = false % Do jitter correction using BPMs?
-    fitmethod string {mustBeMember(fitmethod,["gauss","agauss","agauss2"])} = "agauss"
+    fitmethod string {mustBeMember(fitmethod,["gauss","agauss","agauss2"])} = "agauss2"
     blenvals(1,2) = [-inf,inf] % Window values for bunch length measurements
     blenwin logical = false % Window cut on blen measurements?
     chargenorm logical = false % Do charge normalization using PMT?
     WireDiam = 60 % um
+    scanTimestamp = ""% timestamp of scan completion
   end
   properties(SetAccess=private)
     data
@@ -56,9 +57,9 @@ classdef F2_WirescanApp < handle
     wires string = ["IN10:561" "LI11:444" "LI11:614" "LI11:744" "LI12:214" "LI18:944" "LI19:144" "LI19:244" "LI19:344" "LI20:3179" "LI20:3206"]
     wiremodel string = ["WS10561" "WS11444" "WS11614" "WS11744" "WS12214" "WS18944" "WS19144" "WS19244" "WS19344" "IPWS1" "IPWS3"]
     pmts string = ["IN10:561" "LI11:444" "LI11:614" "LI11:744" "LI12:214" "LI18:944" "LI19:144" "LI19:244" "LI19:344" "LI20:3060" "LI20:3070" "LI20:3179" "LI20:3350" "LI20:3360"]
-%     pmts string = ["IN10:561" "LI11:444" "LI11:614" "LI11:744" "LI12:214" "LI18:944" "LI19:144" "LI19:244" "LI19:344"]
+    % pmts string = ["IN10:561" "LI11:444" "LI11:614" "LI11:744" "LI12:214" "LI18:944" "LI19:144" "LI19:244" "LI19:344"]
     tors string = ["IN10:591" "LI11:360" "LI14:890" "LI20:1988" "LI20:2040" "LI20:2452" "LI20:3163" "LI20:3255"]
-%     tors string = ["IN10:591" "LI11:360" "LI14:890"]
+    % tors string = ["IN10:591" "LI11:360" "LI14:890"]
     blms string = ["LI11:359" "LI14:888" "LI20:3014"]
     BeamRatePV string = "EVNT:SYS1:1:INJECTRATE"
   end
@@ -109,6 +110,10 @@ classdef F2_WirescanApp < handle
         obj.guihan.ScanCenter.Value=0;
         obj.guihan.ScanWidthError.Value=0;
         obj.guihan.ScanCenterError.Value=0;
+        obj.guihan.ScanSkew.Value = 0;
+        obj.guihan.ScanKurt.Value = 0;
+        obj.guihan.ScanTimestamp.Value = '';
+
       end
     end
     function StartScan(obj,ahan)
@@ -254,10 +259,13 @@ classdef F2_WirescanApp < handle
       else
         obj.scansuccess=false;
       end
+
+      % timestamp taken after scan completion, independent of success/failure
+      obj.scanTimestamp = datestr(now);
       
       % Move wire to closest limit to leave out of beam
-%       [~,ii]=min(abs(obj.curpos-obj.motlims));
-%       obj.curpos = obj.motlims(ii) ;
+      % [~,ii]=min(abs(obj.curpos-obj.motlims));
+      % obj.curpos = obj.motlims(ii) ;
       
       % Get BSA data
       if obj.scansuccess
@@ -425,44 +433,90 @@ classdef F2_WirescanApp < handle
       dy=ones(size(ydat)).*max(ydat)./100;
       
       xx = linspace(min(pos),max(pos),1000);
-%       if ~isempty(obj.guihan) && string(obj.guihan.UnitsDropDown.Value)=="Motor"
-%         xx_pl=linspace(min(pos),max(pos),1000);
-%       else
+      % if ~isempty(obj.guihan) && string(obj.guihan.UnitsDropDown.Value)=="Motor"
+      %   xx_pl=linspace(min(pos),max(pos),1000);
+      % else
         xx_pl=xx;
-%       end
+      % end
       
-      [pos,ii]=sort(pos); ydat=ydat(ii); dy=dy(ii);
+      [pos,ii]=sort(pos); ydat=ydat(ii); dy=dy(ii);  
 
       switch obj.fitmethod
         case "gauss"
-          [~,q,dq,chi2]=gauss_fit(pos,ydat,dy); q(5)=0;
+          [~,q,dq,chi2] = gauss_fit(pos,ydat,dy);
+          dy = dy.*sqrt(chi2);
+          [~,q,dq] = gauss_fit(pos,ydat,dy);
+          q(5) = 0;
+
         case "agauss"
-          [~,q,dq,chi2]=agauss_fit(pos,ydat,dy);
+          [~,q,dq,chi2] = agauss_fit(pos,ydat,dy);
+          dy = dy.*sqrt(chi2);
+          [~,q,dq] = agauss_fit(pos,ydat,dy);
+
         case "agauss2"
-          [par, yFit, parstd, ~, chi2] = util_gaussFit(pos, ydat, 1, '1', dy, xx_pl); % [AMP, XM, SIG, BG, BGS]
-          q(1) = par(4); q(2) = par(1); q(3)=par(2); q(4)=par(3);
-          dq(1) = parstd(4); dq(2) = parstd(1); dq(3)=parstd(2); dq(4)=parstd(3);
+          [par, yFit, parstd, ~, chi2] = util_gaussFit(pos, ydat, 1, '1', dy, xx_pl);
+          dy = dy.*sqrt(chi2);
+          [par, yFit, parstd] = util_gaussFit(pos, ydat, 1, '1', dy, xx_pl);
+          % remap output from gauss fit: par = [AMP, XM, SIG, BG, BGS]
+          % par(4) is bot the mysterious "BG" - quanitity has no equivalent in 'q's ...
+          % "BGS" is the actual y offset for the data
+          q(1) = par(4);  
+          q(2) = par(1);
+          q(3) = par(2);
+          q(4) = par(3);
+          q(5) = par(5);
+          dq(1) = parstd(4);
+          dq(2) = parstd(1);
+          dq(3) = parstd(2);
+          dq(4) = parstd(3);
       end
-      dy=dy.*sqrt(chi2);
-      switch obj.fitmethod
-        case "gauss"
-          [~,q,dq]=gauss_fit(pos,ydat,dy); q(5)=0;
-        case "agauss"
-          [~,q,dq]=agauss_fit(pos,ydat,dy);
-        case "agauss2"
-          [par, yFit, parstd] = util_gaussFit(pos, ydat, 1, '1', dy, xx_pl); % [AMP, XM, SIG, BG, BGS]
-          q(1) = par(4); q(2) = par(1); q(3)=par(2); q(4)=par(3);
-          dq(1) = parstd(4); dq(2) = parstd(1); dq(3)=parstd(2); dq(4)=parstd(3);
+
+      % for human-readability
+      xoff = q(3);
+      xoff_err = dq(3);
+      yoff = q(1);
+      yoff_rel = yoff;
+      A = q(2);
+      sigma_fit = q(4);
+      asym = q(5);
+      
+      if strcmp(obj.fitmethod, 'agauss'), yoff_rel = yoff_rel / A; end;
+      if strcmp(obj.fitmethod, 'agauss2'), yoff_rel = q(1); yoff = q(5); end;
+
+      % calculate skewness/kurtosis of asymmetric fits
+      % adapted from beamAnalysis_beamParams.m -> get_2sidefit
+      skew = 0;
+      kurt = 0;
+      if ~strcmp(obj.fitmethod, 'gauss')
+        xrms = sigma_fit * sqrt(1 + yoff_rel^2 * (3-8/pi));
+        m1 = sqrt(8/pi) * sigma_fit * yoff_rel;
+        m3 = m1 * sigma_fit^2 * (1 + yoff_rel^2 * (16/pi-5));
+        m4 = sigma_fit^4 * (3 + 10 * yoff_rel^2 * (3-8/pi) + yoff_rel^4 * (15 + 16/pi * (1-12/pi)));
+        skew = m3 / xrms^3;
+        kurt = m4 / xrms^4 - 3;
       end
-      sigma = abs(q(4))*1e6; sigmaErr = abs(dq(4))*1e6;
-      if sigma<(obj.WireDiam/4)
-        sigma=0;
-      else
-        sigma = sqrt(sigma.^2 - (obj.WireDiam/4).^2) ;
+
+      % fprintf(" %f \t %f \t %f \t %f \t %f \t %f \t %f \n", ...
+      %   yoff, yoff_rel, A, xoff, sigma_fit, skew, kurt);
+
+      center = xoff*1e6;
+      centerErr = xoff_err*1e6;
+
+      % estimate beam size, if the FWHM < 1/4 the wire size, measurement fails
+      sigma = 0;
+      sigma_raw = abs(sigma_fit)*1e6;
+      if sigma_raw >= (obj.WireDiam/4)
+        sigma = sqrt(sigma_raw.^2 - (obj.WireDiam/4).^2);
       end
-      center = q(3)*1e6; centerErr = dq(3)*1e6 ;
-      obj.fitdata.sigma=sigma; obj.fitdata.sigmaErr=sigmaErr;
-      obj.fitdata.center=center; obj.fitdata.centerErr = centerErr ;
+      sigmaErr = abs(dq(4))*1e6;
+
+      obj.fitdata.sigma = sigma;
+      obj.fitdata.sigmaErr = sigmaErr;
+      obj.fitdata.center = center;
+      obj.fitdata.centerErr = centerErr;
+      obj.fitdata.skew = skew;
+      obj.fitdata.kurt = kurt;
+
       lcaPut(char(obj.wirename+":"+upper(obj.plane)+"RMS"),sigma);
       lcaPut(char(obj.wirename+":"+upper(obj.plane)),center);
       if obj.wirename == "WIRE:LI20:3179"
@@ -474,16 +528,16 @@ classdef F2_WirescanApp < handle
       end
       
       if ~isempty(ahan)
-%         if ~isempty(obj.guihan) && string(obj.guihan.UnitsDropDown.Value)=="Motor"
-%           pos=obj.data.pos(~bad);
-%         end
-        plot(ahan,pos.*1e6,ydat,'*');
+        % if ~isempty(obj.guihan) && string(obj.guihan.UnitsDropDown.Value)=="Motor"
+        %   pos=obj.data.pos(~bad);
+        % end
+        plot(ahan, pos.*1e6, ydat, '*');
         if obj.fitmethod == "agauss2"
           yy = yFit ;
         else
-          yy = q(1)+q(2).*exp(-0.5.*((xx-q(3))./(q(4).*(1+sign(xx-q(3)).*q(5)))).^2) ;
+          yy = yoff + A.*exp(-0.5.*((xx-xoff)./(sigma_fit.*(1+sign(xx-xoff).*asym))).^2) ;
         end
-        
+
         hold(ahan,'on');
         plot(ahan,xx_pl.*1e6,yy,'r');
         hold(ahan,'off');
@@ -491,8 +545,13 @@ classdef F2_WirescanApp < handle
         ax=axis(ahan);ax(1:2)=[xx_pl(1) xx_pl(end)].*1e6;axis(ahan,ax);
         xlabel(ahan,upper(obj.plane)+" [\mum]"); ylabel(ahan,'Q [nC]');
         if ~isempty(obj.guihan)
-          obj.guihan.ScanWidth.Value = sigma ; obj.guihan.ScanWidthError.Value = sigmaErr ;
-          obj.guihan.ScanCenter.Value = center ; obj.guihan.ScanCenterError.Value = centerErr ;
+          obj.guihan.ScanWidth.Value = sigma;
+          obj.guihan.ScanWidthError.Value = sigmaErr ;
+          obj.guihan.ScanCenter.Value = center;
+          obj.guihan.ScanCenterError.Value = centerErr ;
+          obj.guihan.ScanSkew.Value = skew;
+          obj.guihan.ScanKurt.Value = kurt;
+          obj.guihan.ScanTimestamp.Value = obj.scanTimestamp;
         end
       end
       
@@ -502,6 +561,7 @@ classdef F2_WirescanApp < handle
       end
       
     end
+
     function confload(obj,fname)
       %CONFLOAD
       %confload([file_name])
@@ -855,12 +915,12 @@ classdef F2_WirescanApp < handle
       obj.wiresel=wsel;
     end
     function set.jittercor(obj,sel)
-%       if sel && ~obj.usejit(obj.wiresel)
-%         obj.jittercor=false;
-%         warning('Unable to process orbit jitter for %s',obj.wirename);
-%       else
+      % if sel && ~obj.usejit(obj.wiresel)
+      %   obj.jittercor=false;
+      %   warning('Unable to process orbit jitter for %s',obj.wirename);
+      % else
         obj.jittercor=sel;
-%       end
+      % end
       obj.confsave;
     end
     function set.wiresel(obj,sel)
