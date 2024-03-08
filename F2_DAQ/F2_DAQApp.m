@@ -85,6 +85,10 @@ classdef F2_DAQApp < handle
             % this indicates daq not in use
             caput(obj.pvs.Reset,0);
             
+            % reset DAQ_InUse PVs for cameras
+            fastDAQobj = obj.DAQ_obj;
+            lcaPutSmart(fastDAQobj.daq_pvs.DAQ_InUse,0);
+            
             % this indicates data taking has ended
             caput(obj.pvs.DAQ_DataOn,0);
             obj.addMessage('DAQ reset.');

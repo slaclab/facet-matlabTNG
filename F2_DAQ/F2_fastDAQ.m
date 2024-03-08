@@ -169,6 +169,9 @@ classdef F2_fastDAQ < handle
             % Get PVs for cam control
             obj.daq_pvs = camera_DAQ_PVs(obj.params.camPVs);
             
+            % Set DAQ_InUse PV for cameras
+            lcaPutSmart(obj.daq_pvs.DAQ_InUse,1);
+            
             % Test cameras before starting
             obj.checkCams();
             status = obj.check_abort();
@@ -179,13 +182,13 @@ classdef F2_fastDAQ < handle
             obj.prepCams();
             
             % Get backgrounds
-            %obj.BG_obj = F2_getBG(obj);
+            obj.BG_obj = F2_getBG(obj);
             obj.data_struct.backgrounds = struct;
             obj.data_struct.backgrounds.getBG = obj.params.saveBG;
             obj.data_struct.backgrounds.laserBG = obj.params.laserBG;
-            %if obj.params.saveBG || obj.params.laserBG
-            %    obj.data_struct.backgrounds = obj.BG_obj.getBackground();
-            %end
+            if obj.params.saveBG || obj.params.laserBG
+               obj.data_struct.backgrounds = obj.BG_obj.getBackground();
+            end
             
             %%%%%%%%%%%%%%%%%%%%
             %   Run the DAQ!  %%
@@ -439,6 +442,7 @@ classdef F2_fastDAQ < handle
             
             obj.dispMessage('Done!');
             caput(obj.pvs.DAQ_Running,0);
+            lcaPutSmart(obj.daq_pvs.DAQ_InUse,0);
         end
         
         function status = collectData(obj)
