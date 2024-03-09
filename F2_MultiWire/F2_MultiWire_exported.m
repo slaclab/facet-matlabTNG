@@ -1,4 +1,4 @@
-classdef F2_MultiWire_exported < matlab.apps.AppBase
+grepcclassdef F2_MultiWire_exported < matlab.apps.AppBase
 
     % Properties that correspond to app components
     properties (Access = public)
@@ -54,7 +54,7 @@ classdef F2_MultiWire_exported < matlab.apps.AppBase
         WSAppButton               matlab.ui.control.Button
         Button                    matlab.ui.control.Button
         LinacDropDownLabel        matlab.ui.control.Label
-        CODE_NAME2                matlab.ui.control.DropDown
+        LiancDropDown             matlab.ui.control.DropDown
     end
 
   
@@ -80,7 +80,7 @@ classdef F2_MultiWire_exported < matlab.apps.AppBase
     end
     
     function RemoteSet(app)
-%       app.CODE_NAME2ValueChanged();
+%       app.LiancDropDownValueChanged();
       app.ButtonGroupSelectionChanged();
       drawnow
     end
@@ -112,7 +112,7 @@ classdef F2_MultiWire_exported < matlab.apps.AppBase
           end
         end
       end
-      switch app.CODE_NAME2.Value
+      switch app.LiancDropDown.Value
         case "L2"
           app.WS1Axes.Title.String = 'WIRE:LI11:444' ; 
           app.WS2Axes.Title.String = 'WIRE:LI11:614' ; 
@@ -187,16 +187,16 @@ classdef F2_MultiWire_exported < matlab.apps.AppBase
         app.LLM=F2_LiveModelApp;
       end
       if exist('linac','var')
-        app.CODE_NAME2.Value = linac ;
+        app.LiancDropDown.Value = linac ;
         app.plane=dim;
       end
       drawnow;
-      app.CODE_NAME2ValueChanged;
+      app.LiancDropDownValueChanged;
         end
 
-        % Value changed function: CODE_NAME2
-        function CODE_NAME2ValueChanged(app, event)
-      value = app.CODE_NAME2.Value;
+        % Value changed function: LiancDropDown
+        function LiancDropDownValueChanged(app, event)
+      value = app.LiancDropDown.Value;
       if ~isempty(app.WS)
         delete(app.WS);
       end
@@ -251,7 +251,7 @@ classdef F2_MultiWire_exported < matlab.apps.AppBase
         function ButtonGroupSelectionChanged(app, event)
       selectedButton = app.ButtonGroup.SelectedObject;
       app.plane = lower(string(selectedButton.Text)) ;
-      app.CODE_NAME2ValueChanged;
+      app.LiancDropDownValueChanged;
         end
 
         % Button pushed function: ScanW2
@@ -288,7 +288,7 @@ classdef F2_MultiWire_exported < matlab.apps.AppBase
         % Button pushed function: Button
         function ButtonPushed(app, event)
             fh=figure;
-            switch app.CODE_NAME2.Value
+            switch app.LiancDropDown.Value
                 case "L2"
                     ttxt={'WIRE:LI11:444' 'WIRE:LI11:614' 'WIRE:LI11:744' 'WIRE:LI12:214'} ;
                 case "L3"
@@ -301,7 +301,6 @@ classdef F2_MultiWire_exported < matlab.apps.AppBase
             end
             
             hdr = 'Multi-Wire Measurements:';
-            fit_str = sprintf('fit method: %s', app.aobj.fitmethod);
             ws_msmt = '[%s] %s = %.3f um\t (skew=%.3f, kurt=%.3f)\t ts: %s';
             sig = sprintf('sig%s', app.plane);
             ws1 = sprintf(ws_msmt, ttxt{1}, sig, app.WS1Sigma.Value, app.WS1Skew.Value, app.WS1Kurt.Value, app.WS1Time.Value);
@@ -309,11 +308,11 @@ classdef F2_MultiWire_exported < matlab.apps.AppBase
             ws3 = sprintf(ws_msmt, ttxt{3}, sig, app.WS3Sigma.Value, app.WS3Skew.Value, app.WS3Kurt.Value, app.WS3Time.Value);
             ws4 = sprintf(ws_msmt, ttxt{4}, sig, app.WS4Sigma.Value, app.WS4Skew.Value, app.WS4Kurt.Value, app.WS4Time.Value);
             
-            logmsg = sprintf('%s\n%s\n  %s\n  %s\n  %s\n  %s\n', hdr, fit_str, ws1, ws2, ws3, ws4);
+            logmsg = sprintf('%s\n  %s\n  %s\n  %s\n  %s\n', hdr, ws1, ws2, ws3, ws4);
 
             drawnow;
             pause(1);
-            util_printLog2020(fh, 'title',sprintf('%s Multi-Wire Scan (%c)',app.CODE_NAME2.Value,char(app.plane)),'author','F2_MultiWire.m','text',logmsg);
+            util_printLog2020(fh, 'title',sprintf('%s Multi-Wire Scan (%c)',app.LiancDropDown.Value,char(app.plane)),'author','F2_MultiWire.m','text',logmsg);
             drawnow;
             pause(1);
             delete(fh);
@@ -687,14 +686,14 @@ classdef F2_MultiWire_exported < matlab.apps.AppBase
             app.LinacDropDownLabel.Layout.Column = 1;
             app.LinacDropDownLabel.Text = 'Linac:';
 
-            % Create CODE_NAME2
-            app.CODE_NAME2 = uidropdown(app.GridLayout6);
-            app.CODE_NAME2.Items = {'L2', 'L3'};
-            app.CODE_NAME2.ValueChangedFcn = createCallbackFcn(app, @CODE_NAME2ValueChanged, true);
-            app.CODE_NAME2.FontWeight = 'bold';
-            app.CODE_NAME2.Layout.Row = 1;
-            app.CODE_NAME2.Layout.Column = 2;
-            app.CODE_NAME2.Value = 'L2';
+            % Create LiancDropDown
+            app.LiancDropDown = uidropdown(app.GridLayout6);
+            app.LiancDropDown.Items = {'L2', 'L3'};
+            app.LiancDropDown.ValueChangedFcn = createCallbackFcn(app, @LiancDropDownValueChanged, true);
+            app.LiancDropDown.FontWeight = 'bold';
+            app.LiancDropDown.Layout.Row = 1;
+            app.LiancDropDown.Layout.Column = 2;
+            app.LiancDropDown.Value = 'L2';
 
             % Show the figure after all components are created
             app.F2_MultiWireUIFigure.Visible = 'on';
