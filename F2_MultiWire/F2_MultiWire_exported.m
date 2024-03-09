@@ -1,4 +1,4 @@
-grepcclassdef F2_MultiWire_exported < matlab.apps.AppBase
+classdef F2_MultiWire_exported < matlab.apps.AppBase
 
     % Properties that correspond to app components
     properties (Access = public)
