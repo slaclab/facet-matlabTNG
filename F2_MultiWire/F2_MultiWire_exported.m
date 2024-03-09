@@ -54,7 +54,7 @@ classdef F2_MultiWire_exported < matlab.apps.AppBase
         WSAppButton               matlab.ui.control.Button
         Button                    matlab.ui.control.Button
         LinacDropDownLabel        matlab.ui.control.Label
-        LiancDropDown             matlab.ui.control.DropDown
+        LinacDropDown             matlab.ui.control.DropDown
     end
 
   
@@ -80,7 +80,7 @@ classdef F2_MultiWire_exported < matlab.apps.AppBase
     end
     
     function RemoteSet(app)
-%       app.LiancDropDownValueChanged();
+%       app.LinacDropDownValueChanged();
       app.ButtonGroupSelectionChanged();
       drawnow
     end
@@ -112,7 +112,7 @@ classdef F2_MultiWire_exported < matlab.apps.AppBase
           end
         end
       end
-      switch app.LiancDropDown.Value
+      switch app.LinacDropDown.Value
         case "L2"
           app.WS1Axes.Title.String = 'WIRE:LI11:444' ; 
           app.WS2Axes.Title.String = 'WIRE:LI11:614' ; 
@@ -187,16 +187,16 @@ classdef F2_MultiWire_exported < matlab.apps.AppBase
         app.LLM=F2_LiveModelApp;
       end
       if exist('linac','var')
-        app.LiancDropDown.Value = linac ;
+        app.LinacDropDown.Value = linac ;
         app.plane=dim;
       end
       drawnow;
-      app.LiancDropDownValueChanged;
+      app.LinacDropDownValueChanged;
         end
 
-        % Value changed function: LiancDropDown
-        function LiancDropDownValueChanged(app, event)
-      value = app.LiancDropDown.Value;
+        % Value changed function: LinacDropDown
+        function LinacDropDownValueChanged(app, event)
+      value = app.LinacDropDown.Value;
       if ~isempty(app.WS)
         delete(app.WS);
       end
@@ -251,7 +251,7 @@ classdef F2_MultiWire_exported < matlab.apps.AppBase
         function ButtonGroupSelectionChanged(app, event)
       selectedButton = app.ButtonGroup.SelectedObject;
       app.plane = lower(string(selectedButton.Text)) ;
-      app.LiancDropDownValueChanged;
+      app.LinacDropDownValueChanged;
         end
 
         % Button pushed function: ScanW2
@@ -288,7 +288,7 @@ classdef F2_MultiWire_exported < matlab.apps.AppBase
         % Button pushed function: Button
         function ButtonPushed(app, event)
             fh=figure;
-            switch app.LiancDropDown.Value
+            switch app.LinacDropDown.Value
                 case "L2"
                     ttxt={'WIRE:LI11:444' 'WIRE:LI11:614' 'WIRE:LI11:744' 'WIRE:LI12:214'} ;
                 case "L3"
@@ -312,7 +312,7 @@ classdef F2_MultiWire_exported < matlab.apps.AppBase
 
             drawnow;
             pause(1);
-            util_printLog2020(fh, 'title',sprintf('%s Multi-Wire Scan (%c)',app.LiancDropDown.Value,char(app.plane)),'author','F2_MultiWire.m','text',logmsg);
+            util_printLog2020(fh, 'title',sprintf('%s Multi-Wire Scan (%c)',app.LinacDropDown.Value,char(app.plane)),'author','F2_MultiWire.m','text',logmsg);
             drawnow;
             pause(1);
             delete(fh);
@@ -686,14 +686,14 @@ classdef F2_MultiWire_exported < matlab.apps.AppBase
             app.LinacDropDownLabel.Layout.Column = 1;
             app.LinacDropDownLabel.Text = 'Linac:';
 
-            % Create LiancDropDown
-            app.LiancDropDown = uidropdown(app.GridLayout6);
-            app.LiancDropDown.Items = {'L2', 'L3'};
-            app.LiancDropDown.ValueChangedFcn = createCallbackFcn(app, @LiancDropDownValueChanged, true);
-            app.LiancDropDown.FontWeight = 'bold';
-            app.LiancDropDown.Layout.Row = 1;
-            app.LiancDropDown.Layout.Column = 2;
-            app.LiancDropDown.Value = 'L2';
+            % Create LinacDropDown
+            app.LinacDropDown = uidropdown(app.GridLayout6);
+            app.LinacDropDown.Items = {'L2', 'L3'};
+            app.LinacDropDown.ValueChangedFcn = createCallbackFcn(app, @LinacDropDownValueChanged, true);
+            app.LinacDropDown.FontWeight = 'bold';
+            app.LinacDropDown.Layout.Row = 1;
+            app.LinacDropDown.Layout.Column = 2;
+            app.LinacDropDown.Value = 'L2';
 
             % Show the figure after all components are created
             app.F2_MultiWireUIFigure.Visible = 'on';
