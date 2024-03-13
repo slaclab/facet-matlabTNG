@@ -41,12 +41,12 @@ classdef scanFunc_waist
     function delta = set_value(obj,value)
       
       [BDES_list]=read_BDES_table(); %list of BDES values from the table
-      BDES_FF0=BDES_list(value,1); %Magnetic value for quad FF0
-      BDES_FF1=BDES_list(value,2); %Magnetic value for quad FF1
-      BDES_FF2=BDES_list(value,3); %Magnetic value for quad FF2
-      BDES_FF3=BDES_list(value,4); %Magnetic value for quad FF3
-      BDES_FF4=BDES_list(value,5); %Magnetic value for quad FF4
-      BDES_FF5=BDES_list(value,6); %Magnetic value for quad FF5
+      BDES_FF5=BDES_list(value,1); %Magnetic value for quad FF5
+      BDES_FF4=BDES_list(value,2); %Magnetic value for quad FF4
+      BDES_FF3=BDES_list(value,3); %Magnetic value for quad FF3
+      BDES_FF2=BDES_list(value,4); %Magnetic value for quad FF2
+      BDES_FF1=BDES_list(value,5); %Magnetic value for quad FF1
+      BDES_FF0=BDES_list(value,6); %Magnetic value for quad FF0
       BDES_QS0=BDES_list(value,7); %Magnetic value for spec quad 0
       BDES_QS1=BDES_list(value,8); %Magnetic value for spec quad 1
       BDES_QS2=BDES_list(value,9); %Magnetic value for spec quad 2
