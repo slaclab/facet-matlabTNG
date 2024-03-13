@@ -1,9 +1,9 @@
-% F2_ModelReceiver
-% @author: Zack Buschmann <zack@slac.stanford.edu>
-
+  % convenience routine to get beamline ind% F2_ModelReceiver
+% -------------------------------------------------------------------------------
 % interface class to provide live lucretia model data to FACET physics apps
-% this object monitors R matricies & twiss parameter PVs provided by the live model
-% and reshapes them back into lucretia-like data structures
+% this object receives model data from the live model server and
+% reshapes NTTables into more familiar/useful data structures
+% author: Zack Buschmann <zack@slac.stanford.edu>
 
 % ================================================================================
 
@@ -13,6 +13,8 @@ properties
     SimulationSource string {mustBeMember(SimulationSource, ["Lucretia"])} = "Lucretia"
     ModelType string {mustBeMember(ModelType, ["FACET2E"])} = "FACET2E"
     ModelSource string {mustBeMember(ModelSource, ["Live", "Design"])} = "Live"
+
+    LatticeFile = F2_common.LucretiaLattice;
 
     pva % py.p4p PVA context
 
@@ -65,7 +67,6 @@ methods
         obj.fetch_lattice();
     end
 
-
     function PV_TWISS = get.PV_TWISS(obj)
         PV_TWISS = sprintf(obj.PV_temp_twiss, ...
             upper(obj.SimulationSource), upper(obj.ModelType), upper(obj.ModelSource));
@@ -84,8 +85,7 @@ end
 
 
 methods(Access = public)
-    
-    % constructor
+
     function obj = F2_ModelReceiver()
         disp('Connecting to PVA server ...')
         obj.pva = py.p4p.client.thread.Context('pva');
@@ -93,9 +93,12 @@ methods(Access = public)
         obj.fetch_lattice();
     end
     
-    % provide R matrices between elem1 and elem2
-    % https://www.slac.stanford.edu/accel/ilc/codes/Lucretia/web/rmat.html#GetRmats
+    
     function [stat, R] = GetRmats(obj, elem1, elem2)
+    % provide R matrices between elem1 and elem2
+    % wrapper function with a Lucretia-like interface
+    % https://www.slac.stanford.edu/accel/ilc/codes/Lucretia/web/rmat.html#GetRmats
+
         RMATS = obj.fetch_rmats(elem1, elem2, true);
         N = size(RMATS, 3);
         R(N) = struct();
@@ -105,9 +108,11 @@ methods(Access = public)
         stat = {[1]};
     end
 
-    % calculate linear transfer map from elem1 to elem2
-    % https://www.slac.stanford.edu/accel/ilc/codes/Lucretia/web/rmat.html#GetRmats
+    
     function [stat, R] = RmatAtoB(obj, elem1, elem2)
+    % calculate linear transfer map from elem1 to elem2
+    % wrapper function with a Lucretia-like interface
+    % https://www.slac.stanford.edu/accel/ilc/codes/Lucretia/web/rmat.html#GetRmats
 
         % if elem1 == 1, can get directly from combined rmat table
         % othrwise grab rmats and compose them manually
@@ -131,24 +136,43 @@ methods(Access = public)
 
     end
 
-    % propagate twiss parameters from elem1 to elem2 given intital TwissX0, TwissY0
-    % https://www.slac.stanford.edu/accel/ilc/codes/Lucretia/web/twiss.html#GetTwiss
+    
     function [stat, T] = GetTwiss(obj, elem1, elem2, TwissX0, TwissY0)
+    % propagate twiss parameters from elem1 to elem2 given intital TwissX0, TwissY0
+    % wrapper function with a Lucretia-like interface
+    % https://www.slac.stanford.edu/accel/ilc/codes/Lucretia/web/twiss.html#GetTwiss
+
         stat = {[0]}; T = nan;
         % TO DO: implement twiss propagation either client-side with Rmats, or via ChannelRPC
     end
 
+    function [stat, T] = GetTwissFromInitial(obj, elem)
     % propagates twiss parameters from the start of the beamline to elem
     % using the current live or design initial parameters
     % wrapper for GetTwiss with elem1 = 1and TwissX0, TwissY0 are the design initial params
-    function [stat, T] = GetTwissFromInitial(obj, elem)
+
         disp(elem);
-        T = obj.fetch_twiss(1, elem);
+        TWISS = obj.fetch_twiss(1, elem);
+        T = struct;
+        T.s       = TWISS(1,:)
+        T.p0c     = TWISS(2,:)
+        T.alpha_x = TWISS(3,:)
+        T.beta_x  = TWISS(4,:)
+        T.eta_x   = TWISS(5,:)
+        T.etap_x  = TWISS(6,:)
+        T.psi_x   = TWISS(7,:)
+        T.alpha_y = TWISS(8,:)
+        T.beta_y  = TWISS(9,:)
+        T.eta_y   = TWISS(10,:)
+        T.etap_y  = TWISS(11,:)
+        T.psi_y   = TWISS(12,:)
         stat = {[1]};
     end
     
-    % convenience routine to get beamline indices
+  
     function i = GetIndex(obj, elem_name)
+    % returns the beamline index for a given element (ModelName)
+
         i = find(obj.ModelNames == elem_name);
     end
 
@@ -161,7 +185,7 @@ methods(Access = private)
     function fetch_beam_params(obj)
         disp('Updating beam parameters ...');
         obj.Q_bunch = obj.q_elec * lcaGet('BPMS:IN10:221:TMIT1H');
-        obj.f = lcaGet('EVNT:SYS1:1:BEAMRATE');
+        obj.f = lcaGet('EVNT:SYS1:1:INJECTRATE')
     end
 
     % parse NTTable and populate names & Z locations
