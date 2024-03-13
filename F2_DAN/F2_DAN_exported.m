@@ -150,16 +150,16 @@ classdef F2_DAN_exported < matlab.apps.AppBase
             app.CameraDropDown_WFS.Items = listOfCameras;
             
             scalarGroups = app.DANobject.getScalarGroups();
-            firstScalars = app.DANobject.getScalarsInGroup(scalarGroups{1});
+%             firstScalars = app.DANobject.getScalarsInGroup(scalarGroups{1});
             
             app.ScalargroupDropDown_Corr1.Items = scalarGroups;
-            app.ScalarDropDown_Corr1.Items = firstScalars;
+            app.ScalargroupDropDown_Corr1ValueChanged();
             
             app.ScalargroupDropDown_Corr2.Items = scalarGroups;
-            app.ScalarDropDown_Corr2.Items =firstScalars;
+            app.ScalargroupDropDown_Corr2ValueChanged();
             
             app.ScalargroupDropDown_WFS.Items = scalarGroups;
-            app.ScalarDropDown_WFS.Items = firstScalars;
+            app.ScalargroupDropDown_WFSValueChanged();
         end
         
         function clearAxis(app)
@@ -839,6 +839,7 @@ classdef F2_DAN_exported < matlab.apps.AppBase
             title(app.ImageAxes, 'Title')
             xlabel(app.ImageAxes, 'X')
             ylabel(app.ImageAxes, 'Y')
+            app.ImageAxes.FontSize = 14;
             app.ImageAxes.Position = [363 409 803 509];
 
             % Create WaterfallplotPanel
