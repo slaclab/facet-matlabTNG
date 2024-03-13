@@ -42,6 +42,12 @@ properties(Constant, Access = private)
     PV_temp_urmat = '%s:SYS0:1:%s:%s:URMAT' % Rmat table for single elements
 
     q_elec = 1.602e-19 % electron charge in C
+
+    twiss_names =  [ ...
+        "s", "p0c", ...
+        "alpha_x", "beta_x", "eta_x", "etap_x", "psi_x", ...
+        "alpha_y", "beta_y", "eta_y", "etap_y", "psi_y" ...
+        ];
 end
 
 % model PVs are determined by SimulationSource, ModelType & ModelSource
@@ -151,28 +157,16 @@ methods(Access = public)
     % using the current live or design initial parameters
     % wrapper for GetTwiss with elem1 = 1and TwissX0, TwissY0 are the design initial params
 
-        disp(elem);
         TWISS = obj.fetch_twiss(1, elem);
         T = struct;
-        T.s       = TWISS(1,:)
-        T.p0c     = TWISS(2,:)
-        T.alpha_x = TWISS(3,:)
-        T.beta_x  = TWISS(4,:)
-        T.eta_x   = TWISS(5,:)
-        T.etap_x  = TWISS(6,:)
-        T.psi_x   = TWISS(7,:)
-        T.alpha_y = TWISS(8,:)
-        T.beta_y  = TWISS(9,:)
-        T.eta_y   = TWISS(10,:)
-        T.etap_y  = TWISS(11,:)
-        T.psi_y   = TWISS(12,:)
+        for j = 1:12
+            T.(obj.twiss_names(j)) = TWISS(j,:);
+        end
         stat = {[1]};
     end
     
   
     function i = GetIndex(obj, elem_name)
-    % returns the beamline index for a given element (ModelName)
-
         i = find(obj.ModelNames == elem_name);
     end
 
@@ -181,15 +175,16 @@ end
 
 methods(Access = private)
 
-    % get e- beam bunch charge, momentum profile and rep rate from EPICS
     function fetch_beam_params(obj)
         disp('Updating beam parameters ...');
         obj.Q_bunch = obj.q_elec * lcaGet('BPMS:IN10:221:TMIT1H');
         obj.f = lcaGet('EVNT:SYS1:1:INJECTRATE')
     end
 
-    % parse NTTable and populate names & Z locations
+    
     function fetch_lattice(obj)
+    % parse NTTable and populate names & Z locations
+
         disp('Updating lattice ...')
         table = obj.pva.get(obj.PV_TWISS).get('value');
 
@@ -204,8 +199,10 @@ methods(Access = private)
         obj.Brho = obj.Q_bunch ./ obj.P;
     end
 
-    % parse NTTable and convert 36 1xN arrays into a 6x6xN  array
+    
     function RMATS = fetch_rmats(obj, i1, i2, uncombined)
+    % parse Rmat table and convert 36 1xN arrays of unrolled Rmats into a 6x6xN array
+
         assert((i1 <= i2), 'bad indices: must have elem1 <= elem2');
         N = i2-i1+1;
 
@@ -213,48 +210,38 @@ methods(Access = private)
         if ~uncombined, PV_str = obj.PV_RMAT; end
 
         fprintf('Requesting %s from PVA server ...\n', PV_str);
-        table = obj.pva.get(PV_str).get('value');
+        tab_r = obj.pva.get(PV_str).get('value');
 
-        % onvert the NTTable into an 6x6xN array
+        % convert the NTTable into an 6x6xN array
         % super inelegant - may be a better way to do this...
-        % table.get('r<i><j>') returns 1xN arrays for each r11, r12 etc.
+        % tr.get('r<i><j>') returns 1xN arrays for each r11, r12 etc.
         RMATS = zeros(6, 6, N);
         for j = 1:6
             for i = 1:6
-                RMATS(j,i,:) = obj.load_ndarray(table.get(sprintf('r%d%d', i, j)), i1, i2);
+                RMATS(j,i,:) = obj.load_ndarray(tab_r.get(sprintf('r%d%d', i, j)), i1, i2);
             end
         end
     end
 
-    % construct twiss data structure from arr
+    
     function TWISS = fetch_twiss(obj, i1, i2)
+    % parse twiss parameter table and shape into a 12xN array 
+
         assert((i1 <= i2), 'bad indices: must have elem1 <= elem2');
         N = i2-i1+1;
         TWISS = zeros(12, N);
 
         % some minor discrepancies in field names, returning the Lucretia convention
         fprintf('Requesting %s from PVA server ...\n', obj.PV_TWISS);
-        table = obj.pva.get(obj.PV_TWISS).get('value');
-
-        TWISS(1,:) = obj.load_ndarray(table.get('s'), i1, i2);
-        TWISS(2,:) = obj.load_ndarray(table.get('p0c'), i1, i2);
-
-        TWISS(3,:) = obj.load_ndarray(table.get('alpha_x'), i1, i2);
-        TWISS(4,:) = obj.load_ndarray(table.get('beta_x'), i1, i2);
-        TWISS(5,:) = obj.load_ndarray(table.get('eta_x'), i1, i2);
-        TWISS(6,:) = obj.load_ndarray(table.get('etap_x'), i1, i2);
-        TWISS(7,:) = obj.load_ndarray(table.get('psi_x'), i1, i2);
-
-        TWISS(8,:) = obj.load_ndarray(table.get('alpha_y'), i1, i2);
-        TWISS(9,:) = obj.load_ndarray(table.get('beta_y'), i1, i2);
-        TWISS(10,:) = obj.load_ndarray(table.get('eta_y'), i1, i2);
-        TWISS(11,:) = obj.load_ndarray(table.get('etap_y'), i1, i2);
-        TWISS(12,:) = obj.load_ndarray(table.get('psi_y'), i1, i2);
-    
+        tab_twiss = obj.pva.get(obj.PV_TWISS).get('value');
+        for j = 1:12
+            TWISS(j,:) = obj.load_ndarray(tab_twiss.get(obj.twiss_names(j)), i1, i2);
+        end
     end
 
-    % helper because direct casting doesn't work for py.memoryview
+    
     function arr = load_ndarray(obj, py_arr, i1, i2)
+    % helper because direct casting doesn't work for py.memoryview
         arr = cell2mat(py_arr.data.cell);
         arr = arr(i1:i2);
     end
