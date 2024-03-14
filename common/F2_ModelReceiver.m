@@ -122,23 +122,30 @@ methods(Access = public)
         R = obj.compose_rmats(i1, i2);
     end
 
-    function [Tx, Ty] = getTwiss(obj, elem1, elem2)
+    function T = getTwiss(obj, elem1, elem2)
     % get the live/design twiss parameters from elem1 to elem2
+        i1 = getIndex(elem1); i2 = getIndex(elem2);
+        TWISS = obj.fetch_twiss(i1, i2);
+        T = struct;
+        for j = 3:12
+            T.(obj.twiss_names(j)) = TWISS(j,:);
+        end
+        stat = {[1]};
     end
 
-    function [Tx, Ty] = propagateTwiss(obj, elem1, elem2, Tx0, Ty0)
-    % propagate Twiss parameters Tx0, Ty0 from elem1 to elem2
+    function T = propagateTwiss(obj, elem1, elem2, T0)
+    % propagate Twiss parameters T0 from elem1 to elem2
+        error('Not yet implemented.');
     end
 
     function idx = getIndex(obj, elem)
     % get the beamline index for 'elem'
-
         idx = double.empty;
 
         % if elem if already an in-bound index, just return that!
         if isa(elem, 'numeric') && (obj.istart <= elem) && (elem <= obj.iend)
             idx = elem;
-        
+
         % otherwise, check if it exists in ModelNames or ControlNames
         else
             idx = find(obj.ModelNames == elem);
