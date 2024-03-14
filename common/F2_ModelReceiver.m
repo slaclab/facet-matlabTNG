@@ -1,4 +1,4 @@
-  % convenience routine to get beamline ind% F2_ModelReceiver
+% F2_ModelReceiver
 % -------------------------------------------------------------------------------
 % interface class to provide live lucretia model data to FACET physics apps
 % this object receives model data from the live model server and
@@ -181,7 +181,6 @@ methods(Access = private)
         obj.f = lcaGet('EVNT:SYS1:1:INJECTRATE')
     end
 
-    
     function fetch_lattice(obj)
     % parse NTTable and populate names & Z locations
 
@@ -223,7 +222,26 @@ methods(Access = private)
         end
     end
 
-    
+    function RMAT = compose_rmats(obj, i1, i2)
+    % compose the linear transfer maps of elements between i1 and i2
+
+        assert((i1 <= i2), 'bad indices: must have elem1 <= elem2');
+        uncombined = true;
+        if i1 == 1
+            uncombined = false;
+            i1 = i2;
+        end
+        RMATS = obj.fetch_rmats(i1, i2, uncombined);
+
+        % multiplies rmats if N > 1, if N == 1, nothing happens
+        RMATS = flip(RMATS, 3);
+        N = size(RMATS, 3);
+        RMAT = RMATS(:,:,1);
+        for i = 2:N
+            RMAT = RMATS(:,:,i) * RMAT;
+        end
+    end
+
     function TWISS = fetch_twiss(obj, i1, i2)
     % parse twiss parameter table and shape into a 12xN array 
 
@@ -231,7 +249,6 @@ methods(Access = private)
         N = i2-i1+1;
         TWISS = zeros(12, N);
 
-        % some minor discrepancies in field names, returning the Lucretia convention
         fprintf('Requesting %s from PVA server ...\n', obj.PV_TWISS);
         tab_twiss = obj.pva.get(obj.PV_TWISS).get('value');
         for j = 1:12
@@ -239,7 +256,6 @@ methods(Access = private)
         end
     end
 
-    
     function arr = load_ndarray(obj, py_arr, i1, i2)
     % helper because direct casting doesn't work for py.memoryview
         arr = cell2mat(py_arr.data.cell);
@@ -247,6 +263,5 @@ methods(Access = private)
     end
 
 end
-
 
 end
