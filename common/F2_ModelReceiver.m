@@ -98,14 +98,65 @@ methods(Access = public)
         obj.fetch_beam_params();
         obj.fetch_lattice();
     end
+
+
+    % primary interface
+    % ============================================================
+
+    function R = getRmats(obj, elem1, elem2)
+    % get single-element R matrices between elem1 and elem2
+        i1 = getIndex(elem1); i2 = getIndex(elem2);
+        R = obj.fetch_rmats(i1, i2, true)
+    end
+
+    function R = getCombinedRmats(obj, elem1, elem2)
+    % get successive composite transfer maps from elem1 to elem2
+    % i.e. the map at elemN is the R matrix from elem1 to elemN
+        i1 = getIndex(elem1); i2 = getIndex(elem2);
+        R = obj.fetch_rmats(i1, i2, false)
+    end
+
+    function R = transferMap(obj, elem1, elem2)
+    % return the composite R matrix between elem1 to elem2
+        i1 = getIndex(elem1); i2 = getIndex(elem2);
+        R = obj.compose_rmats(i1, i2);
+    end
+
+    function [Tx, Ty] = getTwiss(obj, elem1, elem2)
+    % get the live/design twiss parameters from elem1 to elem2
+    end
+
+    function [Tx, Ty] = propagateTwiss(obj, elem1, elem2, Tx0, Ty0)
+    % propagate Twiss parameters Tx0, Ty0 from elem1 to elem2
+    end
+
+    function idx = getIndex(obj, elem)
+    % get the beamline index for 'elem'
+
+        idx = double.empty;
+
+        % if elem if already an in-bound index, just return that!
+        if isa(elem, 'numeric') && (obj.istart <= elem) && (elem <= obj.iend)
+            idx = elem;
+        
+        % otherwise, check if it exists in ModelNames or ControlNames
+        else
+            idx = find(obj.ModelNames == elem);
+            if isempty(idx), idx = find(obj.ControlNames == elem); end;
+        end
+    end
     
-    
-    function [stat, R] = GetRmats(obj, elem1, elem2)
-    % provide R matrices between elem1 and elem2
-    % wrapper function with a Lucretia-like interface
+
+    % Lucretia-like interface
+    % ============================================================
+
+    function [stat, R] = GetRmats(obj, i1, i2)
+    % provide R matrices between elements i1 and i2
+    % NOTE: this is a wrapper function with a Lucretia-like interface
+    %       using transferMap(i1, i2) is recommended
     % https://www.slac.stanford.edu/accel/ilc/codes/Lucretia/web/rmat.html#GetRmats
 
-        RMATS = obj.fetch_rmats(elem1, elem2, true);
+        RMATS = obj.fetch_rmats(i1, i2, true);
         N = size(RMATS, 3);
         R(N) = struct();
         for i_R = 1:N
@@ -114,60 +165,40 @@ methods(Access = public)
         stat = {[1]};
     end
 
-    
-    function [stat, R] = RmatAtoB(obj, elem1, elem2)
-    % calculate linear transfer map from elem1 to elem2
-    % wrapper function with a Lucretia-like interface
+    function [stat, R] = RmatAtoB(obj, i1, i2)
+    % calculate linear transfer map from elements i1 to i2
+    % NOTE: this is a wrapper function with a Lucretia-like interface
+    %       using transferMap(i1, i2) is recommended
     % https://www.slac.stanford.edu/accel/ilc/codes/Lucretia/web/rmat.html#GetRmats
 
-        % if elem1 == 1, can get directly from combined rmat table
-        % othrwise grab rmats and compose them manually
-        uncombined = true;
-        if elem1 == 1
-            uncombined = false;
-            elem1 = elem2;
-        end
-        RMATS = obj.fetch_rmats(elem1, elem2, uncombined);
-
-        % compose transfer maps if N > 1
-        RMATS = flip(RMATS, 3);
-        N = size(RMATS, 3);
         R = struct();
-        R.RMAT = RMATS(:,:,1);
-        for i = 2:N
-            R.RMAT = RMATS(:,:,i) * R.RMAT;
-        end
-        R.RMAT = R.RMAT;
+        R.RMAT = obj.compose_rmats(i1, i2);
         stat = {[1]};
-
     end
 
-    
-    function [stat, T] = GetTwiss(obj, elem1, elem2, TwissX0, TwissY0)
-    % propagate twiss parameters from elem1 to elem2 given intital TwissX0, TwissY0
-    % wrapper function with a Lucretia-like interface
+    function [stat, T] = GetTwiss(obj, i1, i2, TwissX0, TwissY0)
+    % propagate twiss parameters from elements i1 to i2 given intital TwissX0, TwissY0
+    % NOTE: this is a wrapper function with a Lucretia-like interface
+    %       using propagateTwiss(i1, i2, Tx, Ty) is recommended
     % https://www.slac.stanford.edu/accel/ilc/codes/Lucretia/web/twiss.html#GetTwiss
 
         stat = {[0]}; T = nan;
         % TO DO: implement twiss propagation either client-side with Rmats, or via ChannelRPC
     end
 
-    function [stat, T] = GetTwissFromInitial(obj, elem)
-    % propagates twiss parameters from the start of the beamline to elem
+    function [stat, T] = GetTwissFromInitial(obj, i)
+    % propagates twiss parameters from the start of the beamline to element i
     % using the current live or design initial parameters
-    % wrapper for GetTwiss with elem1 = 1and TwissX0, TwissY0 are the design initial params
+    % NOTE: this is a wrapper function with a Lucretia-like interface
+    %       using getTwiss(i1, i2) is recommended
+    % wrapper for GetTwiss with i1 = 1and TwissX0, TwissY0 are the design initial params
 
-        TWISS = obj.fetch_twiss(1, elem);
+        TWISS = obj.fetch_twiss(1, i);
         T = struct;
         for j = 1:12
             T.(obj.twiss_names(j)) = TWISS(j,:);
         end
         stat = {[1]};
-    end
-    
-  
-    function i = GetIndex(obj, elem_name)
-        i = find(obj.ModelNames == elem_name);
     end
 
 end
@@ -198,7 +229,10 @@ methods(Access = private)
         obj.Brho = obj.Q_bunch ./ obj.P;
     end
 
-    
+
+    % Internal processing of NTTable -> matlab arrays
+    % ============================================================
+
     function RMATS = fetch_rmats(obj, i1, i2, uncombined)
     % parse Rmat table and convert 36 1xN arrays of unrolled Rmats into a 6x6xN array
 
