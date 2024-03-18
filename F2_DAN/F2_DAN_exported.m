@@ -3,6 +3,7 @@ classdef F2_DAN_exported < matlab.apps.AppBase
     % Properties that correspond to app components
     properties (Access = public)
         UIFigure                        matlab.ui.Figure
+        ImageAxes                       matlab.ui.control.UIAxes
         dataSet                         matlab.ui.container.Panel
         ExperimentLabel                 matlab.ui.control.Label
         expDropDown                     matlab.ui.control.DropDown
@@ -55,7 +56,6 @@ classdef F2_DAN_exported < matlab.apps.AppBase
         Switch_Corr2FS                  matlab.ui.control.Switch
         CorrelationCheckBox             matlab.ui.control.CheckBox
         PlotcorrelationButton           matlab.ui.control.Button
-        ImageAxes                       matlab.ui.control.UIAxes
         WaterfallplotPanel              matlab.ui.container.Panel
         CameraDropDown_3Label           matlab.ui.control.Label
         CameraDropDown_WF               matlab.ui.control.DropDown
@@ -401,8 +401,21 @@ classdef F2_DAN_exported < matlab.apps.AppBase
             fh = figure(101);
             newAx = axes;
             
+            % Dunno what this does.
             yyaxis(app.ImageAxes,'right');
             ylabel(newAx, '', 'Interpreter', 'none');
+
+            % Save these 4 parameters because copying to the new axes
+            % deletes them from the current axes. For some reason.
+            yyaxis(app.ImageAxes,'left');
+            titleS = app.ImageAxes.Title.String;
+            xlabS = app.ImageAxes.XLabel.String;
+            ylabS = app.ImageAxes.YLabel.String;
+            yyaxis(app.ImageAxes,'right');
+            ylab2S = app.ImageAxes.YLabel.String;
+            yyaxis(app.ImageAxes,'left');
+
+            % Copy the properties of the left y-axis and x-axis
             yyaxis(app.ImageAxes,'left');
             
             copyobj(app.ImageAxes.Children, newAx);
@@ -416,44 +429,42 @@ classdef F2_DAN_exported < matlab.apps.AppBase
                 'InnerPosition'];
             
             uiAxGoodParams = rmfield(uiAxParams, badFields);
-            listOfProps = fieldnames(uiAxGoodParams);
-%             for k = 1:numel(listOfProps)
-% %                 disp(listOfProps{k})
-%                 newAx.(listOfProps{k}) = uiAxGoodParams.(listOfProps{k});
-%             end
-            
-            titleS = app.ImageAxes.Title.String;
-            xlabS = app.ImageAxes.XLabel.String;
-            ylabS = app.ImageAxes.YLabel.String;
-            yyaxis(app.ImageAxes,'right');
-            ylab2S = app.ImageAxes.YLabel.String;
-            yyaxis(app.ImageAxes,'left');
-
             set(newAx, uiAxGoodParams);
-            %coptiyobj(uiAxGoodParams,newAx);
 
+ 
+            % Copy the properties of the right y-axis and x-axis
+            yyaxis(app.ImageAxes, 'right');
+            yyaxis(newAx, 'right')
+
+            copyobj(app.ImageAxes.Children, newAx);
+            uiAxParams = get(app.ImageAxes);
+            uiAxParamsNames = fieldnames(uiAxParams);
+            editableParams = fieldnames(set(newAx));
+
+            badFields = uiAxParamsNames(~ismember(uiAxParamsNames, editableParams));
+            badFields = [badFields; 'Parent'; 'Children'; 'XAxis'; ...
+                'YAxis'; 'ZAxis'; 'Position'; 'OuterPosition'; ...
+                'InnerPosition'; 'YAxisLocation'; 'Title'; 'XLabel'; 'ZLabel'];
+
+            uiAxGoodParams = rmfield(uiAxParams, badFields);
+            disp(uiAxGoodParams)
+            set(newAx, uiAxGoodParams);
             
+%             Print the figure to the logbook
             print(fh, '-dpsc2', ['-P','physics-facetlog']);
-%             opts.title = 'DAN picture';
-%             opts.author = 'Matlab';
-%             opts.text = '';
-%             util_printLog(fh,opts);
+            pause(1.5)
             close(fh)
+
+
+            % Copy the labels back to the DAN figure in the GUI
+            % I dunno why copying gets rid of them on the original figure.
+            yyaxis(app.ImageAxes, 'left');
             title(app.ImageAxes, titleS, 'Interpreter', 'none');
             xlabel(app.ImageAxes, xlabS, 'Interpreter', 'none');
             ylabel(app.ImageAxes, ylabS, 'Interpreter', 'none');
             yyaxis(app.ImageAxes,'right');
             ylabel(app.ImageAxes, ylab2S, 'Interpreter', 'none');
-            yyaxis(app.ImageAxes,'left');
-            
-            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-            
-            info_str = sprintf('%s %s', xlabS, ylabS);
-            
-            set(gcf,'Position',[10 10 10 10]);
-            util_printLog2020(fh,'title',titleS,...
-            'author','DAN','text',info_str);
-            clf(99), close(99);
+
             
         end
 
@@ -525,6 +536,12 @@ classdef F2_DAN_exported < matlab.apps.AppBase
             disp('Remember to uncomment the exit command')
             exit;
         end
+
+        % Value changed function: PlotsortvaluesCheckBox
+        function PlotsortvaluesCheckBoxValueChanged(app, event)
+            value = app.PlotsortvaluesCheckBox.Value;
+            
+        end
     end
 
     % Component initialization
@@ -538,6 +555,13 @@ classdef F2_DAN_exported < matlab.apps.AppBase
             app.UIFigure.Position = [100 100 1197 937];
             app.UIFigure.Name = 'MATLAB App';
             app.UIFigure.CloseRequestFcn = createCallbackFcn(app, @UIFigureCloseRequest, true);
+
+            % Create ImageAxes
+            app.ImageAxes = uiaxes(app.UIFigure);
+            title(app.ImageAxes, 'Title')
+            xlabel(app.ImageAxes, 'X')
+            ylabel(app.ImageAxes, 'Y')
+            app.ImageAxes.Position = [363 409 803 509];
 
             % Create dataSet
             app.dataSet = uipanel(app.UIFigure);
@@ -834,14 +858,6 @@ classdef F2_DAN_exported < matlab.apps.AppBase
             app.PlotcorrelationButton.Position = [85 26 123 59];
             app.PlotcorrelationButton.Text = 'Plot correlation';
 
-            % Create ImageAxes
-            app.ImageAxes = uiaxes(app.UIFigure);
-            title(app.ImageAxes, 'Title')
-            xlabel(app.ImageAxes, 'X')
-            ylabel(app.ImageAxes, 'Y')
-            app.ImageAxes.FontSize = 14;
-            app.ImageAxes.Position = [363 409 803 509];
-
             % Create WaterfallplotPanel
             app.WaterfallplotPanel = uipanel(app.UIFigure);
             app.WaterfallplotPanel.Title = 'Waterfall plot';
@@ -937,6 +953,7 @@ classdef F2_DAN_exported < matlab.apps.AppBase
 
             % Create PlotsortvaluesCheckBox
             app.PlotsortvaluesCheckBox = uicheckbox(app.SortwaterfallplotPanel);
+            app.PlotsortvaluesCheckBox.ValueChangedFcn = createCallbackFcn(app, @PlotsortvaluesCheckBoxValueChanged, true);
             app.PlotsortvaluesCheckBox.Text = 'Plot sort values';
             app.PlotsortvaluesCheckBox.Position = [5 117 105 22];
 
