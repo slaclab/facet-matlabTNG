@@ -452,7 +452,6 @@ classdef F2_DAN_exported < matlab.apps.AppBase
             
 %             Print the figure to the logbook
             print(fh, '-dpsc2', ['-P','physics-facetlog']);
-            pause(1.5)
             close(fh)
 
 
