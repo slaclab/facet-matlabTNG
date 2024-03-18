@@ -447,7 +447,6 @@ classdef F2_DAN_exported < matlab.apps.AppBase
                 'InnerPosition'; 'YAxisLocation'; 'Title'; 'XLabel'; 'ZLabel'];
 
             uiAxGoodParams = rmfield(uiAxParams, badFields);
-            disp(uiAxGoodParams)
             set(newAx, uiAxGoodParams);
             
 %             Print the figure to the logbook
