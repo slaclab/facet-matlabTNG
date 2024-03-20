@@ -28,7 +28,7 @@ classdef scanFunc_GASJET_ON_OFF
             obj.pvlist=[...
                 PV(context,'name',"control",'pvname',obj.control_PV,'mode',"rw",'monitor',true); % Control PV
                 PV(context,'name',"readback",'pvname',obj.readback_PV,'mode',"r",'monitor',true); % Readback PV
-                PV(context,'name',"set",'pvname',set_PV,'mode',"r",'monitor',true); % Set PV
+                PV(context,'name',"set",'pvname',obj.set_PV,'mode',"r",'monitor',true); % Set PV
                 ];
             pset(obj.pvlist,'debug',0);
             obj.pvs = struct(obj.pvlist);
