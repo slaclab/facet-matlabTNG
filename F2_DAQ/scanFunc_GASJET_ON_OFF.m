@@ -48,10 +48,12 @@ classdef scanFunc_GASJET_ON_OFF
             caput(obj.pvs.control,value);
             obj.daqhandle.dispMessage(sprintf('Setting %s to %0.2f', obj.pvs.control.name, value));
             
-            if value == 1
+            % If the input value is odd, the gas jet should be turned on.
+            if mod(round(value),2) == 1
                 caput(obj.pvs.set, "Enabled");
                 disp("Gas Jet Enabled")
-            elseif value == 0
+            % If the input value is even, the gas jet should be turned off.
+            elseif mod(round(value),2) == 0
                 caput(obj.pvs.set, "Disabled");
                 disp("Gas Jet Disabled")
             end
