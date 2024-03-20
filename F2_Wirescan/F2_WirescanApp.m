@@ -625,7 +625,7 @@ classdef F2_WirescanApp < handle
         % disp(obj.wiresel);
         % disp(strcmp(obj.wiresel, 'LI20:3179'));
         if strcmp(obj.wirename, 'WIRE:LI20:3179') | strcmp(obj.wirename, 'WIRE:LI20:3206')
-          obj.guihan.WirediameterEditField.Value = 40;
+          obj.guihan.WirediameterEditField.Value = 45;
         end
         obj.guihan.WIREDropDown.Value = obj.wires(obj.wiresel) ;
         obj.guihan.PMTDropDown.Value = obj.pmts(obj.pmtsel) ;
@@ -921,7 +921,7 @@ classdef F2_WirescanApp < handle
       obj.wiresel=wsel;
       obj.WireDiam = 20;
       if strcmp(obj.wirename, 'WIRE:LI20:3179') | strcmp(obj.wirename, 'WIRE:LI20:3206')
-        obj.WireDiam = 40;
+        obj.WireDiam = 45;
       end
     end
     function set.jittercor(obj,sel)
