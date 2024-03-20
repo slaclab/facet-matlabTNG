@@ -210,7 +210,7 @@ if __name__ == "__main__":
                     _, urmat_table = model.get_model_tables(uncombined=True);
                     live_twiss_pv.post(twiss_table)
                     live_rmat_pv.post(rmat_table)
-                    live_urmat_pv.post(urmat_table)
+                    live_u_rmat_pv.post(urmat_table)
         except KeyboardInterrupt:
             pass
         finally:
