@@ -20,7 +20,7 @@ classdef F2_WirescanApp < handle
     blenvals(1,2) = [-inf,inf] % Window values for bunch length measurements
     blenwin logical = false % Window cut on blen measurements?
     chargenorm logical = false % Do charge normalization using PMT?
-    WireDiam = 60 % um
+    WireDiam = 20 % um
     scanTimestamp = ""% timestamp of scan completion
   end
   properties(SetAccess=private)
@@ -621,6 +621,12 @@ classdef F2_WirescanApp < handle
     end
     function guiupdate(obj)
       if ~isempty(obj.guihan)
+        obj.guihan.WirediameterEditField.Value = 20;
+        % disp(obj.wiresel);
+        % disp(strcmp(obj.wiresel, 'LI20:3179'));
+        if strcmp(obj.wirename, 'WIRE:LI20:3179') | strcmp(obj.wirename, 'WIRE:LI20:3206')
+          obj.guihan.WirediameterEditField.Value = 40;
+        end
         obj.guihan.WIREDropDown.Value = obj.wires(obj.wiresel) ;
         obj.guihan.PMTDropDown.Value = obj.pmts(obj.pmtsel) ;
         obj.guihan.JitterCorrectionCheckBox.Value = obj.jittercor ;
@@ -913,6 +919,10 @@ classdef F2_WirescanApp < handle
         error('Wire name not found');
       end
       obj.wiresel=wsel;
+      obj.WireDiam = 20;
+      if strcmp(obj.wirename, 'WIRE:LI20:3179') | strcmp(obj.wirename, 'WIRE:LI20:3206')
+        obj.WireDiam = 40;
+      end
     end
     function set.jittercor(obj,sel)
       % if sel && ~obj.usejit(obj.wiresel)
