@@ -36,7 +36,7 @@ class ModelRunner:
     """ModelRunner launches a matlab_instance and starts at Lucretia live model. The live model then tracks the machine as long as the matlab instance is still running."""
 
     def __init__(self):
-    #Start matlab engine and F2_Live
+        # Start matlab engine and F2_Live
         os.chdir('/usr/local/facet/tools/matlabTNG/')
         logging.debug("Starting matlab...")
         self.eng = matlab.engine.start_matlab()
@@ -44,14 +44,14 @@ class ModelRunner:
         self.eng.eval('f2_live=F2_LiveModelApp; global BEAMLINE;',nargout=0)
         logging.debug("F2_live now running")
         self.beamline=self.eng.workspace['BEAMLINE'];
-    #Synchronous running parameters
+        # Synchronous running parameters
         self.model_lock = threading.Lock()
         self.last_update_failed = True
 
     def update_forever(self):
         while True:
             with self.model_lock:
-                #self.update_model() # not needed, L2_LiveModelApp is doing this under the hood for us
+                # self.update_model() # not needed, L2_LiveModelApp is doing this under the hood for us
                 time.sleep(1.0)
 
     @lru_cache()
@@ -83,32 +83,28 @@ class ModelRunner:
         """
         with self.model_lock:
             start_time = time.time()
-        # First we get a list of all the elements and z positions
+            # First we get a list of all the elements and z positions
             element_name_list = self.get_ele_name_list()
             z_vals = self.get_z_vals()
-        # Get list of all twiss parameters once
+            # Get list of all twiss parameters once
             self.eng.eval('Initial=f2_live.Initial; [~,twiss] = GetTwiss(1,{:d},Initial.x.Twiss,Initial.y.Twiss);'.format(len(z_vals)),nargout=0)
             twiss=self.eng.workspace['twiss']
-        # Now loop over elements (process only if a new Name)
-            recorded_elements=[];
+            # Now loop over elements
             rmat_table_rows=[];
             twiss_table_rows=[];
             for ii,ele in enumerate(self.beamline):
-                if ele['Name'] in recorded_elements:
-                    continue
-                recorded_elements.append(ele['Name'])
             
-            # Get device name if possible    
+                # Get device name if possible    
                 try:
                     device_name=self.eng.model_nameConvert(ele['Name'],'device');
                 except:
                     device_name = ""
-            # Length in model   
+                # Length in model   
                 if  'L' in ele.keys():
                     length=ele['L']
                 else:
                     length=0
-            #matrix
+                # matrix
                 if uncombined:
                     self.eng.eval('[~,rmat]=RmatAtoB({:d},{:d});'.format(ii+1,ii+1),nargout=0)
                 else:
@@ -211,8 +207,10 @@ if __name__ == "__main__":
                 time.sleep(2.0)
                 if not model_service_args.design_only:
                     twiss_table, rmat_table = model.get_model_tables()
+                    _, urmat_table = model.get_model_tables(uncombined=True);
                     live_twiss_pv.post(twiss_table)
                     live_rmat_pv.post(rmat_table)
+                    live_u_rmat_pv.post(urmat_table)
         except KeyboardInterrupt:
             pass
         finally:

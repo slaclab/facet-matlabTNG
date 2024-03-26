@@ -93,6 +93,9 @@ S20_nonBSA_List = {...
 'SIOC:SYS1:ML00:AO012'; %Calculated L2 Chirp
 'SIOC:SYS1:ML00:AO013'; %Calculated L2 Phase
 
+% Gas jet PVs
+'SIOC:SYS1:ML01:AO035'; % 1 is gas jet on, 0 is gas jet off.
+
 % E332PV
 'SIOC:SYS1:ML03:AO651'; %E332 Cal Point1 HoleNo
 'SIOC:SYS1:ML03:AO652'; %E332 Cal Point1 Lat
