@@ -169,14 +169,12 @@ classdef F2_DAQApp < handle
             
             % Scalar data lists
             obj.DAQ_params.BSA_list = obj.guihan.ListBoxBSA.Items;
-            obj.DAQ_params.nonBSA_list = obj.guihan.ListBoxNonBSA.Items;
+            
+            isarray = contains(obj.guihan.ListBoxNonBSA.Items,"array");
+            obj.DAQ_params.nonBSA_list = obj.guihan.ListBoxNonBSA.Items(~isarray);
             
             % Array lists
-            if obj.guihan.nonBSAArraysCheckBox.Value
-                obj.loadnonBSA_ArrayLists();
-            else
-                obj.DAQ_params.include_nonBSA_arrays = false;
-            end     
+            obj.DAQ_params.nonBSA_Array_list = obj.guihan.ListBoxNonBSA.Items(isarray);
             
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             %%% Setup the scan parameters %%%
@@ -366,7 +364,6 @@ classdef F2_DAQApp < handle
                 split = strsplit(file_lists(i).name,'.');
                 name_lists{end+1} = split{1};
             end
-            obj.DAQ_params.nonBSA_Array_list = name_lists;
             obj.DAQ_params.include_nonBSA_arrays = true;
             
             obj.guihan.nonBSADataListBox.Items = [obj.guihan.nonBSADataListBox.Items name_lists];

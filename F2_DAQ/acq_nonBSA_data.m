@@ -4,8 +4,11 @@ classdef acq_nonBSA_data < handle
         
         base_list
         nonBSA_list
+        nonBSA_Array_list
         data
+        arrayData
         nPV
+        nArrayPV
         nBase
         interpData
         daq_handle
@@ -33,6 +36,7 @@ classdef acq_nonBSA_data < handle
             % Copy base list into nonBSA_list
             % More PVs will be added using addList
             obj.nonBSA_list = obj.base_list;
+            obj.nonBSA_Array_list = obj.base_list;
             obj.nPV = obj.nBase;
             
             obj.initGet();
@@ -64,7 +68,17 @@ classdef acq_nonBSA_data < handle
             
             list = obj.checkList(list);
             obj.nonBSA_list = [obj.nonBSA_list; list];
+            obj.data = lcaGetSmart(obj.nonBSA_list,0,'DBF_ENUM');
             obj.nPV = numel(obj.nonBSA_list);
+            
+        end
+        
+        function list = addListArray(obj,list)
+            
+            list = obj.checkList(list);
+            obj.nonBSA_Array_list = [obj.nonBSA_Array_list; list];
+            obj.arrayData{end+1} = lcaGetSmart(list,0,'DBF_ENUM');
+            obj.nArrayPV = numel(obj.nonBSA_Array_list);
             
         end
         
@@ -97,6 +111,8 @@ classdef acq_nonBSA_data < handle
 %             
 %             init_data(rm_ind) = [];
             obj.data = lcaGetSmart(obj.nonBSA_list,0,'DBF_ENUM');
+            obj.arrayData = lcaGetSmart(obj.nonBSA_Array_list,0,'DBF_ENUM');
+            obj.arrayData = num2cell(obj.arrayData);
             
         end
         
@@ -115,6 +131,26 @@ classdef acq_nonBSA_data < handle
                 new_data = nan(size(obj.nonBSA_list));
             end
             obj.data = [obj.data new_data];
+                
+        end
+        
+        function obj = addArrayData(obj)
+            
+            try
+                % lcaGet returns a matrix that expands to the size of the
+                % largest array PV and fills in the scalar PV rows to be
+                % Nan
+                new_data = lcaGet(obj.nonBSA_Array_list,0,'DBF_ENUM');
+            catch
+                new_data = nan(size(obj.nonBSA_Array_list));
+            end
+            base_list_data = new_data(1:3,1);
+            base_list_data = num2cell(base_list_data);
+            array_pv_data = cell((size(new_data,1)-3),1);
+            for i = 4:size(new_data,1)
+                array_pv_data{i-3} = new_data(i,:);
+            end
+            obj.arrayData = [obj.arrayData [base_list_data;array_pv_data]];
                 
         end
         
@@ -141,6 +177,37 @@ classdef acq_nonBSA_data < handle
                 non_BSA_times = obj.data(2,:) + obj.data(3,:)/1e9;
                 for i = 1:obj.nPV
                     vals = interp1(non_BSA_times,obj.data(i,:),time,'nearest','extrap');
+                    obj.interpData.(pv_names{i}) = vals;
+                end
+            end
+        end
+        
+        function interpolateArrays(obj,time)
+            
+            if ~strcmp(obj.nonBSA_Array_list{2},"PATT:SYS1:1:SEC") || ~strcmp(obj.nonBSA_Array_list{3},"PATT:SYS1:1:NSEC")
+                if ~obj.freerun
+                    obj.daq_handle.dispMessage('Warning: Cannot get interpolate non-BSA Array data.');
+                else
+                    warning('Cannot get interpolate non-BSA Array data.');
+                end
+                return;
+                
+            end
+            
+            pv_names = remove_dots(obj.nonBSA_Array_list);
+            
+            if size(obj.arrayData,2) == 1
+                for i = 1:obj.nArrayPV
+                    vals = obj.arrayData{i}*ones(size(time));
+                    obj.interpData.(pv_names{i}) = vals;
+                end
+            else
+                non_BSA_times = [obj.arrayData{2,:}] + [obj.arrayData{3,:}]/1e9;
+                for i = 4:obj.nArrayPV
+                    PVdata = obj.arrayData(i,:)';
+                    PVdata = cell2mat(PVdata);
+                    vals = interp1(non_BSA_times,PVdata,time,'nearest','extrap');
+                    vals = num2cell(vals,2);
                     obj.interpData.(pv_names{i}) = vals;
                 end
             end
