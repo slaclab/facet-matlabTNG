@@ -305,7 +305,7 @@ classdef F2_Wirescan_exported < matlab.apps.AppBase
         function EditField_3ValueChanged(app, event)
       val1 = app.EditField_3.Value;
       val2 = app.EditField_4.Value;
-      app.aobj.blenwin=[val1 val2];
+      app.aobj.blenvals=[val1 val2];
       app.aobj.guiupdate;
         end
 
@@ -313,7 +313,7 @@ classdef F2_Wirescan_exported < matlab.apps.AppBase
         function EditField_4ValueChanged(app, event)
       val1 = app.EditField_3.Value;
       val2 = app.EditField_4.Value;
-      app.aobj.blenwin=[val1 val2];
+      app.aobj.blenvals=[val1 val2];
       app.aobj.guiupdate;
         end
 
@@ -700,6 +700,7 @@ classdef F2_Wirescan_exported < matlab.apps.AppBase
             app.BLENDropDown = uidropdown(app.GridLayout8);
             app.BLENDropDown.Items = {'---'};
             app.BLENDropDown.ValueChangedFcn = createCallbackFcn(app, @BLENDropDownValueChanged, true);
+            app.BLENDropDown.Enable = 'off';
             app.BLENDropDown.Layout.Row = 2;
             app.BLENDropDown.Layout.Column = [2 4];
             app.BLENDropDown.Value = '---';
@@ -714,6 +715,7 @@ classdef F2_Wirescan_exported < matlab.apps.AppBase
             % Create EditField_3
             app.EditField_3 = uieditfield(app.GridLayout8, 'numeric');
             app.EditField_3.ValueChangedFcn = createCallbackFcn(app, @EditField_3ValueChanged, true);
+            app.EditField_3.Enable = 'off';
             app.EditField_3.Layout.Row = 3;
             app.EditField_3.Layout.Column = 2;
 
@@ -726,6 +728,7 @@ classdef F2_Wirescan_exported < matlab.apps.AppBase
             % Create EditField_4
             app.EditField_4 = uieditfield(app.GridLayout8, 'numeric');
             app.EditField_4.ValueChangedFcn = createCallbackFcn(app, @EditField_4ValueChanged, true);
+            app.EditField_4.Enable = 'off';
             app.EditField_4.Layout.Row = 3;
             app.EditField_4.Layout.Column = 4;
 

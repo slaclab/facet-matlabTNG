@@ -379,7 +379,7 @@ classdef F2_WirescanApp < handle
     function ProcData(obj,ahan,NoUpdateCall)
       %PROCDATA
       %ProcData([AxesHandle])
-      
+
       if ~obj.scansuccess
         return
       end
@@ -558,8 +558,7 @@ classdef F2_WirescanApp < handle
       % Call upstream app to let it know data is updated
       if ~isempty(obj.UpdateObj) && isempty(NoUpdateCall)
         obj.UpdateObj.(obj.UpdateMethod(1))(obj.UpdatePar{1});
-      end
-      
+      end      
     end
 
     function confload(obj,fname)
@@ -657,6 +656,7 @@ classdef F2_WirescanApp < handle
         end
         obj.guihan.ChargeNormalizationCheckBox.Value = obj.chargenorm ;
         obj.guihan.TORODropDown.Value = obj.tors(obj.torsel) ;
+        if ndims(obj.blenwin) > 1, obj.blenwin = false; end
         obj.guihan.BunchLengthWindowingCheckBox.Value = obj.blenwin ;
         obj.guihan.EditField_3.Value = obj.blenvals(1) ;
         obj.guihan.EditField_4.Value = obj.blenvals(2) ;
