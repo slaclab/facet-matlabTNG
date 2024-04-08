@@ -7,7 +7,7 @@ classdef F2_phasescan < handle
         
         % EPICS record names for each spectrometer BPM
         bpms = [ ...
-            "BPMS:IN10:731", "BPMS:LI11:333" "BPMS:LI14:801" "BPMS:LI20:2050" ...
+            "BPMS:IN10:731", "BPMS:LI11:333" "BPMS:LI14:801" "BPMS:LI20:2445" ...
             ];
         
         % bend magnet BACT values for design energy milestones
@@ -17,7 +17,9 @@ classdef F2_phasescan < handle
         
         % hardcoded dispersion at each BPM
         % TO DO: grab this from the model server, once such a thing exists
-        etas = 1000 * [-0.10 -0.2511 -0.4374 0.1207];
+        etas = 1000 * [-0.2628 -0.2511 -0.4374 0.1207];
+
+        EPICS_t0 = datenum('Jan 1 1990 00:00:00');
         
     end
     
@@ -26,6 +28,21 @@ classdef F2_phasescan < handle
         sector = 10;       % sector number (10-19)
         klys = 3;          % klystron number (1-8)
         klys_str = 'ss-k'; % klystron ID string
+
+        PV_klys_PDES = '';
+        PV_klys_PHAS = '';
+        PV_klys_GOLD = '';
+        PV_klys_KPHR = '';
+        PV_goldchg = '';
+        PV_goldts = '';
+        PV_phase0 = '';
+        PV_phasets = '';
+        PV_refpoc = '';
+        PV_wvgPACT = '';
+        PV_sfbPDES = '';
+        PV_SSSB_PDES = '';
+        PV_SSSB_ADES = '';
+        PV_SBST_PDES = '';
         
         BPM = ''           % spectrometer BPM
         eta = 0.0          % dispersion at BPM
@@ -36,6 +53,7 @@ classdef F2_phasescan < handle
         PV_TMIT = ''
         
         start_time         % scan start time
+        end_time           % scan completion time
         
         SUCCESS = false;
         ABORTED = false;
@@ -52,22 +70,47 @@ classdef F2_phasescan < handle
 
     methods
         
-        % constructor
         function self = F2_phasescan(linac, sector, klys)
-            
+
             % global scan setup
             self.linac = linac;
             self.sector = sector;
             self.klys = klys;
             self.klys_str = sprintf('%d-%d', self.sector, self.klys);
-            
+
+            % phase control/readback PVs
+            % varies between L0, L1 and L2-3 due to rf control variation
+            recbase = 'LI%d:KLYS:%d1';
+            if self.linac == 0, recbase = 'KLYS:LI%d:%d1'; end;
+            klys_rec = sprintf(recbase, self.sector, self.klys);
+            self.PV_klys_PDES = sprintf('%s:PDES', klys_rec);
+            self.PV_klys_PHAS = sprintf('%s:PHAS', klys_rec);
+            self.PV_klys_GOLD = sprintf('%s:GOLD', klys_rec);
+            self.PV_klys_KPHR = sprintf('%s:KPHR', klys_rec);
+            self.PV_goldchg = sprintf('%s:GOLDCHG', klys_rec);
+            self.PV_goldts = sprintf('%s:GOLDCHGTS', klys_rec);
+            self.PV_phase0 = sprintf('%s:PHASSCANERR', klys_rec);
+            self.PV_phasets = sprintf('%s:PHASSCANTS', klys_rec);
+
+            if self.linac == 0
+                self.PV_sfbPDES = sprintf('%s:SFB_PDES', klys_rec);
+                self.PV_refpoc = sprintf('%s:REFPOC', klys_rec);
+                self.PV_wvgPACT = sprintf('ACCL:LI10:%d1:PHASE_W0CH0', self.klys);
+            elseif self.linac == 1
+                stmp = sprintf('KLYS:LI11:%d1:SSSB', self.klys);
+                self.PV_SSSB_PDES = sprintf('%s_PDES', stmp);
+                self.PV_SSSB_ADES = sprintf('%s_ADES', stmp);
+            else
+                self.PV_SBST_PDES = sprintf('LI%d:SBST:1:PDES', self.sector);
+            end
+
             self.BPM = '';
             self.PV_X = '';
             self.PV_TMIT = '';
             self.eta = 0.0;
 
             self.start_time = datetime('now');
-            self.start_time.Format = 'dd-MMM-uuuu hh:mm:ss';
+            self.start_time.Format = 'dd-MMM-uuuu HH:mm:ss';
             
             % current beam parameters
             self.beam.N_elec = 0.0;
@@ -86,21 +129,38 @@ classdef F2_phasescan < handle
             self.in.zigzag = false;
             self.in.simulation = false;
             self.in.phi_set = 0.0;
-            self.in.PDES = 0.0;
-            self.in.PHAS = 0.0;
-            self.in.GOLD = 0.0;
-            self.in.KPHR = 0.0;
+
+            [PDES, PACT, POC] = self.get_phase_settings();
+            self.in.PDES = PDES;
+            self.in.PACT = PACT;
+            self.in.POC = POC;
+
+            % offset by SBST, klystron PDES in the main linac
+            p_sbst = 0.0; p_klys = 0.0;
+            switch self.linac
+                case 0
+                    p_klys = lcaGetSmart(self.PV_sfbPDES);
+                case 1
+                    p_klys = lcaGetSmart(self.PV_SSSB_PDES);
+                case {2,3}
+                    p_sbst = lcaGetSmart(self.PV_SBST_PDES);
+                    p_klys = lcaGetSmart(self.PV_klys_PDES);
+            end
+            if abs(p_sbst) > 0, self.in.sbst_offset = -1 * p_sbst; end
+            if abs(p_klys) > 0
+                self.in.klys_offset = -1 * p_klys;
+                self.in.phi_set = p_klys;
+            end
             
+            % undo settings
             self.undo.PDES = 0.0;
-            self.undo.PHAS = 0.0;
-            self.undo.GOLD = 0.0;
-            self.undo.KPHR = 0.0;
+            self.undo.POC = 0.0;
             self.undo.SSSB = struct;
             self.undo.SSSB.ADES1 = 0.0;
             self.undo.SSSB.ADES2 = 0.0;
             self.undo.SSSB.PDES1 = 0.0;
             self.undo.SSSB.PDES2 = 0.0;
-            
+
             % scan measurement data
             self.msmt.PHI = [];
             self.msmt.X = [];
@@ -112,11 +172,10 @@ classdef F2_phasescan < handle
             self.msmt.TMIT_thr_hi = 1e11;
             
             % scan outputs
-            self.out.phi_meas = 0.0;
+            %self.out.phi_meas = 0.0;
             self.out.PDES = 0.0;
-            self.out.PHAS = 0.0;
-            self.out.GOLD = 0.0;
-            self.out.KPHR = 0.0;
+            self.out.PACT = 0.0;
+            self.out.POC = 0.0;
             
             % fit results
             self.fit.range = [];
@@ -168,6 +227,39 @@ classdef F2_phasescan < handle
             self.BPM = self.bpms(self.linac+1);
             self.eta = self.etas(self.linac+1);
         end
+
+        function [PDES, PACT, POC] = get_phase_settings(self)
+            switch self.linac
+                case 0
+                    PDES = lcaGetSmart(self.PV_klys_PDES);
+                    PACT = lcaGetSmart(self.PV_wvgPACT);
+                    POC = lcaGetSmart(self.PV_refpoc);
+                case 1
+                    [PACT, ~, ~, ~, KPHR, GOLD] = control_phaseGet(self.klys_str);
+                    PDES = lcaGetSmart(self.PV_SSSB_PDES);
+                    POC = KPHR;
+                case {2,3}
+                    [PACT, PDES, ~, ~, KPHR, GOLD] = control_phaseGet(self.klys_str);
+                    POC = GOLD;
+            end
+        end
+
+        function [ctl, rbv, poc] = get_phase_setting_desc(self)
+            switch self.linac
+                case 0
+                    ctl = self.PV_klys_PDES;
+                    rbv = self.PV_wvgPACT;
+                    poc = self.PV_refpoc;
+                case 1
+                    ctl = self.PV_SSSB_PDES;
+                    rbv = sprintf('%s (delta)', self.PV_klys_KPHR);
+                    poc = self.PV_klys_GOLD;
+                case {2,3}
+                    ctl = self.PV_klys_PDES;
+                    rbv = self.PV_klys_PHAS;
+                    poc = self.PV_klys_GOLD;
+            end
+        end
         
         % wrapper that grabs BPM+dispersion, rep rate, bunch charge and energy
         function update_op_point(self)
@@ -179,10 +271,10 @@ classdef F2_phasescan < handle
             self.PV_X = sprintf('%s:%s', self.BPM, 'X');
             self.PV_TMIT = sprintf('%s:%s', self.BPM, 'TMIT');
             
-            % need to add event code '57' for SLC BPMs coming through AIDA
-            if self.linac == 3, self.PV_X = sprintf('%s57', self.PV_X); end
+            % % need to add event code '57' for SLC BPMs coming through AIDA
+            % if self.linac == 3, self.PV_X = sprintf('%s57', self.PV_X); end
             
-            % also need to monkey these back into a cell arrays for lcaMonitor
+            % also need to monkey these back into cell arrays for lcaMonitor
             self.PV_X = {sprintf('%s', self.PV_X)};
             self.PV_TMIT = {sprintf('%s', self.PV_TMIT)};
             
@@ -236,6 +328,10 @@ classdef F2_phasescan < handle
             
             if need_disable, lcaPutSmart(FB_state_PV, FB_state); end
         end
+
+        function set_L0_LLRF_phase_feedback(self, state)
+            lcaPutSmart(sprintf('KLYS:LI10:%d1:SFB_PDIS', self.klys), state);
+        end
         
         % compute the range of phase settings given range + N steps
         function compute_scan_range(self)
@@ -244,7 +340,13 @@ classdef F2_phasescan < handle
                         
             % for L1 phase scans we manipulate the KPHR directly
             self.in.p0 = 0;
-            if self.linac == 1, self.in.p0 = self.in.KPHR; end
+            if self.linac == 0
+                % to do: autodetect L0-A/B phases?
+                self.in.p0 = 0;
+            elseif self.linac == 1
+                % self.in.p0 = self.in.KPHR;
+                self.in.p0 = lcaGetSmart(self.PV_klys_KPHR);
+            end
 
             uncorrected_range = linspace(self.in.p0-dp, self.in.p0+dp, N);
             self.in.range = self.in.sbst_offset + self.in.klys_offset + uncorrected_range;
@@ -257,23 +359,34 @@ classdef F2_phasescan < handle
                 self.in.range = self.in.range(mask');
             end
         end
+
+        % save all needed phase settings used to restore the target RFS
+        function save_target_initial_setting(self)
+            if self.linac == 1
+                self.undo.SSSB.ADES1 = lcaGetSmart('KLYS:LI11:11:SSSB_ADES');
+                self.undo.SSSB.ADES2 = lcaGetSmart('KLYS:LI11:21:SSSB_ADES');
+                self.undo.SSSB.PDES1 = lcaGetSmart('KLYS:LI11:11:SSSB_PDES');
+                self.undo.SSSB.PDES2 = lcaGetSmart('KLYS:LI11:21:SSSB_PDES');
+            end
+            self.undo.PDES = self.in.PDES;
+            self.undo.POC = self.in.POC;
+        end
+
+        % set the target station (in L1) PDES to 0
+        % should be called before 
+        function set_L1_chirp(self, cdes)
+            if self.in.simulation, return; end
+            lcaPutSmart(self.PV_SSSB_PDES, cdes);
+            % necessary? should have no effect since SLC PDES isn't used
+            [L1_pact, L1_pok] = control_phaseSet(handles.data.name, cdes, 1, 1);
+        end
         
         % subroutine to correct energy in L1 after cresting the target station before phase scans
         function L1_energy_correction(self)
             if self.in.simulation, return; end
             
-            % make aboslutely sure this is an 11-1 or 11-2 phase scan
-            assert((self.linac == 1 && self.sector == 11 && self.klys < 3));
-            
-            pos_tolerance = 0.1;   % BPM tolerance in mm
-            max_iters     = 1000;  % iteration cap to prevent runaway
-            
             % fix energy with 11-2 for 11-1 scans and vice versa
-            if self.klys == 1
-                corrector_klys = 2;
-            else
-                corrector_klys = 1;
-            end
+            corrector_klys = 2; if self.klys == 2, corrector_klys = 1; end
             
             fprintf('Correcting L1 energy with 11-%d...', corrector_klys);
             
@@ -285,7 +398,7 @@ classdef F2_phasescan < handle
             x = nanmean(bpm_data(:,1));
             
             i = 0;
-            while (i < max_iters) && (abs(x) >= pos_tolerance)
+            while (i < 1000) && (abs(x) >= pos_tolerance)
                 i = i + 1;
                 
                 % default step of 0.1MeV, 0.5MeV when further off-energy
@@ -306,31 +419,89 @@ classdef F2_phasescan < handle
         function [PACT, phase_ok] = set_phase(self, p)
             
             % for simulated scans just pause and return PACT = PDES
-            if self.in.simulation, pause(0.05); PACT = p; phase_ok = true; return; end
+            if self.in.simulation, pause(0.5); PACT = p; phase_ok = true; return; end
+
+            % L0: set KLYS PDES, report ACCL WVG phase
+            if self.linac == 0
+                lcaPutSmart(self.PV_klys_PDES, p)
+                phase_ok = 1
+                PACT = lcaGetSmart(self.PV_wvgPACT)
             
-            if self.linac == 1
+            % L1: set klystron KPHR, report KPHR
+            elseif self.linac == 1
                 [~, phase_ok] = control_phaseSet(self.klys_str, p, 0,0, 'KPHR');
-                PV_KPHR = sprintf('LI%d:KLYS:%d1:KPHR', self.sector, self.klys);
-                PACT = lcaGetSmart(PV_KPHR);
+                PACT = lcaGetSmart(self.PV_KPHR);
+            
+            % L2, L3: set klystron PDES, report PACT <--- slow!!!
             else
-                [PACT, phase_ok] = control_phaseSet(app.target.klys_str, p, 1, 1);
+                [PACT, phase_ok] = control_phaseSet(self.klys_str, p, 1, 1);
             end
         end
         
         % sets the target klystron phase to self.in.range(I_STEP)
         function step_phase(self)
             [PACT, phase_ok] = self.set_phase(self.in.range(self.I_STEP));
-            
             % subtracts off the initial KPHR value for sensible plot axes
             self.msmt.PHI(self.I_STEP) = PACT - self.in.p0;
+        end
+
+        % reset the klystron phase to the first scan step
+        function reset_phase(self)
+            [PACT, phase_ok] = self.set_phase(self.in.range(1));
         end
         
         % correct target klystron phase based on the measured error
         function apply_phase_correction(self)
+
+            % apply phase correction
+            % L0: REFPOC is subtracted in the feedback -> ADD measured error
+            % L1: subtract measured error from KPHR
+            % L2-L3: reGOLD using the SCP, need to PDES=0 & trim as well
+            switch self.linac
+                case 0
+                    poc_zero = wrapTo180(self.in.POC + self.fit.phi_meas);
+                    lcaPutSmart(self.PV_refpoc, poc_zero);
+                
+                case 1
+                    poc_zero = self.in.POC - self.fit.phi_meas;
+                    [~, OK] = control_phaseSet(self.klys_str, poc_zero, 0,0, 'KPHR');
+                
+                case {2,3}
+                    [PACT, PDES, GOLD] = control_phaseGold(self.klys_str, self.in.phi_set)
+                    poc_zero = GOLD;
+                    [PACT, OK] = control_phaseSet(self.klys_str, 0.0, 1, 1);
+            end
+
+            % write out resultant phase settings
+            [PDES, PACT, POC] = get_phase_settings(self)
+            self.out.PDES = PDES;
+            self.out.PACT = PACT;
+            self.out.POC = POC;
+
+            % write history PVs
+            lcaPutSmart(self.PV_phase0, self.fit.phi_meas)
+            lcaPutSmart(self.PV_goldchg, poc_zero);
+            scan_ts = (now - self.EPICS_t0) * 24*60*60
+            lcaPutSmart(self.PV_goldts, scan_ts);
+            lcaPutSmart(self.PV_phasets, scan_ts);
         end
         
         % apply self.undo settings to revert the phase scan
-        function revert(self)
+        function revert_phase_settings(self)
+            switch self.linac
+                case 0
+                    lcaPutSmart(self.PV_klys_PDES, self.undo.PDES);
+                    lcaPutSmart(self.PV_refpoc, self.undo.POC);
+                case 1
+                    lcaPutSmart('KLYS:LI11:11:SSSB_ADES', self.undo.SSSB.ADES1);
+                    lcaPutSmart('KLYS:LI11:21:SSSB_ADES', self.undo.SSSB.ADES2);
+                    lcaPutSmart('KLYS:LI11:11:SSSB_PDES', self.undo.SSSB.PDES1);
+                    lcaPutSmart('KLYS:LI11:21:SSSB_PDES', self.undo.SSSB.PDES2);
+                    lcaPutSmart(self.PV_KPHR, self.undo.POC);
+                case {2,3}
+                    [~, ~] = control_phaseSet(self.klys_str, self.undo.PDES, 1, 1);
+                    lcaPutSmart(self.PV_klys_GOLD, self.undo.POC)
+            end
         end
         
         % collect & average self.in.N_samples of BPM data from the appropriate BPM
@@ -341,9 +512,6 @@ classdef F2_phasescan < handle
 
             lcaSetMonitor(self.PV_X);
             for i = 1:self.in.N_samples
-                
-                % ABORT CHECK
-                %if app.ABORT_REQUEST, app.SCAN_ABORTED = true; break; end
                 
                 lcaNewMonitorWait(self.PV_X);
                 %pause(0.1); % maybe needed?, not clear how monitorWait plays w/ AIDA
@@ -381,7 +549,46 @@ classdef F2_phasescan < handle
             self.msmt.dE(self.I_STEP)     = dE_dx * self.msmt.X(self.I_STEP);
             self.msmt.dE_err(self.I_STEP) = dE_dx * self.msmt.X_err(self.I_STEP);
         end
+
+        function plot_phase_scan(self, ax, show_fit)
+            % generate final phase scan plot for logbook
+            hold(ax,"off");
+            yyaxis(ax,'left');
+            errorbar(ax, self.msmt.PHI(1:i), self.msmt.X(1:i), self.msmt.X_err(1:i), ...
+                '.k', 'MarkerSize', 10);
+
+            yyaxis(ax,'right');
+            errorbar(ax, self.msmt.PHI(1:i), self.msmt.dE(1:i), self.msmt.dE_err(1:i),...
+                '.', 'Color',"#7e2f8e", 'MarkerSize',10);
+            hold(ax,"on");
+
+            if show_fit
+                yyaxis(ax,'right');
+                plot(ax, self.fit.range, self.fit.dE, ...
+                    '-', 'Color',"#d95319", 'LineWidth',2);
+
+                yyaxis(ax,'left');
+                plot(ax, self.fit.range, self.fit.X, ...
+                    '-', 'Color',"#0072bd", 'LineWidth',2);
+                xline(ax, self.in.phi_set, ...
+                    '--', 'Color',"#666666", 'LineWidth',2)
+                xline(ax, -1*self.fit.phi_meas, ...
+                    '--g', 'LineWidth',2);
+            end
+
+            self.label_plot(ax);
         
+        end
+
+        function label_plot(self, ax)
+            title(ax, sprintf('Phase scan: K%s  %s', self.klys_str, self.start_time));
+            xlabel(ax, ['\phi ' self.klys_str], 'Interpreter','tex')
+            yyaxis(ax, 'left');
+            ylabel(ax, sprintf('%s [mm]', self.BPM), 'Interpreter','tex');
+            yyaxis(ax, 'right');
+            ylabel(ax, sprintf('\\Delta E [MeV]'), 'Interpreter', 'tex');
+        end
+
         % calculate beam phase error
         % fits BPM data to Acos(phi+psi) + B using linear least-squares
         function beam_phase_fit(self)

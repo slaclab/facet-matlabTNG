@@ -2,79 +2,72 @@ classdef F2_phasing_exported < matlab.apps.AppBase
 
     % Properties that correspond to app components
     properties (Access = public)
-        UIFigure                matlab.ui.Figure
-        banner                  matlab.ui.control.Label
-        ax                      matlab.ui.control.UIAxes
-        labelTitle              matlab.ui.control.Label
-        mainControlPanel        matlab.ui.container.Panel
-        layoutControl           matlab.ui.container.GridLayout
-        scanButton              matlab.ui.control.Button
-        abortButton             matlab.ui.control.Button
-        undoButton              matlab.ui.control.Button
-        applyButton             matlab.ui.control.Button
-        logbookButton           matlab.ui.control.Button
-        helpButton              matlab.ui.control.Button
-        ScanConfigurationPanel  matlab.ui.container.Panel
-        layoutConfig            matlab.ui.container.GridLayout
-        NstepsEditFieldLabel    matlab.ui.control.Label
-        editNSteps              matlab.ui.control.NumericEditField
-        rangeEditFieldLabel     matlab.ui.control.Label
-        editRange               matlab.ui.control.NumericEditField
-        KlysoffsetLabel         matlab.ui.control.Label
-        editOffset              matlab.ui.control.NumericEditField
-        NsamplesEditFieldLabel  matlab.ui.control.Label
-        editNSamples            matlab.ui.control.NumericEditField
-        selectZigzag            matlab.ui.control.CheckBox
-        selectSLCBuff           matlab.ui.control.CheckBox
-        SBSToffsetLabel         matlab.ui.control.Label
-        editSBOffset            matlab.ui.control.NumericEditField
-        selectSim               matlab.ui.control.CheckBox
-        resultPanel             matlab.ui.container.Panel
-        layoutResult            matlab.ui.container.GridLayout
-        PDESEditFieldLabel      matlab.ui.control.Label
-        initPDES                matlab.ui.control.NumericEditField
-        PHASEditFieldLabel      matlab.ui.control.Label
-        initPHAS                matlab.ui.control.NumericEditField
-        GOLDEditFieldLabel      matlab.ui.control.Label
-        initGOLD                matlab.ui.control.NumericEditField
-        KPHREditField_2Label    matlab.ui.control.Label
-        initKPHR                matlab.ui.control.NumericEditField
-        finalPDES               matlab.ui.control.NumericEditField
-        finalPHAS               matlab.ui.control.NumericEditField
-        finalGOLD               matlab.ui.control.NumericEditField
-        finalKPHR               matlab.ui.control.NumericEditField
-        InitialLabel            matlab.ui.control.Label
-        NewLabel                matlab.ui.control.Label
-        updateInitButton        matlab.ui.control.Button
-        CurrentLabel            matlab.ui.control.Label
-        currentPDES             matlab.ui.control.NumericEditField
-        currentPHAS             matlab.ui.control.NumericEditField
-        currentGOLD             matlab.ui.control.NumericEditField
-        currentKPHR             matlab.ui.control.NumericEditField
-        updateCurrentButton     matlab.ui.control.Button
-        Panel                   matlab.ui.container.Panel
-        selectLinac             matlab.ui.control.DropDown
-        KlystronLabel           matlab.ui.control.Label
-        selectSector            matlab.ui.control.DropDown
-        selectKlys              matlab.ui.control.DropDown
-        klysActiveLamp          matlab.ui.control.Lamp
-        EEditFieldLabel         matlab.ui.control.Label
-        beamEnergy              matlab.ui.control.NumericEditField
-        MeVLabel                matlab.ui.control.Label
-        QEditFieldLabel         matlab.ui.control.Label
-        bunchCharge             matlab.ui.control.NumericEditField
-        pCLabel                 matlab.ui.control.Label
-        specBPM                 matlab.ui.control.EditField
-        EditFieldLabel          matlab.ui.control.Label
-        bpmDispersion           matlab.ui.control.NumericEditField
-        mmLabel                 matlab.ui.control.Label
-        fEditFieldLabel         matlab.ui.control.Label
-        beamRate                matlab.ui.control.NumericEditField
-        HzLabel                 matlab.ui.control.Label
-        BPMLabel                matlab.ui.control.Label
-        Panel_2                 matlab.ui.container.Panel
-        message                 matlab.ui.control.Label
-        StatusLabel             matlab.ui.control.Label
+        FACETIIRFPhaseScansUIFigure  matlab.ui.Figure
+        banner                       matlab.ui.control.Label
+        ax                           matlab.ui.control.UIAxes
+        mainControlPanel             matlab.ui.container.Panel
+        layoutControl                matlab.ui.container.GridLayout
+        scanButton                   matlab.ui.control.Button
+        abortButton                  matlab.ui.control.Button
+        undoButton                   matlab.ui.control.Button
+        applyButton                  matlab.ui.control.Button
+        logbookButton                matlab.ui.control.Button
+        helpButton                   matlab.ui.control.Button
+        ScanConfigurationPanel       matlab.ui.container.Panel
+        layoutConfig                 matlab.ui.container.GridLayout
+        NstepsEditFieldLabel         matlab.ui.control.Label
+        editNSteps                   matlab.ui.control.NumericEditField
+        rangeEditFieldLabel          matlab.ui.control.Label
+        editRange                    matlab.ui.control.NumericEditField
+        KlysoffsetLabel              matlab.ui.control.Label
+        editOffset                   matlab.ui.control.NumericEditField
+        NsamplesEditFieldLabel       matlab.ui.control.Label
+        editNSamples                 matlab.ui.control.NumericEditField
+        selectZigzag                 matlab.ui.control.CheckBox
+        SBSToffsetLabel              matlab.ui.control.Label
+        editSBOffset                 matlab.ui.control.NumericEditField
+        selectSim                    matlab.ui.control.CheckBox
+        resultPanel                  matlab.ui.container.Panel
+        layoutResult                 matlab.ui.container.GridLayout
+        ControlPhaseLabel            matlab.ui.control.Label
+        initPDES                     matlab.ui.control.NumericEditField
+        ReadbackPhaseLabel           matlab.ui.control.Label
+        initPACT                     matlab.ui.control.NumericEditField
+        PhaseOffsetControlLabel      matlab.ui.control.Label
+        initPOC                      matlab.ui.control.NumericEditField
+        finalPDES                    matlab.ui.control.NumericEditField
+        finalPACT                    matlab.ui.control.NumericEditField
+        finalPOC                     matlab.ui.control.NumericEditField
+        NewLabel                     matlab.ui.control.Label
+        CurrentLabel                 matlab.ui.control.Label
+        currentPDES                  matlab.ui.control.NumericEditField
+        currentPACT                  matlab.ui.control.NumericEditField
+        currentPOC                   matlab.ui.control.NumericEditField
+        updateCurrentButton          matlab.ui.control.Button
+        InitialLabel                 matlab.ui.control.Label
+        Panel                        matlab.ui.container.Panel
+        selectLinac                  matlab.ui.control.DropDown
+        KlystronLabel                matlab.ui.control.Label
+        selectSector                 matlab.ui.control.DropDown
+        selectKlys                   matlab.ui.control.DropDown
+        klysActiveLamp               matlab.ui.control.Lamp
+        EEditFieldLabel              matlab.ui.control.Label
+        beamEnergy                   matlab.ui.control.NumericEditField
+        MeVLabel                     matlab.ui.control.Label
+        QEditFieldLabel              matlab.ui.control.Label
+        bunchCharge                  matlab.ui.control.NumericEditField
+        pCLabel                      matlab.ui.control.Label
+        specBPM                      matlab.ui.control.EditField
+        EditFieldLabel               matlab.ui.control.Label
+        bpmDispersion                matlab.ui.control.NumericEditField
+        mmLabel                      matlab.ui.control.Label
+        fEditFieldLabel              matlab.ui.control.Label
+        beamRate                     matlab.ui.control.NumericEditField
+        HzLabel                      matlab.ui.control.Label
+        BPMLabel                     matlab.ui.control.Label
+        Panel_2                      matlab.ui.container.Panel
+        message                      matlab.ui.control.Label
+        StatusLabel                  matlab.ui.control.Label
     end
 
     
@@ -114,7 +107,6 @@ classdef F2_phasing_exported < matlab.apps.AppBase
             app.selectZigzag.Enable = state;
             app.selectSim.Enable = state;
             app.updateCurrentButton.Enable = state;
-            app.updateInitButton.Enable = state;
         end
  
         % associate each linac with an int labelling its linac region
@@ -159,7 +151,7 @@ classdef F2_phasing_exported < matlab.apps.AppBase
                 msg = '%s is not triggering on accelerate time.';
             elseif bitget(act, 3)
                 lamp_color = [1.0 0.0 0.0];
-                msg = '%s is OFF/MNT.';
+                msg = '%s is offline (OFF/MNT/TBR/ARU).';
             end
             
             app.klysActiveLamp.Color = lamp_color;
@@ -167,17 +159,31 @@ classdef F2_phasing_exported < matlab.apps.AppBase
         end
         
         % get current klystron PDES, PHAS, GOLD & KPHR
-        function update_klys_phase_params(app)
-            [PACT, PDES, ~, ~, KPHR, GOLD] = control_phaseGet(app.target.klys_str);
-            app.initPDES.Value = PDES;
-            app.initPHAS.Value = PACT;
-            app.initGOLD.Value = GOLD;
-            app.initKPHR.Value = KPHR;
+        function update_klys_phase_params(app, initial)
+            [PDES, PACT, offset] = app.S.get_phase_settings();
+            if initial
+                app.initPDES.Value = PDES;
+                app.initPACT.Value = PACT;
+                app.initPOC.Value = offset;
+            else
+                app.currentPDES.Value = PDES;
+                app.currentPACT.Value = PACT;
+                app.currentPOC.Value = offset;
+            end
+        end
+        
+        function label_phase_settings(app)
+            % label phase setting tooltips
+            [s_ctl, s_rbv, s_offs] = app.S.get_phase_setting_desc();
+            app.ControlPhaseLabel.Tooltip = {s_ctl};
+            app.ReadbackPhaseLabel.Tooltip = {s_rbv};
+            app.PhaseOffsetControlLabel.Tooltip = {s_offs};
         end
         
         % helper to update chrge, rate energy in one line
         function update_operating_point(app)
-            app.update_klys_phase_params();
+            app.update_klys_phase_params(true);
+            app.update_klys_phase_params(false);
             app.bunchCharge.Value   = app.S.beam.Q;
             app.beamRate.Value      = app.S.beam.f;
             app.beamEnergy.Value    = app.S.beam.E_design;
@@ -190,40 +196,10 @@ classdef F2_phasing_exported < matlab.apps.AppBase
             app.S.in.dPhi = app.editRange.Value;
             app.S.in.N_steps = app.editNSteps.Value;
             app.S.in.N_samples = app.editNSamples.Value;
-            app.S.in.klys_offset = app.editOffset.Value;
-            app.S.in.sbst_offset = app.editSBOffset.Value;
             app.S.in.zigzag = app.selectZigzag.Value;
-            app.S.in.simulation = app.selectSim.Value;
-            app.S.in.phi_set = app.initPDES.Value;
-            app.S.in.PDES = app.initPDES.Value;
-            app.S.in.PHAS = app.initPHAS.Value;
-            app.S.in.GOLD = app.initGOLD.Value;
-            app.S.in.KPHR = app.initKPHR.Value;
-            
-            app.S.undo.PDES = app.S.in.PDES;
-            app.S.undo.PHAS = app.S.in.PHAS;
-            app.S.undo.GOLD = app.S.in.GOLD;
-            app.S.undo.KPHR = app.S.in.KPHR;
-            
+            app.S.in.simulation = app.selectSim.Value;            
             app.S.compute_scan_range();
             app.S.init_msmt();
-        end
-        
-        % helper to correctly label x/y axis
-        function label_plot(app, axis)
-            title(axis, sprintf('Phase scan: %s  %s', app.target.klys_str, app.S.start_time));
-            xlabel(axis, ['\phi ' app.target.klys_str], 'Interpreter','tex')
-            yyaxis(axis,'left');
-            yl = sprintf('%s [mm]', app.S.BPM);
-            ylabel(axis, yl, 'Interpreter','tex');
-            yyaxis(axis,'right');
-            ylabel(axis, sprintf('\\Delta E [MeV]'), 'Interpreter', 'tex');
-        end
-        
-        % set up axes, labels before phase scanning
-        function stage_plot(app)
-            hold(app.ax,"off");
-            app.label_plot(app.ax);
         end
         
         % generate final phase scan plot for logbook
@@ -231,24 +207,9 @@ classdef F2_phasing_exported < matlab.apps.AppBase
             fig = figure('position',[500,500,800,600]);
             axis = axes;
             axis.FontSize = 12;
-            hold(axis, "on");
-            
-            % plot raw measurement + fit for position and energy
-            yyaxis(axis,'left');
-            errorbar(axis, app.S.msmt.PHI, app.S.msmt.X, app.S.msmt.X_err, '.k', 'MarkerSize', 10);
-            plot(axis, app.S.fit.range, app.S.fit.X, '-', 'Color',"#0072bd", 'LineWidth',2);
-            
-            yyaxis(axis,'right');
-            errorbar(axis, app.S.msmt.PHI, app.S.msmt.dE, app.S.msmt.dE_err,...
-                '.', 'Color',"#7e2f8e", 'MarkerSize',10);
-            plot(axis, app.S.fit.range, app.S.fit.dE, '-', 'Color',"#d95319", 'LineWidth',2);
-            
-            % vertical lines for phase setpoint & measurement
-            xline(axis, app.S.in.phi_set, '--', 'Color',"#666666", 'LineWidth',2)
-            xline(axis, -1*app.S.fit.phi_meas, '--g', 'LineWidth',2);
-
-            app.label_plot(axis);
-            shg
+            % hold(axis, "on");
+            app.S.plot_phase_scan(axis, true);
+            shg;
         end
         
         % main phase scan code for L2, L3 (SLC) klystrons
@@ -256,7 +217,7 @@ classdef F2_phasing_exported < matlab.apps.AppBase
             
             app.successful_scan = false;
             
-            % (0) verify that TD11 is in if scanning upstream of L2
+            % verify that TD11 is in if scanning upstream of L2
             if app.target.linac < 2
                 TD11_in = strcmp(lcaGetSmart('DUMP:LI11:390:TGT_STS'), 'IN');
                 if ~TD11_in
@@ -265,56 +226,57 @@ classdef F2_phasing_exported < matlab.apps.AppBase
                 end
             end
             
-            % (1) disable relevant longitudinal feedbacks before scanning
+            % disable relevant longitudinal feedbacks before scanning
+            % for L0, also turn off LLRF slow feedbacks
             app.S.disable_feedbacks()
+            if app.target.linac == 0, app.S.set_L0_LLRF_phase_feedback(0); end
             
-            app.stage_plot();
+            % for L1, manually set SSSB on crest & fix energy
+            if app.target.linac == 1
+                app.S.set_L1_chirp(0.0);
+                pause(1);
+                app.S.L1_energy_correction();
+            end
+            
+            hold(app.ax,"off");
+            app.S.label_plot(app.ax);
 
-            % (2)iterate over phase settings
+            % main scan loop: set phase, take BPM data & plot
             for i = 1:app.S.in.N_steps
                 app.S.I_STEP = i;
                 
                 step_str = sprintf('[%d/%d]', i, app.S.in.N_steps);
                 
-                % ABORT CHECK (1/3)
                 if app.ABORT_REQUEST, app.SCAN_ABORTED = true; break; end
 
-                % (2.1) set phase
                 app.message.Text = sprintf('%s Setting %s phase = %.1f deg ...', ...
                     step_str, app.target.klys_str, app.S.in.range(i) ...
                     );
                 app.S.step_phase()
                 
-                % ABORT CHECK (2/3)
                 if app.ABORT_REQUEST, app.SCAN_ABORTED = true; break; end
                 
-                % (2.2) measure beam position/energy
                 app.message.Text = sprintf('%s Collecting BPM data ...', step_str);
                 app.S.position_energy_msmt();
                 
-                % ABORT CHECK (3/3)
                 if app.ABORT_REQUEST, app.SCAN_ABORTED = true; break; end
                 
-                % (2.3) update plot
-                hold(app.ax,"off");
-                yyaxis(app.ax,'left');
-                errorbar(app.ax, app.S.msmt.PHI(1:i), app.S.msmt.X(1:i), app.S.msmt.X_err(1:i), ...
-                    '.k', 'MarkerSize', 10);
-                yyaxis(app.ax,'right');
-                errorbar(app.ax, app.S.msmt.PHI(1:i), app.S.msmt.dE(1:i), app.S.msmt.dE_err(1:i),...
-                    '.', 'Color',"#7e2f8e", 'MarkerSize',10);
-                hold(app.ax,"on");
+                app.S.plot_phase_scan(app.ax, false);
                 
             end
             
-            % no fitting/plotting if the scan was aborted
+            % quit here if the scan was aborted
             if app.SCAN_ABORTED, return; end
+            
+            % re-enable L0 LLRF phase FB
+            if app.target.linac == 0, app.S.set_L0_LLRF_phase_feedback(1); end
             
             % (3) fit BPM data and calculate beam phase error and energy
             app.S.beam_phase_fit();
-
-            app.successful_scan = true;
             
+            app.successful_scan = true;
+            app.S.end_time = datetime('now');
+            app.S.end_time.Format = 'dd-MMM-uuuu HH:mm:ss';
             %fprintf('phi set  = %.1f deg\n', app.S.in.phi_set);
             %fprintf('phi act  = %.2f deg\n', err);
             %fprintf('phi meas = %.2f deg\n', app.S.fit.phi_meas);
@@ -323,18 +285,12 @@ classdef F2_phasing_exported < matlab.apps.AppBase
             %disp(app.S.fit);
             
             % (4) plot fit and scan result
-            hold(app.ax,"on");
-            yyaxis(app.ax,'right');
-            plot(app.ax, app.S.fit.range, app.S.fit.dE, '-', 'Color',"#d95319", 'LineWidth',2);
-            yyaxis(app.ax,'left');
-            plot(app.ax, app.S.fit.range, app.S.fit.X, '-', 'Color',"#0072bd", 'LineWidth',2);
-            xline(app.ax, app.S.in.phi_set, '--', 'Color',"#666666", 'LineWidth',2)
-            xline(app.ax, -1*app.S.fit.phi_meas, '--g', 'LineWidth',2);
+            app.S.plot_phase_scan(app.ax, true);
             
-            app.message.Text = 'Scan completed.';
+            app.message.Text = 'Scan completed. Press "Apply" to correct phase error.';
             
             % (5) restore initial phase setting
-            if ~app.S.in.simulation, app.S.set_phase(init_phase); end
+            if ~app.S.in.simulation, app.S.reset_phase(); end
             
         end
  
@@ -353,16 +309,19 @@ classdef F2_phasing_exported < matlab.apps.AppBase
             app.target.klys = 1;
             app.target.klys_str = '11-1';
             
-            % initialize scan object in case there isn't one already held
+            % initialize a scan object on startup so things behave normally
             % TO DO: is this when to prompt user before old scan deletion ??
             app.S = F2_phasescan(app.target.linac, app.target.sector, app.target.klys);
             
             app.construct_klys_map();
             app.update_klys_stat();
             app.update_operating_point();
+            app.label_phase_settings();
+            app.get_scan_inputs();
+            app.editOffset.Value = -1 * app.S.in.phi_set;
             
             % re-label plot axes
-            app.label_plot(app.ax);
+            app.S.label_plot(app.ax);
             
             disableDefaultInteractivity(app.ax);
         end
@@ -378,7 +337,10 @@ classdef F2_phasing_exported < matlab.apps.AppBase
             app.selectSectorValueChanged(event);
             
             % modify default scan params for L1, disable gold/offset box
-            if app.target.linac == 1
+            if app.target.linac == 0
+                app.editRange.Value = 20;
+                app.editNSteps.Value = 15;
+            elseif app.target.linac == 1
                 app.editRange.Value = 20;
                 app.editNSteps.Value = 15;
             else
@@ -395,9 +357,7 @@ classdef F2_phasing_exported < matlab.apps.AppBase
             [k,s] = find(app.linac_map' == app.target.linac);
             available_klys = [];
             for i = 1:size(k)
-                if s(i) == app.target.sector
-                    available_klys(end+1) = k(i);
-                end
+                if s(i) == app.target.sector, available_klys(end+1) = k(i); end
             end
             app.selectKlys.Items = string(available_klys);
             app.selectKlys.Value = string(available_klys(1));
@@ -405,9 +365,12 @@ classdef F2_phasing_exported < matlab.apps.AppBase
             
             % for L2-3 subbooster PDES, populate sbst offset accordingly
             app.editSBOffset.Value = 0;
-            if app.target.linac ~= 1    
-                p_sbst = lcaGetSmart(sprintf("LI%d:SBST:1:PDES", app.target.sector));
-                if abs(p_sbst) > 0, app.editSBOffset.Value = -1 * p_sbst; end
+            app.editSBOffset.Enable = false;
+            app.SBSToffsetLabel.Enable = false;
+            if app.target.linac >= 2 
+                app.editSBOffset.Enable = true;
+                app.SBSToffsetLabel.Enable = true;
+                app.editSBOffset.Value = app.S.in.sbst_offset;
             end
             
         end
@@ -424,21 +387,23 @@ classdef F2_phasing_exported < matlab.apps.AppBase
             % once user selects a klystron check if it is on beam time
             % and grab it's current phase settings
             app.update_klys_stat();
-            app.update_klys_phase_params();
-            
-            % populate offset field based on PDES
-            offset = 0;
-            if abs(app.initPDES.Value) > 0, offset = -1 * app.initPDES.Value; end
-            app.editOffset.Value = offset;
-            
+            app.update_klys_phase_params(true);
+ 
             % initialize scan object in case there isn't one already held
             % TO DO: is this when to prompt user before old scan deletion ??
             app.S = F2_phasescan(app.target.linac, app.target.sector, app.target.klys);
             
+            app.editOffset.Value = app.S.in.klys_offset;
+            
+            % label phase setting tooltips
+            [s_ctl, s_rbv, s_offs] = app.S.get_phase_setting_desc();
+            app.ControlPhaseLabel.Tooltip = {s_ctl};
+            app.ReadbackPhaseLabel.Tooltip = {s_rbv};
+            app.PhaseOffsetControlLabel.Tooltip = {s_offs};
+            
             app.update_operating_point();
             
-            % re-label plot axes
-            app.label_plot(app.ax);
+            app.S.label_plot(app.ax);
             
             app.enable_controls(true);
             
@@ -457,29 +422,37 @@ classdef F2_phasing_exported < matlab.apps.AppBase
             app.abortButton.Enable = true;
             app.helpButton.Enable = true;
             app.scanButton.Text = 'Scanning...';
-            
-            % initialize scan object
+
             app.S = F2_phasescan(app.target.linac, app.target.sector, app.target.klys);
             app.get_scan_inputs();
             
             % run the scan!
             app.phase_scan();
 
-            % if the scan was aborted DO STUFF!!! (???)
+            % if the scan was aborted revert phase settings
             if app.SCAN_ABORTED
-                app.message.Text = sprintf('%s scan aborted.', app.target.klys_str);
+                app.message.Text = 'Restoring initial phase settings ...';
+                app.S.revert_phase_settings();
+                app.update_klys_phase_params(false);
                 app.ABORT_REQUEST = false;
                 app.SCAN_ABORTED = false;
+                app.message.Text = sprintf('%s scan aborted.', app.target.klys_str);
+            end
+            
+            % write proposed phase settings to "new" boxes
+            if app.successful_scan
+                app.finalPDES.Value = app.S.out.PDES;
+                app.finalPACT.Value = app.S.out.PACT;
+                app.finalPOC.Value = app.S.out.POC;
             end
             
             app.enable_controls(true);
             app.scanButton.Enable = true;
+            app.scanButton.Text = sprintf('Scan %s', app.target.klys_str);
             app.abortButton.Enable = false;
             app.undoButton.Enable = true;
             app.applyButton.Enable = app.successful_scan;
             app.logbookButton.Enable = app.successful_scan;
-            
-            app.scanButton.Text = sprintf('Scan %s', app.target.klys_str);
         end
 
         % Button pushed function: applyButton
@@ -496,54 +469,34 @@ classdef F2_phasing_exported < matlab.apps.AppBase
                 end
             end
             
-            % to correct phase subtract phi_meas from the initial phase setting
-            phi_init = app.S.in.PDES;
-            if app.target.linac == 1, phi_init = app.S.in.KPHR; end
-            phi_zero = phi_init - app.S.fit.phi_meas;
-            fprintf('phi init = %.1f, phi final = %.1f\n', phi_init, phi_zero);
+            app.S.apply_phase_correction();
             
-            app.S.out.GOLD = app.S.in.GOLD - app.S.fit.phi_meas;
-            if app.target.linac == 1
-                app.S.out.KPHR = app.in.KPHR - app.S.fit.phi_meas;
-            end
-            
-            app.S.set_phase(phi_zero);
-            disp('set phase');
-            app.message.Text = sprintf('%s set to measured zero phase.', app.target.klys_str);
-            pause(2)
-            [PACT, PDES, GOLD] = control_phaseGold(app.target.klys_str, app.S.in.phi_set);
-            disp(PACT);
-            disp(PDES);
-            disp(GOLD);
-            app.message.Text = sprintf('%s phase reGOLDed to %.1f.', app.target.klys_str, phi_zero);
-            pause(3)
-            if abs(app.S.in.phi_set) > 0
-                [PACT, OK] = control_phaseSet(app.target.klys_str, 0.0);
-                app.message.Text = sprintf('%s restored to on-crest phase', app.target.klys_str);
-            end
-            
+            app.update_klys_phase_params(false);
             app.enable_controls(true);
+            app.abortButton.Enable = false;
+            app.message.Text = 'Phase correction applied.';
         end
 
         % Button pushed function: logbookButton
         function logbookButtonPushed(app, event)
             fig = app.make_plot();
-            opts.title = sprintf('Phase Scan: %s', app.target.klys_str);
+            opts.title = sprintf('Phase Scan: K%s', app.target.klys_str);
             opts.author = 'FACET-II Phase Scan GUI';
             util_printLog(fig, opts);
-            app.message.Text = 'Plot posted to physics elog.';
+            app.message.Text = 'Sent to fphysics elog.';
         end
 
         % Button pushed function: abortButton
         function abortButtonPushed(app, event)
             app.ABORT_REQUEST = true;
-            app.message.Text = 'ABORT REQUESTED';
+            app.message.Text = 'SCAN ABORT REQUESTED. Waiting for interrupt...';
         end
 
         % Button pushed function: undoButton
         function undoButtonPushed(app, event)
-            app.message.Text = 'Undoing scan ...';
-            pause(3)
+            app.message.Text = 'Restoring initial phase settings ...';
+            app.S.revert_phase_settings();
+            app.update_klys_phase_params(false);
             app.message.Text = sprintf('%s phase settings restored.', app.target.klys_str);
         end
 
@@ -556,14 +509,14 @@ classdef F2_phasing_exported < matlab.apps.AppBase
             app.message.Text = prev_msg;
         end
 
-        % Button pushed function: updateInitButton
+        % Callback function
         function updateInitButtonPushed(app, event)
-            app.update_klys_phase_params();
+            app.update_klys_phase_params(true);
         end
 
         % Button pushed function: updateCurrentButton
         function updateCurrentButtonPushed(app, event)
-            
+            app.update_klys_phase_params(false);
         end
     end
 
@@ -573,39 +526,28 @@ classdef F2_phasing_exported < matlab.apps.AppBase
         % Create UIFigure and components
         function createComponents(app)
 
-            % Create UIFigure and hide until all components are created
-            app.UIFigure = uifigure('Visible', 'off');
-            app.UIFigure.Position = [100 100 1000 650];
-            app.UIFigure.Name = 'MATLAB App';
-            app.UIFigure.Resize = 'off';
-            app.UIFigure.BusyAction = 'cancel';
-            app.UIFigure.Interruptible = 'off';
+            % Create FACETIIRFPhaseScansUIFigure and hide until all components are created
+            app.FACETIIRFPhaseScansUIFigure = uifigure('Visible', 'off');
+            app.FACETIIRFPhaseScansUIFigure.Position = [100 100 1000 600];
+            app.FACETIIRFPhaseScansUIFigure.Name = 'FACET-II RF Phase Scans';
+            app.FACETIIRFPhaseScansUIFigure.Resize = 'off';
 
             % Create banner
-            app.banner = uilabel(app.UIFigure);
+            app.banner = uilabel(app.FACETIIRFPhaseScansUIFigure);
             app.banner.BackgroundColor = [1 0.5843 0.2353];
-            app.banner.Position = [1 641 1000 10];
+            app.banner.Position = [1 591 1000 10];
             app.banner.Text = {''; ''};
 
             % Create ax
-            app.ax = uiaxes(app.UIFigure);
+            app.ax = uiaxes(app.FACETIIRFPhaseScansUIFigure);
             title(app.ax, 'Title')
             xlabel(app.ax, '\phi')
             ylabel(app.ax, {'\Delta x (BPMS:LI11:333:X)'; ''})
-            app.ax.FontSize = 14;
-            app.ax.Position = [380 20 600 510];
-
-            % Create labelTitle
-            app.labelTitle = uilabel(app.UIFigure);
-            app.labelTitle.FontSize = 20;
-            app.labelTitle.FontWeight = 'bold';
-            app.labelTitle.FontAngle = 'italic';
-            app.labelTitle.Position = [21 601 960 40];
-            app.labelTitle.Text = 'Linac RF Phase Scans';
+            app.ax.Position = [380 21 600 507];
 
             % Create mainControlPanel
-            app.mainControlPanel = uipanel(app.UIFigure);
-            app.mainControlPanel.Position = [21 521 340 80];
+            app.mainControlPanel = uipanel(app.FACETIIRFPhaseScansUIFigure);
+            app.mainControlPanel.Position = [21 493 340 80];
 
             % Create layoutControl
             app.layoutControl = uigridlayout(app.mainControlPanel);
@@ -679,11 +621,11 @@ classdef F2_phasing_exported < matlab.apps.AppBase
             app.helpButton.Text = 'Help';
 
             % Create ScanConfigurationPanel
-            app.ScanConfigurationPanel = uipanel(app.UIFigure);
+            app.ScanConfigurationPanel = uipanel(app.FACETIIRFPhaseScansUIFigure);
             app.ScanConfigurationPanel.Title = 'Scan Configuration';
             app.ScanConfigurationPanel.FontWeight = 'bold';
             app.ScanConfigurationPanel.FontSize = 16;
-            app.ScanConfigurationPanel.Position = [21 231 341 150];
+            app.ScanConfigurationPanel.Position = [21 206 340 145];
 
             % Create layoutConfig
             app.layoutConfig = uigridlayout(app.ScanConfigurationPanel);
@@ -757,21 +699,14 @@ classdef F2_phasing_exported < matlab.apps.AppBase
             app.selectZigzag = uicheckbox(app.layoutConfig);
             app.selectZigzag.Text = 'Zigzag';
             app.selectZigzag.FontSize = 14;
-            app.selectZigzag.Layout.Row = 4;
-            app.selectZigzag.Layout.Column = [4 6];
-
-            % Create selectSLCBuff
-            app.selectSLCBuff = uicheckbox(app.layoutConfig);
-            app.selectSLCBuff.Enable = 'off';
-            app.selectSLCBuff.Text = 'SLC buffer acquisition';
-            app.selectSLCBuff.FontSize = 14;
-            app.selectSLCBuff.Layout.Row = 4;
-            app.selectSLCBuff.Layout.Column = [7 12];
+            app.selectZigzag.Layout.Row = 3;
+            app.selectZigzag.Layout.Column = [7 9];
 
             % Create SBSToffsetLabel
             app.SBSToffsetLabel = uilabel(app.layoutConfig);
             app.SBSToffsetLabel.HorizontalAlignment = 'right';
             app.SBSToffsetLabel.FontSize = 14;
+            app.SBSToffsetLabel.Enable = 'off';
             app.SBSToffsetLabel.Layout.Row = 1;
             app.SBSToffsetLabel.Layout.Column = [7 9];
             app.SBSToffsetLabel.Text = 'SBST offset';
@@ -780,6 +715,7 @@ classdef F2_phasing_exported < matlab.apps.AppBase
             app.editSBOffset = uieditfield(app.layoutConfig, 'numeric');
             app.editSBOffset.Editable = 'off';
             app.editSBOffset.FontSize = 14;
+            app.editSBOffset.Enable = 'off';
             app.editSBOffset.Layout.Row = 1;
             app.editSBOffset.Layout.Column = [10 11];
 
@@ -787,32 +723,33 @@ classdef F2_phasing_exported < matlab.apps.AppBase
             app.selectSim = uicheckbox(app.layoutConfig);
             app.selectSim.Text = 'Simulated scan';
             app.selectSim.FontSize = 14;
-            app.selectSim.Layout.Row = 3;
+            app.selectSim.Layout.Row = 4;
             app.selectSim.Layout.Column = [7 11];
             app.selectSim.Value = true;
 
             % Create resultPanel
-            app.resultPanel = uipanel(app.UIFigure);
+            app.resultPanel = uipanel(app.FACETIIRFPhaseScansUIFigure);
             app.resultPanel.Title = 'Phase Control Settings';
             app.resultPanel.FontWeight = 'bold';
             app.resultPanel.FontSize = 16;
-            app.resultPanel.Position = [21 21 341 200];
+            app.resultPanel.Position = [21 21 341 170];
 
             % Create layoutResult
             app.layoutResult = uigridlayout(app.resultPanel);
-            app.layoutResult.ColumnWidth = {'1x', '1x', '1x', '1x', '1x'};
-            app.layoutResult.RowHeight = {'1x', '1x', '1x', '1x', '1x', '1x'};
+            app.layoutResult.ColumnWidth = {130, '1x', '1x', '1x', '0.2x'};
+            app.layoutResult.RowHeight = {'1x', '1x', '1x', '1x', '1x'};
             app.layoutResult.ColumnSpacing = 5;
             app.layoutResult.RowSpacing = 5;
             app.layoutResult.Padding = [4 4 4 4];
 
-            % Create PDESEditFieldLabel
-            app.PDESEditFieldLabel = uilabel(app.layoutResult);
-            app.PDESEditFieldLabel.HorizontalAlignment = 'right';
-            app.PDESEditFieldLabel.FontSize = 14;
-            app.PDESEditFieldLabel.Layout.Row = 2;
-            app.PDESEditFieldLabel.Layout.Column = 1;
-            app.PDESEditFieldLabel.Text = 'PDES';
+            % Create ControlPhaseLabel
+            app.ControlPhaseLabel = uilabel(app.layoutResult);
+            app.ControlPhaseLabel.HorizontalAlignment = 'right';
+            app.ControlPhaseLabel.FontSize = 14;
+            app.ControlPhaseLabel.Tooltip = {'PVNAME HERE'};
+            app.ControlPhaseLabel.Layout.Row = 2;
+            app.ControlPhaseLabel.Layout.Column = 1;
+            app.ControlPhaseLabel.Text = 'Control Phase';
 
             % Create initPDES
             app.initPDES = uieditfield(app.layoutResult, 'numeric');
@@ -822,53 +759,39 @@ classdef F2_phasing_exported < matlab.apps.AppBase
             app.initPDES.Layout.Row = 2;
             app.initPDES.Layout.Column = 2;
 
-            % Create PHASEditFieldLabel
-            app.PHASEditFieldLabel = uilabel(app.layoutResult);
-            app.PHASEditFieldLabel.HorizontalAlignment = 'right';
-            app.PHASEditFieldLabel.FontSize = 14;
-            app.PHASEditFieldLabel.Layout.Row = 3;
-            app.PHASEditFieldLabel.Layout.Column = 1;
-            app.PHASEditFieldLabel.Text = 'PHAS';
+            % Create ReadbackPhaseLabel
+            app.ReadbackPhaseLabel = uilabel(app.layoutResult);
+            app.ReadbackPhaseLabel.HorizontalAlignment = 'right';
+            app.ReadbackPhaseLabel.FontSize = 14;
+            app.ReadbackPhaseLabel.Tooltip = {'PVNAME HERE'; ''};
+            app.ReadbackPhaseLabel.Layout.Row = 3;
+            app.ReadbackPhaseLabel.Layout.Column = 1;
+            app.ReadbackPhaseLabel.Text = 'Readback Phase';
 
-            % Create initPHAS
-            app.initPHAS = uieditfield(app.layoutResult, 'numeric');
-            app.initPHAS.ValueDisplayFormat = '%.1f';
-            app.initPHAS.Editable = 'off';
-            app.initPHAS.FontSize = 14;
-            app.initPHAS.Layout.Row = 3;
-            app.initPHAS.Layout.Column = 2;
+            % Create initPACT
+            app.initPACT = uieditfield(app.layoutResult, 'numeric');
+            app.initPACT.ValueDisplayFormat = '%.1f';
+            app.initPACT.Editable = 'off';
+            app.initPACT.FontSize = 14;
+            app.initPACT.Layout.Row = 3;
+            app.initPACT.Layout.Column = 2;
 
-            % Create GOLDEditFieldLabel
-            app.GOLDEditFieldLabel = uilabel(app.layoutResult);
-            app.GOLDEditFieldLabel.HorizontalAlignment = 'right';
-            app.GOLDEditFieldLabel.FontSize = 14;
-            app.GOLDEditFieldLabel.Layout.Row = 4;
-            app.GOLDEditFieldLabel.Layout.Column = 1;
-            app.GOLDEditFieldLabel.Text = 'GOLD';
+            % Create PhaseOffsetControlLabel
+            app.PhaseOffsetControlLabel = uilabel(app.layoutResult);
+            app.PhaseOffsetControlLabel.HorizontalAlignment = 'right';
+            app.PhaseOffsetControlLabel.FontSize = 14;
+            app.PhaseOffsetControlLabel.Tooltip = {'PVNAME HERE'; ''};
+            app.PhaseOffsetControlLabel.Layout.Row = 4;
+            app.PhaseOffsetControlLabel.Layout.Column = 1;
+            app.PhaseOffsetControlLabel.Text = 'Phase Offset Control';
 
-            % Create initGOLD
-            app.initGOLD = uieditfield(app.layoutResult, 'numeric');
-            app.initGOLD.ValueDisplayFormat = '%.1f';
-            app.initGOLD.Editable = 'off';
-            app.initGOLD.FontSize = 14;
-            app.initGOLD.Layout.Row = 4;
-            app.initGOLD.Layout.Column = 2;
-
-            % Create KPHREditField_2Label
-            app.KPHREditField_2Label = uilabel(app.layoutResult);
-            app.KPHREditField_2Label.HorizontalAlignment = 'right';
-            app.KPHREditField_2Label.FontSize = 14;
-            app.KPHREditField_2Label.Layout.Row = 5;
-            app.KPHREditField_2Label.Layout.Column = 1;
-            app.KPHREditField_2Label.Text = 'KPHR';
-
-            % Create initKPHR
-            app.initKPHR = uieditfield(app.layoutResult, 'numeric');
-            app.initKPHR.ValueDisplayFormat = '%.1f';
-            app.initKPHR.Editable = 'off';
-            app.initKPHR.FontSize = 14;
-            app.initKPHR.Layout.Row = 5;
-            app.initKPHR.Layout.Column = 2;
+            % Create initPOC
+            app.initPOC = uieditfield(app.layoutResult, 'numeric');
+            app.initPOC.ValueDisplayFormat = '%.1f';
+            app.initPOC.Editable = 'off';
+            app.initPOC.FontSize = 14;
+            app.initPOC.Layout.Row = 4;
+            app.initPOC.Layout.Column = 2;
 
             % Create finalPDES
             app.finalPDES = uieditfield(app.layoutResult, 'numeric');
@@ -878,38 +801,21 @@ classdef F2_phasing_exported < matlab.apps.AppBase
             app.finalPDES.Layout.Row = 2;
             app.finalPDES.Layout.Column = 4;
 
-            % Create finalPHAS
-            app.finalPHAS = uieditfield(app.layoutResult, 'numeric');
-            app.finalPHAS.ValueDisplayFormat = '%.1f';
-            app.finalPHAS.Editable = 'off';
-            app.finalPHAS.FontSize = 14;
-            app.finalPHAS.Layout.Row = 3;
-            app.finalPHAS.Layout.Column = 4;
+            % Create finalPACT
+            app.finalPACT = uieditfield(app.layoutResult, 'numeric');
+            app.finalPACT.ValueDisplayFormat = '%.1f';
+            app.finalPACT.Editable = 'off';
+            app.finalPACT.FontSize = 14;
+            app.finalPACT.Layout.Row = 3;
+            app.finalPACT.Layout.Column = 4;
 
-            % Create finalGOLD
-            app.finalGOLD = uieditfield(app.layoutResult, 'numeric');
-            app.finalGOLD.ValueDisplayFormat = '%.1f';
-            app.finalGOLD.Editable = 'off';
-            app.finalGOLD.FontSize = 14;
-            app.finalGOLD.Layout.Row = 4;
-            app.finalGOLD.Layout.Column = 4;
-
-            % Create finalKPHR
-            app.finalKPHR = uieditfield(app.layoutResult, 'numeric');
-            app.finalKPHR.ValueDisplayFormat = '%.1f';
-            app.finalKPHR.Editable = 'off';
-            app.finalKPHR.FontSize = 14;
-            app.finalKPHR.Layout.Row = 5;
-            app.finalKPHR.Layout.Column = 4;
-
-            % Create InitialLabel
-            app.InitialLabel = uilabel(app.layoutResult);
-            app.InitialLabel.HorizontalAlignment = 'center';
-            app.InitialLabel.FontSize = 14;
-            app.InitialLabel.FontWeight = 'bold';
-            app.InitialLabel.Layout.Row = 1;
-            app.InitialLabel.Layout.Column = 2;
-            app.InitialLabel.Text = 'Initial';
+            % Create finalPOC
+            app.finalPOC = uieditfield(app.layoutResult, 'numeric');
+            app.finalPOC.ValueDisplayFormat = '%.1f';
+            app.finalPOC.Editable = 'off';
+            app.finalPOC.FontSize = 14;
+            app.finalPOC.Layout.Row = 4;
+            app.finalPOC.Layout.Column = 4;
 
             % Create NewLabel
             app.NewLabel = uilabel(app.layoutResult);
@@ -919,14 +825,6 @@ classdef F2_phasing_exported < matlab.apps.AppBase
             app.NewLabel.Layout.Row = 1;
             app.NewLabel.Layout.Column = 4;
             app.NewLabel.Text = 'New';
-
-            % Create updateInitButton
-            app.updateInitButton = uibutton(app.layoutResult, 'push');
-            app.updateInitButton.ButtonPushedFcn = createCallbackFcn(app, @updateInitButtonPushed, true);
-            app.updateInitButton.FontSize = 14;
-            app.updateInitButton.Layout.Row = 6;
-            app.updateInitButton.Layout.Column = 2;
-            app.updateInitButton.Text = 'Update';
 
             % Create CurrentLabel
             app.CurrentLabel = uilabel(app.layoutResult);
@@ -945,41 +843,42 @@ classdef F2_phasing_exported < matlab.apps.AppBase
             app.currentPDES.Layout.Row = 2;
             app.currentPDES.Layout.Column = 3;
 
-            % Create currentPHAS
-            app.currentPHAS = uieditfield(app.layoutResult, 'numeric');
-            app.currentPHAS.ValueDisplayFormat = '%.1f';
-            app.currentPHAS.Editable = 'off';
-            app.currentPHAS.FontSize = 14;
-            app.currentPHAS.Layout.Row = 3;
-            app.currentPHAS.Layout.Column = 3;
+            % Create currentPACT
+            app.currentPACT = uieditfield(app.layoutResult, 'numeric');
+            app.currentPACT.ValueDisplayFormat = '%.1f';
+            app.currentPACT.Editable = 'off';
+            app.currentPACT.FontSize = 14;
+            app.currentPACT.Layout.Row = 3;
+            app.currentPACT.Layout.Column = 3;
 
-            % Create currentGOLD
-            app.currentGOLD = uieditfield(app.layoutResult, 'numeric');
-            app.currentGOLD.ValueDisplayFormat = '%.1f';
-            app.currentGOLD.Editable = 'off';
-            app.currentGOLD.FontSize = 14;
-            app.currentGOLD.Layout.Row = 4;
-            app.currentGOLD.Layout.Column = 3;
-
-            % Create currentKPHR
-            app.currentKPHR = uieditfield(app.layoutResult, 'numeric');
-            app.currentKPHR.ValueDisplayFormat = '%.1f';
-            app.currentKPHR.Editable = 'off';
-            app.currentKPHR.FontSize = 14;
-            app.currentKPHR.Layout.Row = 5;
-            app.currentKPHR.Layout.Column = 3;
+            % Create currentPOC
+            app.currentPOC = uieditfield(app.layoutResult, 'numeric');
+            app.currentPOC.ValueDisplayFormat = '%.1f';
+            app.currentPOC.Editable = 'off';
+            app.currentPOC.FontSize = 14;
+            app.currentPOC.Layout.Row = 4;
+            app.currentPOC.Layout.Column = 3;
 
             % Create updateCurrentButton
             app.updateCurrentButton = uibutton(app.layoutResult, 'push');
             app.updateCurrentButton.ButtonPushedFcn = createCallbackFcn(app, @updateCurrentButtonPushed, true);
             app.updateCurrentButton.FontSize = 14;
-            app.updateCurrentButton.Layout.Row = 6;
+            app.updateCurrentButton.Layout.Row = 5;
             app.updateCurrentButton.Layout.Column = 3;
             app.updateCurrentButton.Text = 'Update';
 
+            % Create InitialLabel
+            app.InitialLabel = uilabel(app.layoutResult);
+            app.InitialLabel.HorizontalAlignment = 'center';
+            app.InitialLabel.FontSize = 14;
+            app.InitialLabel.FontWeight = 'bold';
+            app.InitialLabel.Layout.Row = 1;
+            app.InitialLabel.Layout.Column = 2;
+            app.InitialLabel.Text = 'Initial';
+
             % Create Panel
-            app.Panel = uipanel(app.UIFigure);
-            app.Panel.Position = [21 391 341 120];
+            app.Panel = uipanel(app.FACETIIRFPhaseScansUIFigure);
+            app.Panel.Position = [21 363 341 120];
 
             % Create selectLinac
             app.selectLinac = uidropdown(app.Panel);
@@ -1123,8 +1022,8 @@ classdef F2_phasing_exported < matlab.apps.AppBase
             app.BPMLabel.Text = 'BPM:';
 
             % Create Panel_2
-            app.Panel_2 = uipanel(app.UIFigure);
-            app.Panel_2.Position = [381 571 547 30];
+            app.Panel_2 = uipanel(app.FACETIIRFPhaseScansUIFigure);
+            app.Panel_2.Position = [381 543 547 30];
 
             % Create message
             app.message = uilabel(app.Panel_2);
@@ -1132,7 +1031,7 @@ classdef F2_phasing_exported < matlab.apps.AppBase
             app.message.FontSize = 16;
             app.message.FontColor = [0 0 1];
             app.message.Position = [71 1 473 28];
-            app.message.Text = 'Hello there!';
+            app.message.Text = 'If you can read this, GUI initialization did not complete...';
 
             % Create StatusLabel
             app.StatusLabel = uilabel(app.Panel_2);
@@ -1142,7 +1041,7 @@ classdef F2_phasing_exported < matlab.apps.AppBase
             app.StatusLabel.Text = 'Status:';
 
             % Show the figure after all components are created
-            app.UIFigure.Visible = 'on';
+            app.FACETIIRFPhaseScansUIFigure.Visible = 'on';
         end
     end
 
@@ -1156,7 +1055,7 @@ classdef F2_phasing_exported < matlab.apps.AppBase
             createComponents(app)
 
             % Register the app with App Designer
-            registerApp(app, app.UIFigure)
+            registerApp(app, app.FACETIIRFPhaseScansUIFigure)
 
             % Execute the startup function
             runStartupFcn(app, @startupFcn)
@@ -1170,7 +1069,7 @@ classdef F2_phasing_exported < matlab.apps.AppBase
         function delete(app)
 
             % Delete UIFigure when app is deleted
-            delete(app.UIFigure)
+            delete(app.FACETIIRFPhaseScansUIFigure)
         end
     end
 end
