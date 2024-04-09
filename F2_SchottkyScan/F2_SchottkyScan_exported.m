@@ -371,7 +371,7 @@ classdef F2_SchottkyScan_exported < matlab.apps.AppBase
             app.PhaseStartEditField = uieditfield(app.ScanPanel, 'numeric');
             app.PhaseStartEditField.ValueChangedFcn = createCallbackFcn(app, @StepsEditFieldValueChanged, true);
             app.PhaseStartEditField.Position = [83 86 50 22];
-            app.PhaseStartEditField.Value = -50;
+            app.PhaseStartEditField.Value = -20;
 
             % Create PhaseEndEditFieldLabel
             app.PhaseEndEditFieldLabel = uilabel(app.ScanPanel);
@@ -383,7 +383,7 @@ classdef F2_SchottkyScan_exported < matlab.apps.AppBase
             app.PhaseEndEditField = uieditfield(app.ScanPanel, 'numeric');
             app.PhaseEndEditField.ValueChangedFcn = createCallbackFcn(app, @StepsEditFieldValueChanged, true);
             app.PhaseEndEditField.Position = [220 86 50 22];
-            app.PhaseEndEditField.Value = 10;
+            app.PhaseEndEditField.Value = 40;
 
             % Create StepsEditFieldLabel
             app.StepsEditFieldLabel = uilabel(app.ScanPanel);
@@ -487,7 +487,7 @@ classdef F2_SchottkyScan_exported < matlab.apps.AppBase
             % Create UIAxes
             app.UIAxes = uiaxes(app.RightPanel);
             title(app.UIAxes, 'Schottky Scan')
-            xlabel(app.UIAxes, 'KLYS LI10 2-1 Phase [deg] ')
+            xlabel(app.UIAxes, 'KLYS LI10-2 Phase [deg] ')
             ylabel(app.UIAxes, 'Charge [pC]')
             app.UIAxes.FontSize = 14;
             app.UIAxes.HandleVisibility = 'off';
@@ -545,7 +545,7 @@ classdef F2_SchottkyScan_exported < matlab.apps.AppBase
             app.PhaseOffsetEditField = uieditfield(app.AnalysisPanel, 'numeric');
             app.PhaseOffsetEditField.Limits = [-180 180];
             app.PhaseOffsetEditField.Position = [97 7 34 22];
-            app.PhaseOffsetEditField.Value = 50;
+            app.PhaseOffsetEditField.Value = 30;
 
             % Show the figure after all components are created
             app.SchottkyAppUIFigure.Visible = 'on';
