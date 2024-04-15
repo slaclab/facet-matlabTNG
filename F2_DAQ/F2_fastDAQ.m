@@ -267,6 +267,18 @@ classdef F2_fastDAQ < handle
             
             % waitTime isnt used but it is nice to see in display
             waitTime = obj.params.n_shot/obj.event_info.liveRate;
+            pauseTime = 0.099;
+            if strcmp(obj.event.RATE,'ONE_HERTZ')
+                pauseTime = 0.999;
+            elseif strcmp(obj.event.RATE,'FIVE_HERTZ')
+                pauseTime = 0.199;
+            elseif strcmp(obj.event.RATE,'TEN_HERTZ')
+                pauseTime = 0.099;
+            elseif strcmp(obj.event.RATE,'HALF_HERTZ')
+                pauseTime = 1.999;
+            else
+                pauseTime = 0.099;
+            end
             
             obj.dispMessage(sprintf('Starting DAQ Step %d. Time estimate %0.1f seconds.',obj.step, waitTime));
             
@@ -307,7 +319,8 @@ classdef F2_fastDAQ < handle
             % Get data and count shots
             while count < (obj.params.n_shot+1)
                 %pause(0.01);
-                pause(0.099);
+                %pause(0.099);
+                pause(pauseTime);
                 
                 % Update beamrate PID
                 try
