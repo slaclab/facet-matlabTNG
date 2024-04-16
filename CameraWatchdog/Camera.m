@@ -120,7 +120,11 @@ classdef Camera < handle
                                 switch cameraInstance.pvs.TriggerMode.val{1}
                                     case 'Free Run'
                                         caput(cameraInstance.pvs.State,4);
+                                    case 'Internal'
+                                        caput(cameraInstance.pvs.State,4);
                                     case 'Sync In 1'
+                                        caput(cameraInstance.pvs.State,0);
+                                    case 'External'
                                         caput(cameraInstance.pvs.State,0);
                                 end
                             end

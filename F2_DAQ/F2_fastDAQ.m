@@ -267,6 +267,18 @@ classdef F2_fastDAQ < handle
             
             % waitTime isnt used but it is nice to see in display
             waitTime = obj.params.n_shot/obj.event_info.liveRate;
+            pauseTime = 0.099;
+            if strcmp(obj.event.RATE,'ONE_HERTZ')
+                pauseTime = 0.999;
+            elseif strcmp(obj.event.RATE,'FIVE_HERTZ')
+                pauseTime = 0.199;
+            elseif strcmp(obj.event.RATE,'TEN_HERTZ')
+                pauseTime = 0.099;
+            elseif strcmp(obj.event.RATE,'HALF_HERTZ')
+                pauseTime = 1.999;
+            else
+                pauseTime = 0.099;
+            end
             
             obj.dispMessage(sprintf('Starting DAQ Step %d. Time estimate %0.1f seconds.',obj.step, waitTime));
             
@@ -307,7 +319,8 @@ classdef F2_fastDAQ < handle
             % Get data and count shots
             while count < (obj.params.n_shot+1)
                 %pause(0.01);
-                pause(0.099);
+                %pause(0.099);
+                pause(pauseTime);
                 
                 % Update beamrate PID
                 try
@@ -324,12 +337,11 @@ classdef F2_fastDAQ < handle
                     count = count + 1;
                     
                     obj.async_data.addDataFR();
+                    obj.async_data.addArrayData();
                 end  
             end
             % Buffers should be full
-            
-            
-            
+
             % Stop buffer data
             obj.event.stop_eDef();
             
@@ -495,13 +507,21 @@ classdef F2_fastDAQ < handle
         function getNonBSAdata(obj,slac_time)
             
             obj.async_data.interpolate(slac_time);
+            obj.async_data.interpolateArrays(slac_time);
             
             for i = 1:numel(obj.params.nonBSA_list)
-                
                 for j = 1:numel(obj.data_struct.metadata.(obj.params.nonBSA_list{i}).PVs)
                     pv = obj.data_struct.metadata.(obj.params.nonBSA_list{i}).PVs{j};
                     obj.data_struct.scalars.(obj.params.nonBSA_list{i}).(remove_dots(pv)) = ...
                         [obj.data_struct.scalars.(obj.params.nonBSA_list{i}).(remove_dots(pv)); obj.async_data.interpData.(remove_dots(pv))];
+                end
+            end
+            
+            for i = 1:numel(obj.params.nonBSA_Array_list)
+                for j = 1:numel(obj.data_struct.metadata.(obj.params.nonBSA_Array_list{i}).PVs)
+                    pv = obj.data_struct.metadata.(obj.params.nonBSA_Array_list{i}).PVs{j};
+                    obj.data_struct.arrays.(obj.params.nonBSA_Array_list{i}).(remove_dots(pv)) = ...
+                        [obj.data_struct.arrays.(obj.params.nonBSA_Array_list{i}).(remove_dots(pv)); obj.async_data.interpData.(remove_dots(pv))];
                 end
             end
         end
@@ -761,23 +781,23 @@ classdef F2_fastDAQ < handle
                 %obj.nonbsa_list = [obj.nonbsa_list; list];
             end
             %obj.async_data = acq_nonBSA_data(obj.nonbsa_list,obj);
-            obj.async_data.initGet();
             
             % Fill in non-BSA arrays, not supported yet
-%             if obj.params.include_nonBSA_arrays
-%                 for i = 1:numel(obj.params.nonBSA_Array_list)
-%                     pvList = feval(obj.params.nonBSA_Array_list{i});
-%                     pvDesc = lcaGetSmart(strcat(pvList,'.DESC'));
-%                     
-%                     obj.data_struct.metadata.(obj.params.nonBSA_Array_list{i}).PVs = pvList;
-%                     obj.data_struct.metadata.(obj.params.nonBSA_Array_list{i}).Desc = pvDesc;
-%                 
+            if obj.params.include_nonBSA_arrays
+                for i = 1:numel(obj.params.nonBSA_Array_list)
+                    pvList = feval(obj.params.nonBSA_Array_list{i});
+                    pvList = obj.async_data.addListArray(pvList);
+                    pvDesc = lcaGetSmart(strcat(pvList,'.DESC'));
+                    
+                    obj.data_struct.metadata.(obj.params.nonBSA_Array_list{i}).PVs = pvList;
+                    obj.data_struct.metadata.(obj.params.nonBSA_Array_list{i}).Desc = pvDesc;
+                
 %                     obj.nonbsa_array_list = [obj.nonbsa_array_list; pvList];
-%                     
-%                 end
-%             end
+                    
+                end
+            end
             
-            
+%             obj.async_data.initGet();
         end
         
         function setupDataStruct(obj)
@@ -807,6 +827,7 @@ classdef F2_fastDAQ < handle
             
             if obj.params.include_nonBSA_arrays
                 obj.data_struct.arrays = struct();
+                obj.data_struct.arrays.steps = [];
                 for i = 1:numel(obj.params.nonBSA_Array_list)
                     obj.data_struct.arrays.(obj.params.nonBSA_Array_list{i}) = struct();
                     for j=1:numel(obj.data_struct.metadata.(obj.params.nonBSA_Array_list{i}).PVs)

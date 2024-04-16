@@ -54,7 +54,7 @@ end
 root_name = root_name(I);
 
 if root_name_empty
-    warningTxt = "PV names loaded from file. There may be an issue with the directory service.";
+    warningTxt = "PV names loaded from file. There may be an issue with the directory service or its associated tag files.";
     warndlg(warningTxt);
 end
 
@@ -122,20 +122,28 @@ end
 
 function [root_name, z, root_name_empty] = facetNames(mdl)
 % get directory service names, and format correctly
-[~, root_name] = system('eget -ts ds -a tag=FACET.BSA.rootnames -w 20');
+root_name_empty = false;
+try
+    [~, root_name] = system('eget -ts ds -a tag=FACET.BSA.rootnames -w 20');
+    if isempty(root_name)
+        ME = MException('bsagui_getRootNames:rootNameEmpty','Directory service call returned nothing');
+        throw(ME)
+    end
+catch
+    root_name = {};
+    root_name_empty = true;
+end
 root_name = splitlines(root_name);
 root_name = root_name(~cellfun(@isempty, root_name));
 root_name(contains(root_name, 'BPMS')) = [];
-root_name_empty = false;
 % update PV names cache once a month
-if day(datetime()) == 1 && ~isempty(root_name)
+if day(datetime()) == 1 && ~root_name_empty
     fileID = fopen('bsagui_rootnames_saved_facet.txt','w');
     fprintf(fileID,'%s\n',string(root_name));
     fclose(fileID);
 end
-% read from PV names cache if directory service is down
-if isempty(root_name)
-    root_name_empty = true;
+% read from PV names cache if directory service or its tag files have issues
+if root_name_empty
     fileID = fopen('bsagui_rootnames_saved_facet.txt','r');
     names_cell = textscan(fileID,'%s');
     root_name = cellstr(string(names_cell{:}));
