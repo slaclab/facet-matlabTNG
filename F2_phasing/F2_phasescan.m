@@ -54,6 +54,7 @@ classdef F2_phasescan < handle
         eta = 0.0          % dispersion at BPM (mm)
         klys_offset = 0;
         sbst_offset = 0;
+
         dPhi = 0;
         N_steps = 0;
         N_samples = 0;
@@ -123,6 +124,10 @@ classdef F2_phasescan < handle
             [all_s,all_k] = find(self.linac_map == self.linac);
             self.klys_map = all_k(find(all_s == s));
             self.klys = self.klys_map(1);
+
+            self.dPhi = self.DEFAULT_DPHI(self.linac+1);
+            self.N_steps = self.DEFAULT_STEPS(self.linac+1);
+            self.N_samples = self.DEFAULT_SAMPLES;
         end
 
         function self = set.klys(self, k)
@@ -224,6 +229,7 @@ classdef F2_phasescan < handle
             self.start_time.Format = 'dd-MMM-uuuu HH:mm:ss';
 
             self.GUI_attached = false;
+
         end
 
         % associate each linac with an int labelling its linac region
@@ -571,15 +577,18 @@ classdef F2_phasescan < handle
         end
 
         function plot_phase_scan(self, ax, show_fit)
+            disp('plotting');
             hold(ax,"off");
             yyaxis(ax,'left');
-            errorbar(ax, self.msmt.PHI(1:i), self.msmt.X(1:i), self.msmt.X_err(1:i), ...
+            errorbar(ax, self.msmt.PHI(1:self.i_scan), self.msmt.X(1:self.i_scan), self.msmt.X_err(1:self.i_scan), ...
                 '.k', 'MarkerSize', 10);
 
-            yyaxis(ax,'right');
-            errorbar(ax, self.msmt.PHI(1:i), self.msmt.dE(1:i), self.msmt.dE_err(1:i),...
-                '.', 'Color',"#7e2f8e", 'MarkerSize',10);
             hold(ax,"on");
+
+            yyaxis(ax,'right');
+            errorbar(ax, self.msmt.PHI(1:self.i_scan), self.msmt.dE(1:self.i_scan), self.msmt.dE_err(1:self.i_scan),...
+                '.', 'Color',"#7e2f8e", 'MarkerSize',10);
+            % hold(ax,"on");
 
             if show_fit
                 yyaxis(ax,'right');
@@ -671,14 +680,14 @@ classdef F2_phasescan < handle
                 self.L1_energy_correction();
             end
             
-            hold(self.GUI_ax,"off");
-            self.label_plot(self.GUI_ax);
+            hold(ax,"off");
+            self.label_plot(ax);
 
             % main scan loop: set phase, take BPM data & plot
-            for i = 1:self.in.N_steps
+            for i = 1:self.N_steps
                 self.i_scan = i;
                 
-                i_str = sprintf('[%d/%d]', i, self.in.N_steps);
+                i_str = sprintf('[%d/%d]', i, self.N_steps);
 
                 self.scan_abort_check();
                 if self.abort_requested, self.scan_aborted = true; break; end
@@ -710,12 +719,12 @@ classdef F2_phasescan < handle
                 self.scan_abort_check();
                 if self.abort_requested, self.scan_aborted = true; break; end
                 
-                self.plot_phase_scan(self.GUI_ax, false);
+                self.plot_phase_scan(ax, false); drawnow nocallbacks;
                 
             end
             
             % quit here if the scan was aborted
-            if app.scan_aborted, return; end
+            if self.scan_aborted, return; end
             
             % re-enable L0 LLRF phase FB
             if self.linac == 0, self.set_L0_LLRF_phase_feedback(1); end
