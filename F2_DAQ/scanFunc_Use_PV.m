@@ -43,6 +43,7 @@ classdef scanFunc_Use_PV
         function delta = set_value(obj,value)
             
             caput(obj.pvs.control,value);
+            pause(lcaGet('SIOC:SYS1:ML00:CALCOUT057'));
             obj.daqhandle.dispMessage(sprintf('Setting %s to %0.2f', obj.pvs.control.name, value));
             
             current_value = caget(obj.pvs.readback);
