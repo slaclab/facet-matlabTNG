@@ -215,4 +215,9 @@ S20_nonBSA_List = {...
 'SIOC:SYS1:ML00:AO521'; %y
 'SIOC:SYS1:ML00:AO526'; %theta
 
+'SIOC:SYS1:ML02:AO530'; %Minimum energy 
+'SIOC:SYS1:ML02:AO531'; %Total energy loss 
+'SIOC:SYS1:ML02:AO532'; % total Charge on screen
+'SIOC:SYS1:ML02:AO533'; % energy visible
+
 };
