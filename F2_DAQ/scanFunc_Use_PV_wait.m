@@ -13,7 +13,7 @@ classdef scanFunc_Use_PV_wait
     
     methods 
         
-        function obj = scanFunc_Use_PV(daqhandle,PV_name,RBV_name,tolerance)
+        function obj = scanFunc_Use_PV_wait(daqhandle,PV_name,RBV_name,tolerance)
             
             % Check if scanfunc called by DAQ
             if exist('daqhandle','var')
