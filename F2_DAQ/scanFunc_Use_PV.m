@@ -7,13 +7,14 @@ classdef scanFunc_Use_PV
         initial_control
         initial_readback
         daqhandle
+        waits = 0
         tolerance = 0.01
         freerun = true
     end
     
     methods 
         
-        function obj = scanFunc_Use_PV(daqhandle,PV_name,RBV_name,tolerance)
+        function obj = scanFunc_Use_PV(daqhandle,PV_name,RBV_name,waits,tolerance)
             
             % Check if scanfunc called by DAQ
             if exist('daqhandle','var')
@@ -23,6 +24,7 @@ classdef scanFunc_Use_PV
                         
             obj.control_PV = PV_name;
             obj.readback_PV = RBV_name;
+            obj.waits = waits;
             obj.tolerance = tolerance;
 
                 
@@ -43,7 +45,8 @@ classdef scanFunc_Use_PV
         function delta = set_value(obj,value)
             
             caput(obj.pvs.control,value);
-            pause(lcaGet('SIOC:SYS1:ML00:CALCOUT057'));
+            obj.daqhandle.dispMessage(sprintf('Pausing for %d seconds.',obj.waits));
+            pause(obj.waits);
             obj.daqhandle.dispMessage(sprintf('Setting %s to %0.2f', obj.pvs.control.name, value));
             
             current_value = caget(obj.pvs.readback);
