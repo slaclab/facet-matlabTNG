@@ -61,6 +61,8 @@ classdef F2_DAQ_exported < matlab.apps.AppBase
         ToleranceEditField             matlab.ui.control.NumericEditField
         RBVEditFieldLabel              matlab.ui.control.Label
         RBVEditField                   matlab.ui.control.EditField
+        WaitsEditFieldLabel            matlab.ui.control.Label
+        WaitsEditField                 matlab.ui.control.NumericEditField
         SecondDimensionPanel           matlab.ui.container.Panel
         ScanfunctionDropDown_2Label    matlab.ui.control.Label
         ScanfunctionDropDown_2         matlab.ui.control.DropDown
@@ -660,13 +662,13 @@ classdef F2_DAQ_exported < matlab.apps.AppBase
             app.PVEditFieldLabel = uilabel(app.FirstDimensionPanel);
             app.PVEditFieldLabel.HorizontalAlignment = 'right';
             app.PVEditFieldLabel.Enable = 'off';
-            app.PVEditFieldLabel.Position = [9 251 25 22];
+            app.PVEditFieldLabel.Position = [9 254 25 22];
             app.PVEditFieldLabel.Text = 'PV';
 
             % Create PVEditField
             app.PVEditField = uieditfield(app.FirstDimensionPanel, 'text');
             app.PVEditField.Enable = 'off';
-            app.PVEditField.Position = [49 251 127 22];
+            app.PVEditField.Position = [49 254 127 22];
 
             % Create StartEditFieldLabel
             app.StartEditFieldLabel = uilabel(app.FirstDimensionPanel);
@@ -723,26 +725,39 @@ classdef F2_DAQ_exported < matlab.apps.AppBase
             app.ToleranceEditFieldLabel = uilabel(app.FirstDimensionPanel);
             app.ToleranceEditFieldLabel.HorizontalAlignment = 'right';
             app.ToleranceEditFieldLabel.Enable = 'off';
-            app.ToleranceEditFieldLabel.Position = [9 183 59 22];
+            app.ToleranceEditFieldLabel.Position = [9 179 59 22];
             app.ToleranceEditFieldLabel.Text = 'Tolerance';
 
             % Create ToleranceEditField
             app.ToleranceEditField = uieditfield(app.FirstDimensionPanel, 'numeric');
             app.ToleranceEditField.Limits = [0 Inf];
             app.ToleranceEditField.Enable = 'off';
-            app.ToleranceEditField.Position = [115 183 61 22];
+            app.ToleranceEditField.Position = [115 179 61 22];
 
             % Create RBVEditFieldLabel
             app.RBVEditFieldLabel = uilabel(app.FirstDimensionPanel);
             app.RBVEditFieldLabel.HorizontalAlignment = 'right';
             app.RBVEditFieldLabel.Enable = 'off';
-            app.RBVEditFieldLabel.Position = [4 223 30 22];
+            app.RBVEditFieldLabel.Position = [4 228 30 22];
             app.RBVEditFieldLabel.Text = 'RBV';
 
             % Create RBVEditField
             app.RBVEditField = uieditfield(app.FirstDimensionPanel, 'text');
             app.RBVEditField.Enable = 'off';
-            app.RBVEditField.Position = [49 223 127 22];
+            app.RBVEditField.Position = [49 228 127 22];
+
+            % Create WaitsEditFieldLabel
+            app.WaitsEditFieldLabel = uilabel(app.FirstDimensionPanel);
+            app.WaitsEditFieldLabel.HorizontalAlignment = 'right';
+            app.WaitsEditFieldLabel.Enable = 'off';
+            app.WaitsEditFieldLabel.Position = [9 204 59 22];
+            app.WaitsEditFieldLabel.Text = 'Wait (s)';
+
+            % Create WaitsEditField
+            app.WaitsEditField = uieditfield(app.FirstDimensionPanel, 'numeric');
+            app.WaitsEditField.Limits = [0 Inf];
+            app.WaitsEditField.Enable = 'off';
+            app.WaitsEditField.Position = [115 204 61 22];
 
             % Create SecondDimensionPanel
             app.SecondDimensionPanel = uipanel(app.ScanPanel);
