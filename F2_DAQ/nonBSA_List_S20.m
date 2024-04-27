@@ -220,4 +220,16 @@ S20_nonBSA_List = {...
 'SIOC:SYS1:ML02:AO532'; % total Charge on screen
 'SIOC:SYS1:ML02:AO533'; % energy visible
 
+% Oven PVs
+'PS:LI20:2:VACT'; %Oven voltage readback
+'PS:LI20:2:IACT'; %Oven current readback
+'PS:LI20:2:PACT'; %Oven power readback
+'OVEN:LI20:3185:TEMP1'; %Oven TC1
+'OVEN:LI20:3185:TEMP2'; %Oven TC2
+'OVEN:LI20:3185:TEMP3'; %Oven TC3
+'OVEN:LI20:3185:TEMP4'; %Oven TC4
+'OVEN:LI20:3185:TEMP5'; %Oven TC5
+'OVEN:LI20:3185:TEMP6'; %Oven TC6
+'BMLN:LI20:3184:TEMP'; %Oven TC7
+
 };
