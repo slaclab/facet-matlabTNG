@@ -68,12 +68,17 @@ classdef F2_phasing_exported < matlab.apps.AppBase
         messagePanel                 matlab.ui.container.Panel
         message                      matlab.ui.control.Label
         StatusLabel                  matlab.ui.control.Label
+        doom1                        matlab.ui.control.Image
+        doom2                        matlab.ui.control.Image
+        doom3                        matlab.ui.control.Image
+        axTMIT                       matlab.ui.control.UIAxes
     end
 
     
     properties (Access = private)
         S F2_phasescan % scan controller
         scan_ready = false;
+        images;
     end
     
     methods (Access = private)
@@ -158,19 +163,18 @@ classdef F2_phasing_exported < matlab.apps.AppBase
         
         % populate app.S.in struct from GUI
         function get_scan_inputs(app)
-            app.S.in.dPhi = app.editRange.Value;
-            app.S.in.N_steps = app.editNSteps.Value;
-            app.S.in.N_samples = app.editNSamples.Value;
-            app.S.in.zigzag = app.selectZigzag.Value;
-            app.S.in.simulation = app.selectSim.Value;  
+            app.S.dPhi = app.editRange.Value;
+            app.S.N_steps = app.editNSteps.Value;
+            app.S.N_samples = app.editNSamples.Value;
+            app.S.zigzag = app.selectZigzag.Value;
+            app.S.simulation = app.selectSim.Value;  
         end
         
         % generate final phase scan plot for logbook
         function fig = make_plot(app)
-            fig = figure('position',[500,500,800,600]);
+            fig = figure('position',[500,500,640,480]);
             axis = axes;
             axis.FontSize = 12;
-            % hold(axis, "on");
             app.S.plot_phase_scan(axis, true);
             shg;
         end
@@ -183,9 +187,9 @@ classdef F2_phasing_exported < matlab.apps.AppBase
 
         % Code that executes after component creation
         function startupFcn(app)
-            % initialize a scan object on startup so things behave normally
-            % TO DO: is this when to prompt user before old scan deletion ??
             app.S = F2_phasescan(1,11,1);
+            
+            app.images = [app.doom1 app.doom2 app.doom3];
             
             app.update_klys_stat();
             app.update_operating_point();
@@ -193,11 +197,12 @@ classdef F2_phasing_exported < matlab.apps.AppBase
             app.get_scan_inputs();
             app.editOffset.Value = -1 * app.S.in.phi_set;
             
-            % re-label plot axes
+            % clear & re-label plot axes
             app.S.label_plot(app.ax);
             
             app.S.GUI_attached = true;
             app.S.GUI_ax = app.ax;
+            app.S.GUI_axTMIT = app.axTMIT;
             app.S.GUI_abortButton = app.abortButton;
             app.S.GUI_message = app.message;
             
@@ -223,9 +228,11 @@ classdef F2_phasing_exported < matlab.apps.AppBase
             % update klys list, default target: 1st klys
             app.selectKlys.Items = string(app.S.klys_map);
             app.selectKlys.Value = string(app.S.klys);
-            app.selectKlysValueChanged(event);
             
             % for L2-3 subbooster PDES, populate sbst offset accordingly
+            app.editRange.Value = app.S.dPhi;
+            app.editNSteps.Value = app.S.N_steps;
+            app.editNSamples.Value = app.S.N_samples;
             app.editSBOffset.Value = 0;
             app.editSBOffset.Enable = false;
             app.SBSToffsetLabel.Enable = false;
@@ -234,6 +241,8 @@ classdef F2_phasing_exported < matlab.apps.AppBase
                 app.SBSToffsetLabel.Enable = true;
                 app.editSBOffset.Value = app.S.sbst_offset;
             end
+            
+            app.selectKlysValueChanged(event);
         end
 
         % Value changed function: selectKlys
@@ -252,7 +261,7 @@ classdef F2_phasing_exported < matlab.apps.AppBase
             % initialize scan object in case there isn't one already held
             % TO DO: is this when to prompt user before old scan deletion ??
             app.get_scan_inputs();
-            
+                       
             app.editOffset.Value = app.S.klys_offset;
             
             % label phase setting tooltips
@@ -263,6 +272,11 @@ classdef F2_phasing_exported < matlab.apps.AppBase
             
             app.update_operating_point();
             
+            yyaxis(app.ax,'left');
+            cla(app.ax);
+            yyaxis(app.ax,'right');
+            cla(app.ax);
+            cla(app.axTMIT);
             app.S.label_plot(app.ax);
             
             app.enable_controls(true);
@@ -273,6 +287,11 @@ classdef F2_phasing_exported < matlab.apps.AppBase
             app.undoButton.Enable = false;
             app.applyButton.Enable = false;
             app.logbookButton.Enable = false;
+            
+            % kill easter eggs
+            app.doom1.Visible = false;
+            app.doom2.Visible = false;
+            app.doom3.Visible = false;
         end
 
         % Button pushed function: scanButton
@@ -285,22 +304,38 @@ classdef F2_phasing_exported < matlab.apps.AppBase
             % grab the latest config settings from the GUI
             app.get_scan_inputs();
             
+            yyaxis(app.ax,'left');
+            cla(app.ax);
+            yyaxis(app.ax,'right');
+            cla(app.ax);
+            cla(app.axTMIT);
+                        
             % run the scan!
-            app.S.phase_scan();
+            try
+                app.S.phase_scan();
+            catch E
+                app.message.Text = 'Scan failed due to Matab runtime error';
+                fprintf('Error: %s\n%s\n', E.identifier, E.message);
+                app.S.success = false;
+                app.S.scan_aborted = true;
+            end
 
             % if the scan was aborted revert phase settings
             if app.S.scan_aborted
                 app.message.Text = 'Restoring initial phase settings ...';
                 app.S.revert_phase_settings();
+                app.S.scan_aborted = false;
                 app.update_klys_phase_params(false);
                 app.message.Text = sprintf('%s scan aborted.', app.S.klys_str);
             end
             
+            % roll dice
+            img = app.images(randi(3));
+            if rand < 0.05, img.Visible = true; end
+            
             % write proposed phase settings to "new" boxes
             if app.S.success
                 app.message.Text = 'Scan completed. Press "Apply" to correct phase error.';
-                app.finalPDES.Value = app.S.out.PDES;
-                app.finalPACT.Value = app.S.out.PACT;
                 app.finalPOC.Value = app.S.out.POC;
             end
             
@@ -329,6 +364,10 @@ classdef F2_phasing_exported < matlab.apps.AppBase
             
             app.S.apply_phase_correction();
             
+            app.finalPDES.Value = app.S.out.PDES;
+            app.finalPACT.Value = app.S.out.PACT;
+            app.finalPOC.Value = app.S.out.POC;
+            
             app.update_klys_phase_params(false);
             app.enable_controls(true);
             app.abortButton.Enable = false;
@@ -338,9 +377,9 @@ classdef F2_phasing_exported < matlab.apps.AppBase
         % Button pushed function: logbookButton
         function logbookButtonPushed(app, event)
             fig = app.make_plot();
-            opts.title = sprintf('Phase Scan: K%s', app.S.klys_str);
             opts.author = 'FACET-II Phase Scan GUI';
-            opts.text = '';
+            opts.title = app.S.scan_name;
+            opts.text = app.S.scan_summary;
             util_printLog(fig, opts);
             app.message.Text = 'Sent to fphysics elog.';
         end
@@ -371,6 +410,21 @@ classdef F2_phasing_exported < matlab.apps.AppBase
         function updateCurrentButtonPushed(app, event)
             app.update_klys_phase_params(false);
         end
+
+        % Value changed function: editRange
+        function editRangeValueChanged(app, event)
+            app.S.dPhi =  app.editRange.Value;
+        end
+
+        % Value changed function: editNSteps
+        function editNStepsValueChanged(app, event)
+            app.S.N_steps = app.editNSteps.Value;
+        end
+
+        % Value changed function: selectZigzag
+        function selectZigzagValueChanged(app, event)
+            app.S.zigzag = app.selectZigzag.Value;
+        end
     end
 
     % Component initialization
@@ -396,7 +450,9 @@ classdef F2_phasing_exported < matlab.apps.AppBase
             title(app.ax, 'Title')
             xlabel(app.ax, '\phi')
             ylabel(app.ax, {'\Delta x (BPMS:LI11:333:X)'; ''})
-            app.ax.Position = [361 11 619 510];
+            app.ax.XGrid = 'on';
+            app.ax.YGrid = 'on';
+            app.ax.Position = [361 127 619 394];
 
             % Create mainControlPanel
             app.mainControlPanel = uipanel(app.FACETIIRFPhaseScansUIFigure);
@@ -498,6 +554,7 @@ classdef F2_phasing_exported < matlab.apps.AppBase
 
             % Create editNSteps
             app.editNSteps = uieditfield(app.layoutConfig, 'numeric');
+            app.editNSteps.ValueChangedFcn = createCallbackFcn(app, @editNStepsValueChanged, true);
             app.editNSteps.FontSize = 14;
             app.editNSteps.Layout.Row = 2;
             app.editNSteps.Layout.Column = [4 5];
@@ -513,6 +570,7 @@ classdef F2_phasing_exported < matlab.apps.AppBase
 
             % Create editRange
             app.editRange = uieditfield(app.layoutConfig, 'numeric');
+            app.editRange.ValueChangedFcn = createCallbackFcn(app, @editRangeValueChanged, true);
             app.editRange.FontSize = 14;
             app.editRange.Layout.Row = 1;
             app.editRange.Layout.Column = [4 5];
@@ -550,6 +608,7 @@ classdef F2_phasing_exported < matlab.apps.AppBase
 
             % Create selectZigzag
             app.selectZigzag = uicheckbox(app.layoutConfig);
+            app.selectZigzag.ValueChangedFcn = createCallbackFcn(app, @selectZigzagValueChanged, true);
             app.selectZigzag.Text = 'Zigzag';
             app.selectZigzag.FontSize = 14;
             app.selectZigzag.Layout.Row = 3;
@@ -578,7 +637,6 @@ classdef F2_phasing_exported < matlab.apps.AppBase
             app.selectSim.FontSize = 14;
             app.selectSim.Layout.Row = 4;
             app.selectSim.Layout.Column = [7 11];
-            app.selectSim.Value = true;
 
             % Create resultPanel
             app.resultPanel = uipanel(app.FACETIIRFPhaseScansUIFigure);
@@ -892,6 +950,42 @@ classdef F2_phasing_exported < matlab.apps.AppBase
             app.StatusLabel.FontWeight = 'bold';
             app.StatusLabel.Position = [11 1 60 28];
             app.StatusLabel.Text = 'Status:';
+
+            % Create doom1
+            app.doom1 = uiimage(app.FACETIIRFPhaseScansUIFigure);
+            app.doom1.ScaleMethod = 'fill';
+            app.doom1.Visible = 'off';
+            app.doom1.VerticalAlignment = 'top';
+            app.doom1.Position = [715 1 99 91];
+            app.doom1.ImageSource = 'doom.png';
+
+            % Create doom2
+            app.doom2 = uiimage(app.FACETIIRFPhaseScansUIFigure);
+            app.doom2.ScaleMethod = 'fill';
+            app.doom2.Visible = 'off';
+            app.doom2.VerticalAlignment = 'bottom';
+            app.doom2.Position = [891 517 100 54];
+            app.doom2.ImageSource = 'doom2.png';
+
+            % Create doom3
+            app.doom3 = uiimage(app.FACETIIRFPhaseScansUIFigure);
+            app.doom3.ScaleMethod = 'fill';
+            app.doom3.Visible = 'off';
+            app.doom3.HorizontalAlignment = 'right';
+            app.doom3.VerticalAlignment = 'top';
+            app.doom3.Position = [12 197 76 61];
+            app.doom3.ImageSource = 'doom3.png';
+
+            % Create axTMIT
+            app.axTMIT = uiaxes(app.FACETIIRFPhaseScansUIFigure);
+            title(app.axTMIT, '')
+            xlabel(app.axTMIT, '')
+            ylabel(app.axTMIT, 'Q ratio')
+            app.axTMIT.YLim = [0 1.2];
+            app.axTMIT.YTick = [0.5 1];
+            app.axTMIT.YTickLabel = {'0.5'; '1'};
+            app.axTMIT.YGrid = 'on';
+            app.axTMIT.Position = [361 11 578 114];
 
             % Show the figure after all components are created
             app.FACETIIRFPhaseScansUIFigure.Visible = 'on';
