@@ -197,4 +197,39 @@ S20_nonBSA_List = {...
 'SIOC:SYS1:ML03:AO748';
 'SIOC:SYS1:ML03:AO749';
 'SIOC:SYS1:ML03:AO750';
+
+% Sextupoles S1E-L 2145
+'SIOC:SYS1:ML00:AO551'; %x
+'SIOC:SYS1:ML00:AO556'; %y
+'SIOC:SYS1:ML00:AO561'; %theta
+% Sextupoles S1E-R 2365
+'SIOC:SYS1:ML00:AO566'; %x
+'SIOC:SYS1:ML00:AO571'; %y
+'SIOC:SYS1:ML00:AO576'; %theta
+% Sextupoles S2E-L 2165
+'SIOC:SYS1:ML00:AO501'; %x
+'SIOC:SYS1:ML00:AO506'; %y
+'SIOC:SYS1:ML00:AO511'; %theta
+% Sextupoles S2E-R 2335
+'SIOC:SYS1:ML00:AO516'; %x
+'SIOC:SYS1:ML00:AO521'; %y
+'SIOC:SYS1:ML00:AO526'; %theta
+
+'SIOC:SYS1:ML02:AO530'; %Minimum energy 
+'SIOC:SYS1:ML02:AO531'; %Total energy loss 
+'SIOC:SYS1:ML02:AO532'; % total Charge on screen
+'SIOC:SYS1:ML02:AO533'; % energy visible
+
+% Oven PVs
+'PS:LI20:2:VACT'; %Oven voltage readback
+'PS:LI20:2:IACT'; %Oven current readback
+'PS:LI20:2:PACT'; %Oven power readback
+'OVEN:LI20:3185:TEMP1'; %Oven TC1
+'OVEN:LI20:3185:TEMP2'; %Oven TC2
+'OVEN:LI20:3185:TEMP3'; %Oven TC3
+'OVEN:LI20:3185:TEMP4'; %Oven TC4
+'OVEN:LI20:3185:TEMP5'; %Oven TC5
+'OVEN:LI20:3185:TEMP6'; %Oven TC6
+'BMLN:LI20:3184:TEMP'; %Oven TC7
+
 };

@@ -799,7 +799,7 @@ classdef F2_S20WaistScanApp < handle & F2_common
       end
     end
     function writeBS(obj)
-        BSPath= 'F2_gitIgnore/waist_BDES_values.txt';
+        BSPath= '/usr/local/facet/tools/matlabTNG/F2_gitIgnore/waist_BDES_values.txt';
         fileId = fopen(BSPath, 'a');
         if fileId == -1
             error('File could not be opened. Check the provided file path.');
@@ -823,7 +823,7 @@ classdef F2_S20WaistScanApp < handle & F2_common
         fclose(fileId);
     end
     function ClearBS(obj)
-        BSPath= 'F2_gitIgnore/waist_BDES_values.txt';
+        BSPath= '/usr/local/facet/tools/matlabTNG/F2_gitIgnore/waist_BDES_values.txt';
         fileId = fopen(BSPath, 'w');
         if fileId == -1
             error('File could not be opened. Check the provided file path.');
@@ -851,7 +851,7 @@ classdef F2_S20WaistScanApp < handle & F2_common
         obj.guihan.Log.Value = updatedText;
     end
     function UpdateLog(obj)
-        filepath= 'F2_gitIgnore/waist_BDES_values.txt';
+        filepath= '/usr/local/facet/tools/matlabTNG/F2_gitIgnore/waist_BDES_values.txt';
         % Open the file for reading
         fileId = fopen(filepath, 'r');
 

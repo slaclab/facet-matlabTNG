@@ -339,7 +339,7 @@ classdef F2_runDAQ < handle
             obj.dispMessage('Writing to eLog.');
             obj.write2eLog(status);
             
-            obj.dispMessage('Done!');
+            obj.dispMessage(sprintf('Done with DAQ instance %d!!!!',obj.Instance));
             caput(obj.pvs.DAQ_Running,0);
         end
         

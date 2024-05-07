@@ -207,9 +207,11 @@ classdef F2_DAQApp < handle
                 obj.DAQ_params.scanFuncs{1} = obj.guihan.ScanfunctionDropDown.Value;
                 if ~isempty(obj.guihan.PVEditField) &&...
                         ~isempty(obj.guihan.RBVEditField) && ...
+                        ~isempty(obj.guihan.WaitsEditField)  && ...
                         ~isempty(obj.guihan.ToleranceEditField)
                     obj.DAQ_params.scanPVs{1} = obj.guihan.PVEditField.Value;
                     obj.DAQ_params.RBV_PVs{1} = obj.guihan.RBVEditField.Value;
+                    obj.DAQ_params.Waits{1} = obj.guihan.WaitsEditField.Value;
                     obj.DAQ_params.Tolerance{1} = obj.guihan.ToleranceEditField.Value;
                 else
                     obj.addMessage('Cannot run scan without PV field specified.');
@@ -251,9 +253,11 @@ classdef F2_DAQApp < handle
                 % Check that PV, RBV, and Tolerance fields are filled in
                 if ~isempty(obj.guihan.PVEditField_2) &&...
                         ~isempty(obj.guihan.RBVEditField_2) && ...
+                        ~isempty(obj.guihan.WaitsEditField_2) && ...
                         ~isempty(obj.guihan.ToleranceEditField_2)
                     obj.DAQ_params.scanPVs{2} = obj.guihan.PVEditField_2.Value;
                     obj.DAQ_params.RBV_PVs{2} = obj.guihan.RBVEditField_2.Value;
+                    obj.DAQ_params.Waits{2} = obj.guihan.WaitsEditField_2.Value;
                     obj.DAQ_params.Tolerance{2} = obj.guihan.ToleranceEditField_2.Value;
                 else
                     obj.addMessage('Cannot run scan without PV field specified.');
@@ -392,20 +396,24 @@ classdef F2_DAQApp < handle
             
             obj.guihan.PVEditField.Value = '';
             obj.guihan.RBVEditField.Value = '';
+            obj.guihan.WaitsEditField.Value = 0;
             obj.guihan.ToleranceEditField.Value = 0;
             
             obj.guihan.PVEditField.Enable = true;
             obj.guihan.RBVEditField.Enable = true;
+            obj.guihan.WaitsEditField.Enable = true;
             obj.guihan.ToleranceEditField.Enable = true;
 
             if ~strcmp(value,'Use_PV')
                 scanFunc = feval(['scanFunc_' value],obj);
                 obj.guihan.PVEditField.Value = scanFunc.control_PV;
                 obj.guihan.RBVEditField.Value = scanFunc.readback_PV;
+                %obj.guihan.WaitsEditField.Value = scanFunc.waits;
                 obj.guihan.ToleranceEditField.Value = scanFunc.tolerance;
                 
                 obj.guihan.PVEditField.Enable = false;
                 obj.guihan.RBVEditField.Enable = false;
+                obj.guihan.WaitsEditField.Enable = false;
                 obj.guihan.ToleranceEditField.Enable = false;
                 
             end
@@ -415,20 +423,24 @@ classdef F2_DAQApp < handle
             
             obj.guihan.PVEditField_2.Value = '';
             obj.guihan.RBVEditField_2.Value = '';
+            obj.guihan.WaitsEditField_2.Value = 0;
             obj.guihan.ToleranceEditField_2.Value = 0;
             
             obj.guihan.PVEditField_2.Enable = true;
             obj.guihan.RBVEditField_2.Enable = true;
+            obj.guihan.WaitsEditField_2.Enable = true;
             obj.guihan.ToleranceEditField_2.Enable = true;
             
             if ~strcmp(value,'Use_PV')
                 scanFunc = feval(['scanFunc_' value],obj);
                 obj.guihan.PVEditField_2.Value = scanFunc.control_PV;
                 obj.guihan.RBVEditField_2.Value = scanFunc.readback_PV;
+                %obj.guihan.WaitsEditField_2.Value = scanFunc.waits;
                 obj.guihan.ToleranceEditField_2.Value = scanFunc.tolerance;
                 
                 obj.guihan.PVEditField_2.Enable = false;
                 obj.guihan.RBVEditField_2.Enable = false;
+                obj.guihan.WaitsEditField_2.Enable = false;
                 obj.guihan.ToleranceEditField_2.Enable = false;
             end
         end

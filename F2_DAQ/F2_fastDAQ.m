@@ -156,7 +156,7 @@ classdef F2_fastDAQ < handle
             for i = 1:numel(obj.params.scanFuncs)
                 if strcmp(obj.params.scanFuncs{i},"Use_PV")
                     obj.scanFunctions.Use_PV = scanFunc_Use_PV(obj,...
-                        obj.params.scanPVs{i},obj.params.RBV_PVs{i},obj.params.Tolerance{i});
+                        obj.params.scanPVs{i},obj.params.RBV_PVs{i},obj.params.Waits{i},obj.params.Tolerance{i});
                 else
                     obj.scanFunctions.(obj.params.scanFuncs{i}) = feval(['scanFunc_' obj.params.scanFuncs{i}],obj);
                 end
@@ -452,7 +452,7 @@ classdef F2_fastDAQ < handle
                 obj.write2eLog(status);
             end
             
-            obj.dispMessage('Done!');
+            obj.dispMessage(sprintf('Done with DAQ instance %d!!!!',obj.Instance));
             caput(obj.pvs.DAQ_Running,0);
             lcaPutSmart(obj.daq_pvs.DAQ_InUse,0);
         end

@@ -1154,7 +1154,7 @@ classdef F2_OrbitApp < handle & F2_common & matlab.mixin.Copyable
           else
             lcaPut(char(obj.EOffsetPV(id)),E_init+evals(ival)); % MeV
           end
-%           pause(2);
+          pause(15);
           lcaPut(char(obj.FBDeadbandPV(id)),0);
           % Get BPM data when deadband of FB reached
           while obj.DispMeasMethod==0 && lcaGet(char(obj.FBDeadbandPV(id)))==0
