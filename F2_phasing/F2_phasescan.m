@@ -24,6 +24,9 @@ classdef F2_phasescan < handle
         DEFAULT_DPHI = [15 20 60 60];
         DEFAULT_STEPS = [15 15 9 9];
         DEFAULT_SAMPLES = 20;
+
+        TMIT_THRESHOLD_LO = 0.8;
+        TMIT_THRESHOLD_HI = 1.1;
         
     end
     
@@ -74,7 +77,7 @@ classdef F2_phasescan < handle
 
         sim_err = 0.0;
 
-        % handles for frontend objects to be manipulated during the scan
+        % flag + handles for frontend objects to be manipulated during the scan
         GUI_attached logical
         GUI_ax matlab.ui.control.UIAxes 
         GUI_axTMIT matlab.ui.control.UIAxes 
@@ -96,6 +99,7 @@ classdef F2_phasescan < handle
             self.eta = self.etas(self.linac+1);
 
             % get linac operating point info
+            % rep rate, charge in pC, milestone energy in MeV
             self.beam.f = lcaGetSmart('EVNT:SYS1:1:BEAMRATE');
             self.beam.N_elec = lcaGetSmart(sprintf('%s:TMIT1H', self.BPM));
             self.beam.Q = 1.6e-19 * self.beam.N_elec / 1e-12;
@@ -103,8 +107,8 @@ classdef F2_phasescan < handle
             
             self.PVs.X = sprintf('%s:%s', self.BPM, 'X');
             self.PVs.TMIT = sprintf('%s:%s', self.BPM, 'TMIT');
-            self.msmt.TMIT_thr_lo = 0.8 * self.beam.N_elec;
-            self.msmt.TMIT_thr_hi = 1.3 * self.beam.N_elec;
+            self.msmt.TMIT_thr_lo = self.TMIT_THRESHOLD_LO * self.beam.N_elec;
+            self.msmt.TMIT_thr_hi = self.TMIT_THRESHOLD_HI * self.beam.N_elec;
             
             [all_s,~] = find(self.linac_map == self.linac);
             self.sector_map = [unique(all_s)];
@@ -241,7 +245,6 @@ classdef F2_phasescan < handle
             self.start_time.Format = 'dd-MMM-uuuu HH:mm:ss';
 
             self.GUI_attached = false;
-
         end
 
         % associate each linac with an int labelling its linac region
@@ -383,18 +386,17 @@ classdef F2_phasescan < handle
             lcaPutSmart(sprintf('KLYS:LI10:%d1:SFB_PDIS', self.klys), state);
         end
 
-        % set the scan target klystron's phase to 'p'
+        % set the scan target klystron's control phase to 'p'
         % in L1 adjust KPHR directly, otherwise use PDES
         % TO DO: update for L0?
-        function [PACT, phase_ok] = set_phase(self, p)
+        function PACT = set_phase(self, p)
             
             % for simulated scans just pause and return PACT = PDES
-            if self.simulation, pause(0.5); PACT = p; phase_ok = true; return; end
+            if self.simulation, pause(0.5); PACT = p; return; end
 
             % L0: set KLYS PDES, report ACCL WVG phase
             if self.linac == 0
                 lcaPutSmart(self.PVs.klys_PDES, p);
-                phase_ok = 1;
                 pause(1.0);
                 % L0 PADs occasionally read ~120deg for no apparent reason
                 % try getting phase twice in hopes of avoiding bad luck
@@ -406,13 +408,13 @@ classdef F2_phasescan < handle
             
             % L1: set klystron KPHR, report KPHR
             elseif self.linac == 1
-                [~, phase_ok] = control_phaseSet(self.klys_str, p, 0,0, 'KPHR');
+                [~, ~] = control_phaseSet(self.klys_str, p, 0,0, 'KPHR');
                 pause(0.2);
                 PACT = lcaGetSmart(self.PVs.klys_KPHR);
             
             % L2, L3: set klystron PDES, report PACT <--- slow!!!
             else
-                [PACT, phase_ok] = control_phaseSet(self.klys_str, p, 1, 1);
+                [PACT, ~] = control_phaseSet(self.klys_str, p, 1, 1);
             end
         end
 
@@ -429,13 +431,13 @@ classdef F2_phasescan < handle
                     lcaPutSmart(self.PVs.refpoc, self.out.POC);
                 
                 case 1
-                    [~, OK] = control_phaseSet(self.klys_str, self.out.POC, 0,0, 'KPHR');
+                    [~, ~] = control_phaseSet(self.klys_str, self.out.POC, 0,0, 'KPHR');
                 
                 case {2,3}
-                    [PACT, OK] = control_phaseSet(self.klys_str, -1*self.fit.phi_meas, 1, 1);
+                    [PACT, ~] = control_phaseSet(self.klys_str, -1*self.fit.phi_meas, 1, 1);
                     [PACT, PDES, GOLD] = control_phaseGold(self.klys_str, self.in.phi_set);
-                    poc_zero = GOLD;
-                    [PACT, OK] = control_phaseSet(self.klys_str, self.in.PDES, 1, 1);
+                    % poc_zero = GOLD;
+                    [PACT, ~] = control_phaseSet(self.klys_str, self.in.PDES, 1, 1);
             end
 
             % write out resultant phase settings
@@ -445,11 +447,11 @@ classdef F2_phasescan < handle
             self.out.POC = POC;
 
             % write history PVs
-            lcaPutSmart(self.PVs.phase0, self.fit.phi_meas);
+            %lcaPutSmart(self.PVs.phase0, self.fit.phi_meas);
             % lcaPutSmart(self.PVs.goldchg, poc_zero);
-            scan_ts = (now - self.EPICS_t0) * 24*60*60
-            lcaPutSmart(self.PVs.goldts, scan_ts);
-            lcaPutSmart(self.PVs.phasets, scan_ts);
+            %scan_ts = (now - self.EPICS_t0) * 24*60*60
+            %lcaPutSmart(self.PVs.goldts, scan_ts);
+            %lcaPutSmart(self.PVs.phasets, scan_ts);
         end
         
         % apply self.undo settings to revert the phase scan
@@ -705,7 +707,7 @@ classdef F2_phasescan < handle
                 if self.linac == 1, prbv = PACT - self.in.p0 - self.klys_offset; end
                 self.msmt.PHI(self.i_scan) = prbv;
                 fprintf('%s pDes/pAct : %.1f / %.1f\n', i_str, pdes, prbv);
-                
+
                 self.scan_abort_check();
                 if self.abort_requested, self.scan_aborted = true; break; end
                 
@@ -779,7 +781,7 @@ classdef F2_phasescan < handle
             if ~self.simulation, save(sprintf('%s/%s.mat', datadir, self.scan_name)); end
             
             % (6) plot fit and scan result
-            self.plot_phase_scan(self.GUI_ax, true);
+            self.plot_phase_scan(ax, true);
             if self.GUI_attached, self.plot_TMIT(self.GUI_axTMIT); end
             
             self.GUI_message.Text = 'Scan completed. Press "Apply" to correct phase error.';
