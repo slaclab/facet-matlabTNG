@@ -701,7 +701,7 @@ classdef F2_phasescan < handle
                     i_str, self.klys_str, self.in.range(i) ...
                     ));
                 pdes = self.in.range(self.i_scan);
-                [PACT, phase_ok] = self.set_phase(self.in.range(self.i_scan));
+                PACT = self.set_phase(self.in.range(self.i_scan));
 
                 prbv = PACT;
                 if self.linac == 1, prbv = PACT - self.in.p0 - self.klys_offset; end
