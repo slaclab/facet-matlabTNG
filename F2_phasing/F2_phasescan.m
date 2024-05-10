@@ -748,6 +748,7 @@ classdef F2_phasescan < handle
 
             % (4) calculate correction to phase offset PV
             poc_zero = wrapTo180(self.in.POC - self.fit.phi_err);
+            if self.linac == 1, poc_zero = wrapTo360(self.in.POC - self.fit.phi_err); end
             self.out.POC = poc_zero;
             
             % (5) if we've gotten this far, scan succeeded, time to summarize & save results
