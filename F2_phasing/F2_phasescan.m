@@ -194,7 +194,7 @@ classdef F2_phasescan < handle
                 case {2,3}, p_klys = lcaGetSmart(self.PVs.klys_PDES);
             end
             if abs(p_klys) > 0.0, self.klys_offset = -1 * p_klys; end
-            self.in.phi_set = p_klys - self.sbst_offset;
+            self.in.phi_set = p_klys + self.sbst_offset;
 
             self.save_target_initial_setting();
 
