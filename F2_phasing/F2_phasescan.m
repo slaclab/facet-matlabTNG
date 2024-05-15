@@ -36,9 +36,9 @@ classdef F2_phasescan < handle
         sector_map = NaN(5);
         klys_map = NaN(8);
 
-        linac = 0;         % linac number (1,2,3)
-        sector = 10;       % sector number (10-19)
-        klys = 3;          % klystron number (1-8)
+        linac = -1;         % linac number (1,2,3)
+        sector = -1;       % sector number (10-19)
+        klys = -1;          % klystron number (1-8)
         klys_str = 'ss-k'; % klystron ID string
 
         % klystron trigger status 1: on-beam, 2: standby, 3: offline
@@ -109,6 +109,10 @@ classdef F2_phasescan < handle
             self.PVs.TMIT = sprintf('%s:%s', self.BPM, 'TMIT');
             self.msmt.TMIT_thr_lo = self.TMIT_THRESHOLD_LO * self.beam.N_elec;
             self.msmt.TMIT_thr_hi = self.TMIT_THRESHOLD_HI * self.beam.N_elec;
+
+            self.dPhi = self.DEFAULT_DPHI(self.linac+1);
+            self.N_steps = self.DEFAULT_STEPS(self.linac+1);
+            self.N_samples = self.DEFAULT_SAMPLES;
             
             [all_s,~] = find(self.linac_map == self.linac);
             self.sector_map = [unique(all_s)];
@@ -134,15 +138,17 @@ classdef F2_phasescan < handle
             [all_s,all_k] = find(self.linac_map == self.linac);
             self.klys_map = all_k(find(all_s == s));
             self.klys = self.klys_map(1);
-
+            
+            % special case dPhi for LI11 since beam gamma is so small here
             self.dPhi = self.DEFAULT_DPHI(self.linac+1);
-            if (self.linac == 2) && (self.sector == 11) self.dPhi = 40; end
+            % if (self.linac == 2) && (self.sector == 11), self.dPhi = 40; end
             self.N_steps = self.DEFAULT_STEPS(self.linac+1);
-            self.N_samples = self.DEFAULT_SAMPLES;
+            % self.N_samples = self.DEFAULT_SAMPLES;
         end
 
         function self = set.klys(self, k)
             assert(ismember(k, self.klys_map), 'Invalid klystron number');
+            disp('setting klys value')
             self.klys = k;
 
             self.klys_str = sprintf('%d-%d', self.sector, self.klys);
@@ -194,33 +200,19 @@ classdef F2_phasescan < handle
                 case {2,3}, p_klys = lcaGetSmart(self.PVs.klys_PDES);
             end
             if abs(p_klys) > 0.0, self.klys_offset = -1 * p_klys; end
-            self.in.phi_set = p_klys + self.sbst_offset;
+            self.in.phi_set = p_klys - self.sbst_offset
 
             self.save_target_initial_setting();
-
-            % roll a fake error in degS for simulated scans to "measure"
-            self.sim_err = 80.0*randn();
-        end
-
-        function set.dPhi(self, val)
-            self.dPhi = val;
-            self.compute_scan_range();
         end
 
         function set.N_steps(self, val)
             self.N_steps = val;
-            self.compute_scan_range();
             % reinit measurement arrays when Nsteps changes
             self.msmt.PHI     = zeros(1, self.N_steps);
             self.msmt.X       = zeros(1, self.N_steps);
             self.msmt.X_err   = zeros(1, self.N_steps);
             self.msmt.dE      = zeros(1, self.N_steps);
             self.msmt.dE_err  = zeros(1, self.N_steps);
-        end
-
-        function set.zigzag(self, val)
-            self.zigzag = val;
-            self.compute_scan_range();
         end
     end
 
@@ -234,10 +226,6 @@ classdef F2_phasescan < handle
             self.klys = klys;
 
             self.in.range = [];
-            self.dPhi = self.DEFAULT_DPHI(linac+1);
-            self.in.p0 = 0;
-            self.N_steps = self.DEFAULT_STEPS(linac+1);
-            self.N_samples = self.DEFAULT_SAMPLES;
             self.zigzag = false;
             self.simulation = false;
 
@@ -302,12 +290,14 @@ classdef F2_phasescan < handle
         % compute the range of phase settings given range + N steps
         function compute_scan_range(self)
             N = self.N_steps;
+            if all(isnan(self.klys_map)), return; end
                         
             self.in.p0 = 0;
-            if self.linac == 0
-                self.in.p0 = lcaGetSmart(self.PVs.klys_PDES);
-            elseif self.linac == 1
-                self.in.p0 = lcaGetSmart(self.PVs.klys_KPHR);
+            switch self.linac
+                case {0,2,3}
+                    p0 = lcaGetSmart(self.PVs.klys_PDES);
+                case 1
+                    p0 = lcaGetSmart(self.PVs.klys_KPHR);
             end
 
             uncorrected_range = linspace(self.in.p0-self.dPhi, self.in.p0+self.dPhi, N);
@@ -415,6 +405,8 @@ classdef F2_phasescan < handle
             % L2, L3: set klystron PDES, report PACT <--- slow!!!
             else
                 [PACT, ~] = control_phaseSet(self.klys_str, p, 1, 1);
+                % invalid SLC phase readbacks use -10000degS as a fill value, try again if so
+                if PACT == -10000.0, [PACT, ~] = control_phaseSet(self.klys_str, p, 1, 1); end
             end
         end
 
@@ -577,11 +569,12 @@ classdef F2_phasescan < handle
                 yyaxis(ax,'left');
                 plot(ax, self.fit.range, self.fit.X, ...
                     '-', 'Color',"#0072bd", 'LineWidth',2);
-                p0 = 0;
-                if self.linac ==1, p0 = -1*self.in.phi_set; end
+                % p0 = 0;
+                % if self.linac == 1, p0 = -1*self.in.phi_set; end
+                p0 = -1*self.in.phi_set;
                 xline(ax, p0, ...
                     '--', 'Color',"#666666", 'LineWidth',2)
-                xline(ax, -1*self.fit.phi_meas, ...
+                xline(ax, self.fit.phi_meas, ...
                     '--g', 'LineWidth',2);
             end
 
@@ -630,7 +623,8 @@ classdef F2_phasescan < handle
             self.fit.A = sign(c(1)) * sqrt(c(1)^2 + c(2)^2);
             self.fit.B = c(3);
             
-            phi_meas = -1 * asind(c(2) / self.fit.A);
+            % phi_meas = -1 * asind(c(2) / self.fit.A);
+            phi_meas = asind(c(2) / self.fit.A);
             
             % LLS fit always finds the nearest zero crossing, so we need to
             % flip the sign of A, shift by pi, then wrap to +/-180
@@ -639,14 +633,14 @@ classdef F2_phasescan < handle
             end
             self.fit.phi_meas = wrapTo180(phi_meas);
 
-            self.fit.phi_act = self.in.phi_set + self.fit.phi_meas
-            if self.linac == 1, self.fit.phi_act = self.fit.phi_meas; end
+            self.fit.phi_err = self.in.phi_set + self.fit.phi_meas
+            if self.linac == 1, self.fit.phi_err = self.fit.phi_meas; end
 
-            self.fit.phi_err = self.fit.phi_meas;
-            if self.linac == 1, self.fit.phi_err = self.fit.phi_act + self.klys_offset; end
+            self.fit.phi_act = self.fit.phi_meas;
+            if self.linac == 1, self.fit.phi_act = self.fit.phi_act + self.klys_offset; end
             
             self.fit.range = linspace(PHI(1), PHI(end), 200);
-            self.fit.X = self.fit.A * cosd(self.fit.range + self.fit.phi_meas) + self.fit.B;
+            self.fit.X = self.fit.A * cosd(self.fit.range - self.fit.phi_act) + self.fit.B;
             
             dE_dx = self.beam.E_design / self.eta;
             self.fit.dE = dE_dx * self.fit.X;
@@ -675,6 +669,8 @@ classdef F2_phasescan < handle
 
             self.start_time = datetime('now');
             self.start_time.Format = 'dd-MMM-uuuu HH:mm:ss';
+
+            self.compute_scan_range();
             
             % disable relevant longitudinal feedbacks before scanning
             % for L0, also turn off LLRF slow feedbacks
@@ -682,6 +678,7 @@ classdef F2_phasescan < handle
             if self.linac == 0, self.set_L0_LLRF_phase_feedback(0); end
             
             % roll a fake error in degS for simulated scans to "measure"
+            % self.sim_err = 15.0;
             if self.simulation, self.sim_err = 45.0*randn(); end
             
             hold(ax,"off");
@@ -768,12 +765,13 @@ classdef F2_phasescan < handle
                 sprintf('phase scan K%s completed at %s\n', self.klys_str, self.end_time), ...
                 sprintf('scan data saved to: %s\n', self.data_file), ...
                 sprintf('scan success: %s\n', string(self.success)), ...
-                sprintf('  desired beam phase = %.1f deg\n', self.in.phi_set), ...
-                sprintf('  actual beam phase  = %.2f deg\n', self.fit.phi_act), ...
-                sprintf('  phi0 actual        = %.2f deg\n', self.fit.phi_err), ...
-                sprintf('  POC init           = %.2f deg\n', self.in.POC), ...
-                sprintf('  POC new            = %.2f deg\n', self.out.POC), ...
-                sprintf('  est. klys Egain    = %.2f MeV', self.fit.E0), ...
+                sprintf('  desired beam phase = %.1f degS\n', self.in.phi_set), ...
+                sprintf('  meas. beam phase   = %.1f degS\n', -1*self.fit.phi_meas), ...
+                sprintf('  actual zero phase  = %.1f degS\n', self.fit.phi_act), ...
+                sprintf('  phase error        = %.1f degS\n', self.fit.phi_err), ...
+                sprintf('  POC init           = %.1f degS\n', self.in.POC), ...
+                sprintf('  POC new            = %.1f degS\n', self.out.POC), ...
+                sprintf('  est. klys Egain    = %.1f MeV', self.fit.E0), ...
             };
             self.scan_summary = strjoin(txt, '');
             disp(self.scan_summary);

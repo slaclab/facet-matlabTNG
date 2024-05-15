@@ -1,4 +1,5 @@
-classdef F2_phasing_exported < matlab.apps.AppBase
+ status
+ classdef F2_phasing_exported < matlab.apps.AppBase
 
     % Properties that correspond to app components
     properties (Access = public)
@@ -135,6 +136,9 @@ classdef F2_phasing_exported < matlab.apps.AppBase
                 app.initPDES.Value = PDES;
                 app.initPACT.Value = PACT;
                 app.initPOC.Value = offset;
+                app.S.in.PDES = PDES;
+                app.S.in.PACT = PACT;
+                app.S.in.POC = offset;
             else
                 app.currentPDES.Value = PDES;
                 app.currentPACT.Value = PACT;
@@ -195,7 +199,7 @@ classdef F2_phasing_exported < matlab.apps.AppBase
             app.update_operating_point();
             app.label_phase_settings();
             app.get_scan_inputs();
-            app.editOffset.Value = -1 * app.S.in.phi_set;
+            %app.editOffset.Value = -1 * app.S.in.phi_set;
             
             % clear & re-label plot axes
             app.S.label_plot(app.ax);
@@ -301,9 +305,10 @@ classdef F2_phasing_exported < matlab.apps.AppBase
             app.helpButton.Enable = true;
             app.scanButton.Text = 'Scanning...';
 
-            % grab the latest config settings from the GUI
+            % grab the latest phase settings & config settings from the GUI
+            app.update_klys_phase_params(true);
             app.get_scan_inputs();
-            
+        
             yyaxis(app.ax,'left');
             cla(app.ax);
             yyaxis(app.ax,'right');
@@ -352,7 +357,7 @@ classdef F2_phasing_exported < matlab.apps.AppBase
         function applyButtonPushed(app, event)
             app.message.Text = 'Applying phase correction ...';
             app.enable_controls(false);
-            if abs(app.S.fit.phi_meas) > 20.0
+            if abs(app.S.fit.phi_err) > 20.0
                 resp = questdlg('Large (>20deg) phase change. Set measured zero phase?');
                 if ~strcmp(resp, 'Yes')
                     app.message.Text = 'Phase correction declined.';
