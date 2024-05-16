@@ -270,9 +270,9 @@ classdef F2_S20Config_exported < matlab.apps.AppBase
       value = app.WaistX_dzDES.Value;
       if ~app.XYSelect
         app.WaistY_dzDES.Value = value ;
-        app.XYSelect=false;
-      else
         app.XYSelect=true;
+      else
+        app.XYSelect=false;
       end
       app.aobj.WaistShiftDES=[app.WaistX_dzDES.Value app.WaistY_dzDES.Value].*1e-2;
         end
@@ -282,9 +282,9 @@ classdef F2_S20Config_exported < matlab.apps.AppBase
       value = app.WaistY_dzDES.Value;
       if ~app.XYSelect
         app.WaistX_dzDES.Value = value ;
-        app.XYSelect=false;
-      else
         app.XYSelect=true;
+      else
+        app.XYSelect=false;
       end
       app.aobj.WaistShiftDES=[app.WaistX_dzDES.Value app.WaistY_dzDES.Value].*1e-2;
         end
