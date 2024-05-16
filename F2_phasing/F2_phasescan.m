@@ -633,7 +633,7 @@ classdef F2_phasescan < handle
             end
             self.fit.phi_meas = wrapTo180(phi_meas);
 
-            self.fit.phi_err = self.in.phi_set + self.fit.phi_meas
+            self.fit.phi_err = -1*(self.fit.phi_meas + self.in.phi_set)
             if self.linac == 1, self.fit.phi_err = self.fit.phi_meas; end
 
             self.fit.phi_act = self.fit.phi_meas;
