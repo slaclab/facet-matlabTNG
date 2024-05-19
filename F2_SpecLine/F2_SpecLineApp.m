@@ -40,6 +40,8 @@ classdef F2_SpecLineApp < handle
                 PV(context,'name',"Q2D_BACT",'pvname',"LI20:LGPS:3091:BACT",'monitor',true,'mode',"r"); % Q2D BACT
                 PV(context,'name',"Q5D_BDES",'pvname',"LI20:LGPS:3330:BDES",'monitor',true,'mode',"rw"); % Q5D BDES
                 PV(context,'name',"Q5D_BACT",'pvname',"LI20:LGPS:3330:BACT",'monitor',true,'mode',"r"); % Q5D BACT
+                PV(context,'name',"XCOR3276_BDES",'pvname',"LI20:XCOR:3276:BDES",'monitor',true,'mode',"rw"); % XCOR3276 BDES
+                PV(context,'name',"XCOR3276_BACT",'pvname',"LI20:XCOR:3276:BACT",'monitor',true,'mode',"r"); % XCOR3276 BACT
                 ] ;
             pset(obj.pvlist,'debug',0) ;
             obj.pvs = struct(obj.pvlist);
@@ -64,6 +66,9 @@ classdef F2_SpecLineApp < handle
             obj.pvs.Q2D_BACT.guihan = apph.Q2DBACTField;
             obj.pvs.Q5D_BDES.guihan = apph.B5DBDESEditField;
             obj.pvs.Q5D_BACT.guihan = apph.B5DBACTField;
+            obj.pvs.XCOR3276_BDES.guihan = apph.XCOR3276BDESEditField;
+            obj.pvs.XCOR3276_BACT.guihan = apph.XCOR3276BACTField;
+            
             
             % Start listening for PV updates
             obj.listeners = addlistener(obj,'PVUpdated',@(~,~) obj.loop) ;
@@ -188,6 +193,28 @@ classdef F2_SpecLineApp < handle
             
         end
         
+        function TrimCorr(obj,app)
+            
+            % Read the value and trim the magnet.
+            % This allows you to enter values manually
+            
+           
+            BDES = app.XCOR3276BCALCEditField.Value;
+         
+            disp('Setting corrector!');
+            disp(['XCOR = ' num2str(BDES)]);
+               updateLog(obj, app, {' Setting magnets:', ['   XCOR = ' num2str(BDES)]});
+               pause(0.1);
+               updateLog(obj, app, {'  Waiting for SLC magnet trim...'}); pause(0.1);
+               
+               control_magnetSet('XCOR:LI20:3276',BDES,'action','TRIM');
+            
+            disp('Magnets set!');
+            updateLog(obj, app, 'Magnets set!')
+            
+        end
+        
+        
         function updateLog(obj, app, msg)
            % add an entry to the end of the log
            t = char(datetime('now','TimeZone','local','Format','dd-MMM-yyyy HH:mm:ss'));
@@ -212,14 +239,23 @@ classdef F2_SpecLineApp < handle
             E = app.EnergyEditField.Value;    
             
             
+            M = calc_M(obj, app, zob, zim, PS_Q0D, PS_Q1D, PS_Q2D, E);
+            
+        end
+        
+        function M = calc_M(obj, app, zob, zim, PS_Q0D, PS_Q1D, PS_Q2D, E, BEAMLINE)
+
+            if nargin<9
+                addpath('../F2_Emit');
+                load 'SpecBeamline.mat';
+            end
+            
             % Define magnet positions
             zQ0D = 1996.98244;
             zQ1D = 1999.20656;
             zQ2D = 2001.43099;
             
-            addpath('../F2_Emit');
-            load 'SpecBeamline.mat'
-            
+          
 
             % Find where everything is
             Q0D =findcells(BEAMLINE,'Name','Q0D');
@@ -297,7 +333,35 @@ classdef F2_SpecLineApp < handle
             beamline.name{end+1}='IPOTR2';   beamline.z(end+1) = 1.9950900e+03;
             beamline.name{end+1}='BEWIN2';   beamline.z(end+1) = 1.9961000e+03;
         end
-     
+        
+    
+        
+        function E_zob = calc_ObjectPlaneE(obj, app, zob)
+           
+            % Load beamline file
+            addpath('../F2_Emit');
+            load 'SpecBeamline.mat';
+            
+            %zob = app.ZObjectEditField.Value;
+            zim = app.ZImageEditField.Value;
+            PS_Q0D = app.Q0DBACTField.Value;
+            PS_Q1D = app.Q1DBACTField.Value;
+            PS_Q2D = app.Q2DBACTField.Value;
+            E_i = app.EnergyEditField.Value;   
+            
+            fun = @(x)funcM12_E(obj, app, zob, zim, PS_Q0D, PS_Q1D, PS_Q2D, x, BEAMLINE);
+            
+            E_zob = fzero(fun, E_i);
+            
+        end
+        
+        function M12 =  funcM12_E(obj, app, zob, zim, PS_Q0D, PS_Q1D, PS_Q2D, x, BEAMLINE)
+            % Use to calc object plane as a funtion of E
+            
+            M = calc_M(obj, app, zob, zim, PS_Q0D, PS_Q1D, PS_Q2D, x, BEAMLINE);
+            M12 = M(1,2);
+        end
+        
         
     end
     
