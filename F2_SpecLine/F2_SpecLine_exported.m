@@ -46,6 +46,7 @@ classdef F2_SpecLine_exported < matlab.apps.AppBase
         TrimCorrectorButton          matlab.ui.control.Button
         XCOR3276CheckBox             matlab.ui.control.CheckBox
         XCOR3276BCALCEditField       matlab.ui.control.Spinner
+        AutoELOGCheckBox             matlab.ui.control.CheckBox
         LogPanel                     matlab.ui.container.Panel
         DisplayLogTextAreaLabel      matlab.ui.control.Label
         LogTextArea                  matlab.ui.control.TextArea
@@ -82,10 +83,17 @@ classdef F2_SpecLine_exported < matlab.apps.AppBase
 
         % Button pushed function: TrimButton
         function TrimButtonPushed(app, event)
+             app.TrimButton.Enable = 0;
+             app.PrinttoELOGButton.Enable = 0;
              app.aobj.Trim(app);
-             
+                          
              pause(5);
-             PrinttoELOGButtonPushed(app);
+             app.TrimButton.Enable = 1;
+             app.PrinttoELOGButton.Enable = 1;
+             
+             if app.AutoELOGCheckBox.Value
+                PrinttoELOGButtonPushed(app);
+             end
         end
 
         % Button pushed function: TrimCorrectorButton
@@ -411,7 +419,7 @@ classdef F2_SpecLine_exported < matlab.apps.AppBase
             app.TrimButton.FontSize = 14;
             app.TrimButton.FontWeight = 'bold';
             app.TrimButton.FontColor = [1 1 1];
-            app.TrimButton.Position = [147 115 62 24];
+            app.TrimButton.Position = [139 115 70 24];
             app.TrimButton.Text = 'Trim';
 
             % Create B5DBACTField
@@ -461,21 +469,21 @@ classdef F2_SpecLine_exported < matlab.apps.AppBase
             app.PrinttoELOGButton.BackgroundColor = [0 1 0];
             app.PrinttoELOGButton.FontSize = 14;
             app.PrinttoELOGButton.FontWeight = 'bold';
-            app.PrinttoELOGButton.Position = [241 115 108 24];
+            app.PrinttoELOGButton.Position = [246 115 108 24];
             app.PrinttoELOGButton.Text = 'Print to ELOG';
 
             % Create XCOR3276BACTField
             app.XCOR3276BACTField = uieditfield(app.MagnetValuesPanel, 'numeric');
             app.XCOR3276BACTField.ValueDisplayFormat = '%0.4f';
             app.XCOR3276BACTField.Editable = 'off';
-            app.XCOR3276BACTField.Position = [297 54 59 22];
+            app.XCOR3276BACTField.Position = [297 53 59 22];
 
             % Create XCOR3276BDESEditField
             app.XCOR3276BDESEditField = uieditfield(app.MagnetValuesPanel, 'numeric');
             app.XCOR3276BDESEditField.ValueDisplayFormat = '%0.4f';
             app.XCOR3276BDESEditField.Editable = 'off';
             app.XCOR3276BDESEditField.Visible = 'off';
-            app.XCOR3276BDESEditField.Position = [224 54 61 22];
+            app.XCOR3276BDESEditField.Position = [224 53 61 22];
 
             % Create TrimCorrectorButton
             app.TrimCorrectorButton = uibutton(app.MagnetValuesPanel, 'push');
@@ -485,14 +493,14 @@ classdef F2_SpecLine_exported < matlab.apps.AppBase
             app.TrimCorrectorButton.FontWeight = 'bold';
             app.TrimCorrectorButton.FontColor = [1 1 1];
             app.TrimCorrectorButton.Visible = 'off';
-            app.TrimCorrectorButton.Position = [147 17 113 24];
+            app.TrimCorrectorButton.Position = [139 17 113 24];
             app.TrimCorrectorButton.Text = 'Trim Corrector';
 
             % Create XCOR3276CheckBox
             app.XCOR3276CheckBox = uicheckbox(app.MagnetValuesPanel);
             app.XCOR3276CheckBox.ValueChangedFcn = createCallbackFcn(app, @XCOR3276CheckBoxValueChanged, true);
             app.XCOR3276CheckBox.Text = '   XCOR 3276';
-            app.XCOR3276CheckBox.Position = [21 54 97 22];
+            app.XCOR3276CheckBox.Position = [21 53 97 22];
 
             % Create XCOR3276BCALCEditField
             app.XCOR3276BCALCEditField = uispinner(app.MagnetValuesPanel);
@@ -500,7 +508,13 @@ classdef F2_SpecLine_exported < matlab.apps.AppBase
             app.XCOR3276BCALCEditField.Limits = [-0.065 0.065];
             app.XCOR3276BCALCEditField.ValueDisplayFormat = '%0.4f';
             app.XCOR3276BCALCEditField.Visible = 'off';
-            app.XCOR3276BCALCEditField.Position = [142 54 75 22];
+            app.XCOR3276BCALCEditField.Position = [142 53 75 22];
+
+            % Create AutoELOGCheckBox
+            app.AutoELOGCheckBox = uicheckbox(app.MagnetValuesPanel);
+            app.AutoELOGCheckBox.Text = ' Auto ELOG';
+            app.AutoELOGCheckBox.Position = [259 90 86 22];
+            app.AutoELOGCheckBox.Value = true;
 
             % Create LogPanel
             app.LogPanel = uipanel(app.SpecLineGUIUIFigure);
