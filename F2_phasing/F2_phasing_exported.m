@@ -1,5 +1,4 @@
- status
- classdef F2_phasing_exported < matlab.apps.AppBase
+git stclassdef F2_phasing_exported < matlab.apps.AppBase
 
     % Properties that correspond to app components
     properties (Access = public)

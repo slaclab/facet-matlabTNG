@@ -634,10 +634,17 @@ classdef F2_phasescan < handle
             self.fit.phi_meas = wrapTo180(phi_meas);
 
             self.fit.phi_err = -1*(self.fit.phi_meas + self.in.phi_set)
-            if self.linac == 1, self.fit.phi_err = self.fit.phi_meas; end
-
             self.fit.phi_act = self.fit.phi_meas;
-            if self.linac == 1, self.fit.phi_act = self.fit.phi_act + self.klys_offset; end
+            if self.linac == 1
+                self.fit.phi_err = self.fit.phi_meas;
+                self.fit.phi_act = self.fit.phi_act + self.klys_offset;
+            end
+
+            % self.fit.phi_err = -1*(self.fit.phi_meas + self.in.phi_set)
+            % if self.linac == 1, self.fit.phi_err = self.fit.phi_meas; end
+
+            % self.fit.phi_act = self.fit.phi_meas;
+            % if self.linac == 1, self.fit.phi_act = self.fit.phi_act + self.klys_offset; end
             
             self.fit.range = linspace(PHI(1), PHI(end), 200);
             self.fit.X = self.fit.A * cosd(self.fit.range - self.fit.phi_act) + self.fit.B;
