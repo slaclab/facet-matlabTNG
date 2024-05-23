@@ -232,4 +232,10 @@ S20_nonBSA_List = {...
 'OVEN:LI20:3185:TEMP6'; %Oven TC6
 'BMLN:LI20:3184:TEMP'; %Oven TC7
 
+% Notch Collimator Positions
+'COLL:LI20:2069:MOTR'; %Notch Collimator X Translation Stage Position
+'COLL:LI20:2072:MOTR'; %Notch Collimator Y "elevator" mover stage position 
+'COLL:LI20:2073:MOTR'; %Notch Collimator yaw stage position
+
+
 };
