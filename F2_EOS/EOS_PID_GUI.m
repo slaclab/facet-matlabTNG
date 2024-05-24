@@ -1,4 +1,4 @@
-classdef EOS_PID_GUI_v3_exported < matlab.apps.AppBase
+classdef EOS_PID_GUI < matlab.apps.AppBase
 
     % Properties that correspond to app components
     properties (Access = public)
@@ -426,7 +426,7 @@ classdef EOS_PID_GUI_v3_exported < matlab.apps.AppBase
     methods (Access = public)
 
         % Construct app
-        function app = EOS_PID_GUI_v3_exported
+        function app = EOS_PID_GUI
 
             % Create UIFigure and components
             createComponents(app)
