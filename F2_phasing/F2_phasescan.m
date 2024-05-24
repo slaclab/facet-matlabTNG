@@ -295,9 +295,9 @@ classdef F2_phasescan < handle
             self.in.p0 = 0;
             switch self.linac
                 case {0,2,3}
-                    p0 = lcaGetSmart(self.PVs.klys_PDES);
+                    self.in.p0 = lcaGetSmart(self.PVs.klys_PDES);
                 case 1
-                    p0 = lcaGetSmart(self.PVs.klys_KPHR);
+                    self.in.p0 = lcaGetSmart(self.PVs.klys_KPHR);
             end
 
             uncorrected_range = linspace(self.in.p0-self.dPhi, self.in.p0+self.dPhi, N);
@@ -633,18 +633,11 @@ classdef F2_phasescan < handle
             end
             self.fit.phi_meas = wrapTo180(phi_meas);
 
-            self.fit.phi_err = -1*(self.fit.phi_meas + self.in.phi_set)
-            self.fit.phi_act = self.fit.phi_meas;
-            if self.linac == 1
-                self.fit.phi_err = self.fit.phi_meas;
-                self.fit.phi_act = self.fit.phi_act + self.klys_offset;
-            end
+            self.fit.phi_err = self.fit.phi_meas + self.in.phi_set
+            if self.linac == 1, self.fit.phi_err = self.fit.phi_meas; end
 
-            % self.fit.phi_err = -1*(self.fit.phi_meas + self.in.phi_set)
-            % if self.linac == 1, self.fit.phi_err = self.fit.phi_meas; end
-
-            % self.fit.phi_act = self.fit.phi_meas;
-            % if self.linac == 1, self.fit.phi_act = self.fit.phi_act + self.klys_offset; end
+            self.fit.phi_act = self.in.phi_set + self.fit.phi_meas;
+            if self.linac == 1, self.fit.phi_act = self.fit.phi_act + self.klys_offset; end
             
             self.fit.range = linspace(PHI(1), PHI(end), 200);
             self.fit.X = self.fit.A * cosd(self.fit.range - self.fit.phi_act) + self.fit.B;
@@ -751,8 +744,8 @@ classdef F2_phasescan < handle
             self.beam_phase_fit();
 
             % (4) calculate correction to phase offset PV
-            poc_zero = wrapTo180(self.in.POC - self.fit.phi_err);
-            if self.linac == 1, poc_zero = wrapTo360(self.in.POC - self.fit.phi_err); end
+            poc_zero = wrapTo180(self.in.POC + self.fit.phi_err);
+            if self.linac == 1, poc_zero = wrapTo360(self.in.POC + self.fit.phi_err); end
             self.out.POC = poc_zero;
             
             % (5) if we've gotten this far, scan succeeded, time to summarize & save results
