@@ -238,4 +238,8 @@ S20_nonBSA_List = {...
 'COLL:LI20:2073:MOTR'; %Notch Collimator yaw stage position
 
 
+% Nathan's bunch separation PVs
+'SIOC:SYS1:ML01:AO106'; % bunch separation, updated ~1 Hz
+'SIOC:SYS1:ML01:AO107'; % bunch separation, smoothed
+
 };
