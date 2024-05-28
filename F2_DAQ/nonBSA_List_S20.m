@@ -219,6 +219,8 @@ S20_nonBSA_List = {...
 'SIOC:SYS1:ML02:AO531'; %Total energy loss 
 'SIOC:SYS1:ML02:AO532'; % total Charge on screen
 'SIOC:SYS1:ML02:AO533'; % energy visible
+'SIOC:SYS1:ML02:AO534'; % max energy
+'SIOC:SYS1:ML02:AO535'; % accelerated energy
 
 % Oven PVs
 'PS:LI20:2:VACT'; %Oven voltage readback
