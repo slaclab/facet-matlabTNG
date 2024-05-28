@@ -241,5 +241,6 @@ S20_nonBSA_List = {...
 % Nathan's bunch separation PVs
 'SIOC:SYS1:ML01:AO106'; % bunch separation, updated ~1 Hz
 'SIOC:SYS1:ML01:AO107'; % bunch separation, smoothed
+'SIOC:SYS1:ML01:AO108'; % bunch separation, maybe fast
 
 };
