@@ -219,6 +219,8 @@ S20_nonBSA_List = {...
 'SIOC:SYS1:ML02:AO531'; %Total energy loss 
 'SIOC:SYS1:ML02:AO532'; % total Charge on screen
 'SIOC:SYS1:ML02:AO533'; % energy visible
+'SIOC:SYS1:ML02:AO534'; % max energy
+'SIOC:SYS1:ML02:AO535'; % accelerated energy
 
 % Oven PVs
 'PS:LI20:2:VACT'; %Oven voltage readback
@@ -231,5 +233,16 @@ S20_nonBSA_List = {...
 'OVEN:LI20:3185:TEMP5'; %Oven TC5
 'OVEN:LI20:3185:TEMP6'; %Oven TC6
 'BMLN:LI20:3184:TEMP'; %Oven TC7
+
+% Notch Collimator Positions
+'COLL:LI20:2069:MOTR'; %Notch Collimator X Translation Stage Position
+'COLL:LI20:2072:MOTR'; %Notch Collimator Y "elevator" mover stage position 
+'COLL:LI20:2073:MOTR'; %Notch Collimator yaw stage position
+
+
+% Nathan's bunch separation PVs
+'SIOC:SYS1:ML01:AO106'; % bunch separation, updated ~1 Hz
+'SIOC:SYS1:ML01:AO107'; % bunch separation, smoothed
+'SIOC:SYS1:ML01:AO108'; % bunch separation, maybe fast
 
 };
