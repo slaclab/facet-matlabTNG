@@ -64,6 +64,7 @@ classdef F2_DAQApp < handle
             
             % Initialize camera list, CamCheck has info on cameras and IOCs
             obj.camCheck = F2_CamCheck(true,obj);
+            obj.DAQ_params.camCheck = obj.camCheck;
             obj.initCameras();
             
             % Load BSA Lists
@@ -104,6 +105,188 @@ classdef F2_DAQApp < handle
             
         end
         
+        function params = generateDAQParams(obj)            
+            params.include_nonBSA_arrays = true;
+            params.experiment = obj.guihan.ExperimentDropDown.Value;
+            
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            %%% Beam rate and associated event code %%%
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            
+            rv = obj.guihan.RateDropDown.Value;
+            
+            params.rate = obj.rates{strcmp(rv,obj.rate_names)};
+            params.rate_name = rv;
+            params.doStream = obj.guihan.StreamDataCheckBox.Value;
+            %if obj.guihan.FastDAQCheckBox.Value
+            %    params.EC = 214;
+            %else
+            %    params.EC = 222;
+            %end
+            params.EC = 214;
+            
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            %%% parameters and flags %%%
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            
+            params.comment    = obj.guihan.CommentTextArea.Value;
+            params.n_shot     = obj.guihan.ShotsperstepEditField.Value;
+            params.print2elog = obj.guihan.PrinttoeLogCheckBox.Value;
+            params.saveBG     = obj.guihan.SavebackgroundCheckBox.Value;
+            params.laserBG    = obj.guihan.SaveLaserBGCheckBox.Value;
+            params.nBG        = obj.guihan.BackgroundshotsEditField.Value;
+            params.blockBeam  = obj.guihan.Blockbeam.Value;
+            
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            %%% Get the cameras, metadata, %%%
+            %%% settings and triggers      %%%
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            
+            [~,ia,~] = intersect(obj.camCheck.camNames,obj.guihan.ListBox.Items);
+            list_bool = false(size(obj.camCheck.camNames));
+            list_bool(ia) = true;
+            obj.camCheck.downSelect(list_bool);
+            
+            params.camNames = obj.camCheck.DAQ_Cams.camNames;
+            params.camPVs   = obj.camCheck.DAQ_Cams.camPVs;
+            params.camSIOCs = obj.camCheck.DAQ_Cams.siocs;
+            params.camTrigs = obj.camCheck.DAQ_Cams.camTrigs;
+            params.num_CAM  = numel(params.camNames);
+            obj.camCheck.checkTrigStat();
+            
+            % Enable "Fix Cameras" button in GUI
+            obj.guihan.FixCamerasButton.Enable = 'on';
+            
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            %%% BSA and non-BSA PV lists %%%
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            
+            % Scalar data lists
+            params.BSA_list = obj.guihan.ListBoxBSA.Items;
+            
+            isarray = contains(obj.guihan.ListBoxNonBSA.Items,"array");
+            params.nonBSA_list = obj.guihan.ListBoxNonBSA.Items(~isarray);
+            
+            % Array lists
+            params.nonBSA_Array_list = obj.guihan.ListBoxNonBSA.Items(isarray);
+            
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            %%% Setup the scan parameters %%%
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            
+            scan_type = obj.guihan.ScanTypeDropDown.Value;
+            switch scan_type
+                case 'Single Step'
+                    params.scanDim = 0;
+                case '1D Scan'
+                    params.scanDim = 1;
+                case '2D Scan'
+                    params.scanDim = 2;
+            end
+            
+            params.scanFuncs = {};
+            params.scanPVs = {};
+            params.startVals = [];
+            params.stopVals = [];
+            params.scanVals = {};
+            
+            % This array is used for flattening the scan
+            params.stepsAll = [];
+            params.totalSteps = 0;
+            
+            if params.scanDim > 0
+                % Add handling for use PV
+                % e.g: obj.checkUsePV()
+                
+                params.scanFuncs{1} = obj.guihan.ScanfunctionDropDown.Value;
+                if ~isempty(obj.guihan.PVEditField) &&...
+                        ~isempty(obj.guihan.RBVEditField) && ...
+                        ~isempty(obj.guihan.WaitsEditField)  && ...
+                        ~isempty(obj.guihan.ToleranceEditField)
+                    params.scanPVs{1} = obj.guihan.PVEditField.Value;
+                    params.RBV_PVs{1} = obj.guihan.RBVEditField.Value;
+                    params.Waits{1} = obj.guihan.WaitsEditField.Value;
+                    params.Tolerance{1} = obj.guihan.ToleranceEditField.Value;
+                else
+                    obj.addMessage('Cannot run scan without PV field specified.');
+                    return
+                end
+                
+                if params.Tolerance{1} == 0
+                    obj.addMessage('Warning: attempting scan with tolerance = 0.');
+                end
+                
+                params.startVals(1) = obj.guihan.StartEditField.Value;
+                params.stopVals(1) = obj.guihan.StopEditField.Value;
+                params.nSteps(1) = obj.guihan.StepsEditField.Value;
+                params.scanVals{1} = obj.guihan.scan_vals;
+                
+                params.totalSteps = params.nSteps(1);
+                params.stepsAll = (1:params.nSteps(1))';
+                
+                if params.totalSteps == 0
+                    obj.addMessage('Cannot run scan with zero steps.');
+                    return
+                end
+                
+                if params.startVals(1) == params.stopVals(1)
+                    answer = obj.CheckWithMax();
+                    if ~answer
+                        obj.addMessage('Try again.');
+                        return
+                    end
+                end
+                    
+            end
+            
+            if params.scanDim > 1
+                % Add handling for use PV
+                % e.g: obj.checkUsePV()
+                
+                params.scanFuncs{2} = obj.guihan.ScanfunctionDropDown_2.Value;
+                % Check that PV, RBV, and Tolerance fields are filled in
+                if ~isempty(obj.guihan.PVEditField_2) &&...
+                        ~isempty(obj.guihan.RBVEditField_2) && ...
+                        ~isempty(obj.guihan.WaitsEditField_2) && ...
+                        ~isempty(obj.guihan.ToleranceEditField_2)
+                    params.scanPVs{2} = obj.guihan.PVEditField_2.Value;
+                    params.RBV_PVs{2} = obj.guihan.RBVEditField_2.Value;
+                    params.Waits{2} = obj.guihan.WaitsEditField_2.Value;
+                    params.Tolerance{2} = obj.guihan.ToleranceEditField_2.Value;
+                else
+                    obj.addMessage('Cannot run scan without PV field specified.');
+                    return
+                end
+                
+                if params.Tolerance{2} == 0
+                    obj.addMessage('Warning: attempting scan with tolerance = 0.');
+                end
+                
+                params.scanPVs{2} = obj.guihan.PVEditField_2.Value;
+                params.startVals(2) = obj.guihan.StartEditField_2.Value;
+                params.stopVals(2) = obj.guihan.StopEditField_2.Value;
+                params.nSteps(2) = obj.guihan.StepsEditField_2.Value;
+                params.scanVals{2} = obj.guihan.scan_vals2;
+                
+                params.totalSteps = params.nSteps(1)*params.nSteps(2);
+                params.stepsAll = zeros(params.totalSteps,2);
+                params.stepsAll(:,1) = repelem((1:params.nSteps(1))',params.nSteps(2));
+                params.stepsAll(:,2) = repmat((1:params.nSteps(2))',params.nSteps(1),1);
+                if params.totalSteps == 0
+                    obj.addMessage('Cannot run scan with zero steps.');
+                    return
+                end
+                
+                if params.startVals(2) == params.stopVals(2)
+                    answer = obj.CheckWithMax();
+                    if ~answer
+                        obj.addMessage('Try again.');
+                        return
+                    end
+                end
+            end
+        end
+        
         function runDAQ(obj)
         % This function pulls the configuration out of the GUI and formats
         % it into a DAQ parameter structure
@@ -142,6 +325,7 @@ classdef F2_DAQApp < handle
             obj.DAQ_params.laserBG    = obj.guihan.SaveLaserBGCheckBox.Value;
             obj.DAQ_params.nBG        = obj.guihan.BackgroundshotsEditField.Value;
             obj.DAQ_params.blockBeam  = obj.guihan.Blockbeam.Value;
+            obj.DAQ_params.saveMethod = obj.guihan.Switch.Value;
             
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             %%% Get the cameras, metadata, %%%
@@ -297,7 +481,11 @@ classdef F2_DAQApp < handle
             %%%%%%%%%%%%%%%%%%%%
             
             obj.addMessage('DAQ parameters set.');
-            obj.DAQ_obj = F2_fastDAQ(obj.DAQ_params,obj);
+            if strcmp(obj.DAQ_params.saveMethod,'TIFF')
+                obj.DAQ_obj = F2_fastDAQ(obj.DAQ_params,obj);
+            elseif strcmp(obj.DAQ_params.saveMethod,'HDF5')
+                obj.DAQ_obj = F2_fastDAQ_HDF5(obj.DAQ_params,obj);
+            end
             
 %             if obj.guihan.FastDAQCheckBox.Value
 %                 obj.DAQ_obj = F2_fastDAQ(obj.DAQ_params,obj);

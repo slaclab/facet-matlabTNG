@@ -25,13 +25,16 @@ classdef E332Target < handle
                 coordinateTransform (1,1) CoordinateTransform = RTSTransform()
             end
            
+            configData = PVStorage.getConfigurationSection(pvEngine);
+            offsetLat = configData.targetGlobalOffsetLat;
+            offsetVert = configData.targetGlobalOffsetVert;
             targetData = PVStorage.getTargetSection(pvEngine, targetNumber);
 
             obj.targetDefinition = TargetDefinition.targetTypeByNumber(targetData.type);
             obj.coordinateTransform = coordinateTransform;
             
             holes = [targetData.point1Hole, targetData.point2Hole]';
-            positionsCal = [[targetData.point1Lat, targetData.point2Lat]; [targetData.point1Vert, targetData.point2Vert]]';
+            positionsCal = [[targetData.point1Lat + offsetLat, targetData.point2Lat + offsetLat]; [targetData.point1Vert + offsetVert, targetData.point2Vert + offsetVert]]';
             positionsRaw = obj.targetDefinition.getHolePosition(holes);
             
             obj.coordinateTransform.calibrate(positionsRaw, positionsCal);

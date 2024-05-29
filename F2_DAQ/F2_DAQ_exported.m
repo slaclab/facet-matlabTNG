@@ -20,6 +20,7 @@ classdef F2_DAQ_exported < matlab.apps.AppBase
         RateDropDownLabel              matlab.ui.control.Label
         RateDropDown                   matlab.ui.control.DropDown
         SaveLaserBGCheckBox            matlab.ui.control.CheckBox
+        Switch                         matlab.ui.control.Switch
         CameraConfigPanel              matlab.ui.container.Panel
         Tree                           matlab.ui.container.Tree
         AddButton                      matlab.ui.control.Button
@@ -315,8 +316,8 @@ classdef F2_DAQ_exported < matlab.apps.AppBase
         function SaveConfigButtonPushed(app, event)
             gui_state = struct();
             gui_state.Experiment = app.ExperimentDropDown.Value;
-            EC = split(app.EventCodeButtonGroup.SelectedObject.Text);
-            gui_state.EventCode = str2num(EC{1});
+%             EC = split(app.EventCodeButtonGroup.SelectedObject.Text);
+%             gui_state.EventCode = str2num(EC{1});
             gui_state.ShotsPerStep = app.ShotsperstepEditField.Value;
             gui_state.SaveBackground = app.SavebackgroundCheckBox.Value;
             gui_state.BackgroundShots = app.BackgroundshotsEditField.Value;
@@ -330,7 +331,9 @@ classdef F2_DAQ_exported < matlab.apps.AppBase
             
             uisave('gui_state',[app.config_dir exp '_config_' date '.mat']);
             
-            
+            % Save DAQ parameters struct
+            daq_params = app.aobj.generateDAQParams();
+            save('daq_params.mat','daq_params');
         end
 
         % Button pushed function: ClearConfigButton
@@ -494,6 +497,14 @@ classdef F2_DAQ_exported < matlab.apps.AppBase
             app.SaveLaserBGCheckBox.Text = 'Save Laser BG';
             app.SaveLaserBGCheckBox.Position = [144 50 104 22];
             app.SaveLaserBGCheckBox.Value = true;
+
+            % Create Switch
+            app.Switch = uiswitch(app.DAQSettingsPanel, 'slider');
+            app.Switch.Items = {'TIFF', 'HDF5'};
+            app.Switch.Enable = 'off';
+            app.Switch.Visible = 'off';
+            app.Switch.Position = [60 120 45 20];
+            app.Switch.Value = 'TIFF';
 
             % Create CameraConfigPanel
             app.CameraConfigPanel = uipanel(app.FACETIIDAQUIFigure);
