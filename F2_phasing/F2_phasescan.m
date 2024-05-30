@@ -148,7 +148,6 @@ classdef F2_phasescan < handle
 
         function self = set.klys(self, k)
             assert(ismember(k, self.klys_map), 'Invalid klystron number');
-            disp('setting klys value')
             self.klys = k;
 
             self.klys_str = sprintf('%d-%d', self.sector, self.klys);
@@ -200,7 +199,7 @@ classdef F2_phasescan < handle
                 case {2,3}, p_klys = lcaGetSmart(self.PVs.klys_PDES);
             end
             if abs(p_klys) > 0.0, self.klys_offset = -1 * p_klys; end
-            self.in.phi_set = p_klys - self.sbst_offset
+            self.in.phi_set = p_klys - self.sbst_offset;
 
             self.save_target_initial_setting();
         end
@@ -302,6 +301,7 @@ classdef F2_phasescan < handle
 
             uncorrected_range = linspace(self.in.p0-self.dPhi, self.in.p0+self.dPhi, N);
             self.in.range = self.sbst_offset + self.klys_offset + uncorrected_range;
+            fprintf(' calculated scan range is [%.2f, %.2f]\n', self.in.range(1), self.in.range(N))
             if self.zigzag
                 odd_steps = find(bitget(1:N, 1));
                 even_steps = find(~bitget(1:N, 1));
@@ -440,10 +440,10 @@ classdef F2_phasescan < handle
 
             % write history PVs
             %lcaPutSmart(self.PVs.phase0, self.fit.phi_meas);
-            % lcaPutSmart(self.PVs.goldchg, poc_zero);
-            %scan_ts = (now - self.EPICS_t0) * 24*60*60
-            %lcaPutSmart(self.PVs.goldts, scan_ts);
-            %lcaPutSmart(self.PVs.phasets, scan_ts);
+            %lcaPutSmart(self.PVs.goldchg, poc_zero);
+            scan_ts = (now - self.EPICS_t0) * 24*60*60
+            lcaPutSmart(self.PVs.goldts, scan_ts);
+            lcaPutSmart(self.PVs.phasets, scan_ts);
         end
         
         % apply self.undo settings to revert the phase scan
@@ -462,7 +462,7 @@ classdef F2_phasescan < handle
                     [~, ~] = control_phaseSet(self.klys_str, self.undo.POC, 0,0, 'KPHR');
                 case {2,3}
                     [~, ~] = control_phaseSet(self.klys_str, self.undo.PDES, 1, 1);
-                    lcaPutSmart(self.PVs.klys_GOLD, self.undo.POC)
+                    lcaPutSmart(self.PVs.klys_GOLD, self.undo.POC);
             end
         end
         
@@ -628,19 +628,26 @@ classdef F2_phasescan < handle
             
             % LLS fit always finds the nearest zero crossing, so we need to
             % flip the sign of A, shift by pi, then wrap to +/-180
+            %  phi_meas -> actual measured beam phase
+            %  phi_err  -> difference of actual/expected beam phase
+            %  phi_act  -> actual zero-crossing (i.e. peak Egain) phase
             if sign(self.fit.A) ~= sign(self.eta)
                 phi_meas = phi_meas + (abs(phi_meas) < 180.0)*180.0;
             end
             self.fit.phi_meas = wrapTo180(phi_meas);
-
-            self.fit.phi_err = self.fit.phi_meas + self.in.phi_set
-            if self.linac == 1, self.fit.phi_err = self.fit.phi_meas; end
-
+            self.fit.phi_err = self.fit.phi_meas + self.in.phi_set;
             self.fit.phi_act = self.in.phi_set + self.fit.phi_meas;
-            if self.linac == 1, self.fit.phi_act = self.fit.phi_act + self.klys_offset; end
-            
+            if self.linac == 0,
+                self.fit.phi_err = self.fit.phi_meas;
+                self.fit.phi_act = self.fit.phi_meas + self.in.phi_set;
+            elseif self.linac == 1,
+                self.fit.phi_err = self.fit.phi_meas + self.in.phi_set;
+                self.fit.phi_act = self.fit.phi_act + self.klys_offset;
+            end
+
             self.fit.range = linspace(PHI(1), PHI(end), 200);
-            self.fit.X = self.fit.A * cosd(self.fit.range - self.fit.phi_act) + self.fit.B;
+            % disp(self.fit.range);
+            self.fit.X = self.fit.A * cosd(self.fit.range - self.fit.phi_meas) + self.fit.B;
             
             dE_dx = self.beam.E_design / self.eta;
             self.fit.dE = dE_dx * self.fit.X;
@@ -745,7 +752,9 @@ classdef F2_phasescan < handle
 
             % (4) calculate correction to phase offset PV
             poc_zero = wrapTo180(self.in.POC + self.fit.phi_err);
-            if self.linac == 1, poc_zero = wrapTo360(self.in.POC + self.fit.phi_err); end
+            if (self.linac == 1) && (abs(self.in.POC) > 180.0)
+                poc_zero = wrapTo360(self.in.POC + self.fit.phi_err);
+            end
             self.out.POC = poc_zero;
             
             % (5) if we've gotten this far, scan succeeded, time to summarize & save results
