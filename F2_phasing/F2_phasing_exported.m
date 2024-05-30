@@ -307,6 +307,7 @@ classdef F2_phasing_exported < matlab.apps.AppBase
             % grab the latest phase settings & config settings from the GUI
             app.update_klys_phase_params(true);
             app.get_scan_inputs();
+            app.S.save_target_initial_setting();
         
             yyaxis(app.ax,'left');
             cla(app.ax);

@@ -786,7 +786,7 @@ classdef F2_phasescan < handle
             disp(self.scan_summary);
             if self.simulation, fprintf('  simulated phase error = %.2fdeg\n', self.sim_err); end
 
-            if ~self.simulation, save(sprintf('%s/%s.mat', datadir, self.scan_name)); end
+            if ~self.simulation, save(self.data_file); end
             
             % (6) plot fit and scan result
             self.plot_phase_scan(ax, true);
