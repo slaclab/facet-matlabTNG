@@ -12,15 +12,17 @@ classdef PVStorage
         pvOffsetInformationSectionCurrentHole = 2
         pvOffsetInformationSectionCurrentDaqHole = 3
 
-        pvOffsetConfigurationSection = 3
+        pvOffsetConfigurationSection = 10
         pvOffsetNumTargets = 0
         pvOffsetNumTargetAreas = 1
         pvOffsetTargetIdlePositionLat = 2
         pvOffsetTargetIdlePositionVert = 3
         pvOffsetTargetAlPositionLat = 4
         pvOffsetTargetAlPositionVert = 5
+        pvOffsetGlobalOffsetLat = 6
+        pvOffsetGlobalOffsetVert = 7
 
-        pvOffsetTargetSection = 10
+        pvOffsetTargetSection = 20
         pvLengthTargetSection = 10 % Number of pv's per target
         pvNumberTargetSections = 4 % Max. number of target placeholders
 
@@ -33,7 +35,7 @@ classdef PVStorage
         pvOffsetTargetPoint2Vert = 6
 
 
-        pvOffsetTargetAreaSection = 50
+        pvOffsetTargetAreaSection = 60
         pvLengthTargetAreaSection = 10
         pvOffsetTargetAreaAssociatedTarget = 0
         pvOffsetTargetAreaNumFoils = 1
@@ -72,6 +74,8 @@ classdef PVStorage
             configurationSection.targetIdlePositionVert = readValue(PVStorage.pvOffsetTargetIdlePositionVert);
             configurationSection.targetAlPositionLat = readValue(PVStorage.pvOffsetTargetAlPositionLat);
             configurationSection.targetAlPositionVert = readValue(PVStorage.pvOffsetTargetAlPositionVert);
+            configurationSection.targetGlobalOffsetLat = readValue(PVStorage.pvOffsetGlobalOffsetLat);
+            configurationSection.targetGlobalOffsetVert = readValue(PVStorage.pvOffsetGlobalOffsetVert);            
         end
 
         function setConfigurationSection(pvEngine, configurationSection)
@@ -83,6 +87,8 @@ classdef PVStorage
             setValue(PVStorage.pvOffsetTargetIdlePositionVert, configurationSection.targetIdlePositionVert);
             setValue(PVStorage.pvOffsetTargetAlPositionLat, configurationSection.targetAlPositionLat);
             setValue(PVStorage.pvOffsetTargetAlPositionVert, configurationSection.targetAlPositionVert);
+            setValue(PVStorage.pvOffsetGlobalOffsetLat, configurationSection.targetGlobalOffsetLat);
+            setValue(PVStorage.pvOffsetGlobalOffsetVert, configurationSection.targetGlobalOffsetVert);
         end
 
         function targetSection = getTargetSection(pvEngine, targetNumber)

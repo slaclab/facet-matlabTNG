@@ -63,7 +63,8 @@ classdef F2_fastDAQ < handle
                 obj.freerun = false;
                 obj.camCheck = apph.camCheck;
             else
-                obj.camCheck = F2_CamCheck(true,obj);
+                obj.camCheck = F2_CamCheck(true);
+                obj.camCheck.checkTrigStat();
                 
                 [~,ia,~] = intersect(obj.camCheck.camNames,obj.params.camNames);
                 list_bool = false(size(obj.camCheck.camNames));
