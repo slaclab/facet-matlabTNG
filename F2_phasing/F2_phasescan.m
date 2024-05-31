@@ -372,7 +372,7 @@ classdef F2_phasescan < handle
                     end
             end
             
-            if need_disable, lcaPutSmart(FB_state_PV, FB_state); end
+            if need_disable, lcaPutSmart(self.FB_state_PV, FB_state); end
         end
 
         function set_L0_LLRF_phase_feedback(self, state)
@@ -753,7 +753,7 @@ classdef F2_phasescan < handle
             
             % re-enable L0 LLRF phase FB & longitudinal feedback initial states
             if self.linac == 0, self.set_L0_LLRF_phase_feedback(1); end
-            lcaPutSmart(self.FB_state_PB, self.init_feedback_state);
+            lcaPutSmart(self.FB_state_PV, self.init_feedback_state);
             
             % (3) fit BPM data and calculate beam phase error and energy
             self.beam_phase_fit();
