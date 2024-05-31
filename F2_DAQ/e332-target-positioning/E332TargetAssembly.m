@@ -139,6 +139,14 @@ classdef E332TargetAssembly < handle
             obj.pvEngineMotors.put(obj.pvTargetLat, obj.config.targetAlPositionLat);
             obj.pvEngineMotors.put(obj.pvTargetVert, obj.config.targetAlPositionVert);
         end
+
+        function printUsage(obj)
+            fprintf("Current usage:\n")
+            for i = 1:length(obj.targetAreas)
+                t = obj.targetAreas{i};
+                fprintf('\tTargetArea %i (MF%i): \t%i/%i\n', i, t.parameters.numFoils, t.getCurrentHolePosition().hole, t.getNumberOfHoles())
+            end
+        end
     end
 end
 

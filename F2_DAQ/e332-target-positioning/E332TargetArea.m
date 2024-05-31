@@ -45,6 +45,7 @@ classdef E332TargetArea < handle
             position.hole = holeNumber;
             position.lat = targetPosition.lat;
             position.vert = targetPosition.vert;
+            position.targetHole = targetHoleNumber;
         end
 
         function position = getNextHolePosition(obj)
@@ -58,6 +59,19 @@ classdef E332TargetArea < handle
             targetAreaSection.lastHole = holeNumber;
             PVStorage.setTargetAreaSection(obj.pvEngine, obj.targetAreaNumber, targetAreaSection);
         end
+
+        function position = getCurrentHolePosition(obj)
+            targetAreaSection = PVStorage.getTargetAreaSection(obj.pvEngine, obj.targetAreaNumber);
+            holeNumber = targetAreaSection.lastHole;
+            position = obj.getHolePosition(holeNumber);
+        end
+
+        function setCurrentHolePosition(obj, holeNumber)
+            targetAreaSection = PVStorage.getTargetAreaSection(obj.pvEngine, obj.targetAreaNumber);
+            targetAreaSection.lastHole = holeNumber;
+            PVStorage.setTargetAreaSection(obj.pvEngine, obj.targetAreaNumber, targetAreaSection);
+        end
+
         function numHoles = getNumberOfHoles(obj)
             rows = obj.parameters.point2Row - obj.parameters.point1Row + 1;
             cols = obj.parameters.point2Col - obj.parameters.point1Col + 1;
