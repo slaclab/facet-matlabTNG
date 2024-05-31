@@ -442,11 +442,12 @@ classdef F2_phasescan < handle
             self.out.PACT = PACT;
             self.out.POC = POC;
 
+            dgold = self.in.POC - self.out.POC;
+
             % write history PVs
-            %lcaPutSmart(self.PVs.phase0, self.fit.phi_meas);
-            %lcaPutSmart(self.PVs.goldchg, self.fit.phi_err);
             scan_ts = (now - self.EPICS_t0) * 24*60*60
-            lcaPutSmart(self.PVs.phasets, scan_ts);
+            lcaPutSmart(self.PVs.goldchg, dgold);
+            lcaPutSmart(self.PVs.goldchgts, scan_ts);
         end
         
         % apply self.undo settings to revert the phase scan
@@ -649,7 +650,6 @@ classdef F2_phasescan < handle
             end
 
             self.fit.range = linspace(PHI(1), PHI(end), 200);
-            % disp(self.fit.range);
             self.fit.X = self.fit.A * cosd(self.fit.range - self.fit.phi_meas) + self.fit.B;
             
             dE_dx = self.beam.E_design / self.eta;
@@ -766,6 +766,9 @@ classdef F2_phasescan < handle
             
             % (5) if we've gotten this far, scan succeeded, time to summarize & save results
             self.success = true;
+            scan_ts = (now - self.EPICS_t0) * 24*60*60
+            lcaPutSmart(self.PVs.phasets, scan_ts);
+
             dt = datetime('now');
             self.end_time = dt;
             self.end_time.Format = 'dd-MMM-uuuu HH:mm:ss';
