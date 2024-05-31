@@ -167,6 +167,7 @@ classdef F2_phasescan < handle
             self.PVs.klys_GOLD = sprintf('%s:GOLD', klys_rec);
             self.PVs.klys_KPHR = sprintf('%s:KPHR', klys_rec);
             self.PVs.goldchg = sprintf('%s:GOLDCHG', klys_rec_pva);
+            self.PVs.goldchgts = sprintf('%s:GOLDCHGTS', klys_rec_pva);
             self.PVs.phase0 = sprintf('%s:PHASSCANERR', klys_rec_pva);
             self.PVs.phasets = sprintf('%s:PHASSCANTS', klys_rec_pva);
             if self.linac == 0
