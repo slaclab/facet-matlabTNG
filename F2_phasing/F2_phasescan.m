@@ -14,6 +14,8 @@ classdef F2_phasescan < handle
         bend_BACT_PVs = [ ...
             "BEND:IN10:751:BACT" "BEND:LI11:331:BACT" "BEND:LI14:720:BACT" "LI20:LGPS:1990:BACT" ...
             ];
+
+        FB_state_PV = "SIOC:SYS1:ML00:AO856";
         
         % hardcoded dispersion at each BPM
         % TO DO: grab this from the model server, once such a thing exists
@@ -49,6 +51,8 @@ classdef F2_phasescan < handle
         scan_name = ''     % klystron+ymdhms scan ID
         scan_summary = ''  % text summary for logbook/stdout
         data_file = ''     % full path to output .mat file
+
+        init_feedback_state = 0; % initial longitudinal feedback state, for restore point
 
         abort_requested = false;
         scan_aborted = false;
@@ -331,8 +335,8 @@ classdef F2_phasescan < handle
             need_disable = false;
             
             % FB on/off statuses are individual bits of overall status word
-            FB_state_PV = "SIOC:SYS1:ML00:AO856";
-            FB_state = lcaGetSmart(FB_state_PV);
+            FB_state = lcaGetSmart(self.FB_state_PV);
+            self.init_feedback_state = FB_state;
             DL10E_on  = bitget(FB_state, 1);
             BC11E_on  = bitget(FB_state, 3);
             BC11BL_on = bitget(FB_state, 4);
@@ -747,8 +751,9 @@ classdef F2_phasescan < handle
             % quit here if the scan was aborted
             if self.scan_aborted, return; end
             
-            % re-enable L0 LLRF phase FB
+            % re-enable L0 LLRF phase FB & longitudinal feedback initial states
             if self.linac == 0, self.set_L0_LLRF_phase_feedback(1); end
+            lcaPutSmart(self.FB_state_PB, self.init_feedback_state);
             
             % (3) fit BPM data and calculate beam phase error and energy
             self.beam_phase_fit();
