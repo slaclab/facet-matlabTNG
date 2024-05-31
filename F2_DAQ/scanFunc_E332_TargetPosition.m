@@ -90,7 +90,7 @@ classdef scanFunc_E332_TargetPosition < handle
             %             obj.pvEngine.put(obj.control_PV, holeNumber);
             %info = PVStorage.getInformationSection(pvEngine);
 
-            obj.daqhandle.dispMessage(sprintf('Target no. %i moved to hole %d in %.3f seconds.', holeNumber, elapsedTime))
+            obj.daqhandle.dispMessage(sprintf('Moved to hole %d in %.3f seconds.', holeNumber, elapsedTime))
         end
 
         function restoreInitValue(obj)
