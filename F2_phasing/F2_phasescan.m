@@ -426,7 +426,7 @@ classdef F2_phasescan < handle
                     [~, ~] = control_phaseSet(self.klys_str, self.out.POC, 0,0, 'KPHR');
                 
                 case {2,3}
-                    [PACT, ~] = control_phaseSet(self.klys_str, -1*self.fit.phi_meas, 1, 1);
+                    [PACT, ~] = control_phaseSet(self.klys_str, self.fit.phi_meas, 1, 1);
                     [PACT, PDES, GOLD] = control_phaseGold(self.klys_str, self.in.phi_set);
                     % poc_zero = GOLD;
                     [PACT, ~] = control_phaseSet(self.klys_str, self.in.PDES, 1, 1);
