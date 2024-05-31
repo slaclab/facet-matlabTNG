@@ -161,14 +161,14 @@ classdef F2_phasescan < handle
             recbase = 'LI%d:KLYS:%d1';
             if self.linac == 0, recbase = 'KLYS:LI%d:%d1'; end;
             klys_rec = sprintf(recbase, self.sector, self.klys);
+            klys_rec_pva = sprintf('KLYS:LI%d:%d1', self.sector, self.klys);
             self.PVs.klys_PDES = sprintf('%s:PDES', klys_rec);
             self.PVs.klys_PHAS = sprintf('%s:PHAS', klys_rec);
             self.PVs.klys_GOLD = sprintf('%s:GOLD', klys_rec);
             self.PVs.klys_KPHR = sprintf('%s:KPHR', klys_rec);
-            self.PVs.goldchg = sprintf('%s:GOLDCHG', klys_rec);
-            self.PVs.goldts = sprintf('%s:GOLDCHGTS', klys_rec);
-            self.PVs.phase0 = sprintf('%s:PHASSCANERR', klys_rec);
-            self.PVs.phasets = sprintf('%s:PHASSCANTS', klys_rec);
+            self.PVs.goldchg = sprintf('%s:GOLDCHG', klys_rec_pva);
+            self.PVs.phase0 = sprintf('%s:PHASSCANERR', klys_rec_pva);
+            self.PVs.phasets = sprintf('%s:PHASSCANTS', klys_rec_pva);
             if self.linac == 0
                 self.PVs.sfbPDES = sprintf('%s:SFB_PDES', klys_rec);
                 self.PVs.refpoc = sprintf('ACCL:LI10:%d1:REFPOC', self.klys);
@@ -444,9 +444,8 @@ classdef F2_phasescan < handle
 
             % write history PVs
             %lcaPutSmart(self.PVs.phase0, self.fit.phi_meas);
-            %lcaPutSmart(self.PVs.goldchg, poc_zero);
+            %lcaPutSmart(self.PVs.goldchg, self.fit.phi_err);
             scan_ts = (now - self.EPICS_t0) * 24*60*60
-            lcaPutSmart(self.PVs.goldts, scan_ts);
             lcaPutSmart(self.PVs.phasets, scan_ts);
         end
         
