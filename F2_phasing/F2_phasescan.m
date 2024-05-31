@@ -659,6 +659,9 @@ classdef F2_phasescan < handle
 
             assert(self.klys_stat == 1, 'Cannot phase scan, RFS is not on-beam')
 
+            self.success = false;
+            self.scan_aborted = false;
+
             % check if GUI handles are attached, if so use them
             if self.GUI_attached
                 ax = self.GUI_ax;
