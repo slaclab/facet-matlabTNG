@@ -78,6 +78,7 @@ classdef F2_klys < handle
       obj.KlysSectorMap(:,3:5) = 3 ;
       obj.KlysControl=ones(8,10);
       obj.KlysControl(3:4,1)=0;
+      obj.KlysControl(1:2,2)=0;
       obj.UpdatePVs();
       if exist('UpdateRate','var') && ~isempty(UpdateRate)
         obj.UpdateRate=UpdateRate;
@@ -201,13 +202,19 @@ classdef F2_klys < handle
             if obj.KlysControl(ikly,isec)==1 % SLC
               obj.pvlist(end+1) = PV(context,'name',sprintf("phase_%d_1%d",ikly,isec-1),'pvname',sprintf("LI1%d:KLYS:%d1:PDES",isec-1,ikly),'monitor',true);
               obj.pvlist(end+1) = PV(context,'name',sprintf("ampl_%d_1%d",ikly,isec-1),'pvname',sprintf("LI1%d:KLYS:%d1:ENLD",isec-1,ikly),'monitor',true);
-%               obj.pvlist(end+1) = PV(context,'name',sprintf("stat_%d_1%d",ikly,isec-1),'pvname',sprintf("LI1%d:KLYS:%d1:STAT",isec-1,ikly));
-%               obj.pvlist(end+1) = PV(context,'name',sprintf("swrd_%d_1%d",ikly,isec-1),'pvname',sprintf("LI1%d:KLYS:%d1:SWRD",isec-1,ikly));
+              % obj.pvlist(end+1) = PV(context,'name',sprintf("stat_%d_1%d",ikly,isec-1),'pvname',sprintf("LI1%d:KLYS:%d1:STAT",isec-1,ikly));
+              % obj.pvlist(end+1) = PV(context,'name',sprintf("swrd_%d_1%d",ikly,isec-1),'pvname',sprintf("LI1%d:KLYS:%d1:SWRD",isec-1,ikly));
             else % EPICS
-              obj.pvlist(end+1) = PV(context,'name',sprintf("phase_%d_1%d",ikly,isec-1),'pvname',sprintf("KLYS:LI1%d:%d1:PDES",isec-1,ikly),'monitor',true);
-              obj.pvlist(end+1) = PV(context,'name',sprintf("ampl_%d_1%d",ikly,isec-1),'pvname',sprintf("KLYS:LI1%d:%d1:ADES",isec-1,ikly),'monitor',true);
-%               obj.pvlist(end+1) = PV(context,'name',sprintf("stat_%d_1%d",ikly,isec-1),'pvname',sprintf("KLYS:LI1%d:%d1:FAULTSEQ_STATUS",isec-1,ikly));
-%               obj.pvlist(end+1) = PV(context,'name',sprintf("swrd_%d_1%d",ikly,isec-1),'pvname',sprintf("KLYS:LI1%d:%d1:BEAMCODE10_TSTAT",isec-1,ikly));
+              if (isec==2) && (ikly<3)
+                % goofy RF control scheme in L1
+                obj.pvlist(end+1) = PV(context,'name',sprintf("phase_%d_1%d",ikly,isec-1),'pvname',sprintf("KLYS:LI1%d:%d1:SSSB_PDES",isec-1,ikly),'monitor',true);
+                obj.pvlist(end+1) = PV(context,'name',sprintf("ampl_%d_1%d",ikly,isec-1),'pvname',sprintf("KLYS:LI1%d:%d1:SSSB_ADES",isec-1,ikly),'monitor',true);
+              else
+                obj.pvlist(end+1) = PV(context,'name',sprintf("phase_%d_1%d",ikly,isec-1),'pvname',sprintf("KLYS:LI1%d:%d1:PDES",isec-1,ikly),'monitor',true);
+                obj.pvlist(end+1) = PV(context,'name',sprintf("ampl_%d_1%d",ikly,isec-1),'pvname',sprintf("KLYS:LI1%d:%d1:ADES",isec-1,ikly),'monitor',true);
+              end
+              % obj.pvlist(end+1) = PV(context,'name',sprintf("stat_%d_1%d",ikly,isec-1),'pvname',sprintf("KLYS:LI1%d:%d1:FAULTSEQ_STATUS",isec-1,ikly));
+              % obj.pvlist(end+1) = PV(context,'name',sprintf("swrd_%d_1%d",ikly,isec-1),'pvname',sprintf("KLYS:LI1%d:%d1:BEAMCODE10_TSTAT",isec-1,ikly));
             end
           end
           obj.pvlist(end+1) = PV(context,'name',sprintf("sbst_1%d_phase",isec-1),'pvname',sprintf("LI1%d:SBST:1:PDES",isec-1),'monitor',true) ;
