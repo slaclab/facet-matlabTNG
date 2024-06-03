@@ -245,4 +245,7 @@ S20_nonBSA_List = {...
 'SIOC:SYS1:ML01:AO107'; % bunch separation, smoothed
 'SIOC:SYS1:ML01:AO108'; % bunch separation, maybe fast
 
+% Gas jet delay PV
+'TRIG:LI20:EX01:FP1_TDES';
+
 };
