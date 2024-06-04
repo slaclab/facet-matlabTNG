@@ -410,7 +410,7 @@ classdef F2_DAQ_exported < matlab.apps.AppBase
 
             % Create ExperimentDropDown
             app.ExperimentDropDown = uidropdown(app.DAQSettingsPanel);
-            app.ExperimentDropDown.Items = {'TEST', 'BEAMPHYS', 'E300', 'E301', 'E304', 'E305', 'E308', 'E320', 'E324', 'E325', 'E326', 'E327', 'E331', 'E332', 'E338'};
+            app.ExperimentDropDown.Items = {'TEST', 'BEAMPHYS', 'E300', 'E301', 'E304', 'E305', 'E308', 'E310', 'E320', 'E324', 'E325', 'E326', 'E327', 'E331', 'E332', 'E338'};
             app.ExperimentDropDown.Position = [88 187 71 22];
             app.ExperimentDropDown.Value = 'TEST';
 
@@ -501,8 +501,6 @@ classdef F2_DAQ_exported < matlab.apps.AppBase
             % Create Switch
             app.Switch = uiswitch(app.DAQSettingsPanel, 'slider');
             app.Switch.Items = {'TIFF', 'HDF5'};
-            app.Switch.Enable = 'off';
-            app.Switch.Visible = 'off';
             app.Switch.Position = [60 120 45 20];
             app.Switch.Value = 'TIFF';
 
