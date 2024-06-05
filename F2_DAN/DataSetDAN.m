@@ -44,6 +44,7 @@ classdef DataSetDAN < handle
         dataSet;
         dataSetID;
         hdr;
+        imgType
         
         % Ugly GUI settings
         showOnlyMatchedData = 1;
@@ -76,6 +77,7 @@ classdef DataSetDAN < handle
         
         % exportPlotData
         lastPlotData; %Struct for storing lastPlotData
+        HDF5_imData = double.empty
     end
     
     % Constructor
@@ -83,9 +85,7 @@ classdef DataSetDAN < handle
         function s = DataSetDAN(dSID,exp,apph)
             %DATASETDAN Construct an instance of this class
             %   Detailed explanation goes here
-            
-            
-            
+
             s.dataSetID = dSID;
             s.hlpDispMsg('Looking for directory...\n')
             if nargin >= 2
@@ -99,6 +99,7 @@ classdef DataSetDAN < handle
             end
             s.hlpDispMsg('Done looking for directory\n')
             s.maxShotNbr = length(s.dataSet.pulseID.common_scalar_index);
+            s.getImgType();
             
             s.hlpFindScalarGroups();
             s.hlpGetListOfCameras();
@@ -167,7 +168,19 @@ classdef DataSetDAN < handle
             if s.validShotNbr(shotNbr)                
                 % Get image data
                 [data,~] = s.hlpCheckImage(diag);
-                diagData = s.hlpGetImage(diag, data.common_index(shotNbr));
+                
+                if strcmp(s.imgType,'HDF5')
+                    if isempty(s.HDF5_imData)
+                        data = s.hlpGetImageHDF5(diag);
+                        data = data(:,:,data.common_index);
+                        diagData = data(:,:,shotNbr);
+                    else
+                        data = s.HDF5_imData(:,:,data.common_index);
+                        diagData = data(:,:,shotNbr);
+                    end
+                else
+                    diagData = s.hlpGetImage(diag,data.common_index(shotNbr));
+                end
 
                 % Get plot info
                 curHandle = s.hlpGetFigAxis();
@@ -210,6 +223,75 @@ classdef DataSetDAN < handle
 %             
 %         end
         
+        function plotCorrMatrix(s)
+            % Create array of all scalar data
+            numDataPts = numel(s.dataSet.pulseID.common_scalar_index);
+            
+            scalars = s.GUIHandle.IncludeListBox_CorrM.Items; % cell array
+            numScalars = numel(scalars);
+            scalarArrayData = zeros(numDataPts,numScalars);
+            
+            for i = 1:numScalars
+                facetScalar = s.GUIHandle.IncludeListBox_CorrM.Items{i};
+                [x, ~] = s.hlpGetScalarArray(facetScalar,1);
+                scalarArrayData(:,i) = x;
+            end
+            
+            panelHan = s.GUIHandle.PlotsPanel;
+            set(panelHan,'AutoResizeChildren','off');
+            delete(panelHan.Children); % clear plots
+                
+            if numScalars < 5
+                % Make corrplot and copy to GUI panel
+                fig = figure('Visible','off');
+                ax = axes(fig);
+                [R,~,h] = corrplot(ax,scalarArrayData);
+
+                % Copy all histogram/scatter plot handles
+                axesHans = {};
+                t = tiledlayout(panelHan,numScalars,numScalars,'Padding',...
+                    'compact','TileSpacing','normal');
+                
+                XscalarVec = repmat(1:numScalars,numScalars,1);
+                YscalarVec = repelem(1:numScalars,numScalars);
+                for i = 1:numel(h)
+                    axesHans{i} = nexttile(t);
+                    copyobj(h(i),axesHans{i});
+                    
+                    scalars = replace(scalars,"_"," ");
+                    xlabel(axesHans{i},scalars(XscalarVec(i)))
+                    ylabel(axesHans{i},scalars(YscalarVec(i)),'FontSize',7)
+                end
+
+                delete(fig); % delete corrplot figure
+            else
+                [R,~] = corrcoef(scalarArrayData);
+                
+                t = tiledlayout(panelHan,1,1,'Padding',...
+                    'compact','TileSpacing','none');
+                axHan = nexttile(t);
+                imagesc(axHan,R);
+                colorbar(axHan);
+                
+                scalars = replace(scalars,"_"," ");
+                xticks(axHan,1:numScalars);
+                xticklabels(axHan,scalars);
+                xtickangle(axHan,45);
+                
+                yticks(axHan,1:numScalars);
+                yticklabels(axHan,scalars);
+            end
+
+            title(t,"Correlation Matrix",'FontWeight','bold');
+                        
+            % Show R values in DAN log
+            s.hlpDispMsg('R =');
+            R_str = num2str(R);
+            for i = 1:size(R_str,1)
+                s.hlpDispMsg(R_str(i,:));
+            end
+        end
+
         function waterfallPlot(s, diag, fcn, sortFSArray, plotBool)
 
             if nargin < 3
@@ -219,7 +301,7 @@ classdef DataSetDAN < handle
             
             curHandle = s.hlpGetFigAxis();
 
-            [data,diagData] = s.hlpCheckImage(diag);
+            [data,diagData] = s.hlpCheckImage(diag); % returns image data for first shot
             
             %Check that the provided function maps 2D -> 1D array
             wFData = fcn(diagData);
@@ -230,7 +312,11 @@ classdef DataSetDAN < handle
             end
 
             %Pre-allocate
-            len = length(data.loc(data.common_index));
+            if strcmp(s.imgType,'TIFF')
+                len = length(data.loc(data.common_index));
+            elseif strcmp(s.imgType,'HDF5')
+                len = length(data.common_index);
+            end
             waterfall = zeros(r*c,len);
             waterfall(:,1) = wFData;
             
@@ -247,7 +333,7 @@ classdef DataSetDAN < handle
             end
             
             if nargin < 5
-                plotBool = 0
+                plotBool = 0;
             end
             
             %Label for applied function
@@ -261,13 +347,20 @@ classdef DataSetDAN < handle
             if isfield(s.tempScalars, diag) && ...
                isfield(s.tempScalars.(diag),'waterfall') && ...
                isfield(s.tempScalars.(diag).waterfall,fcnSN)       
-                    waterfall = s.tempScalars.(diag).waterfall.(fcnSN);
+               waterfall = s.tempScalars.(diag).waterfall.(fcnSN);
             else
                 s.hlpDispMsg('Starting to make waterfall plot...\n')
-                for k = 1:len
-                    diagData = s.hlpGetImage(diag, data.common_index(k));
-                    wFData = fcn(diagData);
-                    waterfall(:,k) = wFData;
+                if strcmp(s.imgType,'TIFF')
+                    for k = 1:len
+                        diagData = s.hlpGetImage(diag, data.common_index(k));
+                        wFData = fcn(diagData);
+                        waterfall(:,k) = wFData;
+                    end
+                elseif strcmp(s.imgType,'HDF5')
+                    imData = s.hlpGetImageHDF5(diag);
+                    imData = imData(:,:,data.common_index);
+                    wFData = fcn(imData);
+                    waterfall = squeeze(wFData);
                 end
                 s.hlpDispMsg('Finished making waterfall plot\n')
                 s.tempScalars.(diag).waterfall.(fcnSN) = waterfall;
@@ -282,8 +375,17 @@ classdef DataSetDAN < handle
             titleS, xlabS, ylabS);
             if plotBool
                 s.hlpPlotOverlay(sortFSArray,sortedIdx,sortLab);
+                drawnow;
             end
-
+            
+            % Add (approximate) step ticks  - still working on it!
+%             x_shots_ticks = curHandle.XTick;
+%             x_steps_ticks = x_shots_ticks/s.dataSet.params.n_shot;
+%             labelArray = [compose('%3g',x_shots_ticks); compose('%3g',x_steps_ticks)];
+%             tickLabels = strtrim(sprintf('%s\\newline%s\n', labelArray{:}));
+%             
+%             curHandle.XTickLabel = tickLabels;
+%             curHandle.XLabel.String = 'First row: Shot number  Second row: Step number';
         end
         
         function correlationPlot(s, inputArg1, inputArg2)
@@ -415,7 +517,7 @@ classdef DataSetDAN < handle
         
         function bool = validShotNbr(s, shotNbr)
             % Checks if shot number exist
-            if shotNbr > 0 & shotNbr < s.maxShotNbr
+            if shotNbr > 0 && shotNbr < s.maxShotNbr
                 bool = 1;
             else
                 s.hlpDispMsg('shotNbr not within valid range')
@@ -474,12 +576,18 @@ classdef DataSetDAN < handle
                     dS = getfield(s.dataSet.images,FACETscalar{1});
                     nbrOfShots = length(dS.common_index);
                     scalarArray = zeros(1,nbrOfShots);
-
-
-                    for k = 1:nbrOfShots
-                        diagData = s.hlpGetImage(FACETscalar{1},dS.common_index(k));
+                    
+                    if strcmp(s.imgType,'TIFF')
+                        for k = 1:nbrOfShots
+                            diagData = s.hlpGetImage(FACETscalar{1},dS.common_index(k));
+                            scalarData = fcn(diagData);
+                            scalarArray(:,k) = scalarData;
+                        end
+                    elseif strcmp(s.imgType,'HDF5')
+                        diagData = s.hlpGetImageHDF5(FACETscalar{1}); % returns all image data
+                        diagData = diagData(:,:,dS.common_index);
                         scalarData = fcn(diagData);
-                        scalarArray(:,k) = scalarData;
+                        scalarArray = scalarData;
                     end
                 end
                 
@@ -516,6 +624,27 @@ classdef DataSetDAN < handle
             RVstruct.fcnS = func2str(fcn);
             RVstruct.idx = data.common_index;
             
+        end
+        
+        function getImgType(s)
+            try
+                s.imgType = s.dataSet.params.saveMethod;
+            catch
+                camPath = s.dataSet.save_info.cam_paths{1};
+                listing = dir([camPath '/*data*']);
+                fn = listing.name;
+                expr = '\.[0-9a-z]+$';
+                idx = regexp(fn,expr) + 1;
+                
+                %Check and select method to load from file format
+                if strcmp(fn(idx:end),'tif') || strcmp(fn(idx:end),'tiff')
+                    s.imgType = 'TIFF';
+                elseif strcmp(fn(idx:end),'h5') || strcmp(fn(idx:end),'hdf5')
+                    s.imgType = 'HDF5';
+                else
+                    error('File format not recognized for data.')
+                end
+            end
         end
         
     end
@@ -692,12 +821,17 @@ classdef DataSetDAN < handle
                     dS = getfield(s.dataSet.images,FACETscalar{1});
                     nbrOfShots = length(dS.common_index);
                     scalarArray = zeros(1,nbrOfShots);
-
-
-                    for k = 1:nbrOfShots
-                        diagData = s.hlpGetImage(FACETscalar{1},dS.common_index(k));
+                    if strcmp(s.imgType,'TIFF')
+                        for k = 1:nbrOfShots
+                            diagData = s.hlpGetImage(FACETscalar{1},dS.common_index(k));
+                            scalarData = fcn(diagData);
+                            scalarArray(:,k) = scalarData;
+                        end
+                    elseif strcmp(s.imgType,'HDF5')
+                        diagData = s.hlpGetImageHDF5(FACETscalar{1});
+                        diagData = diagData(:,:,dS.common_index);
                         scalarData = fcn(diagData);
-                        scalarArray(:,k) = scalarData;
+                        scalarArray = squeeze(scalarData);
                     end
                 end
                 
@@ -710,10 +844,26 @@ classdef DataSetDAN < handle
         end
         
         function img = hlpGetImage(s, diag, sNbr)
-            img = imread( sprintf('%s%s',s.hdr,s.dataSet.images.(diag).loc{sNbr}) );
+            if strcmp(s.imgType,'TIFF')
+                img = imread(sprintf('%s%s',s.hdr,s.dataSet.images.(diag).loc{sNbr}));
+            elseif strcmp(s.imgType,'HDF5')
+                h5fn = sprintf('%s%s',s.hdr,s.dataSet.images.(diag).loc{1});
+                imData = h5read(h5fn,'/entry/data/data');
+                img = imData(:,:,sNbr);
+            end
+            
             if s.subtractBackground
                 img = img - s.dataSet.backgrounds.(diag)';
             end
+        end
+        
+        function img = hlpGetImageHDF5(s, diag)
+            % Does the same thing as "hlpGetImage" but it returns the image
+            % data for all the shots
+            % This makes correlation and waterfall plots a lot faster
+            h5fn = sprintf('%s%s',s.hdr,s.dataSet.images.(diag).loc{1});
+            img = h5read(h5fn,'/entry/data/data');
+            s.HDF5_imData = img;
         end
         
         function [data, diagData] = hlpCheckImage(s,diag)
@@ -732,14 +882,20 @@ classdef DataSetDAN < handle
             end
             
             %Find file format
-            expr = '\.[0-9a-z]+$';
-            idx = regexp(data.loc{1},expr) + 1;
+%             expr = '\.[0-9a-z]+$';
+%             idx = regexp(data.loc{1},expr) + 1;
             
             %Check and select method to load from file format
-            if strcmp(data.loc{1}(idx:end),'tif') || strcmp(data.loc{1}(idx:end),'tiff')
-                diagData = imread( sprintf('%s%s',s.hdr,data.loc{1}) );
-            else
-                error('File format not recognized for data.')
+%             if strcmp(data.loc{1}(idx:end),'tif') || strcmp(data.loc{1}(idx:end),'tiff')
+            switch s.imgType
+                case 'TIFF'
+                    diagData = imread( sprintf('%s%s',s.hdr,data.loc{1}) );
+                case 'HDF5'
+                    imData = h5read(sprintf('%s%s',s.hdr,data.loc{1}),...
+                        '/entry/data/data');
+                    diagData = imData(:,:,1);
+                otherwise
+                    error('File format not recognized for data.')
             end
             
         end
@@ -766,7 +922,7 @@ classdef DataSetDAN < handle
         
         function curHandle = hlpGetFigAxis(s)
             if ~s.plotToGUI
-                figure
+                figure;
                 curHandle = gca;
             else
                 curHandle = s.GUIHandle.ImageAxes;
