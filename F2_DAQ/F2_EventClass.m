@@ -62,6 +62,8 @@ classdef F2_EventClass < handle
         
         % This just returns event code (214)
         DAQ_EVNT_PV    = 'EVNT:SYS1:1:PMAQCHCK' % EC 214
+        DAQ_EVNT_ON    = 'EVNT:SYS1:1:PMAQCTRL.E' % EC 214 on/off
+        DAQ_EVNT_NUM   = 'EVNT:SYS1:1:PMAQCTRL.H' % Number of shots
         
         % These return event rates
         BEAM_RATE_PV   = 'EVNT:SYS1:1:BEAMRATE' % EC 203
@@ -107,6 +109,11 @@ classdef F2_EventClass < handle
             lcaPut([obj.BUFF_ACQ_PV ':INCLUSION' obj.STOP_BSA_ENUM], double(obj.INCL_STOP_VALS(1)));
         end
         
+        function stop_event_HDF5(obj)
+            lcaPut([obj.BUFF_ACQ_PV ':CTRL'],0);
+            lcaPut(obj.DAQ_EVNT_ON,0);
+        end
+        
         function start_event(obj)
             % This removes DUMP_2_9 which enables rate
             
@@ -117,6 +124,11 @@ classdef F2_EventClass < handle
             lcaPut([obj.BUFF_ACQ_PV ':INCLUSION' obj.STOP_BSA_ENUM], double(obj.INCL_VALS(1)));
         end
         
+        function start_event_HDF5(obj)
+            lcaPut([obj.BUFF_ACQ_PV ':CTRL'],1);
+            lcaPut(obj.DAQ_EVNT_ON,1);
+        end
+        
         function set_default(obj) % default = beam
             % This function loops over bits and sets them to desired value
             % for beam rate
@@ -125,6 +137,38 @@ classdef F2_EventClass < handle
             obj.INCL_VALS = obj.MODIFIER_INCL_BEAM;
             obj.EXCL_VALS = obj.MODIFIER_EXCL_BEAM;
             obj.INCL_STOP_VALS = obj.MODIFIER_INCL_BEAM_STOP;
+            
+            
+            % Loop over INCL bits
+            for i = 1:numel(obj.INCL_VALS)
+                
+                % This affects EC214 INCLs
+                lcaPut([obj.DAQ_EVNT_PV '.' obj.INCL_ENUMS{i}], double(obj.INCL_VALS(i)));
+                
+                % This affects BUFFACQ INCLs
+                lcaPut([obj.BUFF_ACQ_PV ':INCLUSION' obj.BSA_ENUMS{i}], double(obj.INCL_VALS(i)));
+            end
+            
+            % Loop over EXCL bits
+            for i = 1:numel(obj.EXCL_VALS)
+
+                % This affects EC214 EXCLs
+                lcaPut([obj.DAQ_EVNT_PV '.' obj.EXCL_ENUMS{i}], double(obj.EXCL_VALS(i)));
+                
+                % This affects BUFFACQ EXCLs
+                lcaPut([obj.BUFF_ACQ_PV ':EXCLUSION' obj.BSA_ENUMS{i}], double(obj.EXCL_VALS(i)));
+            end
+            
+            obj.RATE = 'BEAM';
+        end
+        
+        function set_default_HDF5(obj) % default = beam
+            % This function loops over bits and sets them to desired value
+            % for beam rate
+            
+            % Set bits to default for beam rate
+            obj.INCL_VALS = obj.MODIFIER_INCL_BEAM;
+            obj.EXCL_VALS = obj.MODIFIER_EXCL_BEAM;
             
             
             % Loop over INCL bits
@@ -171,6 +215,50 @@ classdef F2_EventClass < handle
                 obj.INCL_VALS = obj.MODIFIER_INCL_05HZ;
                 obj.EXCL_VALS = obj.MODIFIER_EXCL_05HZ;
                 obj.INCL_STOP_VALS = obj.MODIFIER_INCL_05HZ_STOP;
+            else
+                error(['Rate ' rate ' not recognized.']);
+            end
+            
+            % Then loop over INCL bits
+            for i = 1:numel(obj.INCL_VALS)
+                
+                % This affects EC214 INCLs
+                lcaPut([obj.DAQ_EVNT_PV '.' obj.INCL_ENUMS{i}], double(obj.INCL_VALS(i)));
+                
+                % This affects BUFFACQ INCLs
+                lcaPut([obj.BUFF_ACQ_PV ':INCLUSION' obj.BSA_ENUMS{i}], double(obj.INCL_VALS(i)));
+            end
+            
+            % Then loop over EXCL bits
+            for i = 1:numel(obj.EXCL_VALS)
+
+                % This affects EC214 EXCLs
+                lcaPut([obj.DAQ_EVNT_PV '.' obj.EXCL_ENUMS{i}], double(obj.EXCL_VALS(i)));
+                
+                % This affects BUFFACQ EXCLs
+                lcaPut([obj.BUFF_ACQ_PV ':EXCLUSION' obj.BSA_ENUMS{i}], double(obj.EXCL_VALS(i)));
+            end
+            
+            obj.RATE = rate;
+        end
+        
+        function set_fixed_HDF5(obj,rate)
+            % This function loops over bits and sets them to desired value
+            % for fixed rate
+            
+            % First choose your bits
+            if strcmp(rate,'TEN_HERTZ')
+                obj.INCL_VALS = obj.MODIFIER_INCL_10HZ;
+                obj.EXCL_VALS = obj.MODIFIER_EXCL_10HZ;
+            elseif strcmp(rate,'FIVE_HERTZ')
+                obj.INCL_VALS = obj.MODIFIER_INCL_5HZ;
+                obj.EXCL_VALS = obj.MODIFIER_EXCL_5HZ;
+            elseif strcmp(rate,'ONE_HERTZ')
+                obj.INCL_VALS = obj.MODIFIER_INCL_1HZ;
+                obj.EXCL_VALS = obj.MODIFIER_EXCL_1HZ;
+            elseif strcmp(rate,'HALF_HERTZ')
+                obj.INCL_VALS = obj.MODIFIER_INCL_05HZ;
+                obj.EXCL_VALS = obj.MODIFIER_EXCL_05HZ;
             else
                 error(['Rate ' rate ' not recognized.']);
             end

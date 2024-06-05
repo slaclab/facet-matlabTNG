@@ -41,6 +41,10 @@ daq_pvs = {
     ':HDF5:FileWriteMode';
     ':HDF5:NumCaptured_RBV';
     ':HDF5:NumCapture';
+    ':HDF5:ExtraDimSizeN';
+    ':HDF5:NumExtraDims';
+    ':HDF5:ExtraDimSizeX';
+    ':HDF5:ExtraDimSizeY';
     ':DataType';
     ':DAQ_InUse';
     };
