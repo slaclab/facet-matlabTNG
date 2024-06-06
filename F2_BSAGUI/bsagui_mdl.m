@@ -392,6 +392,9 @@ classdef bsagui_mdl < handle
             fig = gcf;
             util_printLog2020(fig,'title','BSA GUI Plot','author',...
                 'F2_BSAGUI.m')
+            if isempty(mdl.process) || ~mdl.process.saved
+                saveData(mdl, 0)
+            end
         end
                                                 
     end
