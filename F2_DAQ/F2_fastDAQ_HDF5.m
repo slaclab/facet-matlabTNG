@@ -405,21 +405,34 @@ classdef F2_fastDAQ_HDF5 < handle
         
         function status = checkShots(obj)
             status = 0;
-            shots = lcaGet(obj.daq_pvs.HDF5_NumCaptured_RBV);
             
+            shots = lcaGet(obj.daq_pvs.HDF5_NumCaptured_RBV);
             check_vec = obj.step*obj.params.n_shot*ones(obj.params.num_CAM,1);
             
-            %inds = (check_vec - shots) ~= 0;
-            inds = (check_vec > shots);
+            good = (check_vec == shots);
+            final_shots = zeros(size(shots));
+            final_shots(good) = shots(good);
+            
+            any_bad = sum(~good);
+            
+            % the problem seems to be that after collecting all N shots,
+            % some cameras immediately drop back down to zero. so maybe
+            % have to deal with this on a camera by camera basis
             
             tic;
             
-            while any(inds)
-                shots = lcaGet(obj.daq_pvs.HDF5_NumCaptured_RBV);
-                %inds = (check_vec - shots) ~= 0;
-                inds = (check_vec > shots);
-                disp(shots);
-                disp(inds);
+            while any_bad
+                new_shots = lcaGet(obj.daq_pvs.HDF5_NumCaptured_RBV);
+                new_good = (check_vec == new_shots);
+                final_shots(new_good) = new_shots(new_good);
+                
+                % add new good shots to list
+                good = good | new_good;
+                any_bad = sum(~good);
+                
+                
+                disp(final_shots);
+                disp(good);
                 pause(1);
                 
                 if toc > 3
@@ -431,9 +444,12 @@ classdef F2_fastDAQ_HDF5 < handle
                     % not 100% sure how to do this yet
                 end
             end
+            if any_bad
+                final_shots(~good) = new_shots(~good);
+            end
             
             % Create shotsArray here
-            obj.shotsArray = [obj.shotsArray,shots];
+            obj.shotsArray = [obj.shotsArray,final_shots];
             
             %disp(obj.params.n_shot)
         end
