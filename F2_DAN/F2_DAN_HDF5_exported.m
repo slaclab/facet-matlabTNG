@@ -973,7 +973,6 @@ classdef F2_DAN_HDF5_exported < matlab.apps.AppBase
             title(app.ImageAxes, 'Title')
             xlabel(app.ImageAxes, 'X')
             ylabel(app.ImageAxes, 'Y')
-            app.ImageAxes.FontSize = 14;
             app.ImageAxes.Position = [405 401 803 509];
 
             % Create CLimPanel

@@ -171,12 +171,10 @@ classdef DataSetDAN < handle
                 
                 if strcmp(s.imgType,'HDF5')
                     if isempty(s.HDF5_imData)
-                        data = s.hlpGetImageHDF5(diag);
-                        data = data(:,:,data.common_index);
-                        diagData = data(:,:,shotNbr);
+                        s.HDF5_imData = s.hlpGetImageHDF5(diag);
+                        diagData = s.HDF5_imData(:,:,data.common_index(shotNbr));
                     else
-                        data = s.HDF5_imData(:,:,data.common_index);
-                        diagData = data(:,:,shotNbr);
+                        diagData = s.HDF5_imData(:,:,data.common_index(shotNbr));
                     end
                 else
                     diagData = s.hlpGetImage(diag,data.common_index(shotNbr));
@@ -608,7 +606,7 @@ classdef DataSetDAN < handle
             % number of datapoints n in the diagnsotic diag and the length
             % N of the 1D vector  
             
-            [data,diagData] = s.hlpCheckImage(diag);
+            [data,diagData] = s.currAxes(diag);
             l = length(fcn(diagData));
             RVstruct.RV = zeros(l,length(data.common_index));
             
