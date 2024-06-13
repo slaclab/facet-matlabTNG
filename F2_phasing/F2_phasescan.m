@@ -28,7 +28,7 @@ classdef F2_phasescan < handle
         DEFAULT_SAMPLES = 20;
 
         TMIT_THRESHOLD_LO = 0.8;
-        TMIT_THRESHOLD_HI = 1.1;
+        TMIT_THRESHOLD_HI = 1.5;
         
     end
     
@@ -204,7 +204,9 @@ classdef F2_phasescan < handle
                 case {2,3}, p_klys = lcaGetSmart(self.PVs.klys_PDES);
             end
             if abs(p_klys) > 0.0, self.klys_offset = -1 * p_klys; end
-            self.in.phi_set = p_klys - self.sbst_offset;
+            if self.linac > 1
+                self.in.phi_set = p_klys - self.sbst_offset;
+            end
 
             self.save_target_initial_setting();
         end
@@ -665,6 +667,7 @@ classdef F2_phasescan < handle
 
             self.success = false;
             self.scan_aborted = false;
+            self.abort_requested = false;
 
             % check if GUI handles are attached, if so use them
             if self.GUI_attached
