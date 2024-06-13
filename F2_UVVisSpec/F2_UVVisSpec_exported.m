@@ -1,4 +1,4 @@
-classdef UVSpecApp_exported < matlab.apps.AppBase
+classdef F2_UVVisSpec_exported < matlab.apps.AppBase
 
     % Properties that correspond to app components
     properties (Access = public)
@@ -501,7 +501,7 @@ classdef UVSpecApp_exported < matlab.apps.AppBase
     methods (Access = public)
 
         % Construct app
-        function app = UVSpecApp_exported
+        function app = F2_UVVisSpec_exported
 
             % Create UIFigure and components
             createComponents(app)
