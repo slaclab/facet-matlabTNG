@@ -363,10 +363,15 @@ classdef DataSetDAN < handle
                         waterfall(:,k) = wFData;
                     end
                 elseif strcmp(s.imgType,'HDF5')
+                    % Load all the HDF5 Images
                     imData = s.hlpGetImageHDF5(diag);
+                    % Grab only the shots that are in the common index
                     imData = imData(:,:,data.common_index);
-                    wFData = fcn(imData);
-                    waterfall = squeeze(wFData);
+                    % Loop through the images, apply the the function and
+                    % add it to the waterfall plot.
+                    for k = 1:len
+                        waterfall(:, k) = fcn(imData(:, :, k));
+                    end
                 end
                 s.hlpDispMsg('Finished making waterfall plot\n')
                 s.tempScalars.(diag).waterfall.(fcnSN) = waterfall;

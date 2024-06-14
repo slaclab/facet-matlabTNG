@@ -244,7 +244,6 @@ classdef F2_DAN_HDF5_exported < matlab.apps.AppBase
         
         function plotImage(app, imageNumber)
             cameraName = app.CameraDropDown_DI.Value;
-            disp(['plotImage: ', cameraName]) %BDO
             applyfcn = app.ApplyImageanalysis2Dto2DCheckBox.Value;
             if ~applyfcn
                 app.DANobject.visImage(cameraName, imageNumber);
