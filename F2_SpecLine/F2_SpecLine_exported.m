@@ -335,7 +335,7 @@ classdef F2_SpecLine_exported < matlab.apps.AppBase
 
             % Create ZobDropDown
             app.ZobDropDown = uidropdown(app.SpectrometerParametersPanel);
-            app.ZobDropDown.Items = {'Select...', 'Custom', 'PIC_CENT', 'FILG', 'FILS', 'IPOTR1P', 'IPOTR1', 'PENT', 'IPWS1', 'PEXT', 'IPOTR2', 'BEWIN2'};
+            app.ZobDropDown.Items = {'Select...', 'Custom', 'PIC_CENT', 'FILG', 'FILS', 'IPOTR1P', 'IPOTR1', 'PENT', 'IPWS1', 'PENT+25', 'PENT+75', 'PEXT', 'IPOTR2', 'BEWIN2'};
             app.ZobDropDown.ValueChangedFcn = createCallbackFcn(app, @ZobDropDownValueChanged, true);
             app.ZobDropDown.Position = [185 260 82 22];
             app.ZobDropDown.Value = 'Select...';

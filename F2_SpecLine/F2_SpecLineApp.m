@@ -329,6 +329,8 @@ classdef F2_SpecLineApp < handle
             beamline.name{end+1}='IPOTR1';   beamline.z(end+1) = 1.9938300e+03;
             beamline.name{end+1}='IPWS1';    beamline.z(end+1) = 1.9939100e+03;
             beamline.name{end+1}='PENT';     beamline.z(end+1) = 1.9938700e+03;
+            beamline.name{end+1}='PENT+25';  beamline.z(end+1) = 1.9938700e+03+.25;
+            beamline.name{end+1}='PENT+75';  beamline.z(end+1) = 1.9938700e+03+.75;
             beamline.name{end+1}='PEXT';     beamline.z(end+1) = 1.9950400e+03;
             beamline.name{end+1}='IPOTR2';   beamline.z(end+1) = 1.9950900e+03;
             beamline.name{end+1}='BEWIN2';   beamline.z(end+1) = 1.9961000e+03;
