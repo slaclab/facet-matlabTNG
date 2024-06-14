@@ -70,6 +70,7 @@ classdef DataSetDAN < handle
         maxShotNbr;
         scalarGroups;
         listOfCameras;
+        visImageDiag;
         
         % GUI specific properties
         plotToGUI = 0;
@@ -167,10 +168,13 @@ classdef DataSetDAN < handle
             
             if s.validShotNbr(shotNbr)                
                 % Get image data
+                disp(['visImage: ', diag]) %BDO
                 [data,~] = s.hlpCheckImage(diag);
                 
                 if strcmp(s.imgType,'HDF5')
-                    if isempty(s.HDF5_imData)
+                    if (isempty(s.HDF5_imData) || ~strcmp(s.visImageDiag, diag))
+                        % If there is no HDF5 data, or the requested
+                        % diagnostic changes, load the HDF5 data.
                         s.HDF5_imData = s.hlpGetImageHDF5(diag);
                         diagData = s.HDF5_imData(:,:,data.common_index(shotNbr));
                     else
@@ -191,6 +195,10 @@ classdef DataSetDAN < handle
                 
                 s.hlpPlotImage(curHandle, fcn(diagData), type, ...
                 titleS, xlabS, ylabS);
+            
+                % Save the diagnostic that was plotted so you can tell when
+                % the requested diagnostic has changed
+                s.visImageDiag = diag;
                 
             end
             
