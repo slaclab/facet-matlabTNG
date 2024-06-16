@@ -478,11 +478,15 @@ classdef F2_fastDAQ_HDF5 < handle
             
             disp('bop');
                         
-            obj.getNonBSAdata(slac_time);
+            try 
+                obj.getNonBSAdata(slac_time);
+                status = 0;
+            catch
+                obj.dispMessage('Non-BSA data failed.');
+                status = 1;
+            end
             
             disp('borp');
-            
-            status = 0;
                         
             obj.dispMessage('Quality control complete.');
         end

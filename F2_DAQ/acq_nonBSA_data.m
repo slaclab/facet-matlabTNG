@@ -175,6 +175,10 @@ classdef acq_nonBSA_data < handle
                 end
             else
                 non_BSA_times = obj.data(2,:) + obj.data(3,:)/1e9;
+                if any(isnan(non_BSA_times))
+                    obj.daq_handle.dispMessage('Warning: Non-BSA time has NaNs.');
+                    non_BSA_times = fillmissing(non_BSA_times,'linear',2,'EndValues','nearest');
+                end
                 for i = 1:obj.nPV
                     vals = interp1(non_BSA_times,obj.data(i,:),time,'nearest','extrap');
                     obj.interpData.(pv_names{i}) = vals;
