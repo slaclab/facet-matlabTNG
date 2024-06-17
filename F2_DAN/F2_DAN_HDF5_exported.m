@@ -281,7 +281,7 @@ classdef F2_DAN_HDF5_exported < matlab.apps.AppBase
         function startupFcn(app)
 %             set(app.dispImage.Children,'Enable','Off')
 %             set(app.correlationPlot.Children,'Enable','Off')
-            p = genpath('/home/fphysics/shperez/git_work/matlabTNG/F2_DAN/');
+            p = genpath('/usr/local/facet/tools/matlabTNG/F2_DAN/');
             addpath(p);
             app.getLatestExp();
             
