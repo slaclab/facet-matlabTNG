@@ -56,7 +56,7 @@ classdef scanFunc_LONG_LASER_TIME_Scan
         
         function restoreInitValue(obj)
             obj.daqhandle.dispMessage('Restoring initial value');
-            obj.set_value(obj.initial_control);
+            % obj.set_value(obj.initial_control);
         end
         
     end
