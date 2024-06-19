@@ -203,12 +203,17 @@ classdef F2_DAN_HDF5_exported < matlab.apps.AppBase
                 
                 app.ScalargroupDropDown_WFS.Items = {''};
                 app.ScalarDropDown_WFS.Items = {''};
+                
+                app.ScalargroupDD_CorrM.Items = {''};
+                app.ScalarsListBox_CorrM.Items = {''};
             end
         end
         
         function clearAxis(app)
             cla(app.ImageAxes);
             xlabel(app.ImageAxes,'', 'Interpreter', 'none');
+            xticklabels(app.ImageAxes,'auto');
+            xticks(app.ImageAxes,'auto');
             ylabel(app.ImageAxes,'', 'Interpreter', 'none');
             title(app.ImageAxes,'', 'Interpreter', 'none');
             yyaxis(app.ImageAxes,'right')
@@ -428,7 +433,7 @@ classdef F2_DAN_HDF5_exported < matlab.apps.AppBase
                         app.DANobject.correlationPlot(FS1);
                     catch
                         % Display error message
-                        app.addMsg('Unable to make plot\nCheck that the data set has scalar data');
+                        app.addMsg('Unable to make plot');
                     end
                 end
                 return
@@ -973,6 +978,7 @@ classdef F2_DAN_HDF5_exported < matlab.apps.AppBase
             title(app.ImageAxes, 'Title')
             xlabel(app.ImageAxes, 'X')
             ylabel(app.ImageAxes, 'Y')
+            app.ImageAxes.FontSize = 14;
             app.ImageAxes.Position = [405 401 803 509];
 
             % Create CLimPanel

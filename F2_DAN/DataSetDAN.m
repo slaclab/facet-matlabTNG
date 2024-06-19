@@ -372,6 +372,7 @@ classdef DataSetDAN < handle
                     for k = 1:len
                         waterfall(:, k) = fcn(imData(:, :, k));
                     end
+%                     waterfall = squeeze(fcn(imData));
                 end
                 s.hlpDispMsg('Finished making waterfall plot\n')
                 s.tempScalars.(diag).waterfall.(fcnSN) = waterfall;
@@ -389,14 +390,16 @@ classdef DataSetDAN < handle
                 drawnow;
             end
             
-            % Add (approximate) step ticks  - still working on it!
-%             x_shots_ticks = curHandle.XTick;
-%             x_steps_ticks = x_shots_ticks/s.dataSet.params.n_shot;
-%             labelArray = [compose('%3g',x_shots_ticks); compose('%3g',x_steps_ticks)];
-%             tickLabels = strtrim(sprintf('%s\\newline%s\n', labelArray{:}));
-%             
-%             curHandle.XTickLabel = tickLabels;
-%             curHandle.XLabel.String = 'First row: Shot number  Second row: Step number';
+            % Add (approximate) step ticks
+            x_shots_ticks = curHandle.XTick;
+            steps = data.step(data.common_index)';
+            steps_ticks = [0 steps(x_shots_ticks(2:end))];
+            labelArray = [compose('%3g',x_shots_ticks); compose('%3g',steps_ticks)];
+            tickLabels = strtrim(sprintf('%s\\newline%s\n', labelArray{:}));
+            
+            curHandle.XTickLabel = tickLabels;
+            xlabel(curHandle,'First row: Shot number / Second row: Step number',...
+                'FontSize',7);
         end
         
         function correlationPlot(s, inputArg1, inputArg2)
@@ -967,6 +970,7 @@ classdef DataSetDAN < handle
             
             plot(plotHandle, data, 'x');
             s.hlpSetPlotLabels(plotHandle, titleS, xlabS, ylabS);
+            
         end
         
         function hlpPlotTwoScalarArray(s, plotHandle, xData, yData, ...
@@ -1010,6 +1014,19 @@ classdef DataSetDAN < handle
             title(plotHandle, titleS, 'Interpreter', 'none');
             xlabel(plotHandle, xlabS, 'Interpreter', 'none');
             ylabel(plotHandle, ylabS, 'Interpreter', 'none');
+            
+            % Add (approximate) step ticks
+            x_shots_ticks = plotHandle.XTick;
+            steps = s.dataSet.pulseID.steps(s.dataSet.pulseID.common_scalar_index)';
+            
+            % Manual formatting of steps ticks
+            steps_ticks = [0 steps(x_shots_ticks(2:end-1)) steps(end)];
+            labelArray = [compose('%3g',x_shots_ticks); compose('%3g',steps_ticks)];
+            tickLabels = strtrim(sprintf('%s\\newline%s\n', labelArray{:}));
+            
+            plotHandle.XTickLabel = tickLabels;
+            xlabel(plotHandle,'First row: Shot number / Second row: Step number',...
+                'FontSize',7);
         end
         
         function hlpClearPlot(s, plotHandle)
