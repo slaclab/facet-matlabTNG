@@ -316,8 +316,6 @@ classdef F2_DAQ_exported < matlab.apps.AppBase
         function SaveConfigButtonPushed(app, event)
             gui_state = struct();
             gui_state.Experiment = app.ExperimentDropDown.Value;
-%             EC = split(app.EventCodeButtonGroup.SelectedObject.Text);
-%             gui_state.EventCode = str2num(EC{1});
             gui_state.ShotsPerStep = app.ShotsperstepEditField.Value;
             gui_state.SaveBackground = app.SavebackgroundCheckBox.Value;
             gui_state.BackgroundShots = app.BackgroundshotsEditField.Value;
@@ -333,14 +331,14 @@ classdef F2_DAQ_exported < matlab.apps.AppBase
             
             % Save DAQ parameters struct
             daq_params = app.aobj.generateDAQParams();
-            save('daq_params.mat','daq_params');
+            uisave('daq_params',['DAQ_params_' exp '_' date '.mat']);
         end
 
         % Button pushed function: ClearConfigButton
         function ClearConfigButtonPushed(app, event)
             app.ExperimentDropDown.Value = 'TEST';
             app.CommentTextArea.Value = 'Comment . . .';
-            app.BeamButton.Value = true;
+%             app.BeamButton.Value = true;
             app.ShotsperstepEditField.Value = 20;
             app.SavebackgroundCheckBox.Value = true;
             app.BackgroundshotsEditField.Value = 1;
@@ -360,9 +358,9 @@ classdef F2_DAQ_exported < matlab.apps.AppBase
             
             switch gui_state.EventCode
                 case 223
-                    app.BeamButton.Value = true;
+%                     app.BeamButton.Value = true;
                 case 53
-                    app.TS510HzButton.Value = true;
+%                     app.TS510HzButton.Value = true;
                 otherwise
                     app.aobj.addMessage('Warning: Could not load Event Code');
             end
