@@ -37,6 +37,7 @@ classdef F2_RADFET_GUI_exported < matlab.apps.AppBase
         % Code that executes after component creation
         function startupFcn(app)
             app.aobj = F2_RADFET_GUIApp(app);
+            app.CameraDropDown.Items = app.aobj.camNames;
             app.aobj.populate();
             selectedRadioButton = app.ButtonGroup.SelectedObject;
             app.aobj.plotVar = selectedRadioButton.Text;
@@ -118,7 +119,7 @@ classdef F2_RADFET_GUI_exported < matlab.apps.AppBase
 
             % Create CameraDropDown
             app.CameraDropDown = uidropdown(app.ConfigurationPanel);
-            app.CameraDropDown.Items = {'LBG LFOV', 'DTOTR2', 'PRDMP', 'GAMMA2', 'GAMMA1', 'LFOV'};
+            app.CameraDropDown.Items = {'LBG LFOV', 'DTOTR2', 'CHER', 'GAMMA2', 'GAMMA1', 'LFOV'};
             app.CameraDropDown.ValueChangedFcn = createCallbackFcn(app, @CameraDropDownValueChanged, true);
             app.CameraDropDown.Position = [84 151 157 22];
             app.CameraDropDown.Value = 'LBG LFOV';

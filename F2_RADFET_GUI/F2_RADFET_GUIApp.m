@@ -1,15 +1,34 @@
 classdef F2_RADFET_GUIApp < handle
-    % This is the support class for the Camera Reboot and Radiation Plotter
-    % GUI. Use the GUI to create plots of reboot counts and radiation for
-    % cameras at the dump.
+    % This is the support class for the RADFET GUI
+    % Use the GUI to create plots of reboot counts and radiation or charge
+    % for cameras at the dump
+    
+    % Dump Cameras and their associated RADFETs:
+    % The mapping may change in the future. Refer to facethome
+
+%     Camera Name   PV               RADFET
+%     --------------------------------------------------
+%     LBG_LFOV      CMOS:LI20:3515   RADF:LI20:1:D:1:DOSE
+%     DTOTR2        CAMR:LI20:107    RADF:LI20:1:C:1:DOSE
+%     CHER          CMOS:LI20:3506   RADF:LI20:2:A:1:DOSE
+%     GAMMA2        CAMR:LI20:303    RADF:LI20:2:B:1:DOSE
+%     GAMMA1        CAMR:LI20:302    RADF:LI20:2:C:1:DOSE
+%     LFOV          CAMR:LI20:301    RADF:LI20:2:D:1:DOSE
+
     
     properties
-        guihan % GUI handle
+        guihan
+        radfetPVs = {'RADF:LI20:1:D:1:DOSE';'RADF:LI20:1:C:1:DOSE';...
+                'RADF:LI20:2:A:1:DOSE';'RADF:LI20:2:B:1:DOSE';...
+                'RADF:LI20:2:C:1:DOSE';'RADF:LI20:2:D:1:DOSE'};
+        camNames = {'LBG LFOV';'DTOTR2';'CHER';'GAMMA2';'GAMMA1';'LFOV'}
+        camPVs = {'CMOS:LI20:3515';'CAMR:LI20:107';'CMOS:LI20:3506';...
+            'CAMR:LI20:303';'CAMR:LI20:302';'CAMR:LI20:301'};
         starttime % Start time for data time range
         endtime % End time for data time range
-        CamRebootPV % PV for camera reboot count
-        RADFETPV % PV for RADFET
-        toroidPV % PV for toroid
+        CamRebootPV % Reboot PV for selected camera
+        RADFETPV % PV for selected RADFET
+        toroidPV = 'TORO:LI20:3255:TMIT_PC'
         reboot_t % Time stamps for reboot count
         reboot_v % Values for reboot count
         rad_t % Time stamps for RADFET
@@ -32,38 +51,13 @@ classdef F2_RADFET_GUIApp < handle
             
             % Based on camera chosen, auto populate the RADFET and toroid
             % drop down values
-            switch camera
-                case "LBG LFOV"
-                    obj.RADFETPV = 'RADF:LI20:1:C:1:DOSE';
-                    obj.toroidPV = 'TORO:LI20:3255:TMIT_PC';
-                    obj.guihan.RADFETDropDown.Value = obj.RADFETPV;
-                    obj.CamRebootPV = 'CAMR:LI20:308:REBOOTCOUNT';
-                case "DTOTR2"
-                    obj.RADFETPV = 'RADF:LI20:1:D:1:DOSE';
-                    obj.toroidPV = 'TORO:LI20:3255:TMIT_PC';
-                    obj.guihan.RADFETDropDown.Value = obj.RADFETPV;
-                    obj.CamRebootPV = 'CAMR:LI20:107:REBOOTCOUNT';
-                case "PRDMP"
-                    obj.RADFETPV = 'RADF:LI20:2:A:1:DOSE';
-                    obj.toroidPV = 'TORO:LI20:3255:TMIT_PC';
-                    obj.guihan.RADFETDropDown.Value = obj.RADFETPV;
-                    obj.CamRebootPV = 'CAMR:LI20:108:REBOOTCOUNT';
-                case "GAMMA2"
-                    obj.RADFETPV = 'RADF:LI20:2:B:1:DOSE';
-                    obj.toroidPV = 'TORO:LI20:3255:TMIT_PC';
-                    obj.guihan.RADFETDropDown.Value = obj.RADFETPV;
-                    obj.CamRebootPV = 'CAMR:LI20:303:REBOOTCOUNT';
-                case "GAMMA1"
-                    obj.RADFETPV = 'RADF:LI20:2:C:1:DOSE';
-                    obj.toroidPV = 'TORO:LI20:3255:TMIT_PC';
-                    obj.guihan.RADFETDropDown.Value = obj.RADFETPV;
-                    obj.CamRebootPV = 'CAMR:LI20:302:REBOOTCOUNT';
-                case "LFOV"
-                    obj.RADFETPV = 'RADF:LI20:2:D:1:DOSE';
-                    obj.toroidPV = 'TORO:LI20:3255:TMIT_PC';
-                    obj.guihan.RADFETDropDown.Value = obj.RADFETPV;
-                    obj.CamRebootPV = 'CAMR:LI20:301:REBOOTCOUNT';
-            end
+            i = strcmp(camera,obj.camNames);
+            obj.RADFETPV = obj.radfetPVs(i);
+            obj.toroidPV = 'TORO:LI20:3255:TMIT_PC';
+            obj.CamRebootPV = [obj.camPVs{i} ':REBOOTCOUNT'];
+            
+            % Update RADFET drop down
+            obj.guihan.RADFETDropDown.Value = obj.RADFETPV;
         end
         
         function getArchiveData(obj)
@@ -73,6 +67,7 @@ classdef F2_RADFET_GUIApp < handle
                         timeRange);
             switch obj.plotVar
                 case "Radiation"
+                    obj.RADFETPV = obj.guihan.RADFETDropDown.Value;
                     [obj.rad_t,obj.rad_v] = history(obj.RADFETPV,timeRange);
                 case "Charge"
                     [obj.toro_t,obj.toro_v] = history(obj.toroidPV,timeRange);
