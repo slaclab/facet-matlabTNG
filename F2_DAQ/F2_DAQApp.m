@@ -88,8 +88,10 @@ classdef F2_DAQApp < handle
             
             % Reset DAQ_InUse PVs for cameras
             if ~isempty(obj.DAQ_obj)
-                daq_InUse_PV = obj.DAQ_obj.daq_pvs.DAQ_InUse;
-                lcaPutSmart(daq_InUse_PV,0);
+                if ~isempty(obj.DAQ_obj.daq_pvs)
+                    daq_InUse_PV = obj.DAQ_obj.daq_pvs.DAQ_InUse;
+                    lcaPutSmart(daq_InUse_PV,0);
+                end
             end
             
             % This indicates data taking has ended
