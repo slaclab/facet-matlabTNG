@@ -139,7 +139,7 @@ classdef F2_fastDAQ_HDF5 < handle
             
             % Create EventClass for controlling global event triggers
             obj.event = F2_EventClass();
-            obj.event.select_rate(obj.params.rate);
+            obj.event.select_rate_HDF5(obj.params.rate);
             obj.event_info = obj.event.evt_struct();
             obj.data_struct.metadata.Event = obj.event_info;
             
@@ -222,7 +222,7 @@ classdef F2_fastDAQ_HDF5 < handle
                 try
                     % Capture here
                     % setup camera saving
-                    lcaPut(obj.daq_pvs.HDF5_FileNumber,0);
+                    lcaPut(obj.daq_pvs.HDF5_FileNumber,0); % this is redundant
                     set_CAM_filepath_HDF5(obj);
                     lcaPutNoWait(obj.daq_pvs.HDF5_Capture,1);
                     
@@ -804,21 +804,21 @@ classdef F2_fastDAQ_HDF5 < handle
                 %obj.nonbsa_list = [obj.nonbsa_list; list];
             end
             %obj.async_data = acq_nonBSA_data(obj.nonbsa_list,obj);
-            obj.async_data.initGet();
             
             % Fill in non-BSA arrays, not supported yet
-%             if obj.params.include_nonBSA_arrays
-%                 for i = 1:numel(obj.params.nonBSA_Array_list)
-%                     pvList = feval(obj.params.nonBSA_Array_list{i});
-%                     pvDesc = lcaGetSmart(strcat(pvList,'.DESC'));
-%                     
-%                     obj.data_struct.metadata.(obj.params.nonBSA_Array_list{i}).PVs = pvList;
-%                     obj.data_struct.metadata.(obj.params.nonBSA_Array_list{i}).Desc = pvDesc;
-%                 
+            if obj.params.include_nonBSA_arrays
+                for i = 1:numel(obj.params.nonBSA_Array_list)
+                    pvList = feval(obj.params.nonBSA_Array_list{i});
+                    pvList = obj.async_data.addListArray(pvList);
+                    pvDesc = lcaGetSmart(strcat(pvList,'.DESC'));
+                    
+                    obj.data_struct.metadata.(obj.params.nonBSA_Array_list{i}).PVs = pvList;
+                    obj.data_struct.metadata.(obj.params.nonBSA_Array_list{i}).Desc = pvDesc;
+                
 %                     obj.nonbsa_array_list = [obj.nonbsa_array_list; pvList];
-%                     
-%                 end
-%             end
+                    
+                end
+            end
             
             
         end

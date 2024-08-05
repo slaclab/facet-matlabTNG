@@ -303,6 +303,23 @@ classdef F2_EventClass < handle
             disp(['Set rate ' rate]);
         end
         
+        function select_rate_HDF5(obj,rate)
+            % Choose DAQ rate
+            
+            if strcmp(rate,'BEAM')
+                obj.set_default();
+            else
+                try                    
+                    obj.set_fixed_HDF5(rate);
+                catch
+                    
+                    error('Invalid rate modifier.');
+                    
+                end
+            end
+            disp(['Set rate ' rate]);
+        end
+        
         function reserve_eDef(obj)
             % Reserve a BUFFACQ edef
             
@@ -315,6 +332,7 @@ classdef F2_EventClass < handle
             obj.eDefNum = eDefReserve(obj.eDefStr);
             
             % This is dumb
+            % Skips over broken buffers
             while obj.eDefNum > 11
                 eDefRelease(obj.eDefNum);
                 obj.eDefNum = eDefReserve(obj.eDefStr);
