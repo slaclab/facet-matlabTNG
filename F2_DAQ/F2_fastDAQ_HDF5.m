@@ -663,6 +663,11 @@ classdef F2_fastDAQ_HDF5 < handle
         end
         
         function save_data(obj)
+            % Suppress weird EPICS warning -- not the best workaround but
+            % ok for now
+            wid = 'MATLAB:Java:ConvertFromOpaque';
+            warning('off',wid);
+            
             data_struct = obj.data_struct;
             
             save_str = [obj.save_info.save_path '/' obj.params.experiment '_' num2str(obj.save_info.instance,'%05d')];
