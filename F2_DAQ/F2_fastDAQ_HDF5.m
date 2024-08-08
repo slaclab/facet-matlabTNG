@@ -304,52 +304,46 @@ classdef F2_fastDAQ_HDF5 < handle
         % status = 0 -> ok. status = 1 -> DAQ failed or aborted
         function status = daq_step(obj)
             
-            % waitTime isnt used but it is nice to see in display
             waitTime = obj.params.n_shot/obj.event_info.liveRate;
             
             obj.dispMessage(sprintf('Starting DAQ Step %d. Time estimate %0.1f seconds.',obj.step, waitTime));
 
-            tic % comment this
+%             tic % comment this
             
             % Start BUFFACQ buffer and camera triggers
             obj.event.start_event_HDF5();
-            disp(toc) % and this
+%             disp(toc) % and this
             
-            tic
+            timer = tic;
             
             % if blockBeam
             if obj.blockBeam
             	obj.BG_obj.enable_Pockels_cell()
             end
             
-            
             % Get data and count shots
-            while toc < waitTime
+            while toc(timer) < waitTime
                 
                 pause(1/obj.event_info.liveRate); % derive this from beam rate
                 obj.async_data.addDataFR();
                 
-                % Add a "check failure"
+                % Add a "check failure" --> already checks shots below ..?
 
                 % Add a "check abort" here
-                
+                status = obj.check_abort;
+                if status; return; end
             end
 
-%             disp(toc)
             % Buffers should be full
 
             % Stop triggers
             obj.event.stop_event_HDF5();
-
-%             obj.event.stop_eDef();
-%             disp(toc)
             
             obj.dispMessage('Acquisition complete. Cameras saving data.');
             
             obj.dispMessage('Data saving complete. Starting quality control.');
             
             % Check number of shots per step and add to shotsArray
-            
             status = obj.checkShots();
             if status; return; end
             
@@ -404,12 +398,26 @@ classdef F2_fastDAQ_HDF5 < handle
         end
         
         function status = checkShots(obj)
+            % Checks that num of shots captured is going up at around the same
+            % rate for all cameras
             status = 0;
             
-            shots = lcaGet(obj.daq_pvs.HDF5_NumCaptured_RBV);
+            shots = lcaGet(obj.daq_pvs.HDF5_NumCaptured_RBV);  % returns a vector
+            
+            if shots == 0 % ?
+                status = 1;
+                return
+            end
+            
+            % Vector of expected shots each camera should have captured at each step
+            % e.g. for 3 cameras, 20 shots per step, and after the first step:
+            % check_vec = [20      -> shots corresponding to camera 1
+            %              20      -> shots corresponding to camera 2
+            %              20]     -> shots corresponding to camera 3
+
             check_vec = obj.step*obj.params.n_shot*ones(obj.params.num_CAM,1);
             
-            good = (check_vec == shots);
+            good = (check_vec == shots); % logical vector
             final_shots = zeros(size(shots));
             final_shots(good) = shots(good);
             
@@ -430,9 +438,8 @@ classdef F2_fastDAQ_HDF5 < handle
                 good = good | new_good;
                 any_bad = sum(~good);
                 
-                
-                disp(final_shots);
-                disp(good);
+%                 disp(final_shots);
+%                 disp(good);
                 pause(1);
                 
                 if toc > 3
@@ -450,8 +457,6 @@ classdef F2_fastDAQ_HDF5 < handle
             
             % Create shotsArray here
             obj.shotsArray = [obj.shotsArray,final_shots];
-            
-            %disp(obj.params.n_shot)
         end
         
         function status = collectData(obj)
@@ -525,6 +530,11 @@ classdef F2_fastDAQ_HDF5 < handle
                 nSteps = 1;
             else
                 nSteps =  obj.params.totalSteps;
+            end
+            
+            % Check for no shots saved
+            if isempty(obj.shotsArray)
+                return
             end
             
             camShotsArray = [obj.shotsArray(:,1),diff(obj.shotsArray,1,2)];
