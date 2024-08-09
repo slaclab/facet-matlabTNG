@@ -356,16 +356,16 @@ classdef F2_DAQ_exported < matlab.apps.AppBase
             
             app.ExperimentDropDown.Value = gui_state.Experiment;
             
-            switch gui_state.EventCode
-                case 223
-%                     app.BeamButton.Value = true;
-                case 53
-%                     app.TS510HzButton.Value = true;
-                otherwise
-                    app.aobj.addMessage('Warning: Could not load Event Code');
-            end
+%             switch gui_state.EventCode
+%                 case 223
+% %                     app.BeamButton.Value = true;
+%                 case 53
+% %                     app.TS510HzButton.Value = true;
+%                 otherwise
+%                     app.aobj.addMessage('Warning: Could not load Event Code');
+%             end
             
-            app.EventCodeButtonGroup.SelectedObject.Value = true;
+%             app.EventCodeButtonGroup.SelectedObject.Value = true;
             app.ShotsperstepEditField.Value = gui_state.ShotsPerStep;
             app.SavebackgroundCheckBox.Value = gui_state.SaveBackground;
             app.BackgroundshotsEditField.Value = gui_state.BackgroundShots;
