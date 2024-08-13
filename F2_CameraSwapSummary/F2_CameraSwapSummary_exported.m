@@ -1,4 +1,4 @@
-classdef F2_CameraSwapSummaey_exported < matlab.apps.AppBase
+classdef F2_CameraSwapSummary_exported < matlab.apps.AppBase
 
     % Properties that correspond to app components
     properties (Access = public)
