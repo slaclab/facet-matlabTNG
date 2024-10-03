@@ -301,6 +301,7 @@ classdef F2_phasing_exported < matlab.apps.AppBase
         function scanButtonPushed(app, event)
             app.enable_controls(false); drawnow;
             app.abortButton.Enable = true;
+            app.abortButton.Value = false;
             app.helpButton.Enable = true;
             app.scanButton.Text = 'Scanning...';
 
