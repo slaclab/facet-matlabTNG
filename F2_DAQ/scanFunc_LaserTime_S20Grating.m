@@ -9,7 +9,7 @@ classdef scanFunc_LaserTime_S20Grating
    end
    properties(Constant) % [(grating property)  (laser property)]
        control_PV = ["SIOC:SYS1:ML00CALCOUT070" "SIOC:SYS1:ML00CALCOUT071"]; %["XPS:LI20:MC03:M6" "OSC:LA20:10:FS_TGT_TIME"]
-       readback_PV = ["XPS:LI20:MC03:M6.RBV" "OSC:LA20:10:FS_CTR_TIME"]
+       readback_PV = ["SIOC:SYS1:ML00CALCOUT070" "SIOC:SYS1:ML00CALCOUT071"];% ["XPS:LI20:MC03:M6.RBV" "OSC:LA20:10:FS_CTR_TIME"]
        tolerance = [0.01 0.01]; % (!)
    end
     
