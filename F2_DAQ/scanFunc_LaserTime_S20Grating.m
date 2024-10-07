@@ -7,17 +7,17 @@ classdef scanFunc_LaserTime_S20Grating
        daqhandle
        freerun = true
        
-       initial_control_laser
-       initial_readback_laser
+       %initial_control_laser
+       %initial_readback_laser
    end
    properties(Constant) 
        control_PV = "SIOC:SYS1:ML00CALCOUT070" %["XPS:LI20:MC03:M6" "OSC:LA20:10:FS_TGT_TIME"]
        readback_PV = "SIOC:SYS1:ML00CALCOUT070"% ["XPS:LI20:MC03:M6.RBV" "OSC:LA20:10:FS_CTR_TIME"]
        tolerance = 0.01; % (!)
        
-       laser_PV_control = "SIOC:SYS1:ML00CALCOUT071"
-       laser_PV_readback = "SIOC:SYS1:ML00CALCOUT071"
-       laser_tolerance = 0.01;       
+       %laser_PV_control = "SIOC:SYS1:ML00CALCOUT071"
+       %laser_PV_readback = "SIOC:SYS1:ML00CALCOUT071"
+       %laser_tolerance = 0.01;       
    end
    
    
@@ -63,7 +63,7 @@ classdef scanFunc_LaserTime_S20Grating
            current_value = caget(obj.pvs.readback);
            
            
-           while (current_value - value) > obj.tolerance
+           while abs(current_value - value) > obj.tolerance
                %while max((current_value - [value value_laser]) > [obj.tolerance obj.laser_tolerance])
                current_value = caget(obj.pvs.readback);
                %current_value(2) = caget(pbj.laser_PV_readback);
