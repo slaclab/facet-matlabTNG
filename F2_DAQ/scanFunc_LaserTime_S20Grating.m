@@ -24,10 +24,10 @@ classdef scanFunc_LaserTime_S20Grating
            
            context = PV.Initialize(PVtype.EPICS_labca);
            obj.pvlist=[...
-               PV(context,'name',"control_S20Grating",'pvname',obj.control_PV(0),'mode',"rw",'monitor',true);% Control PV S20Grating
-               PV(context,'name',"control_LaserTime",'pvname',obj.control_PV(1),'mode',"rw",'monitor',true);% Control PV LaserTime
-               PV(context,'name',"readback_S20Grating",'pvname',obj.readback_PV(0),'mode',"r",'monitor',true);% Readback PV S20Grating
-               PV(context,'name',"readback_LaserTime",'pvname',obj.readback_PV(1),'mode',"r",'monitor',true);% Readback PV LaserTime
+               PV(context,'name',"control_S20Grating",'pvname',obj.control_PV(1),'mode',"rw",'monitor',true);% Control PV S20Grating
+               PV(context,'name',"control_LaserTime",'pvname',obj.control_PV(2),'mode',"rw",'monitor',true);% Control PV LaserTime
+               PV(context,'name',"readback_S20Grating",'pvname',obj.readback_PV(1),'mode',"r",'monitor',true);% Readback PV S20Grating
+               PV(context,'name',"readback_LaserTime",'pvname',obj.readback_PV(2),'mode',"r",'monitor',true);% Readback PV LaserTime
                ]; 
            pset(obj.pvlist,'debug',0);
            obj.pvs = struct(obj.pvlist);
@@ -59,14 +59,14 @@ classdef scanFunc_LaserTime_S20Grating
            
            
            while max((current_value - [value_grating value_laser]) > obj.tolerance)
-               current_value(0) = caget(obj.pvs.readback_S20Grating);
-               current_value(1) = caget(obj.pvs.readback_LaserTime);
+               current_value(1) = caget(obj.pvs.readback_S20Grating);
+               current_value(2) = caget(obj.pvs.readback_LaserTime);
                pause(0.1);
            end
            
            delta = current_value - [value_grating value_laser];
-           obj.daqhandle.dispMessage(springf('%s readback is %0.2f', obj.pvs.readback_S20Grating.name, current_value(0)));
-           obj.daqhandle.dispMessage(springf('%s readback is %0.2f', obj.pvs.readback_LaserTime.name, current_value(1)));
+           obj.daqhandle.dispMessage(springf('%s readback is %0.2f', obj.pvs.readback_S20Grating.name, current_value(1)));
+           obj.daqhandle.dispMessage(springf('%s readback is %0.2f', obj.pvs.readback_LaserTime.name, current_value(2)));
            
        end
        
