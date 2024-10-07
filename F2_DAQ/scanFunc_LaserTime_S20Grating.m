@@ -8,7 +8,7 @@ classdef scanFunc_LaserTime_S20Grating
        freerun = true
    end
    properties(Constant) % [(grating property)  (laser property)]
-       control_PV = ["XPS:LI20:MC03:M6" "OSC:LA20:10:FS_TGT_TIME"]
+       control_PV = ["SIOC:SYS1:ML00CALCOUT070" "SIOC:SYS1:ML00CALCOUT071"]; %["XPS:LI20:MC03:M6" "OSC:LA20:10:FS_TGT_TIME"]
        readback_PV = ["XPS:LI20:MC03:M6.RBV" "OSC:LA20:10:FS_CTR_TIME"]
        tolerance = [0.01 0.01]; % (!)
    end
@@ -41,7 +41,7 @@ classdef scanFunc_LaserTime_S20Grating
            laser_time_val = caget(obj.pvs.readback_LaserTime) + s20_grating_val*slope;
        end
        
-       function delta = set_value(obj,value_grating, value_laser) %value is the GRATING POSITION value
+       function delta = set_value(obj,value_grating, value_laser) 
            arguments
                obj scanFunc_LaserTime_S20Grating
                value_grating double
