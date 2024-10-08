@@ -41,8 +41,8 @@ classdef scanFunc_LaserTime_S20Grating
            obj.initial_control = caget(obj.pvs.control); %[caget(obj.pvs.control_S20Grating) caget(obj.pvs.control_LaserTime)]; 
            obj.initial_readback = caget(obj.pvs.readback); %[caget(obj.pvs.readback_S20Grating) caget(obj.pvs.readback_LaserTime)];
            
-           obj.initial_control_laser = caget(laser_PV_control);
-           obj.initial_readback_laser = caget(laser_PV_readback);
+           obj.initial_control_laser = caget(obj.laser_PV_control);
+           obj.initial_readback_laser = caget(obj.laser_PV_readback);
        end
        
        function laser_time_val = laser_grating_calibration(s20_grating_val)
