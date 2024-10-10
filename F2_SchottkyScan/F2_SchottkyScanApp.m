@@ -622,7 +622,7 @@ classdef F2_SchottkyScanApp < handle
                     xlabel(obj.guihan.UIAxes,'Gun Phase [deg]','fontsize',14);
                     ylabel(obj.guihan.UIAxes,ylabel_str,'fontsize',14);
                     title_str = ['Schottky Scan on ' strrep(obj.data.devName,'_',' ')];
-                    legend(obj.guihan.UIAxes,'Scan Data','New zero crossing','Old zero crossong','Schottky Phase','Location','southeast');
+                    legend(obj.guihan.UIAxes,'Scan Data','New zero crossing','Old zero crossing','Schottky Phase','Location','southeast');
                     if obj.dummy_mode; title_str = [title_str ' (Dummy Mode)']; end
                     title(obj.guihan.UIAxes,title_str,'fontsize',16);
                 else
@@ -640,7 +640,7 @@ classdef F2_SchottkyScanApp < handle
                     xlabel('Gun Phase [deg]','fontsize',14);
                     ylabel(ylabel_str','fontsize',14);
                     title_str = ['Schottky Scan on ' strrep(obj.data.devName,'_',' ')];
-                    legend('Scan Data','New zero crossing','Old zero crossong','Schottky Phase','Location','southeast');
+                    legend('Scan Data','New zero crossing','Old zero crossing','Schottky Phase','Location','southeast');
                     if obj.dummy_mode; title_str = [title_str ' (Dummy Mode)']; end
                     title(title_str,'fontsize',16);
                 end
@@ -662,7 +662,7 @@ classdef F2_SchottkyScanApp < handle
                     xlabel(obj.guihan.UIAxes,'Gun Phase [deg]','fontsize',14);
                     ylabel(obj.guihan.UIAxes,'Charge [pC]','fontsize',14);
                     title_str = ['Schottky Scan on ' strrep(obj.data.devName,'_',' ')];
-                    legend(obj.guihan.UIAxes,'Scan Data','New zero crossing','Old zero crossong','Schottky Phase','Location','southeast');
+                    legend(obj.guihan.UIAxes,'Scan Data','New zero crossing','Old zero crossing','Schottky Phase','Location','southeast');
                     if obj.dummy_mode; title_str = [title_str ' (Dummy Mode)']; end
                     title(obj.guihan.UIAxes,title_str,'fontsize',16);                    
                 else
@@ -680,7 +680,7 @@ classdef F2_SchottkyScanApp < handle
                     xlabel('Gun Phase [deg]','fontsize',14);
                     ylabel('Charge [pC]','fontsize',14);
                     title_str = ['Schottky Scan on ' strrep(obj.data.devName,'_',' ')];
-                    legend('Scan Data','New zero crossing','Old zero crossong','Schottky Phase','Location','southeast');
+                    legend('Scan Data','New zero crossing','Old zero crossing','Schottky Phase','Location','southeast');
                     if obj.dummy_mode; title_str = [title_str ' (Dummy Mode)']; end
                     title(title_str,'fontsize',16);
                 end
