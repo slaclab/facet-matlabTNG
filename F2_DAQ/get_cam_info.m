@@ -32,5 +32,9 @@ info_pvs = {':Model_RBV';
 cam_info = struct();
 cam_info.PV = camPV;
 for i = 1:numel(info_pvs)
-    cam_info.(strrep(info_pvs{i}(2:end),':','_')) = lcaGet([camPV info_pvs{i}]);
+    try
+        cam_info.(strrep(info_pvs{i}(2:end),':','_')) = lcaGetSmart([camPV info_pvs{i}]);
+    catch
+        disp('Could not get cam info or this is a spectrometer')
+    end
 end

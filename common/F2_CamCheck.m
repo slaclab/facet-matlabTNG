@@ -32,7 +32,7 @@ classdef F2_CamCheck < handle
     
     methods
         
-        function obj = F2_CamCheck(DAQ_bool,apph)
+         function obj = F2_CamCheck(DAQ_bool,apph)
             
             % Check if CamCheck called by DAQ
             if exist('DAQ_bool','var')
@@ -50,6 +50,8 @@ classdef F2_CamCheck < handle
             end
             
             obj.camera_info = model_nameListFACETProf(true); % Camera List
+            spctrmtrInfo = {'UVVisSpec','SPEC:LI20:100','','S20 Spectrometer','cpu-li20-pm06','TRIG:LI20:PM06:1:TCTL',''};
+            obj.camera_info = [obj.camera_info;spctrmtrInfo];
             
             % Ignore transport cameras in DAQ
             if obj.DAQ_bool; obj.remove_transport(); end
@@ -133,6 +135,9 @@ classdef F2_CamCheck < handle
                    strcmp(cam_names{i},'LHDSOTR')
                     obj.camECs(i) = 201;
                 end
+                if strcmp(cam_names{i},'UVVisSpec')
+                    obj.camECs(i) = 223;
+                end
             end
             
             
@@ -156,7 +161,10 @@ classdef F2_CamCheck < handle
             obj.badINDs = bad_inds;
             
             if obj.DAQ_bool
-                obj.dispMessage(['Removing camera ' obj.camNames{i} ' from DAQ.']);
+                badCamNames = join(obj.camNames(bad_inds),",");
+                if ~isempty(obj.camNames(bad_inds))
+                    obj.dispMessage(char(append('Removing camera(s) ',badCamNames,' from DAQ.')));
+                end
                 obj.camera_info(bad_inds,:) = [];
                 obj.camNames(bad_inds) = [];
                 obj.camPVs(bad_inds) = [];
@@ -278,7 +286,6 @@ classdef F2_CamCheck < handle
                 evr_setting = obj.DAQ_Cams.evrSettings(i);
                 evr_ind = find(obj.ecs==evr_setting);
                 lcaPut([obj.DAQ_Cams.evrRoots{i} ':EVENT' num2str(evr_ind) 'CTRL.OUT' obj.DAQ_Cams.evrChans{i}],1);
-%                 lcaPut([obj.
                 
                 lcaPut([obj.DAQ_Cams.camPVs{i} ':TSS_SETEC'],evr_setting);
             end

@@ -610,7 +610,7 @@ classdef F2_WirescanApp < handle
       if ~obj.scansuccess || isempty(obj.data)
         return
       end
-      if ~exist('fname','file')
+      if ~exist('fname','var')
         fname = F2_common.confdir + "/F2_Wirescan/" + obj.wirename + "_" + obj.plane + ".mat" ;
       end
       lpar = ["pmtsel" "jittercor" "chargenorm" "blenwin" "bpmsel" "torsel" "blmsel" "fitmethod" "data" "motor_range" "npulses" "scansuccess" "blenvals" "fitdata" "WireDiam"] ;
