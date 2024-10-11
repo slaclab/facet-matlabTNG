@@ -71,8 +71,8 @@ classdef scanFunc_LaserTime_S20Grating
            end
            
            delta = current_value(1) - value;
-           obj.daqhandle.dispMessage(springf('%s readback is %0.2f', obj.pvs.readback.name, current_value(1)));
-           obj.daqhandle.dispMessage(springf('%s readback is %0.2f', obj.laser_PV_readback, current_value(2)));
+           obj.daqhandle.dispMessage(sprintf('%s readback is %0.2f', obj.pvs.readback.name, current_value(1)));
+           obj.daqhandle.dispMessage(sprintf('%s readback is %0.2f', obj.laser_PV_readback, current_value(2)));
            
        end
        
