@@ -46,8 +46,8 @@ classdef scanFunc_LaserTime_S20Grating
        end
        
        function laser_time_val = laser_grating_calibration(obj, s20_grating_val)
-           slope = 0.6*100*4000/16; % fs/mm
-           laser_time_val = caget(obj.pvs.readback_LaserTime) + s20_grating_val*slope;
+           slope =  2.2267e4; % fs/mm
+           laser_time_val = caget(obj.pvs.initial_control_laser) + s20_grating_val*slope;
        end
        
        function delta = set_value(obj,value)  
