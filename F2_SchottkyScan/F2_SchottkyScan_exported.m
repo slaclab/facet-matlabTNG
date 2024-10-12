@@ -396,7 +396,7 @@ classdef F2_SchottkyScan_exported < matlab.apps.AppBase
 
             % Create StepsEditField
             app.StepsEditField = uieditfield(app.ScanPanel, 'numeric');
-            app.StepsEditField.Limits = [2 100];
+            app.StepsEditField.Limits = [2 200];
             app.StepsEditField.ValueChangedFcn = createCallbackFcn(app, @StepsEditFieldValueChanged, true);
             app.StepsEditField.Position = [98 53 33 22];
             app.StepsEditField.Value = 42;
@@ -492,7 +492,6 @@ classdef F2_SchottkyScan_exported < matlab.apps.AppBase
             title(app.UIAxes, 'Schottky Scan')
             xlabel(app.UIAxes, 'KLYS LI10-2 Phase [deg] ')
             ylabel(app.UIAxes, 'Charge [pC]')
-            app.UIAxes.FontSize = 14;
             app.UIAxes.HandleVisibility = 'off';
             app.UIAxes.Position = [7 282 432 314];
 
