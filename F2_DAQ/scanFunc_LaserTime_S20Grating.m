@@ -11,13 +11,13 @@ classdef scanFunc_LaserTime_S20Grating
        initial_readback_laser
    end
    properties(Constant) 
-       control_PV = "SIOC:SYS1:ML00:CALCOUT070" %["XPS:LI20:MC03:M6" "OSC:LA20:10:FS_TGT_TIME"]
-       readback_PV = "SIOC:SYS1:ML00:CALCOUT070"% ["XPS:LI20:MC03:M6.RBV" "OSC:LA20:10:FS_CTR_TIME"]
+       control_PV = "XPS:LI20:MC03:M6" %"SIOC:SYS1:ML00:CALCOUT070" 
+       readback_PV = "XPS:LI20:MC03:M6.RBV"  %"SIOC:SYS1:ML00:CALCOUT070"
        tolerance = 0.01; % (!)
        
-       laser_PV_control = "SIOC:SYS1:ML00:CALCOUT071"
-       laser_PV_readback = "SIOC:SYS1:ML00:CALCOUT071"
-       laser_tolerance = 0.01;       
+       laser_PV_control = "OSC:LA20:10:FS_TGT_TIME"  %"SIOC:SYS1:ML00:CALCOUT071"
+       laser_PV_readback = "OSC:LA20:10:FS_CTR_TIME"  %"SIOC:SYS1:ML00:CALCOUT071"
+       laser_tolerance = 0.001;       
    end
    
    
@@ -79,7 +79,7 @@ classdef scanFunc_LaserTime_S20Grating
        function restoreInitValue(obj)
            obj.daqhandle.dispMessage('Restoring initial value');
            obj.set_value(obj.initial_control);
-           caput(obj.pvs.control_LaserTime, obj.initial_control_laser);
+           %caput(obj.pvs.control_LaserTime, obj.initial_control_laser);
            %obj.daqhandle.dispMessage('Initial values restored');
        end
     
