@@ -46,8 +46,8 @@ classdef scanFunc_LaserTime_S20Grating
        end
        
        function laser_time_val = laser_grating_calibration(obj, s20_grating_val)
-           slope =  2.2267e4; % fs/mm
-           laser_time_val = caget(obj.pvs.initial_control_laser) + s20_grating_val*slope;
+           slope =  2.2267e4 * 1e-6; % fs/mm * ns/fs
+           laser_time_val = obj.initial_control_laser + (s20_grating_val - obj.initial_control)*slope;
        end
        
        function delta = set_value(obj,value)  
@@ -72,14 +72,13 @@ classdef scanFunc_LaserTime_S20Grating
            
            delta = current_value(1) - value;
            obj.daqhandle.dispMessage(sprintf('%s readback is %0.2f', obj.pvs.readback.name, current_value(1)));
-           obj.daqhandle.dispMessage(sprintf('%s readback is %0.2f', obj.laser_PV_readback, current_value(2)));
+           obj.daqhandle.dispMessage(sprintf('%s readback is %0.2f', obj.pvs.readback_LaserTime.name, current_value(2)));
            
        end
        
        function restoreInitValue(obj)
            obj.daqhandle.dispMessage('Restoring initial value');
            obj.set_value(obj.initial_control);
-           caput(obj.pvs.control_LaserTime,obj.initial_control_laser);
        end
     
    end
