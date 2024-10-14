@@ -79,6 +79,8 @@ classdef scanFunc_LaserTime_S20Grating
        function restoreInitValue(obj)
            obj.daqhandle.dispMessage('Restoring initial value');
            obj.set_value(obj.initial_control);
+           caput(obj.pvs.control_LaserTime, obj.initial_control_laser);
+           %obj.daqhandle.dispMessage('Initial values restored');
        end
     
    end
