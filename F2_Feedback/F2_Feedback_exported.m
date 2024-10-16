@@ -95,7 +95,7 @@ classdef F2_Feedback_exported < matlab.apps.AppBase
         StatusLamp_5                    matlab.ui.control.Lamp
         Switch_5                        matlab.ui.control.Switch
         Gauge_9                         matlab.ui.control.LinearGauge
-        KLYSLI111121SSSB_ADESLabel      matlab.ui.control.Label
+        KLYSLI111121AREQLabel           matlab.ui.control.Label
         EnergySetpointLabel             matlab.ui.control.Label
         EditField_11                    matlab.ui.control.NumericEditField
         EditField_12                    matlab.ui.control.NumericEditField
@@ -108,7 +108,7 @@ classdef F2_Feedback_exported < matlab.apps.AppBase
         StatusLamp_6                    matlab.ui.control.Lamp
         Switch_6                        matlab.ui.control.Switch
         Gauge_11                        matlab.ui.control.LinearGauge
-        KLYSLI111121SSSB_PDESLabel      matlab.ui.control.Label
+        KLYSLI111121PREQLabel           matlab.ui.control.Label
         BLENLI11359Label                matlab.ui.control.Label
         EditField_13                    matlab.ui.control.NumericEditField
         EditField_14                    matlab.ui.control.NumericEditField
@@ -415,8 +415,8 @@ classdef F2_Feedback_exported < matlab.apps.AppBase
       caput(app.aobj.pvs.FeedbackEnable,double(bitset(app.aobj.Enabled,3,0))); drawnow ;
       % Restore actuator to given date
       aval=archive_dataGet('SIOC:SYS1:ML01:AO259',datevec(dval),datevec(dval)) ;
-      lcaPut('KLYS:LI11:11:SSSB_ADES',aval{1}(1));
-      lcaPut('KLYS:LI11:21:SSSB_ADES',aval{1}(1));
+      lcaPut('KLYS:LI11:11:AREQ',aval{1}(1));
+      lcaPut('KLYS:LI11:21:AREQ',aval{1}(1));
       % Re-enable FB (if previously enabled)
       caput(app.aobj.pvs.FeedbackEnable,initstate);
         end
@@ -432,8 +432,8 @@ classdef F2_Feedback_exported < matlab.apps.AppBase
       caput(app.aobj.pvs.FeedbackEnable,double(bitset(app.aobj.Enabled,4,0))); drawnow ;
       % Restore actuator to given date
       aval=archive_dataGet('SIOC:SYS1:ML01:AO260',datevec(dval),datevec(dval)) ;
-      lcaPut('KLYS:LI11:11:SSSB_PDES',aval{1}(1));
-      lcaPut('KLYS:LI11:21:SSSB_PDES',aval{1}(1));
+      lcaPut('KLYS:LI11:11:PREQ',aval{1}(1));
+      lcaPut('KLYS:LI11:21:PREQ',aval{1}(1));
       % Re-enable FB (if previously enabled)
       caput(app.aobj.pvs.FeedbackEnable,initstate);
         end
@@ -538,12 +538,12 @@ classdef F2_Feedback_exported < matlab.apps.AppBase
       end
       % BC11_E
       aval=archive_dataGet('SIOC:SYS1:ML01:AO259',datevec(dval),datevec(dval)) ;
-      lcaPut('KLYS:LI11:11:SSSB_ADES',aval{1}(1));
-      lcaPut('KLYS:LI11:21:SSSB_ADES',aval{1}(1));
+      lcaPut('KLYS:LI11:11:AREQ',aval{1}(1));
+      lcaPut('KLYS:LI11:21:AREQ',aval{1}(1));
       % BC11_BLEN
       aval=archive_dataGet('SIOC:SYS1:ML01:AO260',datevec(dval),datevec(dval)) ;
-      lcaPut('KLYS:LI11:11:SSSB_PDES',aval{1}(1));
-      lcaPut('KLYS:LI11:21:SSSB_PDES',aval{1}(1));
+      lcaPut('KLYS:LI11:11:PREQ',aval{1}(1));
+      lcaPut('KLYS:LI11:21:PREQ',aval{1}(1));
       % BC20_E
       pv1=char(app.BC20_C1Lab.Text); pv2=char(app.BC20_C2Lab.Text);
       aval1=archive_dataGet(pv1,datevec(dval),datevec(dval)) ;
@@ -1165,11 +1165,11 @@ classdef F2_Feedback_exported < matlab.apps.AppBase
             app.Gauge_9.Position = [334 67 126 29];
             app.Gauge_9.Value = 40;
 
-            % Create KLYSLI111121SSSB_ADESLabel
-            app.KLYSLI111121SSSB_ADESLabel = uilabel(app.BC11EnergyFeedbackPanel);
-            app.KLYSLI111121SSSB_ADESLabel.HorizontalAlignment = 'center';
-            app.KLYSLI111121SSSB_ADESLabel.Position = [298 95 175 22];
-            app.KLYSLI111121SSSB_ADESLabel.Text = 'KLYS:LI11:11&21:SSSB_ADES';
+            % Create KLYSLI111121AREQLabel
+            app.KLYSLI111121AREQLabel = uilabel(app.BC11EnergyFeedbackPanel);
+            app.KLYSLI111121AREQLabel.HorizontalAlignment = 'center';
+            app.KLYSLI111121AREQLabel.Position = [298 95 175 22];
+            app.KLYSLI111121AREQLabel.Text = 'KLYS:LI11:11&21:AREQ';
 
             % Create EnergySetpointLabel
             app.EnergySetpointLabel = uilabel(app.BC11EnergyFeedbackPanel);
@@ -1250,11 +1250,11 @@ classdef F2_Feedback_exported < matlab.apps.AppBase
             app.Gauge_11.FontSize = 10;
             app.Gauge_11.Position = [334 65 126 33];
 
-            % Create KLYSLI111121SSSB_PDESLabel
-            app.KLYSLI111121SSSB_PDESLabel = uilabel(app.BC11BunchLengthFeedbackPanel);
-            app.KLYSLI111121SSSB_PDESLabel.HorizontalAlignment = 'center';
-            app.KLYSLI111121SSSB_PDESLabel.Position = [296 99 175 22];
-            app.KLYSLI111121SSSB_PDESLabel.Text = 'KLYS:LI11:11&21:SSSB_PDES';
+            % Create KLYSLI111121PREQLabel
+            app.KLYSLI111121PREQLabel = uilabel(app.BC11BunchLengthFeedbackPanel);
+            app.KLYSLI111121PREQLabel.HorizontalAlignment = 'center';
+            app.KLYSLI111121PREQLabel.Position = [296 99 175 22];
+            app.KLYSLI111121PREQLabel.Text = 'KLYS:LI11:11&21:PREQ';
 
             % Create BLENLI11359Label
             app.BLENLI11359Label = uilabel(app.BC11BunchLengthFeedbackPanel);
