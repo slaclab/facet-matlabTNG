@@ -62,7 +62,7 @@ classdef scanFunc_Gamma2_filter_pos
             arguments
                 obj scanFunc_Gamma2_filter_pos
                 value int16 {mustBeInteger, mustBeGreaterThanOrEqual(value, 1), mustBeLessThanOrEqual(value, 12)}
-                restore_initial {isLogical} = false
+                restore_initial = false
             end
             % counter intuitively, the variable "value" is used to select
             % the filter number (integer from 1 to 12), NOT the PV of
