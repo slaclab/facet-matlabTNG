@@ -41,11 +41,11 @@ classdef F2_UVVisSpec_exported < matlab.apps.AppBase
         
         Running (1,1) logical {mustBeScalarOrEmpty} = false
         Data = [];
-        spectrometerpv = 'SPEC:LI20:EX01:Spectrum';        
-        triggerMode = 'SPEC:LI20:EX01:TrigModeSet';
-        wavelengths = 'SPEC:LI20:EX01:Wavelengths';
-        integrationTime = 'SPEC:LI20:EX01:IntTimeSet';
-        updateTime = 'SPEC:LI20:EX01:UpdateTimeSet';
+        spectrometerpv = 'SPEC:LI20:PM01:Spectrum';        
+        triggerMode = 'SPEC:LI20:PM01:TrigModeSet';
+        wavelengths = 'SPEC:LI20:PM01:Wavelengths';
+        integrationTime = 'SPEC:LI20:PM01:IntTimeSet';
+        updateTime = 'SPEC:LI20:PM01:UpdateTimeSet';
         spectrometerCalibrationFile = 'theoreticalResponseInterp.mat';
         edcutsstagepv = 'XPS:LI20:MC03:M2';
         ndfilterpv = 'APC:LI20:EX02:5VOUT_12';
