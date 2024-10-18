@@ -95,7 +95,7 @@ classdef F2_Feedback_exported < matlab.apps.AppBase
         StatusLamp_5                    matlab.ui.control.Lamp
         Switch_5                        matlab.ui.control.Switch
         Gauge_9                         matlab.ui.control.LinearGauge
-        KLYSLI111121AREQLabel           matlab.ui.control.Label
+        KLYSLI1111AREQLabel             matlab.ui.control.Label
         EnergySetpointLabel             matlab.ui.control.Label
         EditField_11                    matlab.ui.control.NumericEditField
         EditField_12                    matlab.ui.control.NumericEditField
@@ -1165,11 +1165,11 @@ classdef F2_Feedback_exported < matlab.apps.AppBase
             app.Gauge_9.Position = [334 67 126 29];
             app.Gauge_9.Value = 40;
 
-            % Create KLYSLI111121AREQLabel
-            app.KLYSLI111121AREQLabel = uilabel(app.BC11EnergyFeedbackPanel);
-            app.KLYSLI111121AREQLabel.HorizontalAlignment = 'center';
-            app.KLYSLI111121AREQLabel.Position = [298 95 175 22];
-            app.KLYSLI111121AREQLabel.Text = 'KLYS:LI11:11&21:AREQ';
+            % Create KLYSLI1111AREQLabel
+            app.KLYSLI1111AREQLabel = uilabel(app.BC11EnergyFeedbackPanel);
+            app.KLYSLI1111AREQLabel.HorizontalAlignment = 'center';
+            app.KLYSLI1111AREQLabel.Position = [298 95 175 22];
+            app.KLYSLI1111AREQLabel.Text = 'KLYS:LI11:11:AREQ';
 
             % Create EnergySetpointLabel
             app.EnergySetpointLabel = uilabel(app.BC11EnergyFeedbackPanel);
@@ -1254,7 +1254,7 @@ classdef F2_Feedback_exported < matlab.apps.AppBase
             app.KLYSLI111121PREQLabel = uilabel(app.BC11BunchLengthFeedbackPanel);
             app.KLYSLI111121PREQLabel.HorizontalAlignment = 'center';
             app.KLYSLI111121PREQLabel.Position = [296 99 175 22];
-            app.KLYSLI111121PREQLabel.Text = 'KLYS:LI11:11&21:PREQ';
+            app.KLYSLI111121PREQLabel.Text = 'KLYS:LI11:11 & 21:PREQ';
 
             % Create BLENLI11359Label
             app.BLENLI11359Label = uilabel(app.BC11BunchLengthFeedbackPanel);
