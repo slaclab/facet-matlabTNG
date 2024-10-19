@@ -26,7 +26,7 @@ classdef scanFunc_Gamma2_filter_pos
         readback_center_x_PV = "SIOC:SYS1:ML00:CALCOUT070" % assign an unused PV
         readback_center_y_PV = "SIOC:SYS1:ML00:CALCOUT071"
         
-        radius = "12" % mm
+        radius = "SIOC:SYS1:ML00:CALCOUT069" % mm
     end
     
     methods 
@@ -47,6 +47,7 @@ classdef scanFunc_Gamma2_filter_pos
                 PV(context,'name',"readback_y",'pvname',obj.readback_y_PV,'mode',"r",'monitor',true); % Readback PV y motor
                 PV(context,'name',"readback_center_x",'pvname',obj.readback_center_x_PV,'mode',"r",'monitor',true); % Read center x pos of filter wheel
                 PV(context,'name',"readback_center_y",'pvname',obj.readback_center_y_PV,'mode',"r",'monitor',true); % Read center y pos of filter wheel
+                PV(context,'name',"radius",'pvname',obj.radius,'mode',"r",'monitor',true); % Read radius of filter wheel
                 ];
             pset(obj.pvlist,'debug',0);
             obj.pvs = struct(obj.pvlist);
@@ -67,12 +68,12 @@ classdef scanFunc_Gamma2_filter_pos
             % counter intuitively, the variable "value" is used to select
             % the filter number (integer from 1 to 12), NOT the PV of
             % Gamma2_X. The filter number is then converted to the Gamma2_X
-            % and Gamma2_Y values. 
+            % and Gamma2_Y values.             
             
             if ~restore_initial
-                angle = pi/12 + pi/6 * (value - 1);
-                x_circ = obj.pvs.readback_center_x + obj.radius * cos(angle);
-                y_circ = obj.pvs.readback_center_y + obj.radius * sin(angle);
+                angle = pi/12 + pi/6 * (double(value) - 1);
+                x_circ = caget(obj.pvs.readback_center_x) + caget(obj.pvs.radius) * cos(angle);
+                y_circ = caget(obj.pvs.readback_center_y) + caget(obj.pvs.radius) * sin(angle);
             else
                 x_circ = obj.initial_control;
                 y_circ = obj.initial_control_y;
