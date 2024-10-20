@@ -268,7 +268,7 @@ classdef F2_fastDAQ_HDF5 < handle
                 
                 for j = 1:obj.params.scanDim
                     
-                    if new_steps(j) == old_steps(j); continue; end
+                    %if new_steps(j) == old_steps(j); continue; end
                     
                     obj.dispMessage(sprintf('Setting %s to %0.2f',obj.params.scanFuncs{j},obj.params.scanVals{j}(new_steps(j))));
                     if obj.blockBeam
