@@ -1,4 +1,4 @@
-git statclassdef F2_Wirescan_exported < matlab.apps.AppBase
+classdef F2_Wirescan_exported < matlab.apps.AppBase
 
     % Properties that correspond to app components
     properties (Access = public)
