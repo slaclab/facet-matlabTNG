@@ -2,6 +2,7 @@ function DAQPVs = camera_DAQ_PVs(camPVs)
 
 daq_pvs = {
     ':Acquisition';
+    ':Acquire';
     ':ArrayCounter_RBV';
     ':ArrayCounter';
     ':AsynIO.CNCT';
@@ -34,6 +35,7 @@ daq_pvs = {
     ':HDF5:Capture';
     ':HDF5:FileTemplate';
     ':HDF5:FileName';
+    ':HDF5:FileName_RBV';
     ':HDF5:FileNumber_RBV';
     ':HDF5:FileNumber';
     ':HDF5:FilePathExists_RBV';
@@ -45,6 +47,9 @@ daq_pvs = {
     ':HDF5:NumExtraDims';
     ':HDF5:ExtraDimSizeX';
     ':HDF5:ExtraDimSizeY';
+    ':HDF5:WriteFile';
+    ':HDF5:WriteFile_RBV';
+    ':HDF5:WriteStatus';
     ':DataType';
     ':DAQ_InUse';
     };

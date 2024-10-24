@@ -64,7 +64,7 @@ classdef F2_DAQApp < handle
             
             % Initialize camera list, CamCheck has info on cameras and IOCs
             obj.camCheck = F2_CamCheck(true,obj);
-            obj.DAQ_params.camCheck = obj.camCheck;
+%             obj.DAQ_params.camCheck = obj.camCheck;
             obj.initCameras();
             
             % Load BSA Lists
@@ -488,12 +488,6 @@ classdef F2_DAQApp < handle
             elseif strcmp(obj.DAQ_params.saveMethod,'HDF5')
                 obj.DAQ_obj = F2_fastDAQ_HDF5(obj.DAQ_params,obj);
             end
-            
-%             if obj.guihan.FastDAQCheckBox.Value
-%                 obj.DAQ_obj = F2_fastDAQ(obj.DAQ_params,obj);
-%             else
-%                 obj.DAQ_obj = F2_runDAQ(obj.DAQ_params,obj);
-%             end
             
             
         end
