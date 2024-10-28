@@ -12,8 +12,8 @@ classdef scanFunc_xt
        
    end
    properties(Constant) 
-       control_PV = "XPS:LI20:MC03:M6" %%REPLACE
-       readback_PV = "XPS:LI20:MC03:M6.RBV" %REPLACE
+       control_PV = "XPS:LI20:MC10:M3" 
+       readback_PV = "XPS:LI20:MC10:M3.RBV" 
        tolerance = 0.01; % (!)
        
        laser_PV_control = "OSC:LA20:10:FS_TGT_TIME" 
@@ -56,7 +56,7 @@ classdef scanFunc_xt
        
 
        function laser_time_val = laser_grating_calibration(obj, s20_grating_val)
-           slope =  4000/0.35 * 1e-6; % fs/mm * ns/fs %to confirm numerically
+           slope =  -4000/0.35 * 1e-6; % fs/mm * ns/fs %to confirm numerically
            offset = lcaGet(char(obj.offset_PV));
            laser_time_val = obj.initial_control_laser + (s20_grating_val - obj.initial_control)*slope + offset;
        end
