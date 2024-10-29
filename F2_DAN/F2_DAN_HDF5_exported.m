@@ -17,6 +17,8 @@ classdef F2_DAN_HDF5_exported < matlab.apps.AppBase
         DataSetInfoTextAreaLabel        matlab.ui.control.Label
         DataSetInfoTextArea             matlab.ui.control.TextArea
         LastDAQButton                   matlab.ui.control.Button
+        SaveconfigButton                matlab.ui.control.Button
+        LoadconfigButton                matlab.ui.control.Button
         correlationPlot                 matlab.ui.container.Panel
         FACETScalarArray1Panel          matlab.ui.container.Panel
         ScalarDropDown_Corr1            matlab.ui.control.DropDown
@@ -114,11 +116,20 @@ classdef F2_DAN_HDF5_exported < matlab.apps.AppBase
         ShowCorrelationMatrixButton     matlab.ui.control.Button
         ScalargroupDropDownLabel        matlab.ui.control.Label
         ScalargroupDD_CorrM             matlab.ui.control.DropDown
-        IncludeincorrmatrixListBoxLabel  matlab.ui.control.Label
+        IncludeincorrmatrixfitLabel     matlab.ui.control.Label
         IncludeListBox_CorrM            matlab.ui.control.ListBox
         AddButton                       matlab.ui.control.Button
         RemoveButton                    matlab.ui.control.Button
         PlotsPanel                      matlab.ui.container.Panel
+        UIAxes                          matlab.ui.control.UIAxes
+        FitDataPanel                    matlab.ui.container.Panel
+        ModeltypetofitDropDownLabel     matlab.ui.control.Label
+        ModeltypetofitDropDown          matlab.ui.control.DropDown
+        CustomfitfunctionEditFieldLabel  matlab.ui.control.Label
+        CustomfitfunctionEditField      matlab.ui.control.EditField
+        ResultsTextAreaLabel            matlab.ui.control.Label
+        ResultsTextArea                 matlab.ui.control.TextArea
+        ShowFitButton                   matlab.ui.control.Button
     end
 
     
@@ -127,6 +138,7 @@ classdef F2_DAN_HDF5_exported < matlab.apps.AppBase
         commonPIDmax = 1;
         commonPIDmin = 1;
         messageLog;
+        save_struct = struct % Used for save/load config buttons
     end
     
     methods (Access = private)
@@ -719,6 +731,116 @@ classdef F2_DAN_HDF5_exported < matlab.apps.AppBase
                 app.IncludeListBox_CorrM.Items = items;
             end
         end
+
+        % Button pushed function: SaveconfigButton
+        function SaveconfigButtonPushed(app, event)
+            app.save_struct.HistogramCheckBox = app.HistogramCheckBox.Value;
+            app.save_struct.Switch_Corr1FS = app.Switch_Corr1FS.Value;
+            app.save_struct.ScalargroupDropDown_Corr1 = app.ScalargroupDropDown_Corr1.Value;
+            app.save_struct.CameraDropDown_Corr1 = app.CameraDropDown_Corr1.Value;
+            app.save_struct.ScalarDropDown_Corr1 = app.ScalarDropDown_Corr1.Value;
+            app.save_struct.D21DFcnDropDown_Corr1 = app.D21DFcnDropDown_Corr1.Value;
+            app.save_struct.D21DFunctionEditField_Corr1 = app.D21DFunctionEditField_Corr1.Value;
+            
+            app.save_struct.CorrelationCheckBox = app.CorrelationCheckBox.Value;
+            app.save_struct.Switch_Corr2FS = app.Switch_Corr2FS.Value;
+            app.save_struct.ScalargroupDropDown_Corr2 = app.ScalargroupDropDown_Corr2.Value;
+            app.save_struct.CameraDropDown_Corr2 = app.CameraDropDown_Corr2.Value;
+            app.save_struct.ScalarDropDown_Corr2 = app.ScalarDropDown_Corr2.Value;
+            app.save_struct.D21DFcnDropDown_Corr2 = app.D21DFcnDropDown_Corr2.Value;
+            app.save_struct.D21DFunctionEditField_Corr2 = app.D21DFunctionEditField_Corr2.Value;
+            
+            app.save_struct.CameraDropDown_WF = app.CameraDropDown_WF.Value;
+            app.save_struct.Dto1DFunctionDropDown_WF = app.Dto1DFunctionDropDown_WF.Value;
+            app.save_struct.D21DFunctionEditField_WF = app.D21DFunctionEditField_WF.Value;
+            app.save_struct.SortonscalarCheckBox = app.SortonscalarCheckBox.Value;
+            app.save_struct.PlotsortvaluesCheckBox = app.PlotsortvaluesCheckBox.Value;
+            app.save_struct.Switch_WFSFS = app.Switch_WFSFS.Value;
+            app.save_struct.ScalargroupDropDown_WFS = app.ScalargroupDropDown_WFS.Value;
+            app.save_struct.CameraDropDown_WFS = app.CameraDropDown_WFS.Value;
+            app.save_struct.ScalarDropDown_WFS = app.ScalarDropDown_WFS.Value;
+            app.save_struct.D2SFunctionDropDown_WFS = app.D2SFunctionDropDown_WFS.Value;
+            app.save_struct.D2SFunctionEditField_WFS = app.D2SFunctionEditField_WFS.Value;
+            
+            app.save_struct.CameraDropDown_DI = app.CameraDropDown_DI.Value;
+            app.save_struct.ApplyImageanalysis2Dto2DCheckBox = app.ApplyImageanalysis2Dto2DCheckBox.Value;
+            app.save_struct.ImageAnalysisFunctionDD = app.ImageAnalysisFunctionDD.Value;
+            app.save_struct.ImageAnalysisFunctionEditField = app.ImageAnalysisFunctionEditField.Value;
+            app.save_struct.ImageincrementEditField = app.ImageincrementEditField.Value;
+            app.save_struct.WaittimesEditField = app.WaittimesEditField.Value;
+            
+%             uisave(save_struct)
+        end
+
+        % Button pushed function: LoadconfigButton
+        function LoadconfigButtonPushed(app, event)
+            app.HistogramCheckBox.Value = app.save_struct.HistogramCheckBox;
+            app.Switch_Corr1FS.Value = app.save_struct.Switch_Corr1FS;
+            app.ScalargroupDropDown_Corr1.Value = app.save_struct.ScalargroupDropDown_Corr1;
+            app.CameraDropDown_Corr1.Value = app.save_struct.CameraDropDown_Corr1;
+            app.ScalarDropDown_Corr1.Value = app.save_struct.ScalarDropDown_Corr1;
+            app.D21DFcnDropDown_Corr1.Value = app.save_struct.D21DFcnDropDown_Corr1;
+            app.D21DFunctionEditField_Corr1.Value = app.save_struct.D21DFunctionEditField_Corr1;
+            app.CorrelationCheckBox.Value = app.save_struct.CorrelationCheckBox;
+            app.Switch_Corr2FS.Value = app.save_struct.Switch_Corr2FS;
+            app.ScalargroupDropDown_Corr2.Value = app.save_struct.ScalargroupDropDown_Corr2;
+            app.CameraDropDown_Corr2.Value = app.save_struct.CameraDropDown_Corr2;
+            app.ScalarDropDown_Corr2.Value = app.save_struct.ScalarDropDown_Corr2;
+            app.D21DFcnDropDown_Corr2.Value = app.save_struct.D21DFcnDropDown_Corr2;
+            app.D21DFunctionEditField_Corr2.Value = app.save_struct.D21DFunctionEditField_Corr2;
+            app.CameraDropDown_WF.Value = app.save_struct.CameraDropDown_WF;
+            app.Dto1DFunctionDropDown_WF.Value = app.save_struct.Dto1DFunctionDropDown_WF;
+            app.D21DFunctionEditField_WF.Value = app.save_struct.D21DFunctionEditField;
+            app.SortonscalarCheckBox.Value = app.save_struct.SortonscalarCheckBox;
+            app.PlotsortvaluesCheckBox.Value = app.save_struct.PlotsortvaluesCheckBox;
+            app.Switch_WFSFS.Value = app.save_struct.Switch_WFSFS;
+            app.ScalargroupDropDown_WFS.Value = app.ScalargroupDropDown_WFS;
+            app.CameraDropDown_WFS.Value = app.save_struct.CameraDropDown_WFS;
+            app.ScalarDropDown_WFS.Value = app.save_struct.ScalarDropDown_WFS;
+            app.D2SFunctionDropDown_WFS.Value = app.save_struct.D2SFunctionDropDown_WFS;
+            app.D2SFunctionEditField_WFS.Value = app.save_struct.D2SFunctionEditField_WFS;
+            app.CameraDropDown_DI.Value = app.save_struct.CameraDropDown_DI;
+            app.ApplyImageanalysis2Dto2DCheckBox.Value = app.save_struct.ApplyImageanalysis2Dto2DCheckBox;
+            app.ImageAnalysisFunctionDD.Value = app.save_struct.ImageAnalysisFunctionDD;
+            app.ImageAnalysisFunctionEditField.Value = app.save_struct.ImageAnalysisFunctionEditField;
+            app.ImageincrementEditField.Value = app.save_struct.ImageincrementEditField;
+            app.WaittimesEditField.Value = app.save_struct.WaittimesEditField;
+        end
+
+        % Button pushed function: ShowFitButton
+        function ShowFitButtonPushed(app, event)
+            if numel(app.IncludeListBox_CorrM.Items) ~= 2
+                app.addMsg('Select 2 scalars to compute fit')
+            else
+                selectedFit = app.ModeltypetofitDropDown.Value;
+                switch selectedFit
+                    case "Linear"
+                        fitMethod = 'poly1';
+                    case "Gaussian"
+                        fitMethod = 'gauss1';
+                    case "Sigmoid"
+                        fitMethod = 'logistic';
+                    case "Custom"
+                        fitFun = app.CustomfitfunctionEditField.Value;
+                        fitMethod = str2func(fitFun);
+                end
+                [gof,ci] = app.DANobject.fitData(fitMethod);
+                % Get results from fit and show in results box
+                app.ResultsTextArea.Value = ["RMSE: "+string(gof.rmse);...
+                    "R-squared: "+string(gof.rsquare); "SSE: "+string(gof.sse);...
+                    "95% Confidence Intervals:";join(string(ci(1,:)));join(string(ci(2,:)))];
+            end
+        end
+
+        % Value changed function: ModeltypetofitDropDown
+        function ModeltypetofitDropDownValueChanged(app, event)
+            value = app.ModeltypetofitDropDown.Value;
+            if value == "Custom"
+                app.CustomfitfunctionEditField.Enable = 'on';
+            else
+                app.CustomfitfunctionEditField.Enable = 'off';
+            end
+        end
     end
 
     % Component initialization
@@ -748,19 +870,17 @@ classdef F2_DAN_HDF5_exported < matlab.apps.AppBase
 
             % Create ExperimentLabel
             app.ExperimentLabel = uilabel(app.dataSet);
-            app.ExperimentLabel.HorizontalAlignment = 'right';
-            app.ExperimentLabel.Position = [17 335 67 22];
+            app.ExperimentLabel.Position = [14 333 67 22];
             app.ExperimentLabel.Text = 'Experiment';
 
             % Create expDropDown
             app.expDropDown = uidropdown(app.dataSet);
-            app.expDropDown.Items = {'TEST', 'E300', 'E301', 'E304', 'E305', 'E308', 'E310', 'E320', 'E324', 'E325', 'E326', 'E327', 'E331', 'E332', 'E338'};
-            app.expDropDown.Position = [98 335 124 22];
+            app.expDropDown.Items = {'TEST', 'BEAMPHYS', 'E300', 'E301', 'E304', 'E305', 'E308', 'E310', 'E320', 'E324', 'E325', 'E326', 'E327', 'E331', 'E332', 'E338'};
+            app.expDropDown.Position = [95 333 124 22];
             app.expDropDown.Value = 'TEST';
 
             % Create dataSetIDLabel
             app.dataSetIDLabel = uilabel(app.dataSet);
-            app.dataSetIDLabel.HorizontalAlignment = 'right';
             app.dataSetIDLabel.Position = [14 304 59 22];
             app.dataSetIDLabel.Text = 'dataSetID';
 
@@ -774,7 +894,7 @@ classdef F2_DAN_HDF5_exported < matlab.apps.AppBase
             % Create LoadDataSetButton
             app.LoadDataSetButton = uibutton(app.dataSet, 'push');
             app.LoadDataSetButton.ButtonPushedFcn = createCallbackFcn(app, @LoadDataSetButtonPushed, true);
-            app.LoadDataSetButton.Position = [18 269 100 23];
+            app.LoadDataSetButton.Position = [11 269 100 23];
             app.LoadDataSetButton.Text = 'Load DataSet';
 
             % Create DANlogTextAreaLabel
@@ -791,7 +911,7 @@ classdef F2_DAN_HDF5_exported < matlab.apps.AppBase
             app.SubtractImageBackgroundCheckBox = uicheckbox(app.dataSet);
             app.SubtractImageBackgroundCheckBox.ValueChangedFcn = createCallbackFcn(app, @SubtractImageBackgroundCheckBoxValueChanged, true);
             app.SubtractImageBackgroundCheckBox.Text = {'Subtract Image '; 'Background'};
-            app.SubtractImageBackgroundCheckBox.Position = [195 262 107 30];
+            app.SubtractImageBackgroundCheckBox.Position = [200 296 107 30];
 
             % Create DataSetInfoTextAreaLabel
             app.DataSetInfoTextAreaLabel = uilabel(app.dataSet);
@@ -806,8 +926,24 @@ classdef F2_DAN_HDF5_exported < matlab.apps.AppBase
             % Create LastDAQButton
             app.LastDAQButton = uibutton(app.dataSet, 'push');
             app.LastDAQButton.ButtonPushedFcn = createCallbackFcn(app, @LastDAQButtonPushed, true);
-            app.LastDAQButton.Position = [233 313 69 25];
+            app.LastDAQButton.Position = [238 332 69 25];
             app.LastDAQButton.Text = 'Last DAQ';
+
+            % Create SaveconfigButton
+            app.SaveconfigButton = uibutton(app.dataSet, 'push');
+            app.SaveconfigButton.ButtonPushedFcn = createCallbackFcn(app, @SaveconfigButtonPushed, true);
+            app.SaveconfigButton.Enable = 'off';
+            app.SaveconfigButton.Visible = 'off';
+            app.SaveconfigButton.Position = [132 266 82 22];
+            app.SaveconfigButton.Text = 'Save config';
+
+            % Create LoadconfigButton
+            app.LoadconfigButton = uibutton(app.dataSet, 'push');
+            app.LoadconfigButton.ButtonPushedFcn = createCallbackFcn(app, @LoadconfigButtonPushed, true);
+            app.LoadconfigButton.Enable = 'off';
+            app.LoadconfigButton.Visible = 'off';
+            app.LoadconfigButton.Position = [225 266 82 22];
+            app.LoadconfigButton.Text = 'Load config';
 
             % Create correlationPlot
             app.correlationPlot = uipanel(app.MainDANTab);
@@ -1361,10 +1497,10 @@ classdef F2_DAN_HDF5_exported < matlab.apps.AppBase
             app.ScalargroupDD_CorrM.Position = [105 500 211 22];
             app.ScalargroupDD_CorrM.Value = {};
 
-            % Create IncludeincorrmatrixListBoxLabel
-            app.IncludeincorrmatrixListBoxLabel = uilabel(app.CorrelationMatrixPanel);
-            app.IncludeincorrmatrixListBoxLabel.Position = [19 262 120 22];
-            app.IncludeincorrmatrixListBoxLabel.Text = 'Include in corr matrix:';
+            % Create IncludeincorrmatrixfitLabel
+            app.IncludeincorrmatrixfitLabel = uilabel(app.CorrelationMatrixPanel);
+            app.IncludeincorrmatrixfitLabel.Position = [19 262 140 22];
+            app.IncludeincorrmatrixfitLabel.Text = 'Include in corr matrix / fit:';
 
             % Create IncludeListBox_CorrM
             app.IncludeListBox_CorrM = uilistbox(app.CorrelationMatrixPanel);
@@ -1389,6 +1525,56 @@ classdef F2_DAN_HDF5_exported < matlab.apps.AppBase
             app.PlotsPanel = uipanel(app.MoreFeaturesTab);
             app.PlotsPanel.Title = 'Plots';
             app.PlotsPanel.Position = [386 328 827 582];
+
+            % Create UIAxes
+            app.UIAxes = uiaxes(app.PlotsPanel);
+            title(app.UIAxes, 'Title')
+            xlabel(app.UIAxes, 'X')
+            ylabel(app.UIAxes, 'Y')
+            app.UIAxes.Position = [12 12 804 539];
+
+            % Create FitDataPanel
+            app.FitDataPanel = uipanel(app.MoreFeaturesTab);
+            app.FitDataPanel.Title = 'Fit Data';
+            app.FitDataPanel.Position = [386 16 301 295];
+
+            % Create ModeltypetofitDropDownLabel
+            app.ModeltypetofitDropDownLabel = uilabel(app.FitDataPanel);
+            app.ModeltypetofitDropDownLabel.Position = [19 245 94 22];
+            app.ModeltypetofitDropDownLabel.Text = 'Model type to fit:';
+
+            % Create ModeltypetofitDropDown
+            app.ModeltypetofitDropDown = uidropdown(app.FitDataPanel);
+            app.ModeltypetofitDropDown.Items = {'Linear', 'Gaussian', 'Custom'};
+            app.ModeltypetofitDropDown.ValueChangedFcn = createCallbackFcn(app, @ModeltypetofitDropDownValueChanged, true);
+            app.ModeltypetofitDropDown.Position = [125 245 151 22];
+            app.ModeltypetofitDropDown.Value = 'Linear';
+
+            % Create CustomfitfunctionEditFieldLabel
+            app.CustomfitfunctionEditFieldLabel = uilabel(app.FitDataPanel);
+            app.CustomfitfunctionEditFieldLabel.Enable = 'off';
+            app.CustomfitfunctionEditFieldLabel.Position = [19 219 108 22];
+            app.CustomfitfunctionEditFieldLabel.Text = 'Custom fit function:';
+
+            % Create CustomfitfunctionEditField
+            app.CustomfitfunctionEditField = uieditfield(app.FitDataPanel, 'text');
+            app.CustomfitfunctionEditField.Enable = 'off';
+            app.CustomfitfunctionEditField.Position = [19 188 262 31];
+
+            % Create ResultsTextAreaLabel
+            app.ResultsTextAreaLabel = uilabel(app.FitDataPanel);
+            app.ResultsTextAreaLabel.Position = [19 125 49 22];
+            app.ResultsTextAreaLabel.Text = 'Results:';
+
+            % Create ResultsTextArea
+            app.ResultsTextArea = uitextarea(app.FitDataPanel);
+            app.ResultsTextArea.Position = [19 17 262 109];
+
+            % Create ShowFitButton
+            app.ShowFitButton = uibutton(app.FitDataPanel, 'push');
+            app.ShowFitButton.ButtonPushedFcn = createCallbackFcn(app, @ShowFitButtonPushed, true);
+            app.ShowFitButton.Position = [101 154 100 22];
+            app.ShowFitButton.Text = 'Show Fit';
 
             % Show the figure after all components are created
             app.UIFigure.Visible = 'on';
