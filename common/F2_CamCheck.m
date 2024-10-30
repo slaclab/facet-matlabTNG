@@ -118,6 +118,7 @@ classdef F2_CamCheck < handle
                              'cpu-li20-pm06',       'SIOC:LI20:PM06'   222;
                              'cpu-li20-pm07',       'SIOC:LI20:PM07'   223;
                              'cpu-li20-pm08',       'SIOC:LI20:PM08'   223;
+                             'cpu-li20-pm09',       'SIOC:LI20:PM09'   222;
                              };
             
             % Fill in data for each camera and add exceptions
