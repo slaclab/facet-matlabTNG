@@ -15,15 +15,15 @@ classdef scanFunc_Gamma2_filter_pos
     properties(Constant)
         %control: ("XPS:LI20:MC02:M3","XPS:LI20:MC02:M6") (x,y) 
         %readback: ("XPS:LI20:MC02:M3.RBV","XPS:LI20:MC02:M6.RBV") (x,y)
-        control_PV = "SIOC:SYS1:ML00:CALCOUT075"
-        readback_PV = "SIOC:SYS1:ML00:CALCOUT075" 
+        control_PV = "XPS:LI20:MC02:M3" %"SIOC:SYS1:ML00:CALCOUT075"
+        readback_PV = "XPS:LI20:MC02:M3.RBV" %"SIOC:SYS1:ML00:CALCOUT075" 
         tolerance = 0.01;
 
-        control_y_PV = "SIOC:SYS1:ML00:CALCOUT076"
-        readback_y_PV = "SIOC:SYS1:ML00:CALCOUT076"
+        control_y_PV = "XPS:LI20:MC02:M6" %"SIOC:SYS1:ML00:CALCOUT076"
+        readback_y_PV = "XPS:LI20:MC02:M6.RBV" %"SIOC:SYS1:ML00:CALCOUT076"
         tolerance_y = 0.01;
         
-        readback_center_x_PV = "SIOC:SYS1:ML00:CALCOUT070" % assign an unused PV
+        readback_center_x_PV = "SIOC:SYS1:ML00:CALCOUT070" 
         readback_center_y_PV = "SIOC:SYS1:ML00:CALCOUT071"
         
         radius = "SIOC:SYS1:ML00:CALCOUT069" % mm
