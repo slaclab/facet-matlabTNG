@@ -11,6 +11,7 @@ LaserS20_nonBSA_List = {...
 'TRIG:LA20:LS25:TCTL'; % sdg gate enable (pulse
 'TRIG:LA20:LS28:TDES'; % saga timing
 'SIOC:SYS1:ML02:AO502'; % long delay laser target time
+'ADC:LA20:10:CALC:CH03'; % Laser energy in S20 laser room
 
 'MOTR:LI20:MC06:M0:CH1:MOTOR'; % S20 LASER ROOM pico
 'MOTR:LI20:MC06:M0:CH2:MOTOR'; % S20 LASER ROOM pico
