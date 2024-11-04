@@ -204,7 +204,13 @@ classdef F2_fastDAQ_HDF5 < handle
         
         function status = daq_loop(obj)
             % The meat of the matter
-
+            
+            % Resetting PVs that were used in a previous version of DAQ
+            lcaPut(obj.daq_pvs.HDF5_NumExtraDims,0);
+            lcaPut(obj.daq_pvs.HDF5_ExtraDimSizeN,0);
+            lcaPut(obj.daq_pvs.HDF5_ExtraDimSizeX,0);
+            lcaPut(obj.daq_pvs.HDF5_ExtraDimSizeY,0);
+            
             % This is a "simple" DAQ
             if obj.params.scanDim == 0
                 
