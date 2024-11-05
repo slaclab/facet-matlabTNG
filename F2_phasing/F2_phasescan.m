@@ -580,12 +580,14 @@ classdef F2_phasescan < handle
         end
 
         function label_plot(self, ax)
-            title(ax, sprintf('Phase scan: K%s  %s', self.klys_str, self.start_time));
-            % % if self.success
-            %     sprintf('  phase error        = %.1f degS\n', self.fit.phi_err)
-            % %     sbs = ['\phi_{DES} = ' self.in.phi_set ' \phi_{ACT} = ' self.fit.phi_meas ' \phi_{err} = ' self.fit.phi_err];
-            % %     subtitle(ax, sbs , 'Interpreter','tex');
-            % % end
+            plot_title = sprintf('Phase scan: K%s  %s', self.klys_str, self.start_time);
+            if ~self.success
+                title(ax, plot_title);
+            elseif self.success
+                plot_title_full = sprintf('%s\n\\phi_{des} = %.1f, \\phi_{meas} = %.1f, \\phi_{err} = %.1f (degS)\n', ...
+                   plot_title,  self.in.phi_set, self.fit.phi_meas, self.fit.phi_err);
+                title(ax, plot_title_full, 'Interpreter','tex');
+            end
             xlabel(ax, ['\phi ' self.klys_str], 'Interpreter','tex')
             yyaxis(ax, 'left');
             ylabel(ax, sprintf('%s [mm]', self.BPM), 'Interpreter','tex');
