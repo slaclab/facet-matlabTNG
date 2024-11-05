@@ -21,6 +21,7 @@ classdef scanFunc_LaserTime_S20Grating
        laser_tolerance = 0.001;    
        
        offset_PV = "SIOC:SYS1:ML00:CALCOUT074";
+       slope_PV = "SIOC:SYS1:ML00:CALCOUT081";
        
        %[None of these PVs are reserved in the Matlab PV list, it won't let me edit PV comments]
    end
@@ -56,7 +57,7 @@ classdef scanFunc_LaserTime_S20Grating
        
 
        function laser_time_val = laser_grating_calibration(obj, s20_grating_val)
-           slope =  2.2267e4 * 1e-6; % fs/mm * ns/fs
+           slope =  lcaGet(char(obj.slope_PV)); %2.2267e4 * 1e-6; % fs/mm * ns/fs 
            offset = lcaGet(char(obj.offset_PV));
            laser_time_val = obj.initial_control_laser + (s20_grating_val - obj.initial_control)*slope + offset;
        end

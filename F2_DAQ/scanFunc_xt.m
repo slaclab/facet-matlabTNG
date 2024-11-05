@@ -21,6 +21,7 @@ classdef scanFunc_xt
        laser_tolerance = 0.001;    
        
        offset_PV = "SIOC:SYS1:ML00:CALCOUT074";
+       slope_PV = "SIOC:SYS1:ML00:CALCOUT080";
        
        %[None of these PVs are reserved in the Matlab PV list, it won't let me edit PV comments]
    end
@@ -56,7 +57,7 @@ classdef scanFunc_xt
        
 
        function laser_time_val = laser_grating_calibration(obj, s20_grating_val)
-           slope =  -4000/0.35 * 1e-6; % fs/mm * ns/fs %to confirm numerically
+           slope =  lcaGet(char(obj.slope_PV));%-4000/0.35 * 1e-6; % fs/mm * ns/fs %to confirm numerically
            offset = lcaGet(char(obj.offset_PV));
            laser_time_val = obj.initial_control_laser + (s20_grating_val - obj.initial_control)*slope + offset;
        end
