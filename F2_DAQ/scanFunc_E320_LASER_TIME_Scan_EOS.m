@@ -66,13 +66,13 @@ classdef scanFunc_E320_LASER_TIME_Scan_EOS
             current_value = caget(obj.pvs.readback);
             current_value_EOS = caget(obj.pvs.readback_EOS);
             
-            while min(abs([current_value current_value_EOS]- [value EOS_pos_updated]) > [obj.tolerance obj.tolerance_EOS])
+            while max(([current_value current_value_EOS]- [value EOS_pos_updated]) > [obj.tolerance obj.tolerance_EOS])
                 current_value = caget(obj.pvs.readback);
                 current_value_EOS = caget(obj.pvs.readback_EOS);
                 pause(0.1);
             end
             
-            delta = current_value - value;
+            delta = current_value(1) - value;
             obj.daqhandle.dispMessage(sprintf('%s readback is %0.2f', obj.pvs.readback.name, current_value));
             obj.daqhandle.dispMessage(sprintf('%s readback is %0.2f', obj.pvs.readback_EOS.name, current_value_EOS));
             
