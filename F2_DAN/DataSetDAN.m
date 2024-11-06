@@ -243,6 +243,10 @@ classdef DataSetDAN < handle
                 scalarArrayData(:,i) = x;
             end
             
+            if any(any(isnan(scalarArrayData)))
+                s.GUIHandle.addMsg('Warning: Scalar data contains NaNs!')
+            end
+            
             panelHan = s.GUIHandle.PlotsPanel;
             set(panelHan,'AutoResizeChildren','off');
             delete(panelHan.Children); % clear plots
@@ -588,7 +592,7 @@ classdef DataSetDAN < handle
         
         function bool = validShotNbr(s, shotNbr)
             % Checks if shot number exist
-            if shotNbr > 0 && shotNbr < s.maxShotNbr
+            if shotNbr > 0 && shotNbr <= s.maxShotNbr
                 bool = 1;
             else
                 s.hlpDispMsg('shotNbr not within valid range')
@@ -941,7 +945,7 @@ classdef DataSetDAN < handle
                 for i = 1:numel(s.dataSet.images.(diag).loc)
                     h5fn = sprintf('%s%s',s.hdr,s.dataSet.images.(diag).loc{i});
                     imgData = h5read(h5fn,'/entry/data/data');
-                    img = cat(4,img,imgData);
+                    img = cat(3,img,imgData);
                 end
             end
             s.HDF5_imData = img;
@@ -1107,6 +1111,7 @@ classdef DataSetDAN < handle
             tickLabels = strtrim(sprintf('%s\\newline%s\n', labelArray{:}));
             
             plotHandle.XTickLabel = tickLabels;
+            plotHandle.XTickMode = 'manual';
             xlabel(plotHandle,'First row: Shot number / Second row: Step number',...
                 'FontSize',7);
         end
