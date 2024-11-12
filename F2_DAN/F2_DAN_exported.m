@@ -580,7 +580,7 @@ classdef F2_DAN_exported < matlab.apps.AppBase
 
             % Create expDropDown
             app.expDropDown = uidropdown(app.dataSet);
-            app.expDropDown.Items = {'TEST', 'E300', 'E301', 'E304', 'E305', 'E308', 'E310', 'E320', 'E324', 'E325', 'E326', 'E327', 'E331', 'E332', 'E338'};
+            app.expDropDown.Items = {'TEST', 'E300', 'E301', 'E304', 'E305', 'E308', 'E310', 'E320', 'E324', 'E325', 'E326', 'E327', 'E331', 'E332', 'E338', 'E339'};
             app.expDropDown.ValueChangedFcn = createCallbackFcn(app, @expDropDownValueChanged, true);
             app.expDropDown.Position = [98 335 124 22];
             app.expDropDown.Value = 'TEST';
