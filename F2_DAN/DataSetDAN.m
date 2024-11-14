@@ -255,7 +255,15 @@ classdef DataSetDAN < handle
                 % Make corrplot and copy to GUI panel
                 fig = figure('Visible','off');
                 ax = axes(fig);
-                [R,~,h] = corrplot(ax,scalarArrayData);
+                try
+                    [R,~,h] = corrplot(ax,scalarArrayData);
+                catch ME
+                    s.GUIHandle.addMsg('Failed to make correlation plot');
+                    if strcmp(ME.identifier,'MATLAB:hg:shaped_arrays:LimitsWithInfsPredicate')
+                        s.GUIHandle.addMsg('Make sure correlations can be calculated for the selected variables');
+                    end
+                    return
+                end
 
                 % Copy all histogram/scatter plot handles
                 axesHans = {};
