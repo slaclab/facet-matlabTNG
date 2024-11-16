@@ -500,7 +500,7 @@ classdef F2_DAQ_exported < matlab.apps.AppBase
             app.Switch = uiswitch(app.DAQSettingsPanel, 'slider');
             app.Switch.Items = {'TIFF', 'HDF5'};
             app.Switch.Position = [60 120 45 20];
-            app.Switch.Value = 'TIFF';
+            app.Switch.Value = 'HDF5';
 
             % Create CameraConfigPanel
             app.CameraConfigPanel = uipanel(app.FACETIIDAQUIFigure);
