@@ -8,8 +8,8 @@ classdef scanFunc_Gamma2_Filter_InOut
         freerun = true
     end
     properties(Constant)
-        control_PV = "SIOC:SYS1:ML02:AO399"  % dummy PV
-        readback_PV = "SIOC:SYS1:ML02:AO399"
+        control_PV = "SIOC:SYS1:ML00:AO639"
+        readback_PV = "SIOC:SYS1:ML00:AO639"
         tolerance = 0.01;
     end
     
