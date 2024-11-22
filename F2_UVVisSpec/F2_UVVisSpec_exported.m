@@ -125,13 +125,17 @@ classdef F2_UVVisSpec_exported < matlab.apps.AppBase
                     shotNum = shotNum + 1;
                     timestamp(shotNum) = now;
                     integratedSpectrum(shotNum) = trapz(newData); 
+                    integratedSpectrumMCts = round(integratedSpectrum(shotNum)*1e-3);
                 else
                     timestamp = circshift(timestamp,-1);
                     timestamp(end) = now;
                     integratedSpectrum = circshift(integratedSpectrum,-1);
                     integratedSpectrum(end) = trapz(newData); 
+                    integratedSpectrumMCts = round(integratedSpectrum(end)*1e-3);
                 end
- 
+                % Write the integrated spectrum to a matlab support pv              
+                lcaPutSmart('SIOC:SYS1:ML00:AO540',integratedSpectrumMCts);
+                
                 % Plot new spectrum
                 plot(app.UIAxes, specWavelengths,newData,'k');
                 
