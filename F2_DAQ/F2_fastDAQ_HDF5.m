@@ -171,7 +171,7 @@ classdef F2_fastDAQ_HDF5 < handle
             obj.daq_pvs = camera_DAQ_PVs(obj.params.camPVs);
             
             % Set DAQ_InUse PV for cameras
-            lcaPutSmart(obj.daq_pvs.DAQ_InUse,1);
+%             lcaPutSmart(obj.daq_pvs.DAQ_InUse,1);
             
             % Test cameras before starting
             obj.checkCams();
