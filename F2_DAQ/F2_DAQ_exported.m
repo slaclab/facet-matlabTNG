@@ -303,12 +303,14 @@ classdef F2_DAQ_exported < matlab.apps.AppBase
         % Button pushed function: DisplayBSA
         function DisplayBSAButtonPushed(app, event)
             list = app.BSADataListBox.Value;
+            list = string(list);
             app.aobj.display_list(list);
         end
 
         % Button pushed function: DisplayNonBSA
         function DisplayNonBSAButtonPushed(app, event)
             list = app.nonBSADataListBox.Value;
+            list = string(list);
             app.aobj.display_list(list);
         end
 
