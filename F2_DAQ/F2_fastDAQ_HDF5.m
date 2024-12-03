@@ -178,7 +178,6 @@ classdef F2_fastDAQ_HDF5 < handle
             status = obj.check_abort();
             if status; obj.end_scan(status); return; end
             
-            
             % Prep cams -> make sure they are in good state
             obj.prepCams();
             
@@ -220,14 +219,15 @@ classdef F2_fastDAQ_HDF5 < handle
                     
                     % we are done BUFFACQ eDef
                     obj.event.release_eDef();
-                    return;
-                catch
+                    return
+                catch ME
+                    disp(ME.message)
                     obj.dispMessage(sprintf('DAQ failed on step %d',obj.step));
                     status = 1;
                     
                     % we are done BUFFACQ eDef
                     obj.event.release_eDef();
-                    return;
+                    return
                 end 
             end
             
@@ -318,7 +318,7 @@ classdef F2_fastDAQ_HDF5 < handle
             % command never got sent
             fileNums = lcaGet(obj.daq_pvs.HDF5_FileNumber_RBV); % should be 1
             if any(~fileNums)
-                lcaPut(obj.daq_pvs.HDF5_WriteFile(~fileNums),1);
+                lcaPutSmart(obj.daq_pvs.HDF5_WriteFile(~fileNums),1);
             end
 
             writingStatus = lcaGet(obj.daq_pvs.HDF5_WriteFile_RBV);
@@ -449,7 +449,8 @@ classdef F2_fastDAQ_HDF5 < handle
             try 
                 obj.getNonBSAdata(slac_time);
                 status = 0;
-            catch
+            catch ME
+                disp(ME.message)
                 obj.dispMessage('Non-BSA data failed.');
                 status = 1;
             end
@@ -611,13 +612,15 @@ classdef F2_fastDAQ_HDF5 < handle
             % Suppress weird EPICS warning -- not the best workaround but
             % ok for now
             wid = 'MATLAB:Java:ConvertFromOpaque';
-            warning('off',wid);
+            wstate = warning('off',wid);
             
             data_struct = obj.data_struct;
             
             save_str = [obj.save_info.save_path '/' obj.params.experiment '_' num2str(obj.save_info.instance,'%05d')];
 
             save(save_str,'data_struct');
+            
+            warning(wstate); % restore warning after we are done saving
         end
         
         function write2eLog(obj,status)
@@ -760,12 +763,13 @@ classdef F2_fastDAQ_HDF5 < handle
             end
             %obj.async_data = acq_nonBSA_data(obj.nonbsa_list,obj);
             
-            % Fill in non-BSA arrays, not supported yet
+            % Fill in non-BSA arrays
             if obj.params.include_nonBSA_arrays
                 for i = 1:numel(obj.params.nonBSA_Array_list)
                     pvList = feval(obj.params.nonBSA_Array_list{i});
                     pvList = obj.async_data.addListArray(pvList);
-                    pvDesc = lcaGetSmart(strcat(pvList,'.DESC'));
+%                     pvDesc = lcaGetSmart(strcat(pvList,'.DESC'));
+                    pvDesc = pvList; % Temporary
                     
                     obj.data_struct.metadata.(obj.params.nonBSA_Array_list{i}).PVs = pvList;
                     obj.data_struct.metadata.(obj.params.nonBSA_Array_list{i}).Desc = pvDesc;
