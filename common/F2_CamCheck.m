@@ -50,7 +50,7 @@ classdef F2_CamCheck < handle
             end
             
             obj.camera_info = model_nameListFACETProf(true); % Camera List
-            spctrmtrInfo = {'UVVisSpec','SPEC:LI20:100','','S20 Spectrometer','cpu-li20-pm06','TRIG:LI20:PM06:1:TCTL',''};
+            spctrmtrInfo = {'UVVisSpec','SPEC:LI20:101','','S20 Spectrometer','cpu-li20-pm01','TRIG:LI20:PM06:1:TCTL',''};
             obj.camera_info = [obj.camera_info;spctrmtrInfo];
             
             % Ignore transport cameras in DAQ
@@ -292,7 +292,7 @@ classdef F2_CamCheck < handle
             end
         end
         
-        function bad_cam = checkConnect(obj,daq_bool)
+           function bad_cam = checkConnect(obj,daq_bool)
             % Check if camera is running
             if daq_bool
                 cmos_cams = strcmp(obj.DAQ_Cams.regions,'S20 sCMOS');
