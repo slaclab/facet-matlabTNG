@@ -1,0 +1,14 @@
+function S11_SCP_BPM_List = SCP_BPM_List_S11()
+
+S11_SCP_BPM_List = {...
+    
+'BPMS:LI11:201';
+'BPMS:LI11:301';
+'BPMS:LI11:401';
+'BPMS:LI11:501';
+'BPMS:LI11:601';
+'BPMS:LI11:701';
+'BPMS:LI11:801';
+'BPMS:LI11:901';
+
+};

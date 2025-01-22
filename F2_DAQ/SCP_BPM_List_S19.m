@@ -1,0 +1,14 @@
+function S19_SCP_BPM_List = SCP_BPM_List_S19()
+
+S19_SCP_BPM_List = {...
+    
+'BPMS:LI19:201';
+'BPMS:LI19:301';
+'BPMS:LI19:401';
+'BPMS:LI19:501';
+'BPMS:LI19:601';
+'BPMS:LI19:701';
+'BPMS:LI19:801';
+'BPMS:LI19:901';
+
+};
