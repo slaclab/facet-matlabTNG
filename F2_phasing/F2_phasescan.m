@@ -15,7 +15,7 @@ classdef F2_phasescan < handle
             "BEND:IN10:751:BACT" "BEND:LI11:331:BACT" "BEND:LI14:720:BACT" "LI20:LGPS:1990:BACT" ...
             ];
 
-        FB_state_PV = "SIOC:SYS1:ML00:AO856";
+        % FB_state_PV = "SIOC:SYS1:ML00:AO856";
         
         % hardcoded dispersion at each BPM
         % TO DO: grab this from the model server, once such a thing exists
@@ -52,7 +52,7 @@ classdef F2_phasescan < handle
         scan_summary = ''  % text summary for logbook/stdout
         data_file = ''     % full path to output .mat file
 
-        init_feedback_state = 0; % initial longitudinal feedback state, for restore point
+        init_feedback_state = [0 0 0 0 0 0]; % initial longitudinal feedback states, for restore point
 
         abort_requested = false;
         scan_aborted = false;
@@ -316,48 +316,38 @@ classdef F2_phasescan < handle
         % disable relevant downstream longitudinal feedbacks for the scan
         function disable_feedbacks(self)
             if self.simulation, return; end
-
-            need_disable = false;
             
             % FB on/off statuses are individual bits of overall status word
-            FB_state = lcaGetSmart(self.FB_state_PV);
-            self.init_feedback_state = FB_state;
-            DL10E_on  = bitget(FB_state, 1);
-            BC11E_on  = bitget(FB_state, 3);
-            BC11BL_on = bitget(FB_state, 4);
-            BC14E_on  = bitget(FB_state, 2);
-            BC14BL_on = bitget(FB_state, 6);  
-            BC20E_on  = bitget(FB_state, 5);
-            
+            DL10E_on  = strcmp(lcaGetSmart("PHYS:SYS1:1:F2LFB_DL10E"), 'ON');
+            BC11E_on  = strcmp(lcaGetSmart("PHYS:SYS1:1:F2LFB_BC11E"), 'ON');
+            BC11BL_on = strcmp(lcaGetSmart("PHYS:SYS1:1:F2LFB_BC11BL"), 'ON');
+            BC14E_on  = strcmp(lcaGetSmart("PHYS:SYS1:1:F2LFB_BC14E"), 'ON');
+            BC14BL_on = strcmp(lcaGetSmart("PHYS:SYS1:1:F2LFB_BC14BL"), 'ON');  
+            BC20E_on  = strcmp(lcaGetSmart("PHYS:SYS1:1:F2LFB_BC20E"), 'ON');
+            disp(DL10E_on)
+            self.init_feedback_state = [DL10E_on BC11E_on BC11BL_on BC14E_on BC14BL_on BC20E_on];
+            disp(self.init_feedback_state)
             % L0 scan: disable DL10E, BC11E, BC11BL
             % L1 scan: disable BC11E, BC11BL
             % L2 scan: disable BC14E, BC14BL
             % L3 scan: disable BC20E
             switch self.linac
                 case 0
-                    if DL10E_on,  FB_state = bitset(FB_state, 1, 0); end
-                    if BC11E_on,  FB_state = bitset(FB_state, 3, 0); end
-                    if BC11BL_on, FB_state = bitset(FB_state, 4, 0); end
-                    if DL10E_on || BC11E_on || BC11BL_on, need_disable = true; end
+                    if DL10E_on, lcaPutSmart("PHYS:SYS1:1:F2LFB_DL10E", 0); end
+                    if BC11E_on, lcaPutSmart("PHYS:SYS1:1:F2LFB_BC11E", 0); end
+                    if BC11BL_on, lcaPutSmart("PHYS:SYS1:1:F2LFB_BC11BL", 0); end
  
                 case 1
-                    if BC11E_on,  FB_state = bitset(FB_state, 3, 0); end
-                    if BC11BL_on, FB_state = bitset(FB_state, 4, 0); end
-                    if BC11E_on || BC11BL_on, need_disable = true; end
+                    if BC11E_on, lcaPutSmart("PHYS:SYS1:1:F2LFB_BC11E", 0); end
+                    if BC11BL_on, lcaPutSmart("PHYS:SYS1:1:F2LFB_BC11BL", 0); end
   
                 case 2
-                    if BC14E_on,  FB_state = bitset(FB_state, 2, 0); end
-                    if BC14BL_on, FB_state = bitset(FB_state, 6, 0); end
-                    if BC14E_on || BC14BL_on, need_disable = true; end
+                    if BC14E_on, lcaPutSmart("PHYS:SYS1:1:F2LFB_BC14E", 0); end
+                    if BC14BL_on, lcaPutSmart("PHYS:SYS1:1:F2LFB_BC14BL", 0); end
                     
                 case 3
-                    if BC20E_on
-                        FB_state = bitset(FB_state, 5, 0);
-                        need_disable = true;
-                    end
+                    if BC20E_on, lcaPutSmart("PHYS:SYS1:1:F2LFB_BC20E", 0); end
             end
-            
-            if need_disable, lcaPutSmart(self.FB_state_PV, FB_state); end
         end
 
         function set_L0_LLRF_phase_feedback(self, state)
@@ -737,7 +727,13 @@ classdef F2_phasescan < handle
             % re-enable L0 LLRF phase FB & longitudinal feedback initial states
             if self.linac == 0, self.set_L0_LLRF_phase_feedback(1); end
             if self.linac == 1, self.set_L1_LLRF_phase_feedback(1); end  % <-- unsure if needed
-            lcaPutSmart(self.FB_state_PV, self.init_feedback_state);
+
+            lcaPutSmart("PHYS:SYS1:1:F2LFB_DL10E",  self.init_feedback_state(1)); 
+            lcaPutSmart("PHYS:SYS1:1:F2LFB_BC11E",  self.init_feedback_state(2)); 
+            lcaPutSmart("PHYS:SYS1:1:F2LFB_BC11BL", self.init_feedback_state(3));
+            lcaPutSmart("PHYS:SYS1:1:F2LFB_BC14E",  self.init_feedback_state(4)); 
+            lcaPutSmart("PHYS:SYS1:1:F2LFB_BC14BL", self.init_feedback_state(5)); 
+            lcaPutSmart("PHYS:SYS1:1:F2LFB_BC20E",  self.init_feedback_state(6)); 
             
             % (3) fit BPM data and calculate beam phase error and energy
             self.beam_phase_fit();
