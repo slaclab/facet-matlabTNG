@@ -27,7 +27,7 @@ classdef F2_DAQ_exported < matlab.apps.AppBase
         RemoveButton                   matlab.ui.control.Button
         ListBox                        matlab.ui.control.ListBox
         PVListsPanel                   matlab.ui.container.Panel
-        BSADataListBoxLabel            matlab.ui.control.Label
+        BSAandSCPDataListBoxLabel      matlab.ui.control.Label
         BSADataListBox                 matlab.ui.control.ListBox
         nonBSADataListBoxLabel         matlab.ui.control.Label
         nonBSADataListBox              matlab.ui.control.ListBox
@@ -537,11 +537,11 @@ classdef F2_DAQ_exported < matlab.apps.AppBase
             app.PVListsPanel.Title = 'PV Lists';
             app.PVListsPanel.Position = [16 154 406 276];
 
-            % Create BSADataListBoxLabel
-            app.BSADataListBoxLabel = uilabel(app.PVListsPanel);
-            app.BSADataListBoxLabel.HorizontalAlignment = 'right';
-            app.BSADataListBoxLabel.Position = [12 222 58 22];
-            app.BSADataListBoxLabel.Text = 'BSA Data';
+            % Create BSAandSCPDataListBoxLabel
+            app.BSAandSCPDataListBoxLabel = uilabel(app.PVListsPanel);
+            app.BSAandSCPDataListBoxLabel.HorizontalAlignment = 'right';
+            app.BSAandSCPDataListBoxLabel.Position = [12 223 110 22];
+            app.BSAandSCPDataListBoxLabel.Text = 'BSA and SCP Data';
 
             % Create BSADataListBox
             app.BSADataListBox = uilistbox(app.PVListsPanel);
@@ -619,7 +619,8 @@ classdef F2_DAQ_exported < matlab.apps.AppBase
 
             % Create IncludeSCPCheckBox
             app.IncludeSCPCheckBox = uicheckbox(app.PVListsPanel);
-            app.IncludeSCPCheckBox.Enable = 'off';
+            app.IncludeSCPCheckBox.Visible = 'off';
+            app.IncludeSCPCheckBox.Tooltip = {'BPMS only'};
             app.IncludeSCPCheckBox.Text = 'Include SCP';
             app.IncludeSCPCheckBox.Position = [13 7 90 22];
 
@@ -627,12 +628,14 @@ classdef F2_DAQ_exported < matlab.apps.AppBase
             app.DisplaySCP = uibutton(app.PVListsPanel, 'push');
             app.DisplaySCP.Tag = 'RemoveBSA';
             app.DisplaySCP.Enable = 'off';
+            app.DisplaySCP.Visible = 'off';
             app.DisplaySCP.Position = [111 7 61 23];
             app.DisplaySCP.Text = 'Display';
 
             % Create nonBSAArraysCheckBox
             app.nonBSAArraysCheckBox = uicheckbox(app.PVListsPanel);
             app.nonBSAArraysCheckBox.Enable = 'off';
+            app.nonBSAArraysCheckBox.Visible = 'off';
             app.nonBSAArraysCheckBox.Text = 'Include non-BSA Arrays';
             app.nonBSAArraysCheckBox.Position = [222 7 152 22];
 
