@@ -59,19 +59,19 @@ classdef scanFunc_WIRE_LI20_3179X
             pos_tolerance = 1;
             
             %wait here for motor rbk to reach startpoint 
-            while abs(pos - wire_start) >= pos_tolerance
-                pos = lcaGet(char("WIRE:LI20:3179:POSN"));
+            %while abs(pos - wire_start) >= pos_tolerance
+             %   pos = lcaGet(char("WIRE:LI20:3179:POSN"));
                 
-            end
+            %end
             
 
             % Motor has reached start point, store current position
-            current_pos = pos;
+            %current_pos = pos;
             
             % Now wait until the motor starts moving again
-            while abs(pos - current_pos) < pos_tolerance
-                pos = lcaGet(char("WIRE:LI20:3179:POSN"));
-            end
+            %while abs(pos - current_pos) < pos_tolerance
+             %   pos = lcaGet(char("WIRE:LI20:3179:POSN"));
+            %end
             % if required use delay here
 
             
