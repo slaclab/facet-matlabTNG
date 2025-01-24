@@ -382,7 +382,7 @@ classdef DataSetDAN < handle
 
             [r,c] = size(wFData);
             if ~xor(r == 1, c == 1)
-                error('The provided function does not map the data correctly. Mapped data has %d rows and %d columns.',r,d)
+                error('The provided function does not map the data correctly. Mapped data has %d rows and %d columns.',r,c)
             end
 
             %Pre-allocate
@@ -562,7 +562,7 @@ classdef DataSetDAN < handle
             % Saves plot data
             computer = char(java.net.InetAddress.getLocalHost.getHostName);
             
-            if strcmp(computer,'facet-srv20')
+            if strcmp(computer,'facet-srv20-2')
                 %Current time
                 [~,tsi]=lcaGet('PATT:SYS1:1:PULSEID');
                 ts = lca2matlabTime(tsi);
@@ -571,7 +571,8 @@ classdef DataSetDAN < handle
                     s.lastPlotData, 'DANplot', fileName, ts);
                 fprintf('Plot data saved at: %s/%s.\n', pathName, fileName);
             else
-                save(fileName, s.lastPlotData);
+                plotData = s.lastPlotData;
+                save(fileName, 'plotData');
                 fprintf('Plot data saved at: %s.mat.\n', fileName);
             end
         end
