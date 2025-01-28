@@ -693,8 +693,17 @@ classdef F2_fastDAQ_HDF5 < handle
                 uids = obj.generateUIDs(pid,steps);
                 
                 % Find matches with scalar UIDs
-                obj.data_struct.pulseID.scalar_UID = intersect(uids,obj.data_struct.pulseID.scalar_UID);
-                obj.data_struct.pulseID.scalar_PID = intersect(pid,obj.data_struct.pulseID.scalar_PID);
+                [uid_common,uid_idxa,uid_idxb] = intersect(uids,obj.data_struct.pulseID.scalar_UID);
+                [pid_common,pid_idxa,pid_idxb] = intersect(pid,obj.data_struct.pulseID.scalar_PID);
+                
+%                 obj.data_struct.scalars.BSA_UID_idx = uid_idxa;
+%                 obj.data_struct.scalars.SCP_UID_idx = uid_idxb;
+                
+                obj.data_struct.scalars.BSA_common_idx = pid_idxa;
+                obj.data_struct.scalars.SCP_common_idx = pid_idxb;
+                
+                obj.data_struct.pulseID.scalar_UID = uid_common;
+                obj.data_struct.pulseID.scalar_PID = pid_common;
 
                 % Add to data_struct
                 obj.data_struct.scalars.SCP_steps = steps;
