@@ -997,6 +997,7 @@ classdef F2_DAN_HDF5_exported < matlab.apps.AppBase
             % Create D21DFunctionEditField_Corr1
             app.D21DFunctionEditField_Corr1 = uieditfield(app.FACETScalarArray1Panel, 'text');
             app.D21DFunctionEditField_Corr1.Enable = 'off';
+            app.D21DFunctionEditField_Corr1.Tooltip = {'To select a range: x(50:100,100:200,:)'};
             app.D21DFunctionEditField_Corr1.Position = [15 7 276 24];
             app.D21DFunctionEditField_Corr1.Value = '@(x)sum(sum(x))';
 
@@ -1074,6 +1075,7 @@ classdef F2_DAN_HDF5_exported < matlab.apps.AppBase
             % Create D21DFunctionEditField_Corr2
             app.D21DFunctionEditField_Corr2 = uieditfield(app.FACETScalarArray2Panel, 'text');
             app.D21DFunctionEditField_Corr2.Enable = 'off';
+            app.D21DFunctionEditField_Corr2.Tooltip = {'To select a range: x(50:100,100:200,:)'};
             app.D21DFunctionEditField_Corr2.Position = [12 7 276 24];
             app.D21DFunctionEditField_Corr2.Value = '@(x)sum(sum(x))';
 
@@ -1114,6 +1116,7 @@ classdef F2_DAN_HDF5_exported < matlab.apps.AppBase
             title(app.ImageAxes, 'Title')
             xlabel(app.ImageAxes, 'X')
             ylabel(app.ImageAxes, 'Y')
+            app.ImageAxes.FontSize = 14;
             app.ImageAxes.Position = [405 401 803 509];
 
             % Create CLimPanel
@@ -1218,6 +1221,7 @@ classdef F2_DAN_HDF5_exported < matlab.apps.AppBase
             % Create D21DFunctionEditField_WF
             app.D21DFunctionEditField_WF = uieditfield(app.WaterfallplotPanel, 'text');
             app.D21DFunctionEditField_WF.Enable = 'off';
+            app.D21DFunctionEditField_WF.Tooltip = {'To select a range: x(50:100,100:200,:)'};
             app.D21DFunctionEditField_WF.Position = [16 271 252 27];
 
             % Create PlotwaterfallButton
@@ -1409,6 +1413,7 @@ classdef F2_DAN_HDF5_exported < matlab.apps.AppBase
             % Create ImageAnalysisFunctionEditField
             app.ImageAnalysisFunctionEditField = uieditfield(app.dispImage, 'text');
             app.ImageAnalysisFunctionEditField.Enable = 'off';
+            app.ImageAnalysisFunctionEditField.Tooltip = {'To select a range: x(50:100,100:200,:)'};
             app.ImageAnalysisFunctionEditField.Position = [13 175 236 24];
             app.ImageAnalysisFunctionEditField.Value = '@(x)abs(fftshift(fft2(x)))';
 
@@ -1530,6 +1535,7 @@ classdef F2_DAN_HDF5_exported < matlab.apps.AppBase
             title(app.UIAxes, 'Title')
             xlabel(app.UIAxes, 'X')
             ylabel(app.UIAxes, 'Y')
+            app.UIAxes.FontSize = 14;
             app.UIAxes.Position = [12 12 804 539];
 
             % Create FitDataPanel
