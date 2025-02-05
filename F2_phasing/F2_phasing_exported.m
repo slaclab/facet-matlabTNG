@@ -431,6 +431,16 @@ classdef F2_phasing_exported < matlab.apps.AppBase
         function selectZigzagValueChanged(app, event)
             app.S.zigzag = app.selectZigzag.Value;
         end
+
+        % Value changed function: editSBOffset
+        function editSBOffsetValueChanged(app, event)
+            app.S.sbst_offset = app.editSBOffset.Value;
+        end
+
+        % Value changed function: editOffset
+        function editOffsetValueChanged(app, event)
+            app.S.klys_offset = app.editOffset.Value;
+        end
     end
 
     % Component initialization
@@ -592,7 +602,7 @@ classdef F2_phasing_exported < matlab.apps.AppBase
 
             % Create editOffset
             app.editOffset = uieditfield(app.layoutConfig, 'numeric');
-            app.editOffset.Editable = 'off';
+            app.editOffset.ValueChangedFcn = createCallbackFcn(app, @editOffsetValueChanged, true);
             app.editOffset.FontSize = 14;
             app.editOffset.Layout.Row = 2;
             app.editOffset.Layout.Column = [10 11];
@@ -631,7 +641,7 @@ classdef F2_phasing_exported < matlab.apps.AppBase
 
             % Create editSBOffset
             app.editSBOffset = uieditfield(app.layoutConfig, 'numeric');
-            app.editSBOffset.Editable = 'off';
+            app.editSBOffset.ValueChangedFcn = createCallbackFcn(app, @editSBOffsetValueChanged, true);
             app.editSBOffset.FontSize = 14;
             app.editSBOffset.Enable = 'off';
             app.editSBOffset.Layout.Row = 1;
