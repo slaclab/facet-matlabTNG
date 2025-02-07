@@ -53,6 +53,7 @@ S10_BSA_List = {...
 'BPMS:IN10:781:TMIT';
 
 'PMTR:HT10:950:PWR';
+'LASR:LT10:930:PWR';
 
 };
 
