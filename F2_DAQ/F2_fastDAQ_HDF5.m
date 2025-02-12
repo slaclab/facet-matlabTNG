@@ -875,6 +875,13 @@ classdef F2_fastDAQ_HDF5 < handle
                 obj.data_struct.metadata.(obj.params.camNames{i}) = get_cam_info(obj.params.camPVs{i});
                 obj.data_struct.metadata.(obj.params.camNames{i}).sioc = obj.params.camSIOCs{i};
                 obj.data_struct.metadata.(obj.params.camNames{i}).trigger = obj.params.camTrigs{i};
+                
+                % Add spectrometer metadata here - min/max wavelength
+                if contains(obj.params.camNames{i},'Spec','IgnoreCase',true)
+                    wavelengths = lcaGetSmart('SPEC:LI20:PM02:Wavelengths');
+                    obj.data_struct.metadata.(obj.params.camNames{i}).Min_Wavelength = min(wavelengths);
+                    obj.data_struct.metadata.(obj.params.camNames{i}).Max_Wavelength = max(wavelengths);
+                end
             end
             
             % Fill in BSA data
