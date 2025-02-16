@@ -37,7 +37,7 @@ classdef scanFunc_E336_horizontal_nanotarget_pico
         end
         
         function delta = set_value(obj,value2)
-            offset_PV = "SIOC:SYS1:ML00:CALCOUT084";
+            offset_PV = 'SIOC:SYS1:ML00:CALCOUT084';
             offset_val = lcaGet(offset_PV);
             value = value2 + offset_val;
             
