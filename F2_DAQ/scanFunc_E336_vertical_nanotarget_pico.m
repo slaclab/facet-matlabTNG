@@ -36,7 +36,10 @@ classdef scanFunc_E336_vertical_nanotarget_pico
             
         end
         
-        function delta = set_value(obj,value)
+        function delta = set_value(obj,value2)
+            offset_PV = "SIOC:SYS1:ML00:CALCOUT083";
+            offset_val = lcaGet(offset_PV);
+            value = value2 + offset_val;
             
             caput(obj.pvs.control,value);
             obj.daqhandle.dispMessage(sprintf('Setting %s to %0.2f', obj.pvs.control.name, value));
