@@ -207,6 +207,7 @@ classdef F2_fastDAQ_HDF5 < handle
                 obj.dispMessage('Error getting backgrounds');
                 disp(ME.message)
                 obj.event.release_eDef();
+                return
             end
             
             % Stop buffer
