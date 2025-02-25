@@ -195,12 +195,19 @@ classdef F2_fastDAQ_HDF5 < handle
             obj.prepCams();
             
             % Get backgrounds
-            obj.BG_obj = F2_getBG(obj);
-            obj.data_struct.backgrounds = struct;
-            obj.data_struct.backgrounds.getBG = obj.params.saveBG;
-            obj.data_struct.backgrounds.laserBG = obj.params.laserBG;
-            if obj.params.saveBG || obj.params.laserBG
-               obj.data_struct.backgrounds = obj.BG_obj.getBackground();
+            try
+                obj.BG_obj = F2_getBG(obj);
+                obj.data_struct.backgrounds = struct;
+                obj.data_struct.backgrounds.getBG = obj.params.saveBG;
+                obj.data_struct.backgrounds.laserBG = obj.params.laserBG;
+                if obj.params.saveBG || obj.params.laserBG
+                   obj.data_struct.backgrounds = obj.BG_obj.getBackground();
+                end
+            catch ME
+                obj.dispMessage('Error getting backgrounds');
+                disp(ME.message)
+                obj.event.release_eDef();
+                return
             end
             
             % Stop buffer
@@ -685,7 +692,7 @@ classdef F2_fastDAQ_HDF5 < handle
                         obj.data_struct.scalars.(fields{idx}).([BPM '_Y']) = [obj.data_struct.scalars.(fields{idx}).([BPM '_Y']);smallTable.yOffset_mm_];
                         obj.data_struct.scalars.(fields{idx}).([BPM '_TMIT']) = [obj.data_struct.scalars.(fields{idx}).([BPM '_TMIT']);smallTable.numParticles_coulomb_];
                     end
-                    steps = [steps;i*ones(size(smallTable,1))];
+                    steps = [steps;i*ones(size(smallTable,1),1)];
                     pid = [pid; unique(scp_data.pulseId)];
                 end
                
@@ -875,6 +882,13 @@ classdef F2_fastDAQ_HDF5 < handle
                 obj.data_struct.metadata.(obj.params.camNames{i}) = get_cam_info(obj.params.camPVs{i});
                 obj.data_struct.metadata.(obj.params.camNames{i}).sioc = obj.params.camSIOCs{i};
                 obj.data_struct.metadata.(obj.params.camNames{i}).trigger = obj.params.camTrigs{i};
+                
+                % Add spectrometer metadata here - min/max wavelength
+                if contains(obj.params.camNames{i},'Spec','IgnoreCase',true)
+                    wavelengths = lcaGetSmart('SPEC:LI20:PM02:Wavelengths');
+                    obj.data_struct.metadata.(obj.params.camNames{i}).Min_Wavelength = min(wavelengths);
+                    obj.data_struct.metadata.(obj.params.camNames{i}).Max_Wavelength = max(wavelengths);
+                end
             end
             
             % Fill in BSA data

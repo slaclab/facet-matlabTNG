@@ -145,7 +145,7 @@ classdef F2_phasescan < handle
             
             % special case dPhi for LI11 since beam gamma is so small here
             self.dPhi = self.DEFAULT_DPHI(self.linac+1);
-            % if (self.linac == 2) && (self.sector == 11), self.dPhi = 40; end
+            if (self.linac == 2) && (self.sector == 11), self.dPhi = 40; end
             self.N_steps = self.DEFAULT_STEPS(self.linac+1);
             % self.N_samples = self.DEFAULT_SAMPLES;
         end
@@ -379,12 +379,6 @@ classdef F2_phasescan < handle
                     pause(0.1)
                     PACT = lcaGetSmart(self.PVs.wvgPACT)
                 end
-            
-            % % L1: set klystron KPHR, report KPHR
-            % elseif self.linac == 1
-            %     [~, ~] = control_phaseSet(self.klys_str, p, 0,0, 'KPHR');
-            %     pause(0.2);
-            %     PACT = lcaGetSmart(self.PVs.klys_KPHR);
             
             % L2, L3: set klystron PDES, report PACT <--- slow!!!
             else
@@ -657,7 +651,7 @@ classdef F2_phasescan < handle
             self.start_time.Format = 'dd-MMM-uuuu HH:mm:ss';
 
             self.compute_scan_range();
-            
+
             % disable relevant longitudinal feedbacks before scanning
             % for L0, also turn off LLRF slow feedbacks
             self.disable_feedbacks()
