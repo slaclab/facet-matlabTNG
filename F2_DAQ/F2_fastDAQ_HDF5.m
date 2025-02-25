@@ -692,7 +692,7 @@ classdef F2_fastDAQ_HDF5 < handle
                         obj.data_struct.scalars.(fields{idx}).([BPM '_Y']) = [obj.data_struct.scalars.(fields{idx}).([BPM '_Y']);smallTable.yOffset_mm_];
                         obj.data_struct.scalars.(fields{idx}).([BPM '_TMIT']) = [obj.data_struct.scalars.(fields{idx}).([BPM '_TMIT']);smallTable.numParticles_coulomb_];
                     end
-                    steps = [steps;i*ones(size(smallTable,1))];
+                    steps = [steps;i*ones(size(smallTable,1),1)];
                     pid = [pid; unique(scp_data.pulseId)];
                 end
                
