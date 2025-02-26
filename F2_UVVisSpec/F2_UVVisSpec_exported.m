@@ -41,11 +41,12 @@ classdef F2_UVVisSpec_exported < matlab.apps.AppBase
         
         Running (1,1) logical {mustBeScalarOrEmpty} = false
         Data = [];
-        spectrometerpv = 'SPEC:LI20:PM01:Spectrum';        
-        triggerMode = 'SPEC:LI20:PM01:TrigModeSet';
-        wavelengths = 'SPEC:LI20:PM01:Wavelengths';
-        integrationTime = 'SPEC:LI20:PM01:IntTimeSet';
-        updateTime = 'SPEC:LI20:PM01:UpdateTimeSet';
+        integratedSpectrum = [];
+        spectrometerpv = 'SPEC:LI20:PM02:Spectrum';        
+        triggerMode = 'SPEC:LI20:PM02:TrigModeSet';
+        wavelengths = 'SPEC:LI20:PM02:Wavelengths';
+        integrationTime = 'SPEC:LI20:PM02:IntTimeSet';
+        updateTime = 'SPEC:LI20:PM02:UpdateTimeSet';
         spectrometerCalibrationFile = 'theoreticalResponseInterp.mat';
         edcutsstagepv = 'XPS:LI20:MC03:M2';
         ndfilterpv = 'APC:LI20:EX02:5VOUT_12';
@@ -125,12 +126,14 @@ classdef F2_UVVisSpec_exported < matlab.apps.AppBase
                     shotNum = shotNum + 1;
                     timestamp(shotNum) = now;
                     integratedSpectrum(shotNum) = trapz(newData); 
+                    app.integratedSpectrum = integratedSpectrum;
                     integratedSpectrumMCts = round(integratedSpectrum(shotNum)*1e-3);
                 else
                     timestamp = circshift(timestamp,-1);
                     timestamp(end) = now;
                     integratedSpectrum = circshift(integratedSpectrum,-1);
                     integratedSpectrum(end) = trapz(newData); 
+                    app.integratedSpectrum = integratedSpectrum;
                     integratedSpectrumMCts = round(integratedSpectrum(end)*1e-3);
                 end
                 % Write the integrated spectrum to a matlab support pv              
@@ -207,8 +210,8 @@ classdef F2_UVVisSpec_exported < matlab.apps.AppBase
                 catch
                     warning('Invald Y axis limits');
                 end
-            else
-                app.UIAxes.YLim = [min(app.Data) max(app.Data)];
+             else
+                app.UIAxes2.YLim = [min(app.integratedSpectrum)/1e6-1 min(app.integratedSpectrum)/1e6+1];
             end
         end
 
@@ -282,6 +285,12 @@ classdef F2_UVVisSpec_exported < matlab.apps.AppBase
             value = app.EnergyMeterFlipperOFFINSwitch.Value;
             lcaPut(app.energymeterflipperpv,value); 
         end
+
+        % Value changed function: UpdateTimesEditField
+        function UpdateTimesEditFieldValueChanged(app, event)
+            value = app.UpdateTimesEditField.Value;
+            lcaPut(app.updateTime,value);
+        end
     end
 
     % Component initialization
@@ -308,7 +317,7 @@ classdef F2_UVVisSpec_exported < matlab.apps.AppBase
             app.UIAxes2 = uiaxes(app.UIFigure);
             title(app.UIAxes2, 'Integrated Spectral Counts')
             xlabel(app.UIAxes2, 'Time')
-            ylabel(app.UIAxes2, 'Cts')
+            ylabel(app.UIAxes2, 'Counts [x1000]')
             app.UIAxes2.Box = 'on';
             app.UIAxes2.Position = [243 1 613 211];
 
@@ -346,13 +355,13 @@ classdef F2_UVVisSpec_exported < matlab.apps.AppBase
             % Create IntegrationTimemsEditFieldLabel
             app.IntegrationTimemsEditFieldLabel = uilabel(app.UIFigure);
             app.IntegrationTimemsEditFieldLabel.HorizontalAlignment = 'right';
-            app.IntegrationTimemsEditFieldLabel.Position = [20 381 118 22];
+            app.IntegrationTimemsEditFieldLabel.Position = [28 383 118 22];
             app.IntegrationTimemsEditFieldLabel.Text = 'Integration Time [ms]';
 
             % Create IntegrationTimemsEditField
             app.IntegrationTimemsEditField = uieditfield(app.UIFigure, 'numeric');
             app.IntegrationTimemsEditField.ValueChangedFcn = createCallbackFcn(app, @IntegrationTimemsEditFieldValueChanged, true);
-            app.IntegrationTimemsEditField.Position = [145 381 56 22];
+            app.IntegrationTimemsEditField.Position = [153 383 48 22];
             app.IntegrationTimemsEditField.Value = 10;
 
             % Create ScaleYAxisCheckBox
@@ -364,36 +373,37 @@ classdef F2_UVVisSpec_exported < matlab.apps.AppBase
             % Create YminEditFieldLabel
             app.YminEditFieldLabel = uilabel(app.UIFigure);
             app.YminEditFieldLabel.HorizontalAlignment = 'right';
-            app.YminEditFieldLabel.Position = [16 269 33 22];
+            app.YminEditFieldLabel.Position = [21 231 33 22];
             app.YminEditFieldLabel.Text = 'Ymin';
 
             % Create YminEditField
             app.YminEditField = uieditfield(app.UIFigure, 'numeric');
             app.YminEditField.ValueChangedFcn = createCallbackFcn(app, @YminEditFieldValueChanged, true);
-            app.YminEditField.Position = [52 269 59 22];
+            app.YminEditField.Position = [57 231 59 22];
             app.YminEditField.Value = 1400;
 
             % Create YmaxEditFieldLabel
             app.YmaxEditFieldLabel = uilabel(app.UIFigure);
             app.YmaxEditFieldLabel.HorizontalAlignment = 'right';
-            app.YmaxEditFieldLabel.Position = [119 269 36 22];
+            app.YmaxEditFieldLabel.Position = [124 231 36 22];
             app.YmaxEditFieldLabel.Text = 'Ymax';
 
             % Create YmaxEditField
             app.YmaxEditField = uieditfield(app.UIFigure, 'numeric');
             app.YmaxEditField.ValueChangedFcn = createCallbackFcn(app, @YmaxEditFieldValueChanged, true);
-            app.YmaxEditField.Position = [158 269 68 22];
+            app.YmaxEditField.Position = [163 231 68 22];
             app.YmaxEditField.Value = 17000;
 
             % Create UpdateTimesEditFieldLabel
             app.UpdateTimesEditFieldLabel = uilabel(app.UIFigure);
             app.UpdateTimesEditFieldLabel.HorizontalAlignment = 'right';
-            app.UpdateTimesEditFieldLabel.Position = [20 351 90 22];
+            app.UpdateTimesEditFieldLabel.Position = [30 351 90 22];
             app.UpdateTimesEditFieldLabel.Text = 'Update Time [s]';
 
             % Create UpdateTimesEditField
             app.UpdateTimesEditField = uieditfield(app.UIFigure, 'numeric');
-            app.UpdateTimesEditField.Position = [141 351 57 22];
+            app.UpdateTimesEditField.ValueChangedFcn = createCallbackFcn(app, @UpdateTimesEditFieldValueChanged, true);
+            app.UpdateTimesEditField.Position = [151 351 49 22];
             app.UpdateTimesEditField.Value = 0.1;
 
             % Create PrinttoelogButton
@@ -451,6 +461,7 @@ classdef F2_UVVisSpec_exported < matlab.apps.AppBase
             % Create UseCalibrationCheckBox
             app.UseCalibrationCheckBox = uicheckbox(app.UIFigure);
             app.UseCalibrationCheckBox.ValueChangedFcn = createCallbackFcn(app, @UseCalibrationCheckBoxValueChanged, true);
+            app.UseCalibrationCheckBox.Enable = 'off';
             app.UseCalibrationCheckBox.Text = 'Use Calibration';
             app.UseCalibrationCheckBox.Position = [16 324 104 22];
 
