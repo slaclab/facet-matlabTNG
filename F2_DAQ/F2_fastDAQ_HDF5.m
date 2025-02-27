@@ -278,7 +278,7 @@ classdef F2_fastDAQ_HDF5 < handle
                     obj.dispMessage(sprintf('DAQ failed on step %d',obj.step));
                     
                     % we are done BUFFACQ eDef
-                    obj.event.release_eDef();
+%                     obj.event.release_eDef();
                     status = 1;
                 end
                 
@@ -358,16 +358,16 @@ classdef F2_fastDAQ_HDF5 < handle
             % If FileNumber_RBV is stuck at 0, then that means writing
             % command never got sent. Send a command to write file if this
             % is the case
-            fileNums = lcaGet(obj.daq_pvs.HDF5_FileNumber_RBV); % should be 1
+            fileNums = lcaGetSmart(obj.daq_pvs.HDF5_FileNumber_RBV); % should be 1
             if any(~fileNums)
                 lcaPutSmart(obj.daq_pvs.HDF5_WriteFile(~fileNums),1);
             end
 
-            writingStatus = lcaGet(obj.daq_pvs.HDF5_WriteFile_RBV);
+            writingStatus = lcaGetSmart(obj.daq_pvs.HDF5_WriteFile_RBV);
             while any(~strcmp(writingStatus,'Done'))
-                writingStatus = lcaGet(obj.daq_pvs.HDF5_WriteFile_RBV);
+                writingStatus = lcaGetSmart(obj.daq_pvs.HDF5_WriteFile_RBV);
                 % Check and break if there is a writing error
-                errorStatus = lcaGet(obj.daq_pvs.HDF5_WriteStatus);
+                errorStatus = lcaGetSmart(obj.daq_pvs.HDF5_WriteStatus);
                 if strcmp(errorStatus,'Write error')
                     break
                 end
@@ -542,7 +542,7 @@ classdef F2_fastDAQ_HDF5 < handle
             if obj.params.totalSteps == 0
                 nSteps = 1;
             else
-                nSteps =  obj.params.totalSteps;
+                nSteps = obj.params.totalSteps;
             end
          
             obj.daq_status(:,1) = zeros(obj.params.num_CAM,1);
@@ -853,7 +853,7 @@ classdef F2_fastDAQ_HDF5 < handle
         function prepCams(obj)
             
             lcaPutSmart(obj.daq_pvs.Acquire,1);
-            lcaPutSmart(obj.daq_pvs.DataType,1);
+            lcaPutSmart(obj.daq_pvs.DataType,'UInt16');
             lcaPutSmart(obj.daq_pvs.ROI_EnableCallbacks,1);
             lcaPutSmart(obj.daq_pvs.TSS_SETEC,obj.params.EC);
             
