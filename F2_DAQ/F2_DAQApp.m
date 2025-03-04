@@ -298,6 +298,13 @@ classdef F2_DAQApp < handle
                 return
             end
             
+            % Check if there are edefs available
+            num_edefs = lcaGetSmart('IOC:SYS1:EV01:EDEFAVAIL');
+            if num_edefs == 0
+                obj.addMessage('Cannot run DAQ with no EDEFs available.');
+                return
+            end
+            
             obj.DAQ_params.experiment = obj.guihan.ExperimentDropDown.Value;
             
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -327,6 +334,7 @@ classdef F2_DAQApp < handle
             obj.DAQ_params.laserBG    = obj.guihan.SaveLaserBGCheckBox.Value;
             obj.DAQ_params.nBG        = obj.guihan.BackgroundshotsEditField.Value;
             obj.DAQ_params.blockBeam  = obj.guihan.Blockbeam.Value;
+            obj.DAQ_params.allowDuplicateSteps = obj.guihan.Allowduplicatesteps.Value;
             obj.DAQ_params.saveMethod = obj.guihan.Switch.Value;
             
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
