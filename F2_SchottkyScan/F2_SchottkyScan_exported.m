@@ -60,6 +60,9 @@ classdef F2_SchottkyScan_exported < matlab.apps.AppBase
         SetdesiredphaseCheckBox       matlab.ui.control.CheckBox
         PhaseOffsetEditFieldLabel     matlab.ui.control.Label
         PhaseOffsetEditField          matlab.ui.control.NumericEditField
+        ImplementchangetoButtonGroup  matlab.ui.container.ButtonGroup
+        LasertimingButton             matlab.ui.control.RadioButton
+        GunRFphaseButton              matlab.ui.control.RadioButton
     end
 
     % Properties that correspond to apps with auto-reflow
@@ -393,7 +396,7 @@ classdef F2_SchottkyScan_exported < matlab.apps.AppBase
 
             % Create StepsEditField
             app.StepsEditField = uieditfield(app.ScanPanel, 'numeric');
-            app.StepsEditField.Limits = [2 100];
+            app.StepsEditField.Limits = [2 200];
             app.StepsEditField.ValueChangedFcn = createCallbackFcn(app, @StepsEditFieldValueChanged, true);
             app.StepsEditField.Position = [98 53 33 22];
             app.StepsEditField.Value = 42;
@@ -489,7 +492,6 @@ classdef F2_SchottkyScan_exported < matlab.apps.AppBase
             title(app.UIAxes, 'Schottky Scan')
             xlabel(app.UIAxes, 'KLYS LI10-2 Phase [deg] ')
             ylabel(app.UIAxes, 'Charge [pC]')
-            app.UIAxes.FontSize = 14;
             app.UIAxes.HandleVisibility = 'off';
             app.UIAxes.Position = [7 282 432 314];
 
@@ -514,7 +516,7 @@ classdef F2_SchottkyScan_exported < matlab.apps.AppBase
             % Create PlotVariableButtonGroup
             app.PlotVariableButtonGroup = uibuttongroup(app.AnalysisPanel);
             app.PlotVariableButtonGroup.Title = 'Plot Variable';
-            app.PlotVariableButtonGroup.Position = [13 68 123 75];
+            app.PlotVariableButtonGroup.Position = [185 63 123 75];
 
             % Create ChargeButton
             app.ChargeButton = uiradiobutton(app.PlotVariableButtonGroup);
@@ -546,6 +548,24 @@ classdef F2_SchottkyScan_exported < matlab.apps.AppBase
             app.PhaseOffsetEditField.Limits = [-180 180];
             app.PhaseOffsetEditField.Position = [97 7 34 22];
             app.PhaseOffsetEditField.Value = 30;
+
+            % Create ImplementchangetoButtonGroup
+            app.ImplementchangetoButtonGroup = uibuttongroup(app.AnalysisPanel);
+            app.ImplementchangetoButtonGroup.Title = 'Implement change to:';
+            app.ImplementchangetoButtonGroup.Position = [15 63 155 75];
+
+            % Create LasertimingButton
+            app.LasertimingButton = uiradiobutton(app.ImplementchangetoButtonGroup);
+            app.LasertimingButton.Tooltip = {'Changes Vitara target time'};
+            app.LasertimingButton.Text = 'Laser timing';
+            app.LasertimingButton.Position = [11 29 87 22];
+            app.LasertimingButton.Value = true;
+
+            % Create GunRFphaseButton
+            app.GunRFphaseButton = uiradiobutton(app.ImplementchangetoButtonGroup);
+            app.GunRFphaseButton.Tooltip = {'Change 10-2 phase offset correction (leaves gun phase at 0 deg after change)'};
+            app.GunRFphaseButton.Text = 'Gun RF phase';
+            app.GunRFphaseButton.Position = [11 7 100 22];
 
             % Show the figure after all components are created
             app.SchottkyAppUIFigure.Visible = 'on';

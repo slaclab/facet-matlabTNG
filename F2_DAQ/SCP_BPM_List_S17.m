@@ -1,0 +1,14 @@
+function S17_SCP_BPM_List = SCP_BPM_List_S17()
+
+S17_SCP_BPM_List = {...
+    
+'BPMS:LI17:201';
+'BPMS:LI17:301';
+'BPMS:LI17:401';
+'BPMS:LI17:501';
+'BPMS:LI17:601';
+'BPMS:LI17:701';
+'BPMS:LI17:801';
+'BPMS:LI17:901';
+
+};

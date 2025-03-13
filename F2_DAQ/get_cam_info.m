@@ -22,15 +22,31 @@ info_pvs = {':Model_RBV';
             ':ROI:ArraySizeY_RBV';
             ':ROI:ArraySize0_RBV';
             ':ROI:ArraySize1_RBV';
-            ':X_ORIENT';
-            ':Y_ORIENT';
-            ':IS_ROTATED';
-            ':RESOLUTION';
             ':AcquireTime_RBV';
             ':Gain_RBV'};
         
 cam_info = struct();
 cam_info.PV = camPV;
 for i = 1:numel(info_pvs)
-    cam_info.(strrep(info_pvs{i}(2:end),':','_')) = lcaGet([camPV info_pvs{i}]);
+    try
+        cam_info.(strrep(info_pvs{i}(2:end),':','_')) = lcaGetSmart([camPV info_pvs{i}]);
+    catch
+        disp('Could not get camera PV')
+    end
 end
+
+if ~contains(camPV,'SPEC')
+    info_pvs_no_spec = {':X_ORIENT';
+            ':Y_ORIENT';
+            ':IS_ROTATED';
+            ':RESOLUTION'};
+    for i = 1:numel(info_pvs_no_spec)
+        try
+            cam_info.(strrep(info_pvs_no_spec{i}(2:end),':','_')) = lcaGetSmart([camPV info_pvs_no_spec{i}]);
+        catch
+            disp('Could not get camera PV')
+        end
+    end
+end
+
+

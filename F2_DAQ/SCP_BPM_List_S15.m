@@ -1,0 +1,14 @@
+function S15_SCP_BPM_List = SCP_BPM_List_S15()
+
+S15_SCP_BPM_List = {...
+    
+'BPMS:LI15:201';
+'BPMS:LI15:301';
+'BPMS:LI15:401';
+'BPMS:LI15:501';
+'BPMS:LI15:601';
+'BPMS:LI15:701';
+'BPMS:LI15:801';
+'BPMS:LI15:901';
+
+};

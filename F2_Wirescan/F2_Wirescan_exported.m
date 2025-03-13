@@ -92,39 +92,39 @@ classdef F2_Wirescan_exported < matlab.apps.AppBase
         onePanelWidth = 576;
     end
 
-  
-  properties (Access = public)
-    aobj % F2_WirescanApp object
-    UpdateObj % Object to notify of updated data
-    UpdateMethod % Method to call when data is updated
-    plane string
-  end
-  
-  methods (Access = public)
     
-    function RemoteStartScan(app)
-      app.StartScanButtonPushed();
+    properties (Access = public)
+        aobj % F2_WirescanApp object
+        UpdateObj % Object to notify of updated data
+        UpdateMethod % Method to call when data is updated
+        plane string
     end
-  end
-  
+    
+    methods (Access = public)
+        
+        function RemoteStartScan(app)
+            app.StartScanButtonPushed();
+        end
+    end
+    
 
     % Callbacks that handle component events
     methods (Access = private)
 
         % Code that executes after component creation
         function startupFcn(app, LLM, iwire, dim)
-      if exist('LLM','var') && ~isempty(LLM)
-        if exist('iwire','var')
-          app.aobj = F2_WirescanApp(LLM,iwire,dim) ;
-        else
-          app.aobj = F2_WirescanApp(LLM) ;
-        end
-      elseif exist('iwire','var')
-        app.aobj = F2_WirescanApp([],iwire,dim) ;
-      else
-        app.aobj = F2_WirescanApp();
-      end
-      app.aobj.AttachGUI(app); % also updates app GUI fields
+            if exist('LLM','var') && ~isempty(LLM)
+                if exist('iwire','var')
+                    app.aobj = F2_WirescanApp(LLM,iwire,dim) ;
+                else
+                    app.aobj = F2_WirescanApp(LLM) ;
+                end
+            elseif exist('iwire','var')
+                app.aobj = F2_WirescanApp([],iwire,dim) ;
+            else
+                app.aobj = F2_WirescanApp();
+            end
+            app.aobj.AttachGUI(app); % also updates app GUI fields
         end
 
         % Changes arrangement of the app based on UIFigure width
@@ -147,29 +147,29 @@ classdef F2_Wirescan_exported < matlab.apps.AppBase
 
         % Menu selected function: EDMPanelMenu
         function EDMPanelMenuSelected(app, event)
-      switch string(app.WIREDropDown.Value)
-        case "IN10:561"
-          !edm -x -m "DEV=WIRE:IN10:561,MAD=WS10561,AREA=in10,RATEPV=EVNT:SYS1:1:INJECTRATE" /usr/local/facet/tools/edm/display/ws/wirescannerstart.edl &
-        case "LI11:444"
-          !edm -x -m "DEV=WIRE:LI11:444,MAD=WS11444,AREA=li11,RATEPV=EVNT:SYS1:1:INJECTRATE" /usr/local/facet/tools/edm/display/ws/wirescannerstart.edl &
-        case "LI11:614"
-          !edm -x -m "DEV=WIRE:LI11:614,MAD=WS11614,AREA=li11,RATEPV=EVNT:SYS1:1:INJECTRATE" /usr/local/facet/tools/edm/display/ws/wirescannerstart.edl &
-        case "LI11:744"
-          !edm -x -m "DEV=WIRE:LI11:744,MAD=WS11744,AREA=li11,RATEPV=EVNT:SYS1:1:INJECTRATE" /usr/local/facet/tools/edm/display/ws/wirescannerstart.edl &
-        case "LI12:214"
-          !edm -x -m "DEV=WIRE:LI12:214,MAD=WS12214,AREA=li12,RATEPV=EVNT:SYS1:1:INJECTRATE" /usr/local/facet/tools/edm/display/ws/wirescannerstart.edl &
-        case "LI18:944"
-          !edm -x -m "DEV=WIRE:LI18:944,MAD=WS18944,AREA=li18,RATEPV=EVNT:SYS1:1:INJECTRATE" /usr/local/facet/tools/edm/display/ws/wirescannerstart.edl &
-        case "LI19:144"
-          !edm -x -m "DEV=WIRE:LI19:144,MAD=WS19144,AREA=li19,RATEPV=EVNT:SYS1:1:INJECTRATE" /usr/local/facet/tools/edm/display/ws/wirescannerstart.edl &
-        case "LI19:244"
-          !edm -x -m "DEV=WIRE:LI19:244,MAD=WS19244,AREA=li19,RATEPV=EVNT:SYS1:1:INJECTRATE" /usr/local/facet/tools/edm/display/ws/wirescannerstart.edl &
-        case "LI19:344"
-          !edm -x -m "DEV=WIRE:LI19:344,MAD=WS19344,AREA=li19,RATEPV=EVNT:SYS1:1:INJECTRATE" /usr/local/facet/tools/edm/display/ws/wirescannerstart.edl &
-        case "LI20:3179"
-          !edm -x -m "DEV=WIRE:LI20:3179,MAD=IPWS1,AREA=li20,RATEPV=EVNT:SYS1:1:INJECTRATE" /usr/local/facet/tools/edm/display/ws/wirescannerstart.edl &
-        case "LI20:3206"
-          !edm -x -m "DEV=WIRE:LI20:3206,MAD=IPWS3,AREA=li20,RATEPV=EVNT:SYS1:1:INJECTRATE" /usr/local/facet/tools/edm/display/ws/wirescannerstart.edl &
+            switch string(app.WIREDropDown.Value)
+                case "IN10:561"
+                    !edm -x -m "DEV=WIRE:IN10:561,MAD=WS10561,AREA=in10,RATEPV=EVNT:SYS1:1:INJECTRATE" /usr/local/facet/tools/edm/display/ws/wirescannerstart.edl &
+                case "LI11:444"
+                    !edm -x -m "DEV=WIRE:LI11:444,MAD=WS11444,AREA=li11,RATEPV=EVNT:SYS1:1:INJECTRATE" /usr/local/facet/tools/edm/display/ws/wirescannerstart.edl &
+                case "LI11:614"
+                    !edm -x -m "DEV=WIRE:LI11:614,MAD=WS11614,AREA=li11,RATEPV=EVNT:SYS1:1:INJECTRATE" /usr/local/facet/tools/edm/display/ws/wirescannerstart.edl &
+                case "LI11:744"
+                    !edm -x -m "DEV=WIRE:LI11:744,MAD=WS11744,AREA=li11,RATEPV=EVNT:SYS1:1:INJECTRATE" /usr/local/facet/tools/edm/display/ws/wirescannerstart.edl &
+                case "LI12:214"
+                    !edm -x -m "DEV=WIRE:LI12:214,MAD=WS12214,AREA=li12,RATEPV=EVNT:SYS1:1:INJECTRATE" /usr/local/facet/tools/edm/display/ws/wirescannerstart.edl &
+                case "LI18:944"
+                    !edm -x -m "DEV=WIRE:LI18:944,MAD=WS18944,AREA=li18,RATEPV=EVNT:SYS1:1:INJECTRATE" /usr/local/facet/tools/edm/display/ws/wirescannerstart.edl &
+                case "LI19:144"
+                    !edm -x -m "DEV=WIRE:LI19:144,MAD=WS19144,AREA=li19,RATEPV=EVNT:SYS1:1:INJECTRATE" /usr/local/facet/tools/edm/display/ws/wirescannerstart.edl &
+                case "LI19:244"
+                    !edm -x -m "DEV=WIRE:LI19:244,MAD=WS19244,AREA=li19,RATEPV=EVNT:SYS1:1:INJECTRATE" /usr/local/facet/tools/edm/display/ws/wirescannerstart.edl &
+                case "LI19:344"
+                    !edm -x -m "DEV=WIRE:LI19:344,MAD=WS19344,AREA=li19,RATEPV=EVNT:SYS1:1:INJECTRATE" /usr/local/facet/tools/edm/display/ws/wirescannerstart.edl &
+                case "LI20:3179"
+                    !edm -x -m "DEV=WIRE:LI20:3179,MAD=IPWS1,AREA=li20,RATEPV=EVNT:SYS1:1:INJECTRATE" /usr/local/facet/tools/edm/display/ws/wirescannerstart.edl &
+                case "LI20:3206"
+                    !edm -x -m "DEV=WIRE:LI20:3206,MAD=IPWS3,AREA=li20,RATEPV=EVNT:SYS1:1:INJECTRATE" /usr/local/facet/tools/edm/display/ws/wirescannerstart.edl &
       end
         end
 
@@ -229,20 +229,20 @@ classdef F2_Wirescan_exported < matlab.apps.AppBase
 
         % Button pushed function: StartScanButton
         function StartScanButtonPushed(app, event)
-      app.ScanSuccessLamp.Color='r'; 
-      app.aobj.ResetData;
-      cla(app.UIAxes); reset(app.UIAxes); axis(app.UIAxes,'off');
-      rectangle(app.UIAxes,'Position',[0,0.4,0/100,0.2],'facecolor','g');axis(app.UIAxes,[0 1 0 1]);
-      title(app.UIAxes,'Scan Progress...');
-      text(app.UIAxes,max([0 0/100-0.1]),0.5,sprintf('%.1f %%',0));
-      drawnow
-      try
-        app.aobj.StartScan ;
-      catch ME
-        errordlg("Scan failed - see xterm window","Scan Failed");
-        eDefRelease(app.aobj.edef);
-        throw(ME);
-      end
+            app.ScanSuccessLamp.Color='r';
+            app.aobj.ResetData;
+            cla(app.UIAxes); reset(app.UIAxes); axis(app.UIAxes,'off');
+            rectangle(app.UIAxes,'Position',[0,0.4,0/100,0.2],'facecolor','g');axis(app.UIAxes,[0 1 0 1]);
+            title(app.UIAxes,'Scan Progress...');
+            text(app.UIAxes,max([0 0/100-0.1]),0.5,sprintf('%.1f %%',0));
+            drawnow
+            try
+                app.aobj.StartScan ;
+            catch ME
+                errordlg("Scan failed - see xterm window","Scan Failed");
+                eDefRelease(app.aobj.edef);
+                throw(ME);
+            end
         end
 
         % Button pushed function: AbortScanButton
@@ -755,6 +755,7 @@ classdef F2_Wirescan_exported < matlab.apps.AppBase
             title(app.UIAxes, '')
             xlabel(app.UIAxes, 'X')
             ylabel(app.UIAxes, 'Y')
+            app.UIAxes.FontSize = 14;
             app.UIAxes.Layout.Row = 1;
             app.UIAxes.Layout.Column = [1 7];
 

@@ -4,7 +4,7 @@ num_cam = obj.params.num_CAM;
 
 filePrefix = obj.params.camNames;
 file_format = '%s%s.h5';
-data_string = '_data';
+data_string = ['_data_step' sprintf('%02d',obj.step)];
 
 % Set filepath format
 ff = zeros(1,256);
@@ -43,5 +43,4 @@ for i=1:num_cam
     n_el = length(fileASCII);
     fn(1:n_el) = fileASCII;
     lcaPut(obj.daq_pvs.HDF5_FileName(i), fn);
-    
 end

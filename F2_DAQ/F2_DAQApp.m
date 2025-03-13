@@ -64,7 +64,7 @@ classdef F2_DAQApp < handle
             
             % Initialize camera list, CamCheck has info on cameras and IOCs
             obj.camCheck = F2_CamCheck(true,obj);
-            obj.DAQ_params.camCheck = obj.camCheck;
+%             obj.DAQ_params.camCheck = obj.camCheck;
             obj.initCameras();
             
             % Load BSA Lists
@@ -298,6 +298,13 @@ classdef F2_DAQApp < handle
                 return
             end
             
+            % Check if there are edefs available
+            num_edefs = lcaGetSmart('IOC:SYS1:EV01:EDEFAVAIL');
+            if num_edefs == 0
+                obj.addMessage('Cannot run DAQ with no EDEFs available.');
+                return
+            end
+            
             obj.DAQ_params.experiment = obj.guihan.ExperimentDropDown.Value;
             
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -327,6 +334,7 @@ classdef F2_DAQApp < handle
             obj.DAQ_params.laserBG    = obj.guihan.SaveLaserBGCheckBox.Value;
             obj.DAQ_params.nBG        = obj.guihan.BackgroundshotsEditField.Value;
             obj.DAQ_params.blockBeam  = obj.guihan.Blockbeam.Value;
+            obj.DAQ_params.allowDuplicateSteps = obj.guihan.Allowduplicatesteps.Value;
             obj.DAQ_params.saveMethod = obj.guihan.Switch.Value;
             
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -349,12 +357,39 @@ classdef F2_DAQApp < handle
             % Enable "Fix Cameras" button in GUI
             obj.guihan.FixCamerasButton.Enable = 'on';
             
-            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-            %%% BSA and non-BSA PV lists %%%
-            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            %%% BSA, SCP, and non-BSA PV lists %%%
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             
             % Scalar data lists
-            obj.DAQ_params.BSA_list = obj.guihan.ListBoxBSA.Items;
+            isBSA = contains(obj.guihan.ListBoxBSA.Items,"BSA");
+            obj.DAQ_params.BSA_list = obj.guihan.ListBoxBSA.Items(isBSA);
+                        
+            isSCP = contains(obj.guihan.ListBoxBSA.Items,"SCP");
+            obj.DAQ_params.SCP_list = obj.guihan.ListBoxBSA.Items(isSCP);
+            if ~isempty(obj.DAQ_params.SCP_list)
+                obj.DAQ_params.saveSCP = true;
+            else
+                obj.DAQ_params.saveSCP = false;
+            end
+            
+            if obj.DAQ_params.saveSCP
+                if obj.DAQ_params.n_shot >= 600
+                    selection = uiconfirm(obj.guihan.FACETIIDAQUIFigure,...
+                        "Requesting too many shots. Aborting. Try again with less shots.",...
+                        "Error requesting SCP data",'Options',{'OK'},'Icon','error');
+                    return
+                    % abort
+                else
+                    selection = uiconfirm(obj.guihan.FACETIIDAQUIFigure,...
+                        "Acquiring SCP data will steal rate from other applications.",...
+                        "Warning",'Options',{'Continue','Abort'},'Icon','warning');
+                    if strcmp(selection,'Abort')
+                        % abort
+                        return
+                    end
+                end
+            end
             
             isarray = contains(obj.guihan.ListBoxNonBSA.Items,"array");
             obj.DAQ_params.nonBSA_list = obj.guihan.ListBoxNonBSA.Items(~isarray);
@@ -489,12 +524,6 @@ classdef F2_DAQApp < handle
                 obj.DAQ_obj = F2_fastDAQ_HDF5(obj.DAQ_params,obj);
             end
             
-%             if obj.guihan.FastDAQCheckBox.Value
-%                 obj.DAQ_obj = F2_fastDAQ(obj.DAQ_params,obj);
-%             else
-%                 obj.DAQ_obj = F2_runDAQ(obj.DAQ_params,obj);
-%             end
-            
             
         end
         
@@ -532,9 +561,16 @@ classdef F2_DAQApp < handle
                 split = strsplit(file_lists(i).name,'.');
                 name_lists{end+1} = split{1};
             end
-            obj.guihan.BSADataListBox.Items = name_lists;
             
-            obj.addMessage(sprintf('Loaded %d BSA Lists.',numel(name_lists)));
+            % Add SCP BPM lists
+            SCP_Lists = [{'SCP_BPM_List_S11'},{'SCP_BPM_List_S12'},...
+                {'SCP_BPM_List_S13'},{'SCP_BPM_List_S14'},...
+                {'SCP_BPM_List_S15'},{'SCP_BPM_List_S16'},...
+                {'SCP_BPM_List_S17'},{'SCP_BPM_List_S18'},...
+                {'SCP_BPM_List_S19'},{'SCP_BPM_List_S20'}];
+            name_lists = [name_lists, SCP_Lists];
+            obj.guihan.BSADataListBox.Items = name_lists;
+            obj.addMessage(sprintf('Loaded %d BSA and SCP Lists.',numel(name_lists)));
         end
         
         function loadnonBSALists(obj)

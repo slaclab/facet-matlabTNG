@@ -47,7 +47,7 @@ classdef F2_SchottkyScanApp < handle
                 %PV(context,'name',"SFB_SWITCH",'pvname',"KLYS:LI10:21:SFB_PDIS",'monitor',true,'mode',"rw",'pvdatatype',"int"); % Slow feedback on/off
                 PV(context,'name',"SFB_PDES",'pvname',"KLYS:LI10:21:SFB_PDES",'monitor',true,'mode',"rw"); % Slow feedback setpoint
                 PV(context,'name',"SFB_POC",'pvname','ACCL:LI10:21:REFPOC','monitor',true,'mode',"rw"); % Phase offset correction for gun waveguide phase
-                
+                PV(context,'name',"LaserTargetTime",'pvname',"OSC:LT10:20:FS_TGT_TIME",'monitor',true,'mode',"rw"); % Laser target time 
                 PV(context,'name',"LaserEnergy",'pvname',"LASR:LT10:930:PWR",'monitor',true); % IN10 laser power meter
                 PV(context,'name',"BPM_221_TMIT",'pvname',"BPMS:IN10:221:TMIT",'monitor',true,'mode',"rw"); % BPM IN10 221 charge meas
                 PV(context,'name',"FCQ",'pvname',"SIOC:SYS1:ML00:AO850",'monitor',true,'mode',"rw"); % output faraday cup charge meas
@@ -78,6 +78,7 @@ classdef F2_SchottkyScanApp < handle
                            'FC1',       'FCQ'        };           
             obj.devconv = [1.602e-19*1e12, 1e3]; % convert # e- to pC for BPM, convert nC to pC for FC
             
+            
             % Associate class with GUI
             obj.guihan=apph;
             
@@ -87,7 +88,6 @@ classdef F2_SchottkyScanApp < handle
             obj.pvs.GUN_21_PHAS.guihan = apph.GUNPHASEditField;
             obj.pvs.SFB_PDES.guihan = apph.GUNPDESEditField;
             obj.pvs.ZeroOffset.guihan = apph.PhaseOffsetEditField;
-            
             
             % Set GUI callbacks for Lamps and toggles
             obj.pvs.fcupStats.guihan = [apph.InStateLamp apph.FC1Switch] ;
@@ -241,31 +241,32 @@ classdef F2_SchottkyScanApp < handle
                                         %if strcmp(obj.machine_state.init_fb_state,'Enabled')
                                         if obj.machine_state.init_fb_state
                                             obj.addMessage('Re-enabling slow feedback.');
-                                            caput(obj.pvs.SFB_ENABLE,1);
+                                            caput(obj.pvs.SFB_ENABLE,1); % Should this be the initial state, not 1?
                                         end
                                         
                                         %if strcmp(obj.machine_state.init_charge_fb_state,'RUNNING')
                                         if obj.machine_state.init_charge_fb_state
                                             obj.addMessage('Re-enabling charge feedback.');
-                                            caput(obj.pvs.chargeFB,1);
+                                            caput(obj.pvs.chargeFB,1); % Should this be the initial state, not 1?
                                         end
                                     else
                                         obj.restoreInitPhas();
                                         %if strcmp(obj.machine_state.init_fb_state,'Enabled')
                                         if obj.machine_state.init_fb_state
                                             obj.addMessage('Re-enabling slow feedback.');
-                                            caput(obj.pvs.SFB_ENABLE,1);
+                                            caput(obj.pvs.SFB_ENABLE,1); % Should this be the initial state, not 1?
                                         end
                                         
                                         %if strcmp(obj.machine_state.init_charge_fb_state,'RUNNING')
                                         if obj.machine_state.init_charge_fb_state
                                             obj.addMessage('Re-enabling charge feedback.');
-                                            caput(obj.pvs.chargeFB,1);
+                                            caput(obj.pvs.chargeFB,1); % Should this be the initial state, not 1?
                                         end
                                     end
                                 end
                                 return;
                             end
+                            
                             
                             obj.mode = "PHASE_SETTING";
                             obj.guihan.SettingPhaseLamp.Enable = true;
@@ -316,6 +317,7 @@ classdef F2_SchottkyScanApp < handle
         function restoreInitPhas(obj)
             obj.setPhas(obj.machine_state.init_klys_pdes);
             caput(obj.pvs.SFB_POC, obj.machine_state.init_sfb_poc);
+            caput(obj.pvs.LaserTargetTime, obj.machine_state.init_laser_target_time);
             obj.addMessage(sprintf('Restoring initial PDES to %0.2f and POC to %0.2f',obj.machine_state.init_klys_pdes,obj.machine_state.init_sfb_poc));
         end
         
@@ -325,11 +327,27 @@ classdef F2_SchottkyScanApp < handle
             %obj.setPhas(obj.machine_state.init_phas);
             %obj.setPhas(obj.data.opPhase + obj.machine_state.init_delta_PDES);
             % caput(obj.pvs.SFB_PDES,obj.data.opPhase);
-            % caput to POC instead of PDES
-            % new POC is old POC + change to zeroC + change to opPhase
-            new_sfb_poc = obj.machine_state.init_sfb_poc + obj.data.zeroC + (obj.data.opPhase - obj.machine_state.init_sfb_pdes);
-            caput(obj.pvs.SFB_POC, new_sfb_poc);
-            obj.addMessage(sprintf('Golding gun to Schottky Phase: %0.2f. Phase change of %0.2f',obj.machine_state.init_sfb_pdes, obj.data.zeroC));
+            
+            % check the desired phase setting element
+            if obj.guihan.LasertimingButton.Value == true
+                % caput to laser timing 
+                % laser timing change is 1/2856MHz/350deg ps per degree
+                % or 1.0742 ps/degS = 1.0742/1000 ns/degS
+                % Indicate change in ns because that's what the PV is
+                laser_timing_delta = obj.data.zeroC*1.0742/1000; 
+                new_laser_timing = obj.machine_state.init_laser_target_time + laser_timing_delta;
+                caput(obj.pvs.LaserTargetTime, new_laser_timing);
+                obj.addMessage(sprintf('Moving laser target time by %0.2f ps.', laser_timing_delta));
+            else 
+                % caput to POC instead of PDES
+                % new POC is old POC + change to zeroC + change to opPhase
+                new_sfb_poc = obj.machine_state.init_sfb_poc + obj.data.zeroC + (obj.data.opPhase - obj.machine_state.init_sfb_pdes);
+                caput(obj.pvs.SFB_POC, new_sfb_poc);
+                obj.addMessage(sprintf('Golding gun to Schottky Phase: %0.2f. Phase change of %0.2f',obj.machine_state.init_sfb_pdes, obj.data.zeroC));
+                
+            end
+            
+            
         end
         
         function getFcupState(obj)
@@ -406,6 +424,7 @@ classdef F2_SchottkyScanApp < handle
             obj.machine_state.init_klys_gun_delta = obj.machine_state.init_klys_phas - obj.machine_state.init_gun_phas;
             obj.machine_state.init_delta_PDES = obj.machine_state.init_gun_phas - obj.machine_state.init_klys_pdes;
             obj.machine_state.init_sfb_poc = caget(obj.pvs.SFB_POC);
+            obj.machine_state.init_laser_target_time = caget(obj.pvs.LaserTargetTime);
             obj.calcScanPhases();
         end
         
@@ -521,7 +540,14 @@ classdef F2_SchottkyScanApp < handle
         function setZeroCrossing(obj)
             
             %confFig = uifigure;
-            msg = sprintf('Gold gun phase to Schottky phase of %0.2f ?',obj.data.opPhase);
+            if obj.guihan.LasertimingButton.Value == true
+                % Implement change to the laser timing offset
+                msg = sprintf('Change laser target time by %0.2f ps?',obj.data.zeroC*1.0742);
+            else
+                % Implement change to the gun RF phase
+                msg = sprintf('Gold gun phase to Schottky phase of %0.2f ?',obj.data.opPhase);
+                
+            end
             title = 'Update Phase';
             %selection = uiconfirm(confFig,msg,title,'Options',{'Yes','No'},'DefaultOption',2);
             selection = questdlg(msg,title,'No');
@@ -552,6 +578,7 @@ classdef F2_SchottkyScanApp < handle
             
             %plot(obj.guihan.UIAxes,obj.scan_param.step_vals(1:obj.scan_param.step-1),plot_data,'bo','linewidth',2);
             plot(obj.guihan.UIAxes,x_data,plot_data,'bo','linewidth',2);
+            legend(obj.guihan.UIAxes,'hide'); % suppress legend during data collection to ignore spurious plotting
             
             xlabel(obj.guihan.UIAxes,'Gun Phase [deg]','fontsize',14);
             ylabel(obj.guihan.UIAxes,ylabel_str,'fontsize',14);
@@ -595,7 +622,7 @@ classdef F2_SchottkyScanApp < handle
                     xlabel(obj.guihan.UIAxes,'Gun Phase [deg]','fontsize',14);
                     ylabel(obj.guihan.UIAxes,ylabel_str,'fontsize',14);
                     title_str = ['Schottky Scan on ' strrep(obj.data.devName,'_',' ')];
-                    legend(obj.guihan.UIAxes,'Scan Data','New zero crossing','Old zero crossong','Schottky Phase','Location','southeast');
+                    legend(obj.guihan.UIAxes,'Scan Data','New zero crossing','Old zero crossing','Schottky Phase','Location','southeast');
                     if obj.dummy_mode; title_str = [title_str ' (Dummy Mode)']; end
                     title(obj.guihan.UIAxes,title_str,'fontsize',16);
                 else
@@ -613,7 +640,7 @@ classdef F2_SchottkyScanApp < handle
                     xlabel('Gun Phase [deg]','fontsize',14);
                     ylabel(ylabel_str','fontsize',14);
                     title_str = ['Schottky Scan on ' strrep(obj.data.devName,'_',' ')];
-                    legend('Scan Data','New zero crossing','Old zero crossong','Schottky Phase','Location','southeast');
+                    legend('Scan Data','New zero crossing','Old zero crossing','Schottky Phase','Location','southeast');
                     if obj.dummy_mode; title_str = [title_str ' (Dummy Mode)']; end
                     title(title_str,'fontsize',16);
                 end
@@ -635,7 +662,7 @@ classdef F2_SchottkyScanApp < handle
                     xlabel(obj.guihan.UIAxes,'Gun Phase [deg]','fontsize',14);
                     ylabel(obj.guihan.UIAxes,'Charge [pC]','fontsize',14);
                     title_str = ['Schottky Scan on ' strrep(obj.data.devName,'_',' ')];
-                    legend(obj.guihan.UIAxes,'Scan Data','New zero crossing','Old zero crossong','Schottky Phase','Location','southeast');
+                    legend(obj.guihan.UIAxes,'Scan Data','New zero crossing','Old zero crossing','Schottky Phase','Location','southeast');
                     if obj.dummy_mode; title_str = [title_str ' (Dummy Mode)']; end
                     title(obj.guihan.UIAxes,title_str,'fontsize',16);                    
                 else
@@ -653,7 +680,7 @@ classdef F2_SchottkyScanApp < handle
                     xlabel('Gun Phase [deg]','fontsize',14);
                     ylabel('Charge [pC]','fontsize',14);
                     title_str = ['Schottky Scan on ' strrep(obj.data.devName,'_',' ')];
-                    legend('Scan Data','New zero crossing','Old zero crossong','Schottky Phase','Location','southeast');
+                    legend('Scan Data','New zero crossing','Old zero crossing','Schottky Phase','Location','southeast');
                     if obj.dummy_mode; title_str = [title_str ' (Dummy Mode)']; end
                     title(title_str,'fontsize',16);
                 end
@@ -688,7 +715,12 @@ classdef F2_SchottkyScanApp < handle
             obj.finalPlot(1);
             opts.title = 'Schottky Scan';
             opts.author = 'Matlab';
-            opts.text = ['Gun POC changed by ',num2str(obj.data.zeroC), ' deg.'];
+            
+            if obj.guihan.LasertimingButton.Value == true
+                opts.text = ['Laser target time changed by ',num2str(obj.data.zeroC*1.0742),' ps.'];
+            else
+                opts.text = ['Gun POC changed by ',num2str(obj.data.zeroC), ' deg.'];
+            end
             util_printLog(1,opts);
             
             obj.saveData();

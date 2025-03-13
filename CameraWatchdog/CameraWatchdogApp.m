@@ -39,6 +39,7 @@ classdef CameraWatchdogApp < handle
             diary(diaryLogFn);
             
             % Create Camera objects: camObj = Camera(cameraPV,SIOC_Status)
+            badCamsIdx = [];
             for i = 1:size(watchdogInstance.NameList,1)
                 if ~isempty(watchdogInstance.NameList{i,7}) % skip cameras without POE (should be none)
                     % Sort cameras with bad SIOCs : false = bad SIOC, true
@@ -51,9 +52,12 @@ classdef CameraWatchdogApp < handle
                     camObj = watchdogInstance.CameraObjs(end);
                     camObj.CamLocation = string(watchdogInstance.NameList{i,4});
                 else
-                    disp(['Could not create Camera object for ' watchdogInstance.NameList{i,2} '. Missing POE.'])
+                    disp(['Could not create Camera object for ' ...
+                        watchdogInstance.NameList{i,2} ' because it is missing a POE. Removing from camera list'])
+                    badCamsIdx = [badCamsIdx; i];
                 end
             end
+            watchdogInstance.NameList(badCamsIdx,:) = [];
             
             % Unflag cameras that don't have alarm status for Acquisition PV
             for i = 1:numel(watchdogInstance.CameraObjs)
@@ -118,6 +122,7 @@ classdef CameraWatchdogApp < handle
       
             % Loop through SIOCs and POE hubs. If alarm is on, turn off
             % its respective camera(s) (stop looping/setting status)
+            
             
             for i = 1:numel(watchdogInstance.SIOCs)
                 server = string(watchdogInstance.SIOCList{i,1});

@@ -194,8 +194,8 @@ classdef DataSetDAN < handle
                     diag, shotNbr);
                 
                 s.hlpPlotImage(curHandle, fcn(diagData), type, ...
-                titleS, xlabS, ylabS);
-            
+                    titleS, xlabS, ylabS);
+                
                 % Save the diagnostic that was plotted so you can tell when
                 % the requested diagnostic has changed
                 s.visImageDiag = diag;
@@ -243,6 +243,10 @@ classdef DataSetDAN < handle
                 scalarArrayData(:,i) = x;
             end
             
+            if any(any(isnan(scalarArrayData)))
+                s.GUIHandle.addMsg('Warning: Scalar data contains NaNs!')
+            end
+            
             panelHan = s.GUIHandle.PlotsPanel;
             set(panelHan,'AutoResizeChildren','off');
             delete(panelHan.Children); % clear plots
@@ -251,7 +255,15 @@ classdef DataSetDAN < handle
                 % Make corrplot and copy to GUI panel
                 fig = figure('Visible','off');
                 ax = axes(fig);
-                [R,~,h] = corrplot(ax,scalarArrayData);
+                try
+                    [R,~,h] = corrplot(ax,scalarArrayData);
+                catch ME
+                    s.GUIHandle.addMsg('Failed to make correlation plot');
+                    if strcmp(ME.identifier,'MATLAB:hg:shaped_arrays:LimitsWithInfsPredicate')
+                        s.GUIHandle.addMsg('Make sure correlations can be calculated for the selected variables');
+                    end
+                    return
+                end
 
                 % Copy all histogram/scatter plot handles
                 axesHans = {};
@@ -297,6 +309,62 @@ classdef DataSetDAN < handle
                 s.hlpDispMsg(R_str(i,:));
             end
         end
+        
+        function [gof, ci] = fitData(s,fitMethod)
+            % There is another "fit" function so we have to add the path
+            % for the one we want to use (the matlab function)
+            addpath('/usr/local/lcls/package/matlab/2020a/toolbox/curvefit/curvefit');
+            
+            % Get data
+            scalars = s.GUIHandle.IncludeListBox_CorrM.Items; % cell array
+            
+            facetScalar1 = scalars{1};
+            [x, ~] = s.hlpGetScalarArray(facetScalar1,1);
+            facetScalar2 = scalars{2};
+            [y, ~] = s.hlpGetScalarArray(facetScalar2,1);
+            
+            panelHan = s.GUIHandle.PlotsPanel;
+            set(panelHan,'AutoResizeChildren','off');
+            delete(panelHan.Children); % clear plots
+            
+            % Create UI Axes in panel and set size
+            axesHan = uiaxes(panelHan);
+            panelSize = get(panelHan,'Position');
+            set(axesHan,'Position',[10 10 panelSize(3)-20 panelSize(4)-30]);
+            
+            % Filter out NaN values for fit
+            y = y(~isnan(x));
+            x = x(~isnan(x));
+            x = x(~isnan(y));
+            y = y(~isnan(y));
+            
+            % Get only unique X values
+            % I think the "right" thing to do in this case would be to find
+            % repeated values and average them, but for now just using
+            % "unique" to retain only the first repeated data point
+            [x_unique,idx] = unique(x);
+            y_unique = y(idx);
+
+            [f,gof] = fit(x_unique,y_unique,fitMethod);
+            % Get confidence intervals
+            ci = confint(f);
+            
+            fig = figure('Visible','off');
+            ax = axes(fig);
+            h = plot(f,x_unique,y_unique,'x');
+            
+            hApp = copyobj(h,axesHan);
+%             title(axesHan,"")
+            
+            % Fix underscores in scalar names and set x and y labels
+            facetScalar1 = replace(facetScalar1,"_"," ");
+            facetScalar2 = replace(facetScalar2,"_"," ");
+            xlabel(axesHan,facetScalar1)
+            ylabel(axesHan,facetScalar2)
+            drawnow;
+
+            delete(fig);
+        end
 
         function waterfallPlot(s, diag, fcn, sortFSArray, plotBool)
 
@@ -314,7 +382,7 @@ classdef DataSetDAN < handle
 
             [r,c] = size(wFData);
             if ~xor(r == 1, c == 1)
-                error('The provided function does not map the data correctly. Mapped data has %d rows and %d columns.',r,d)
+                error('The provided function does not map the data correctly. Mapped data has %d rows and %d columns.',r,c)
             end
 
             %Pre-allocate
@@ -385,6 +453,7 @@ classdef DataSetDAN < handle
 
             s.hlpPlotImage(curHandle, waterfall(:,sortedIdx), type, ...
             titleS, xlabS, ylabS);
+            s.hlpSetPlotLabels(curHandle, titleS, xlabS, ylabS);
             if plotBool
                 s.hlpPlotOverlay(sortFSArray,sortedIdx,sortLab);
                 drawnow;
@@ -493,7 +562,7 @@ classdef DataSetDAN < handle
             % Saves plot data
             computer = char(java.net.InetAddress.getLocalHost.getHostName);
             
-            if strcmp(computer,'facet-srv20')
+            if strcmp(computer,'facet-srv20-2')
                 %Current time
                 [~,tsi]=lcaGet('PATT:SYS1:1:PULSEID');
                 ts = lca2matlabTime(tsi);
@@ -502,7 +571,8 @@ classdef DataSetDAN < handle
                     s.lastPlotData, 'DANplot', fileName, ts);
                 fprintf('Plot data saved at: %s/%s.\n', pathName, fileName);
             else
-                save(fileName, s.lastPlotData);
+                plotData = s.lastPlotData;
+                save(fileName, 'plotData');
                 fprintf('Plot data saved at: %s.mat.\n', fileName);
             end
         end
@@ -531,7 +601,7 @@ classdef DataSetDAN < handle
         
         function bool = validShotNbr(s, shotNbr)
             % Checks if shot number exist
-            if shotNbr > 0 && shotNbr < s.maxShotNbr
+            if shotNbr > 0 && shotNbr <= s.maxShotNbr
                 bool = 1;
             else
                 s.hlpDispMsg('shotNbr not within valid range')
@@ -875,8 +945,18 @@ classdef DataSetDAN < handle
             % Does the same thing as "hlpGetImage" but it returns the image
             % data for all the shots
             % This makes correlation and waterfall plots a lot faster
-            h5fn = sprintf('%s%s',s.hdr,s.dataSet.images.(diag).loc{1});
-            img = h5read(h5fn,'/entry/data/data');
+
+            img = double.empty;
+            if numel(s.dataSet.images.(diag).loc) == 1
+                h5fn = sprintf('%s%s',s.hdr,s.dataSet.images.(diag).loc{1});
+                img = h5read(h5fn,'/entry/data/data');
+            else
+                for i = 1:numel(s.dataSet.images.(diag).loc)
+                    h5fn = sprintf('%s%s',s.hdr,s.dataSet.images.(diag).loc{i});
+                    imgData = h5read(h5fn,'/entry/data/data');
+                    img = cat(3,img,imgData);
+                end
+            end
             s.HDF5_imData = img;
         end
         
@@ -970,7 +1050,7 @@ classdef DataSetDAN < handle
             
             plot(plotHandle, data, 'x');
             s.hlpSetPlotLabels(plotHandle, titleS, xlabS, ylabS);
-            
+            s.hlpAddStepTicks(plotHandle);
         end
         
         function hlpPlotTwoScalarArray(s, plotHandle, xData, yData, ...
@@ -1015,6 +1095,21 @@ classdef DataSetDAN < handle
             xlabel(plotHandle, xlabS, 'Interpreter', 'none');
             ylabel(plotHandle, ylabS, 'Interpreter', 'none');
             
+%             % Add (approximate) step ticks
+%             x_shots_ticks = plotHandle.XTick;
+%             steps = s.dataSet.pulseID.steps(s.dataSet.pulseID.common_scalar_index)';
+%             
+%             % Manual formatting of steps ticks
+%             steps_ticks = [0 steps(x_shots_ticks(2:end-1)) steps(end)];
+%             labelArray = [compose('%3g',x_shots_ticks); compose('%3g',steps_ticks)];
+%             tickLabels = strtrim(sprintf('%s\\newline%s\n', labelArray{:}));
+%             
+%             plotHandle.XTickLabel = tickLabels;
+%             xlabel(plotHandle,'First row: Shot number / Second row: Step number',...
+%                 'FontSize',7);
+        end
+        
+        function hlpAddStepTicks(s,plotHandle)
             % Add (approximate) step ticks
             x_shots_ticks = plotHandle.XTick;
             steps = s.dataSet.pulseID.steps(s.dataSet.pulseID.common_scalar_index)';
@@ -1025,6 +1120,7 @@ classdef DataSetDAN < handle
             tickLabels = strtrim(sprintf('%s\\newline%s\n', labelArray{:}));
             
             plotHandle.XTickLabel = tickLabels;
+            plotHandle.XTickMode = 'manual';
             xlabel(plotHandle,'First row: Shot number / Second row: Step number',...
                 'FontSize',7);
         end

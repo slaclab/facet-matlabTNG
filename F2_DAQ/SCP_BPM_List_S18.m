@@ -1,0 +1,14 @@
+function S18_SCP_BPM_List = SCP_BPM_List_S18()
+
+S18_SCP_BPM_List = {...
+    
+'BPMS:LI18:201';
+'BPMS:LI18:301';
+'BPMS:LI18:401';
+'BPMS:LI18:501';
+'BPMS:LI18:601';
+'BPMS:LI18:701';
+'BPMS:LI18:801';
+'BPMS:LI18:901';
+
+};

@@ -18,6 +18,7 @@ classdef F2_fastDAQ_HDF5 < handle
         step
         async_data
         bsa_list
+        scp_list
         nonbsa_list
         nonbsa_array_list
         scanFunctions
@@ -28,6 +29,7 @@ classdef F2_fastDAQ_HDF5 < handle
         doStream = false
         blockBeam = false
         shotsArray
+        BPMS_cmd
     end
     properties(Hidden)
         listeners
@@ -152,6 +154,17 @@ classdef F2_fastDAQ_HDF5 < handle
             % Fill in the rest of the data struct to prepare for data
             obj.setupDataStruct();
             
+            % Create formatted list (BPMS_cmd) of requested SCP BPMS
+            % Should look like: '["BPMS:LI11:201",...,"BPMS:LI20:3340"]'
+            % We will pass this to bash script
+            BPMS = [];
+            for i = 1:numel(obj.params.SCP_list)
+                BPMS = [BPMS;feval(obj.params.SCP_list{i})];
+            end
+            BPMS_str = join(string(BPMS)','","');
+            BPMS_str_cmd = '''["' + BPMS_str + '"]''';
+            obj.BPMS_cmd = char(BPMS_str_cmd);
+            
             % Fill in scan functions
             obj.scanFunctions = struct();
             for i = 1:numel(obj.params.scanFuncs)
@@ -171,30 +184,34 @@ classdef F2_fastDAQ_HDF5 < handle
             obj.daq_pvs = camera_DAQ_PVs(obj.params.camPVs);
             
             % Set DAQ_InUse PV for cameras
-            lcaPutSmart(obj.daq_pvs.DAQ_InUse,1);
+%             lcaPutSmart(obj.daq_pvs.DAQ_InUse,1);
             
             % Test cameras before starting
             obj.checkCams();
             status = obj.check_abort();
             if status; obj.end_scan(status); return; end
             
-            
             % Prep cams -> make sure they are in good state
             obj.prepCams();
             
             % Get backgrounds
-            obj.BG_obj = F2_getBG(obj);
-            obj.data_struct.backgrounds = struct;
-            obj.data_struct.backgrounds.getBG = obj.params.saveBG;
-            obj.data_struct.backgrounds.laserBG = obj.params.laserBG;
-            if obj.params.saveBG || obj.params.laserBG
-               obj.data_struct.backgrounds = obj.BG_obj.getBackground();
+            try
+                obj.BG_obj = F2_getBG(obj);
+                obj.data_struct.backgrounds = struct;
+                obj.data_struct.backgrounds.getBG = obj.params.saveBG;
+                obj.data_struct.backgrounds.laserBG = obj.params.laserBG;
+                if obj.params.saveBG || obj.params.laserBG
+                   obj.data_struct.backgrounds = obj.BG_obj.getBackground();
+                end
+            catch ME
+                obj.dispMessage('Error getting backgrounds');
+                disp(ME.message)
+                obj.event.release_eDef();
+                return
             end
             
-            % Stop trigger
-            % This sets EC214 and BUFFACQ rate to zero
-            obj.event.stop_event_HDF5();
-            pause(2);
+            % Stop buffer
+            obj.event.stop_eDef();
             
             %%%%%%%%%%%%%%%%%%%%
             %   Run the DAQ!  %%
@@ -207,68 +224,47 @@ classdef F2_fastDAQ_HDF5 < handle
         function status = daq_loop(obj)
             % The meat of the matter
             
-            % This sets EC214 and BUFFACQ rate to zero
-            % obj.event.stop_event_HDF5();
-            
-            % Set Event PV number of shots
-            lcaPut(obj.event.DAQ_EVNT_NUM,obj.params.n_shot);
+            % Resetting PVs that were used in a previous version of DAQ
+            % Make sure DAQ isn't saving images in extra dimensions
+            lcaPut(obj.daq_pvs.HDF5_NumExtraDims,0);
+            lcaPut(obj.daq_pvs.HDF5_ExtraDimSizeN,0);
+            lcaPut(obj.daq_pvs.HDF5_ExtraDimSizeX,0);
+            lcaPut(obj.daq_pvs.HDF5_ExtraDimSizeY,0);
             
             % This is a "simple" DAQ
             if obj.params.scanDim == 0
-                lcaPut(obj.daq_pvs.HDF5_NumExtraDims,0);
-                lcaPut(obj.daq_pvs.HDF5_FileNumber,0);
                 
                 obj.step = 1;
                 try
-                    % Capture here
-                    % setup camera saving
-                    lcaPut(obj.daq_pvs.HDF5_FileNumber,0); % this is redundant
-                    set_CAM_filepath_HDF5(obj);
-                    lcaPutNoWait(obj.daq_pvs.HDF5_Capture,1);
-                    
                     status = obj.daq_step();
                     
                     % we are done BUFFACQ eDef
                     obj.event.release_eDef();
-                    return;
-                catch
+                    return
+                catch ME
+                    disp(ME.message)
                     obj.dispMessage(sprintf('DAQ failed on step %d',obj.step));
                     status = 1;
                     
                     % we are done BUFFACQ eDef
                     obj.event.release_eDef();
-                    return;
+                    return
                 end 
             end
             
             % This is a scan
             old_steps = nan(1,obj.params.scanDim);
-            lcaPut(obj.daq_pvs.HDF5_NumExtraDims,obj.params.scanDim);
-            
-            % Set ExtraDimSizeN to be number of shots per step
-            lcaPut(obj.daq_pvs.HDF5_ExtraDimSizeN,obj.params.n_shot);
-            
-            % Set ExtraDimSizeX and Y to be num Steps
-            lcaPut(obj.daq_pvs.HDF5_ExtraDimSizeX,obj.params.nSteps(1));
-            
-            if obj.params.scanDim > 1
-                lcaPut(obj.daq_pvs.HDF5_ExtraDimSizeY,obj.params.nSteps(2));
-            end
-            
-            % Capture here
-            % setup camera saving
-            lcaPut(obj.daq_pvs.HDF5_FileNumber,0);
-            set_CAM_filepath_HDF5(obj);
-            lcaPutNoWait(obj.daq_pvs.HDF5_Capture,1);
             
             for i = 1:obj.params.totalSteps
                 obj.step = i;
                 
                 new_steps = obj.params.stepsAll(i,:);
-                
+            
                 for j = 1:obj.params.scanDim
                     
-                    if new_steps(j) == old_steps(j); continue; end
+                    if ~obj.params.allowDuplicateSteps
+                        if new_steps(j) == old_steps(j); continue; end
+                    end
                     
                     obj.dispMessage(sprintf('Setting %s to %0.2f',obj.params.scanFuncs{j},obj.params.scanVals{j}(new_steps(j))));
                     if obj.blockBeam
@@ -284,78 +280,100 @@ classdef F2_fastDAQ_HDF5 < handle
                     obj.dispMessage(sprintf('DAQ failed on step %d',obj.step));
                     
                     % we are done BUFFACQ eDef
-                    obj.event.release_eDef();
+%                     obj.event.release_eDef();
                     status = 1;
                 end
                 
                 if status; return; end
                 
                 old_steps = new_steps;
+                
             end
-            
-            % Set back EVNT PV
-            lcaPut(obj.event.DAQ_EVNT_NUM,0);
             
             % we are done BUFFACQ eDef
             obj.event.release_eDef();
-            
         end
         
         % status = 0 -> ok. status = 1 -> DAQ failed or aborted
         function status = daq_step(obj)
             
-            % waitTime isnt used but it is nice to see in display
             waitTime = obj.params.n_shot/obj.event_info.liveRate;
             
             obj.dispMessage(sprintf('Starting DAQ Step %d. Time estimate %0.1f seconds.',obj.step, waitTime));
+            
+            % Set up camera files
+            lcaPut(obj.daq_pvs.HDF5_FileNumber,0);
+            set_CAM_filepath_HDF5(obj);
+            
+            % If we are requesting SCP data
+            if obj.params.saveSCP
+                % Start SCP Buffered Acquisition, BSA, and image acquisition
+                SCPtimeout = 300; % arbitrarily large enough number
+                numPulses = obj.params.n_shot;
+                
+                % Run external bash script that acquires SCP BPM data
+                command = ['./scpbuffacq.sh ' num2str(SCPtimeout) ' ' num2str(numPulses) ' ' obj.BPMS_cmd ' > step' num2str(obj.step) '.txt &'];
+                commandStat = system(command);
 
-            tic % comment this
+                % Pause for SCP data acquisiton setup
+                pause(1);
+            end
             
-            % Start BUFFACQ buffer and camera triggers
-            obj.event.start_event_HDF5();
-            disp(toc) % and this
+            % Start image capture
+            lcaPutNoWait(obj.daq_pvs.HDF5_Capture,1);
             
-            tic
+            % Start BSA acquisition
+            obj.event.start_eDef();
+            
+            % Start timer
+            timer = tic;
             
             % if blockBeam
             if obj.blockBeam
             	obj.BG_obj.enable_Pockels_cell()
             end
             
-            
             % Get data and count shots
-            while toc < waitTime
+            while toc(timer) < waitTime
                 
                 pause(1/obj.event_info.liveRate); % derive this from beam rate
                 obj.async_data.addDataFR();
+                % Add array data? obj.async_data.addArrayData();
                 
-                % Add a "check failure"
-
                 % Add a "check abort" here
-                
+                status = obj.check_abort;
+                if status; return; end
             end
 
-%             disp(toc)
-            % Buffers should be full
+            % Buffers should be full, stop buffer data
+            obj.event.stop_eDef();
+            
+            % Stop capture, regardless of how many shots were saved
+            lcaPut(obj.daq_pvs.HDF5_Capture,0);
 
-            % Stop triggers
-            obj.event.stop_event_HDF5();
+            obj.dispMessage('Acquisition complete. Starting quality control.');
 
-%             obj.event.stop_eDef();
-%             disp(toc)
-            
-            obj.dispMessage('Acquisition complete. Cameras saving data.');
-            
-            obj.dispMessage('Data saving complete. Starting quality control.');
-            
-            % Check number of shots per step and add to shotsArray
-            
-            status = obj.checkShots();
-            if status; return; end
-            
-            % Get the data
+            % Get BSA and non-BSA data
             status = obj.collectData();
-            
+
+            % Check FileNumber_RBV and WriteFile_RBV PVs
+            % If FileNumber_RBV is stuck at 0, then that means writing
+            % command never got sent. Send a command to write file if this
+            % is the case
+            fileNums = lcaGetSmart(obj.daq_pvs.HDF5_FileNumber_RBV); % should be 1
+            if any(~fileNums)
+                lcaPutSmart(obj.daq_pvs.HDF5_WriteFile(~fileNums),1);
+            end
+
+            writingStatus = lcaGetSmart(obj.daq_pvs.HDF5_WriteFile_RBV);
+            while any(~strcmp(writingStatus,'Done'))
+                writingStatus = lcaGetSmart(obj.daq_pvs.HDF5_WriteFile_RBV);
+                % Check and break if there is a writing error
+                errorStatus = lcaGetSmart(obj.daq_pvs.HDF5_WriteStatus);
+                if strcmp(errorStatus,'Write error')
+                    break
+                end
+            end
         end
         
         function end_scan(obj,status)
@@ -364,17 +382,13 @@ classdef F2_fastDAQ_HDF5 < handle
                 obj.dispMessage('Ending failed/aborted scan.');
                 obj.event.stop_eDef();
                 obj.event.release_eDef();
-                % this indicates data taking has ended
+                % This indicates data taking has ended
                 caput(obj.pvs.DAQ_DataOn,0);
             end
             
+            % Restore triggers
             obj.camCheck.restore_trig_event(obj.params.EC);
-            
-            % Re-enable triggers
-            lcaPut(obj.event.DAQ_EVNT_NUM,0);
-            lcaPutSmart(obj.event.DAQ_EVNT_ON,1);
-
-                        
+       
             if obj.params.scanDim > 0
                 
                 obj.dispMessage('Restoring scan functions to initial value.');
@@ -386,6 +400,11 @@ classdef F2_fastDAQ_HDF5 < handle
             
             obj.dispMessage('Collecting camera data.');
             status = obj.getCamData();
+            
+            if obj.params.saveSCP
+                obj.dispMessage('Collecting SCP BPM data');
+                obj.getSCPdata();
+            end
             
             obj.dispMessage('Comparing pulse IDs.');
             obj.compareUIDs();
@@ -403,13 +422,16 @@ classdef F2_fastDAQ_HDF5 < handle
             lcaPutSmart(obj.daq_pvs.DAQ_InUse,0);
         end
         
-        function status = checkShots(obj)
+        function status = checkShots(obj) % this function isn't used anymore
+            % Checks that num of shots captured is going up at around the same
+            % rate for all cameras
             status = 0;
             
-            shots = lcaGet(obj.daq_pvs.HDF5_NumCaptured_RBV);
+            shots = lcaGet(obj.daq_pvs.HDF5_NumCaptured_RBV);  % returns a vector
+
             check_vec = obj.step*obj.params.n_shot*ones(obj.params.num_CAM,1);
             
-            good = (check_vec == shots);
+            good = (check_vec == shots); % logical vector
             final_shots = zeros(size(shots));
             final_shots(good) = shots(good);
             
@@ -419,9 +441,9 @@ classdef F2_fastDAQ_HDF5 < handle
             % some cameras immediately drop back down to zero. so maybe
             % have to deal with this on a camera by camera basis
             
-            tic;
+            shotsTimer = tic;
             
-            while any_bad
+            while any_bad && toc(shotsTimer) < 3
                 new_shots = lcaGet(obj.daq_pvs.HDF5_NumCaptured_RBV);
                 new_good = (check_vec == new_shots);
                 final_shots(new_good) = new_shots(new_good);
@@ -429,33 +451,29 @@ classdef F2_fastDAQ_HDF5 < handle
                 % add new good shots to list
                 good = good | new_good;
                 any_bad = sum(~good);
-                
-                
-                disp(final_shots);
-                disp(good);
+
                 pause(1);
-                
-                if toc > 3
-                    obj.dispMessage('Cameras have not saved all shots after waiting 3 seconds.');
-                    %status = 1;
-                    break;
-                    
-                    % Alternatively, try to fix it?
-                    % not 100% sure how to do this yet
-                end
             end
+                
+            if toc(shotsTimer) > 3
+                obj.dispMessage('Cameras have not saved all shots after waiting 3 seconds.');
+                %status = 1;
+%                     break;
+
+                % Alternatively, try to fix it?
+                % not 100% sure how to do this yet
+            end
+            
             if any_bad
                 final_shots(~good) = new_shots(~good);
             end
             
             % Create shotsArray here
             obj.shotsArray = [obj.shotsArray,final_shots];
-            
-            %disp(obj.params.n_shot)
         end
         
         function status = collectData(obj)
-            
+            % Get pulse IDs, BSA and non BSA data
             n_use = lcaGet(sprintf('%sHST%d.NUSE',obj.pulseIDPV,obj.event.eDefNum));
             pulse_IDs = lcaGet(sprintf('%sHST%d',obj.pulseIDPV,obj.event.eDefNum),n_use)';
             seconds = lcaGet(sprintf('%sHST%d',obj.secPV,obj.event.eDefNum),n_use)';
@@ -481,7 +499,8 @@ classdef F2_fastDAQ_HDF5 < handle
             try 
                 obj.getNonBSAdata(slac_time);
                 status = 0;
-            catch
+            catch ME
+                disp(ME.message)
                 obj.dispMessage('Non-BSA data failed.');
                 status = 1;
             end
@@ -520,107 +539,195 @@ classdef F2_fastDAQ_HDF5 < handle
         end
         
         function status = getCamData(obj)
+            % Read HDF5 image files, extract pulse IDs
             status = 0;
             if obj.params.totalSteps == 0
                 nSteps = 1;
             else
-                nSteps =  obj.params.totalSteps;
+                nSteps = obj.params.totalSteps;
             end
-            
-            camShotsArray = [obj.shotsArray(:,1),diff(obj.shotsArray,1,2)];
-            % Loop over steps and cameras to collect list of images in save
-            % directory.
-            for i = 1:obj.params.num_CAM
-                
-                % Try to read HDF5 file
-                tryCount = 0;
-                success = false; % success means HDF5 file was created and is readable
-                
-                while ~success && tryCount < 120
-                    try
-                        dirInfo = dir([obj.save_info.cam_paths{i} '/*.h5']);
-%                         disp(dirInfo.name)
-                        h5fn = [obj.save_info.cam_paths{i} '/' dirInfo.name];
-                        info = h5info(h5fn,'/entry/data/data');
-                        n_imgs = prod(info.Dataspace.Size(3:end));
-                        obj.daq_status(i,1) = n_imgs;
-                        
-                        success = true;
-                    catch
-                        if tryCount == 0
-                            obj.dispMessage('Could not read HDF5 file. Trying again.');
-                        end
-                        success = false;
-                    end
-                    tryCount = tryCount + 1;
-                    pause(1);
-                end
-                
-                if tryCount == 120
-                    obj.dispMessage(['Could not read HDF5 file: ' h5fn '. Skipping camera.']);
-                    status = 1;
-                    continue;
-                end
-                
-                obj.daq_status(i,2) = obj.params.n_shot;
-                
-                % Need to rewrite the code below:
-                % 1. "k" doesn't exist anymore
-                % 2. "n_imgs" is now the TOTAL number of images saved
-                % 3. Can we check if all the shots weren't saved on a
-                % certain step?
-%                 if n_imgs < obj.params.n_shot
-%                     obj.dispMessage([obj.params.camNames{i} ' didn"t save all the shots on step ' num2str(k) '.']);
-%                 end
-%                 if n_imgs == 0
-%                     obj.dispMessage([obj.params.camNames{i} ' saved zero shots. Skipping step ' num2str(k) '.']);
-%                     status = 1;
-%                     continue;
-%                 end
-                
-                disp('bleep');
-                
-                % Add the paths of images found to 'loc'
-                obj.data_struct.images.(obj.params.camNames{i}).loc = {h5fn};
-                
-                disp('blop');
-                
-                status = obj.check_abort();
-                if status; return; end
-                PIDs = h5read(h5fn,'/entry/instrument/NDAttributes/NDArrayUniqueId');
-                PIDs = double(PIDs);
-                
-                disp('blorp');
-                
-                % Add UIDs and PIDs
-                obj.data_struct.images.(obj.params.camNames{i}).pid = PIDs;
-%                 shotsArray = repelem((1:nSteps)',obj.params.n_shot);
-                
-%                 shotsArray = [obj.shotsArray(i,1),diff(obj.shotsArray,1,2)];
-                stepsArray = repelem((1:nSteps),camShotsArray(i,:))';
-                
-                % if size(steps_array) < size(PIDs), this means shots were
-                % added at the end of scan to make up for lost shots
-                if size(stepsArray,1) < size(PIDs,1)
-                    extra = size(PIDs,1) - size(stepsArray,1);
-                    stepsArray = [stepsArray; -1*ones(extra,1)];
-                end
+         
+            obj.daq_status(:,1) = zeros(obj.params.num_CAM,1);
+            for k = 1:nSteps
+                for i = 1:obj.params.num_CAM
                     
-                
-                disp(obj.params.camNames{i})
-                %disp(size(PIDs))
-                %disp(size(stepsArray))
-                
-                UIDs = obj.generateUIDs(PIDs,stepsArray);
-                obj.data_struct.images.(obj.params.camNames{i}).uid = UIDs;
-                obj.data_struct.images.(obj.params.camNames{i}).step = stepsArray;
+                    % Try to read HDF5 file
+                    tryCount = 0; % timeout is 60 s
+                    success = false; % success means HDF5 file was created and is readable
+                    
+                    while ~success && tryCount < 60
+                        try
+                            dirInfo = dir([obj.save_info.cam_paths{i} '/*_data_step' num2str(k,'%02d') '.h5']);
+                            h5fn = [obj.save_info.cam_paths{i} '/' dirInfo.name];
+                            info = h5info(h5fn,'/entry/data/data');
+                            
+                            success = true;
+                        catch
+                            if tryCount == 0
+                                obj.dispMessage('Could not read HDF5 file, trying again. Max wait is 60 s.');
+                            end
+                            success = false;
+                        end
+                        tryCount = tryCount + 1;
+                        status = obj.check_abort();
+                        if status; return; end
+                        pause(1);
+                    end
+                    
+                    if tryCount == 60
+                        obj.dispMessage(['Could not read HDF5 file: ' h5fn '. Skipping step.']);
+                        status = 1;
+                        continue;
+                    end
+                    
+                    n_imgs = prod(info.Dataspace.Size(3:end)); % number of images in this step
+                    obj.daq_status(i,1) = obj.daq_status(i,1)+n_imgs; % number of images saved
+                    obj.daq_status(i,2) = obj.params.n_shot; % number of images requested
+                    
+                    if n_imgs < obj.params.n_shot
+                        obj.dispMessage([obj.params.camNames{i} ' didn"t save all the shots on step ' num2str(k) '.']);
+                    end
+                    if n_imgs == 0
+                        obj.dispMessage([obj.params.camNames{i} ' saved zero shots. Skipping step ' num2str(k) '.']);
+                        status = 1;
+                        continue;
+                    end
+                    
+                    disp('bleep');
+                    
+                    % Add the paths of images found to 'loc'
+                    locs = strcat([obj.save_info.cam_paths{i} '/'],{dirInfo.name}');
+                    obj.data_struct.images.(obj.params.camNames{i}).loc = ...
+                        [obj.data_struct.images.(obj.params.camNames{i}).loc; locs];
+                    
+                    disp('blop');
+                    
+                    status = obj.check_abort();
+                    if status; return; end
+                    
+                    % Get PIDs from location in HDF5 file and save in data_struct
+                    PIDs = h5read(h5fn,'/entry/instrument/NDAttributes/NDArrayUniqueId');
+                    PIDs = double(PIDs);
+                    
+                    disp('blorp');
+                    
+%                     disp([obj.params.camNames{i} ' step ' num2str(k)]);
+                    
+                    UIDs = obj.generateUIDs(PIDs,k);
+                    steps = k*ones(size(PIDs));
+                    
+                    obj.data_struct.images.(obj.params.camNames{i}).pid = ...
+                        [obj.data_struct.images.(obj.params.camNames{i}).pid; PIDs];
+                    obj.data_struct.images.(obj.params.camNames{i}).uid = ...
+                        [obj.data_struct.images.(obj.params.camNames{i}).uid; UIDs];
+                    obj.data_struct.images.(obj.params.camNames{i}).step = ...
+                        [obj.data_struct.images.(obj.params.camNames{i}).step; steps];
+                end
             end
             
+        end
+        
+        function getSCPdata(obj)
+            % Get SCP data from txt files and save to data_struct
+            
+            % Put data from all steps into a single cell array all_scp_data
+            try
+                % Turn off table variable name warning
+                warnID = 'MATLAB:table:ModifiedAndSavedVarnames';
+                warnStruct = warning('off',warnID);
+                if obj.params.scanDim == 0
+                    all_scp_data = cell(1,1);
+                    txtfilename = 'step1.txt';
+                    data = readtable(txtfilename,'MultipleDelimsAsOne',true);
+                    
+                    tryCount = 0;
+                    while isempty(data)
+                        pause(1);
+                        data = readtable(txtfilename,'MultipleDelimsAsOne',true);
+                        tryCount = tryCount+1;
+                        if tryCount >= 300
+                            obj.dispMessage('Reading SCP data timed out.')
+                            break
+                        end
+                    end
+                    all_scp_data{1} = data;
+                else
+                    all_scp_data = cell(1,obj.params.totalSteps);
+                    for i = 1:obj.params.totalSteps
+                        txtfilename = ['step' num2str(i) '.txt'];
+                        data = readtable(txtfilename,'MultipleDelimsAsOne',true);
+                        
+                        tryCount = 0;
+                        while isempty(data)
+                            pause(1);
+                            data = readtable(txtfilename,'MultipleDelimsAsOne',true);
+                            tryCount = tryCount+1;
+                            if tryCount >= 300
+                                obj.dispMessage('Reading SCP data timed out.')
+                                break
+                            end
+                        end
+                        all_scp_data{i} = data;
+                    end
+                end
+
+                steps = [];
+                pid = [];
+                
+                % Organize by sector/BPM and separate X, Y, TMIT data
+                for i = 1:numel(all_scp_data)
+                    scp_data = all_scp_data{i};
+                    [unique_BPMS,BPMidx] = unique(scp_data.BPMName);
+                    % Make a new table for each BPM
+                    for j = 1:numel(unique_BPMS)
+                        smallTable = scp_data(strcmp(scp_data.BPMName,scp_data.BPMName(BPMidx(j),:)),:);
+                        BPM = unique_BPMS{j};
+                        BPM = remove_dots(BPM);
+                        sector = extractBetween(BPM,'_LI','_');
+                        fields = fieldnames(obj.data_struct.scalars);
+                        
+                        % Find subfield in data_struct.scalars for that sector
+                        idx = contains(fields,sector) & contains(fields,'SCP_BPM');
+                        
+                        % Add data to correct location in data_struct
+                        obj.data_struct.scalars.(fields{idx}).([BPM '_X']) = [obj.data_struct.scalars.(fields{idx}).([BPM '_X']);smallTable.xOffset_mm_];
+                        obj.data_struct.scalars.(fields{idx}).([BPM '_Y']) = [obj.data_struct.scalars.(fields{idx}).([BPM '_Y']);smallTable.yOffset_mm_];
+                        obj.data_struct.scalars.(fields{idx}).([BPM '_TMIT']) = [obj.data_struct.scalars.(fields{idx}).([BPM '_TMIT']);smallTable.numParticles_coulomb_];
+                    end
+                    steps = [steps;i*ones(size(smallTable,1),1)];
+                    pid = [pid; unique(scp_data.pulseId)];
+                end
+               
+                % Create UIDs
+                uids = obj.generateUIDs(pid,steps);
+                
+                % Find matches with scalar UIDs
+                [uid_common,uid_idxa,uid_idxb] = intersect(uids,obj.data_struct.pulseID.scalar_UID);
+                [pid_common,pid_idxa,pid_idxb] = intersect(pid,obj.data_struct.pulseID.scalar_PID);
+                
+%                 obj.data_struct.scalars.BSA_UID_idx = uid_idxa;
+%                 obj.data_struct.scalars.SCP_UID_idx = uid_idxb;
+                
+                obj.data_struct.scalars.BSA_common_idx = pid_idxa;
+                obj.data_struct.scalars.SCP_common_idx = pid_idxb;
+                
+                obj.data_struct.pulseID.scalar_UID = uid_common;
+                obj.data_struct.pulseID.scalar_PID = pid_common;
+
+                % Add to data_struct
+                obj.data_struct.scalars.SCP_steps = steps;
+                obj.data_struct.scalars.SCP_PIDs = pid;
+            catch ME
+                disp(ME.message)
+            end
+            % Restore table variable name warning status
+            warning(warnStruct)
         end
         
         function compareUIDs(obj)
             COMMON_UID = obj.data_struct.pulseID.scalar_UID;
             
+            % Compare scalar (BSA) UIDs and camera UIDs
             for i = 1:obj.params.num_CAM
                 
                 [~,~,camera_index] = intersect(obj.data_struct.pulseID.scalar_UID,obj.data_struct.images.(obj.params.camNames{i}).uid);
@@ -653,19 +760,18 @@ classdef F2_fastDAQ_HDF5 < handle
         end
         
         function save_data(obj)
+            % Suppress weird EPICS warning -- not the best workaround but
+            % ok for now
+            wid = 'MATLAB:Java:ConvertFromOpaque';
+            wstate = warning('off',wid);
+            
             data_struct = obj.data_struct;
             
             save_str = [obj.save_info.save_path '/' obj.params.experiment '_' num2str(obj.save_info.instance,'%05d')];
 
             save(save_str,'data_struct');
             
-%             obj.dispMessage('Converting data to HDF5');
-%             try
-%                 matlab2hdf5(data_struct,save_str);
-%             catch
-%                 obj.dispMessage('Failed to convert to HDF5');
-%             end
-            
+            warning(wstate); % restore warning after we are done saving
         end
         
         function write2eLog(obj,status)
@@ -748,7 +854,8 @@ classdef F2_fastDAQ_HDF5 < handle
         
         function prepCams(obj)
             
-            lcaPutSmart(obj.daq_pvs.DataType,1);
+            lcaPutSmart(obj.daq_pvs.Acquire,1);
+            lcaPutSmart(obj.daq_pvs.DataType,'UInt16');
             lcaPutSmart(obj.daq_pvs.ROI_EnableCallbacks,1);
             lcaPutSmart(obj.daq_pvs.TSS_SETEC,obj.params.EC);
             
@@ -760,9 +867,11 @@ classdef F2_fastDAQ_HDF5 < handle
             end
             lcaPutSmart(obj.daq_pvs.HDF5_AutoIncrement,1);
             lcaPutSmart(obj.daq_pvs.HDF5_AutoSave,1);
-%             lcaPutSmart(obj.daq_pvs.HDF5_SetPort,2);
             
             lcaPutSmart(obj.daq_pvs.HDF5_NumCapture,obj.params.n_shot);
+            
+            % Check if spectrometer is being used, if so set "Start" PV
+            
             
             obj.camCheck.set_trig_event(obj.params.EC);
             
@@ -775,6 +884,13 @@ classdef F2_fastDAQ_HDF5 < handle
                 obj.data_struct.metadata.(obj.params.camNames{i}) = get_cam_info(obj.params.camPVs{i});
                 obj.data_struct.metadata.(obj.params.camNames{i}).sioc = obj.params.camSIOCs{i};
                 obj.data_struct.metadata.(obj.params.camNames{i}).trigger = obj.params.camTrigs{i};
+                
+                % Add spectrometer metadata here - min/max wavelength
+                if contains(obj.params.camNames{i},'Spec','IgnoreCase',true)
+                    wavelengths = lcaGetSmart('SPEC:LI20:PM02:Wavelengths');
+                    obj.data_struct.metadata.(obj.params.camNames{i}).Min_Wavelength = min(wavelengths);
+                    obj.data_struct.metadata.(obj.params.camNames{i}).Max_Wavelength = max(wavelengths);
+                end
             end
             
             % Fill in BSA data
@@ -788,7 +904,25 @@ classdef F2_fastDAQ_HDF5 < handle
                 obj.data_struct.metadata.(obj.params.BSA_list{i}).Desc = pvDesc;
                 
                 obj.bsa_list = [obj.bsa_list; pvList];
-            end 
+            end
+            
+            % Fill in SCP BPM data
+            obj.scp_list = {obj.pulseIDPV; obj.secPV; obj.nSecPV;};
+            for i = 1:numel(obj.params.SCP_list)
+                pvRoots = feval(obj.params.SCP_list{i});
+                pvList = [];
+                for j = 1:numel(pvRoots)
+                    X_PV = {[pvRoots{j} ':X']};
+                    Y_PV = {[pvRoots{j} ':Y']};
+                    TMIT_PV = {[pvRoots{j} ':TMIT']};
+                    pvList = [pvList;X_PV;Y_PV;TMIT_PV];
+                end
+                pvDesc = pvList; % Temporary
+                obj.data_struct.metadata.(obj.params.SCP_list{i}).PVs = pvList;
+                obj.data_struct.metadata.(obj.params.SCP_list{i}).Desc = pvDesc;
+                
+                obj.scp_list = [obj.scp_list; pvList];
+            end
             
             % Fill in non-BSA data
             obj.nonbsa_list = {obj.pulseIDPV; obj.secPV; obj.nSecPV;};
@@ -805,12 +939,13 @@ classdef F2_fastDAQ_HDF5 < handle
             end
             %obj.async_data = acq_nonBSA_data(obj.nonbsa_list,obj);
             
-            % Fill in non-BSA arrays, not supported yet
+            % Fill in non-BSA arrays
             if obj.params.include_nonBSA_arrays
                 for i = 1:numel(obj.params.nonBSA_Array_list)
                     pvList = feval(obj.params.nonBSA_Array_list{i});
                     pvList = obj.async_data.addListArray(pvList);
-                    pvDesc = lcaGetSmart(strcat(pvList,'.DESC'));
+%                     pvDesc = lcaGetSmart(strcat(pvList,'.DESC'));
+                    pvDesc = pvList; % Temporary
                     
                     obj.data_struct.metadata.(obj.params.nonBSA_Array_list{i}).PVs = pvList;
                     obj.data_struct.metadata.(obj.params.nonBSA_Array_list{i}).Desc = pvDesc;
@@ -818,6 +953,7 @@ classdef F2_fastDAQ_HDF5 < handle
 %                     obj.nonbsa_array_list = [obj.nonbsa_array_list; pvList];
                     
                 end
+
             end
             
             
@@ -840,6 +976,15 @@ classdef F2_fastDAQ_HDF5 < handle
                     obj.data_struct.scalars.(obj.params.BSA_list{i}).(remove_dots(pv)) = [];
                 end
             end
+            
+            for i = 1:numel(obj.params.SCP_list)
+                obj.data_struct.scalars.(obj.params.SCP_list{i}) = struct();
+                for j=1:numel(obj.data_struct.metadata.(obj.params.SCP_list{i}).PVs)
+                    pv = obj.data_struct.metadata.(obj.params.SCP_list{i}).PVs{j};
+                    obj.data_struct.scalars.(obj.params.SCP_list{i}).(remove_dots(pv)) = [];
+                end
+            end
+            
             for i = 1:numel(obj.params.nonBSA_list)
                 obj.data_struct.scalars.(obj.params.nonBSA_list{i}) = struct();
                 for j=1:numel(obj.data_struct.metadata.(obj.params.nonBSA_list{i}).PVs)
@@ -847,7 +992,7 @@ classdef F2_fastDAQ_HDF5 < handle
                     obj.data_struct.scalars.(obj.params.nonBSA_list{i}).(remove_dots(pv)) = [];
                 end
             end
-            
+                        
             if obj.params.include_nonBSA_arrays
                 obj.data_struct.arrays = struct();
                 for i = 1:numel(obj.params.nonBSA_Array_list)
@@ -867,10 +1012,7 @@ classdef F2_fastDAQ_HDF5 < handle
                 obj.data_struct.images.(obj.params.camNames{i}).uid = [];
                 obj.data_struct.images.(obj.params.camNames{i}).step = [];
             end
-            
-            
         end
-            
         
         function dispMessage(obj,message)
             

@@ -54,7 +54,7 @@ classdef F2_WirescanApp < handle
   properties(Constant)
     usejit logical = [1 0 0 0 0 0 0 0 0 1 1] % Can use jitter correction for wires?
     aidabpms logical = [0          1         1           1          1          1         1          1            1          0           0     ]
-    wires string = ["IN10:561" "LI11:444" "LI11:614" "LI11:744" "LI12:214" "LI18:944" "LI19:144" "LI19:244" "LI19:344" "LI20:3179" "LI20:3206"]
+    wires string = ["IN10:561" "LI11:444" "LI11:614" "LI11:744" "LI12:214" "LI18:944" "LI19:144" "LI19:244" "LI19:344" "LI20:3179" "LI20:3229"]
     wiremodel string = ["WS10561" "WS11444" "WS11614" "WS11744" "WS12214" "WS18944" "WS19144" "WS19244" "WS19344" "IPWS1" "IPWS3"]
     pmts string = ["IN10:561" "LI11:444" "LI11:614" "LI11:744" "LI12:214" "LI18:944" "LI19:144" "LI19:244" "LI19:344" "LI20:3060" "LI20:3070" "LI20:3179" "LI20:3350" "LI20:3360"]
     % pmts string = ["IN10:561" "LI11:444" "LI11:614" "LI11:744" "LI12:214" "LI18:944" "LI19:144" "LI19:244" "LI19:344"]
@@ -610,7 +610,7 @@ classdef F2_WirescanApp < handle
       if ~obj.scansuccess || isempty(obj.data)
         return
       end
-      if ~exist('fname','file')
+      if ~exist('fname','var')
         fname = F2_common.confdir + "/F2_Wirescan/" + obj.wirename + "_" + obj.plane + ".mat" ;
       end
       lpar = ["pmtsel" "jittercor" "chargenorm" "blenwin" "bpmsel" "torsel" "blmsel" "fitmethod" "data" "motor_range" "npulses" "scansuccess" "blenvals" "fitdata" "WireDiam"] ;
