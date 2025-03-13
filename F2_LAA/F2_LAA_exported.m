@@ -350,14 +350,14 @@ classdef F2_LAA_exported < matlab.apps.AppBase
 
             % Create UIFigure and hide until all components are created
             app.UIFigure = uifigure('Visible', 'off');
-            app.UIFigure.Position = [100 100 637 729];
+            app.UIFigure.Position = [100 100 637 768];
             app.UIFigure.Name = 'MATLAB App';
             app.UIFigure.CloseRequestFcn = createCallbackFcn(app, @UIFigureCloseRequest, true);
 
             % Create SelectLaserAlignmentTargetPositionsButtonGroup
             app.SelectLaserAlignmentTargetPositionsButtonGroup = uibuttongroup(app.UIFigure);
             app.SelectLaserAlignmentTargetPositionsButtonGroup.Title = '1. Select Laser Alignment Target Positions';
-            app.SelectLaserAlignmentTargetPositionsButtonGroup.Position = [35 613 280 59];
+            app.SelectLaserAlignmentTargetPositionsButtonGroup.Position = [35 652 280 59];
 
             % Create ShowTargetsButton
             app.ShowTargetsButton = uibutton(app.SelectLaserAlignmentTargetPositionsButtonGroup, 'push');
@@ -370,23 +370,23 @@ classdef F2_LAA_exported < matlab.apps.AppBase
             app.FACETIILaserAutoAlignmentLabel.HorizontalAlignment = 'center';
             app.FACETIILaserAutoAlignmentLabel.FontSize = 14;
             app.FACETIILaserAutoAlignmentLabel.FontWeight = 'bold';
-            app.FACETIILaserAutoAlignmentLabel.Position = [217 697 218 22];
+            app.FACETIILaserAutoAlignmentLabel.Position = [217 736 218 22];
             app.FACETIILaserAutoAlignmentLabel.Text = 'FACET-II Laser Auto Alignment';
 
             % Create LogTextAreaLabel
             app.LogTextAreaLabel = uilabel(app.UIFigure);
             app.LogTextAreaLabel.HorizontalAlignment = 'right';
-            app.LogTextAreaLabel.Position = [345 471 29 22];
+            app.LogTextAreaLabel.Position = [345 510 29 22];
             app.LogTextAreaLabel.Text = 'Log:';
 
             % Create LogTextArea
             app.LogTextArea = uitextarea(app.UIFigure);
-            app.LogTextArea.Position = [345 22 268 445];
+            app.LogTextArea.Position = [345 29 268 477];
 
             % Create InitializeReferenceLaserParametersPanel
             app.InitializeReferenceLaserParametersPanel = uipanel(app.UIFigure);
             app.InitializeReferenceLaserParametersPanel.Title = '4. Initialize Reference Laser Parameters';
-            app.InitializeReferenceLaserParametersPanel.Position = [36 348 280 57];
+            app.InitializeReferenceLaserParametersPanel.Position = [36 387 280 57];
 
             % Create GrabReferencesButton
             app.GrabReferencesButton = uibutton(app.InitializeReferenceLaserParametersPanel, 'push');
@@ -397,19 +397,19 @@ classdef F2_LAA_exported < matlab.apps.AppBase
             % Create SelectCamerastoAlignPanel
             app.SelectCamerastoAlignPanel = uipanel(app.UIFigure);
             app.SelectCamerastoAlignPanel.Title = '5. Select Cameras to Align';
-            app.SelectCamerastoAlignPanel.Position = [36 19 280 313];
+            app.SelectCamerastoAlignPanel.Position = [36 26 280 345];
 
             % Create UITable
             app.UITable = uitable(app.SelectCamerastoAlignPanel);
             app.UITable.ColumnName = {'Laser Cameras'; 'Select'};
             app.UITable.RowName = {};
             app.UITable.ColumnEditable = [false true];
-            app.UITable.Position = [13 17 255 264];
+            app.UITable.Position = [13 13 255 300];
 
             % Create InitiateAutoAlignmentPanel
             app.InitiateAutoAlignmentPanel = uipanel(app.UIFigure);
             app.InitiateAutoAlignmentPanel.Title = '6. Initiate Auto Alignment';
-            app.InitiateAutoAlignmentPanel.Position = [345 534 271 137];
+            app.InitiateAutoAlignmentPanel.Position = [345 573 271 137];
 
             % Create StartAlignmentButton
             app.StartAlignmentButton = uibutton(app.InitiateAutoAlignmentPanel, 'push');
@@ -454,13 +454,13 @@ classdef F2_LAA_exported < matlab.apps.AppBase
             % Create ClearLogButton
             app.ClearLogButton = uibutton(app.UIFigure, 'push');
             app.ClearLogButton.ButtonPushedFcn = createCallbackFcn(app, @ClearLogButtonPushed, true);
-            app.ClearLogButton.Position = [510 504 100 23];
+            app.ClearLogButton.Position = [510 543 100 23];
             app.ClearLogButton.Text = 'Clear Log';
 
             % Create SetshutterstatusPanel
             app.SetshutterstatusPanel = uipanel(app.UIFigure);
             app.SetshutterstatusPanel.Title = '2. Set shutter status';
-            app.SetshutterstatusPanel.Position = [36 504 280 97];
+            app.SetshutterstatusPanel.Position = [36 543 280 97];
 
             % Create HeNestatusLampLabel
             app.HeNestatusLampLabel = uilabel(app.SetshutterstatusPanel);
@@ -498,7 +498,7 @@ classdef F2_LAA_exported < matlab.apps.AppBase
             % Create SetcameraexposuresPanel
             app.SetcameraexposuresPanel = uipanel(app.UIFigure);
             app.SetcameraexposuresPanel.Title = '3. Set camera exposures';
-            app.SetcameraexposuresPanel.Position = [36 424 280 64];
+            app.SetcameraexposuresPanel.Position = [36 463 280 64];
 
             % Create SetExposuresButton
             app.SetExposuresButton = uibutton(app.SetcameraexposuresPanel, 'push');
