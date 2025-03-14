@@ -37,7 +37,9 @@ function [data_struct, header] = getDataSet(dataSetID,exp)
                 searchPath = ['/nas/nas-li20-pm00/',exp,'/'];
             end
         end
-        [~, outp] = unix(sprintf( 'find %s -name "*%s" 2>/dev/null', searchPath, dataSetID ));
+%        [~, outp] = unix(sprintf( 'find %s -name "*%s" 2>/dev/null', searchPath, dataSetID ));
+        [~, outp] = unix(sprintf( 'find %s -name "*%s" -maxdepth 3 2>/dev/null', searchPath, dataSetID ));
+
     else
         error('Currently not supported on your operating system')
     end
