@@ -253,6 +253,7 @@ S20_nonBSA_List = {...
 'OVEN:LI20:3185:TEMP5'; %Oven TC5
 'OVEN:LI20:3185:TEMP6'; %Oven TC6
 'BMLN:LI20:3184:TEMP'; %Oven TC7
+'BMLN:LI20:3186:TEMP'; %Oven TC8
 
 % Notch Collimator Positions
 'COLL:LI20:2069:MOTR.RBV'; %Notch Collimator X Translation Stage Position
@@ -260,11 +261,13 @@ S20_nonBSA_List = {...
 'COLL:LI20:2073:MOTR.RBV'; %Notch Collimator yaw stage position
 
 % Jaw Collimator Positions
-'COLL:LI20:2085:MOTR.RBV '; %Left Jaw Position
-'COLL:LI20:2086:MOTR.RBV '; %Right Jaw Position
-'COLL:LI20:2085:LVPOS '; %Left Jaw LVDT
-'COLL:LI20:2086:LVPOS '; %Right Jaw LVDT
-'COLL:LI20:2085:GETCENTER '; %Gap Center
+'COLL:LI20:2085:MOTR.RBV'; %Left Jaw Position
+'COLL:LI20:2086:MOTR.RBV'; %Right Jaw Position
+'COLL:LI20:2085:LVPOS'; %Left Jaw LVDT
+'COLL:LI20:2086:LVPOS'; %Right Jaw LVDT
+'COLL:LI20:2085:GETCENTER'; %Gap Center
+'COLL:LI20:2085:GETGAP'; %Gap Gap
+
 
 % Nathan's bunch separation PVs
 'SIOC:SYS1:ML01:AO106'; % bunch separation, updated ~1 Hz
@@ -275,8 +278,8 @@ S20_nonBSA_List = {...
 'TRIG:LI20:EX01:FP1_TDES';
 
 % EDC Energy meter PVs
-'PMTR:LI20:3415:QUERYDATA ';
-'PMTR:LI20:3415:SETRANGE ';
+'PMTR:LI20:3415:QUERYDATA';
+'PMTR:LI20:3415:SETRANGE';
 
 % Test PV's for S20 grating and laster timing script
 'SIOC:SYS1:ML00:CALCOUT074'; % laser timing offset PV

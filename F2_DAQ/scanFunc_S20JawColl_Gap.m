@@ -1,4 +1,4 @@
-classdef scanFunc_S20JawColl_GapCenter
+classdef scanFunc_S20JawColl_Gap
     properties
         pvlist PV
         pvs
@@ -8,14 +8,14 @@ classdef scanFunc_S20JawColl_GapCenter
         freerun = true
     end
     properties(Constant)
-        control_PV = "COLL:LI20:2085:SETCENTER"
-        readback_PV = "COLL:LI20:2085:GETCENTER"
+        control_PV = "COLL:LI20:2085:SETGAP"
+        readback_PV = "COLL:LI20:2085:GETGAP"
         tolerance = 0.01;
     end
     
     methods 
         
-        function obj = scanFunc_S20JawColl_GapCenter(daqhandle)
+        function obj = scanFunc_S20JawColl_Gap(daqhandle)
             
             % Check if scanfunc called by DAQ
             if exist('daqhandle','var')
