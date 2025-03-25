@@ -1,4 +1,4 @@
-classdef scanFunc_XCOR_LI20_2460_COARSE
+classdef scanFunc_YCOR_LI20_3017_COARSE
     properties
 %         pvlist PV
 %         pvs
@@ -8,14 +8,14 @@ classdef scanFunc_XCOR_LI20_2460_COARSE
         freerun = true
     end
     properties(Constant)
-        control_PV = "LGPS:LI20:2145"
-        readback_PV = "LGPS:LI20:2145"
+        control_PV = "LI20:LGPS:2145"
+        readback_PV = "LI20:LGPS:2145"
         tolerance = 0.01;
     end
     
     methods 
         
-        function obj = scanFunc_XCOR_LI20_2460_COARSE(daqhandle)
+        function obj = scanFunc_YCOR_LI20_3017_COARSE(daqhandle)
             
             % Check if scanfunc called by DAQ
             if exist('daqhandle','var')
