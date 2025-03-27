@@ -10,7 +10,7 @@ classdef scanFunc_SEXT_S1EL
     properties(Constant)
         control_PV = "LGPS:LI20:2145"
         readback_PV = "LGPS:LI20:2145"
-        tolerance = 0.01;
+        tolerance = 10;
     end
     
     methods 
