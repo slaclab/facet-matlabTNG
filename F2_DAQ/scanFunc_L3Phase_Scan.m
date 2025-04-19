@@ -41,6 +41,9 @@ classdef scanFunc_L3Phase_Scan
             k4 = lcaGetSmart('LI19:KLYS:41:KPHR');
             k5 = lcaGetSmart('LI19:KLYS:51:KPHR');
 
+            disp(["Initial K4 Phase : ", k4])
+            disp(["Initial K5 Phase : ", k5])
+
         	control_phaseSet('19-4',  k4-value, 0,0,'KPHR');
             control_phaseSet('19-5',  k5+value, 0,0,'KPHR');
 
