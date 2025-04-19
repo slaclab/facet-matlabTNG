@@ -19,6 +19,7 @@ classdef F2_DAN_HDF5_exported < matlab.apps.AppBase
         LastDAQButton                   matlab.ui.control.Button
         SaveconfigButton                matlab.ui.control.Button
         LoadconfigButton                matlab.ui.control.Button
+        InclSCPCheckBox                 matlab.ui.control.CheckBox
         correlationPlot                 matlab.ui.container.Panel
         FACETScalarArray1Panel          matlab.ui.container.Panel
         ScalarDropDown_Corr1            matlab.ui.control.DropDown
@@ -318,6 +319,7 @@ classdef F2_DAN_HDF5_exported < matlab.apps.AppBase
                 app.DANobject = DataSetDAN(dataSetID,exp,app);
             catch errm
                 app.addMsg('Could not find data set')
+                app.addMsg(errm.message)
                 return
             end
             
@@ -436,13 +438,14 @@ classdef F2_DAN_HDF5_exported < matlab.apps.AppBase
             FS1 = getFacetScalar(app, app.Switch_Corr1FS, ...
                 app.ScalarDropDown_Corr1, app.CameraDropDown_Corr1, ...
                 app.D21DFunctionEditField_Corr1, app.D21DFcnDropDown_Corr1);
+            SG1 = app.ScalargroupDropDown_Corr1.Value;
             
             if ~app.CorrelationCheckBox.Value
                 if app.HistogramCheckBox.Value
                     app.DANobject.histogramPlot(FS1);
                 else
                     try
-                        app.DANobject.correlationPlot(FS1);
+                        app.DANobject.correlationPlot(FS1,SG1);
                     catch
                         % Display error message
                         app.addMsg('Unable to make plot');
@@ -454,9 +457,10 @@ classdef F2_DAN_HDF5_exported < matlab.apps.AppBase
             FS2 = getFacetScalar(app, app.Switch_Corr2FS, ...
                 app.ScalarDropDown_Corr2, app.CameraDropDown_Corr2, ...
                 app.D21DFunctionEditField_Corr2, app.D21DFcnDropDown_Corr2);
+            SG2 = app.ScalargroupDropDown_Corr2.Value;
             
             try
-                app.DANobject.correlationPlot(FS1,FS2);
+                app.DANobject.correlationPlot(FS1,SG1,FS2,SG2);
             catch
                 % Display error message
                 app.addMsg('Unable to make plot. Check that the data set has scalar data.');
@@ -944,6 +948,12 @@ classdef F2_DAN_HDF5_exported < matlab.apps.AppBase
             app.LoadconfigButton.Visible = 'off';
             app.LoadconfigButton.Position = [225 266 82 22];
             app.LoadconfigButton.Text = 'Load config';
+
+            % Create InclSCPCheckBox
+            app.InclSCPCheckBox = uicheckbox(app.dataSet);
+            app.InclSCPCheckBox.Enable = 'off';
+            app.InclSCPCheckBox.Text = 'Include SCP data';
+            app.InclSCPCheckBox.Position = [122 269 115 22];
 
             % Create correlationPlot
             app.correlationPlot = uipanel(app.MainDANTab);
