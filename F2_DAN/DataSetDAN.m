@@ -65,6 +65,7 @@ classdef DataSetDAN < handle
     properties (Access = private)
         
         include_data;
+        inclSCP;
         
         % DAQ-file specific properties 
         maxShotNbr;
@@ -78,7 +79,7 @@ classdef DataSetDAN < handle
         
         % exportPlotData
         lastPlotData; %Struct for storing lastPlotData
-        HDF5_imData = double.empty
+        HDF5_imData = double.empty;
     end
     
     % Constructor
@@ -99,16 +100,24 @@ classdef DataSetDAN < handle
                 %toc
             end
             s.hlpDispMsg('Done looking for directory\n')
-            s.maxShotNbr = length(s.dataSet.pulseID.common_scalar_index);
-            s.getImgType();
-            
-            s.hlpFindScalarGroups();
-            s.hlpGetListOfCameras();
             
             if nargin > 2
                 s.GUIHandle = apph;
                 s.plotToGUI = 1;
             end
+            
+            % Check if user wants to include SCP data in matches/analysis
+            s.inclSCP = s.GUIHandle.InclSCPCheckBox.Value;
+            if s.inclSCP == 1
+                s.maxShotNbr = length(s.dataSet.pulseID.common_scalar_index_inclSCP);
+            else
+                s.maxShotNbr = length(s.dataSet.pulseID.common_scalar_index);
+            end
+            
+            s.getImgType();
+            
+            s.hlpFindScalarGroups();
+            s.hlpGetListOfCameras();
             
             s.hlpDispMsg('dataSet succefully loaded\n');
             
@@ -231,7 +240,11 @@ classdef DataSetDAN < handle
         
         function plotCorrMatrix(s)
             % Create array of all scalar data
-            numDataPts = numel(s.dataSet.pulseID.common_scalar_index);
+            if s.inclSCP
+                numDataPts = numel(s.dataSet.pulseID.common_scalar_index_inclSCP);
+            else
+                numDataPts = numel(s.dataSet.pulseID.common_scalar_index);
+            end
             
             scalars = s.GUIHandle.IncludeListBox_CorrM.Items; % cell array
             numScalars = numel(scalars);
@@ -471,7 +484,7 @@ classdef DataSetDAN < handle
                 'FontSize',7);
         end
         
-        function correlationPlot(s, inputArg1, inputArg2)
+        function correlationPlot(s, inputArg1, SG1, inputArg2, SG2)
         %CORRELATIONPLOT plots 1 FACET-vector as a function another
         %  A FACET-vector can be defined by:
         %   - experimental scalar value captured for each shot in a dataset
@@ -511,17 +524,16 @@ classdef DataSetDAN < handle
             curHandle = s.hlpGetFigAxis();
             titleS = sprintf('Correlation plot');
             
-            
             errm = 'input argument #1 not a FACET Scalar Array';
             type = s.hlpIsFSArray(inputArg1,errm);
             
-            [x, xlabS] = s.hlpGetScalarArray(inputArg1,type);
+            [x, xlabS] = s.hlpGetScalarArray(inputArg1,type,SG1);
 
             
-            if nargin == 3
+            if nargin == 5
                 errm = 'input argument #2 not a FACET Scalar Array';
                 type = s.hlpIsFSArray(inputArg2, errm);
-                [y, ylabS] = s.hlpGetScalarArray(inputArg2,type);
+                [y, ylabS] = s.hlpGetScalarArray(inputArg2,type,SG2);
                 
                 s.hlpPlotTwoScalarArray(curHandle, x, y, ...
                     titleS, xlabS, ylabS)
@@ -631,13 +643,21 @@ classdef DataSetDAN < handle
 
             if type == 1
                 if isfield(s.dataSet.scalars,(FACETscalar{1}))
-                    scalarArray = s.dataSet.scalars.(FACETscalar{1})(s.dataSet.pulseID.common_scalar_index);
+                    if s.inclSCP
+                        scalarArray = s.dataSet.scalars.(FACETscalar{1})(s.dataSet.pulseID.common_scalar_index_inclSCP);
+                    else
+                        scalarArray = s.dataSet.scalars.(FACETscalar{1})(s.dataSet.pulseID.common_scalar_index);
+                    end
                     scalarLabel = FACETscalar{1};
                     return
                 else
                     for k = 1:numel(s.scalarGroups)
-                        if isfield(s.dataSet.scalars.(s.scalarGroups{k}),(FACETscalar{1}) )
-                            scalarArray = s.dataSet.scalars.(s.scalarGroups{k}).(FACETscalar{1})(s.dataSet.pulseID.common_scalar_index);
+                        if isfield(s.dataSet.scalars.(s.scalarGroups{k}),(FACETscalar{1}))
+                            if s.inclSCP
+                                scalarArray = s.dataSet.scalars.(s.scalarGroups{k}).(FACETscalar{1})(s.dataSet.pulseID.common_scalar_index_inclSCP);
+                            else
+                                scalarArray = s.dataSet.scalars.(s.scalarGroups{k}).(FACETscalar{1})(s.dataSet.pulseID.common_scalar_index);
+                            end
                             scalarLabel = FACETscalar{1};
                             return
                         end
@@ -864,7 +884,7 @@ classdef DataSetDAN < handle
         end
         
         function [scalarArray, scalarLabel] = hlpGetScalarArray(s, ...
-            FACETscalar, type)
+            FACETscalar, type, scalarGroup)
         %% hlpGetScalarArray extracts a 1D array of values from FACET data
         %  currently supports scalar diagnostics (type 1) and image
         %  diagnostics combined with a function that maps 2D - > scalar
@@ -875,18 +895,38 @@ classdef DataSetDAN < handle
             end
 
             if type == 1
+                isSCPscalar = contains(scalarGroup,'SCP');
                 if isfield(s.dataSet.scalars,(FACETscalar{1}))
-                    scalarArray = s.dataSet.scalars.(FACETscalar{1})(s.dataSet.pulseID.common_scalar_index);
+                    if s.inclSCP
+                        if isSCPscalar
+                            scalarArray = s.dataSet.scalars.(FACETscalar{1})(s.dataSet.pulseID.common_scalar_index_SCP);
+                        else
+                            scalarArray = s.dataSet.scalars.(FACETscalar{1})(s.dataSet.pulseID.common_scalar_index_inclSCP);
+                        end
+                    else
+                        scalarArray = s.dataSet.scalars.(FACETscalar{1})(s.dataSet.pulseID.common_scalar_index);
+                    end
                     scalarLabel = FACETscalar{1};
                     return
                 else
-                    for k = 1:numel(s.scalarGroups)
-                        if isfield(s.dataSet.scalars.(s.scalarGroups{k}),(FACETscalar{1}) )
-                            scalarArray = s.dataSet.scalars.(s.scalarGroups{k}).(FACETscalar{1})(s.dataSet.pulseID.common_scalar_index);
-                            scalarLabel = FACETscalar{1};
-                            return
+                    if s.inclSCP
+                        if isSCPscalar
+                            scalarArray = s.dataSet.scalars.(scalarGroup).(FACETscalar{1})(s.dataSet.pulseID.common_scalar_index_SCP);
+                        else
+                            scalarArray = s.dataSet.scalars.(scalarGroup).(FACETscalar{1})(s.dataSet.pulseID.common_scalar_index_inclSCP);
                         end
+                    else
+                        scalarArray = s.dataSet.scalars.(scalarGroup).(FACETscalar{1})(s.dataSet.pulseID.common_scalar_index);
                     end
+                    scalarLabel = FACETscalar{1};
+                    return
+%                     for k = 1:numel(s.scalarGroups)
+%                         if isfield(s.dataSet.scalars.(s.scalarGroups{k}),(FACETscalar{1}) )
+%                             scalarArray = s.dataSet.scalars.(s.scalarGroups{k}).(FACETscalar{1})(s.dataSet.pulseID.common_scalar_index);
+%                             scalarLabel = FACETscalar{1};
+%                             return
+%                         end
+%                     end
                 end
             elseif type == 2
                 % Check if already calculated
@@ -1007,8 +1047,15 @@ classdef DataSetDAN < handle
             n = 1;
             for k = 1:numel(fieldNames)
                 if isstruct(s.dataSet.scalars.(fieldNames{k}))
-                    s.scalarGroups{n} = fieldNames{k};
-                    n = n + 1;
+                    if s.inclSCP
+                        s.scalarGroups{n} = fieldNames{k};
+                        n = n + 1;
+                    else
+                        if ~contains(fieldNames{k},'SCP')
+                            s.scalarGroups{n} = fieldNames{k};
+                            n = n + 1;
+                        end
+                    end
                 end
             end
             
@@ -1112,7 +1159,11 @@ classdef DataSetDAN < handle
         function hlpAddStepTicks(s,plotHandle)
             % Add (approximate) step ticks
             x_shots_ticks = plotHandle.XTick;
-            steps = s.dataSet.pulseID.steps(s.dataSet.pulseID.common_scalar_index)';
+            if s.inclSCP
+                steps = s.dataSet.pulseID.steps(s.dataSet.pulseID.common_scalar_index_inclSCP)';
+            else
+                steps = s.dataSet.pulseID.steps(s.dataSet.pulseID.common_scalar_index)';
+            end
             
             % Manual formatting of steps ticks
             steps_ticks = [0 steps(x_shots_ticks(2:end-1)) steps(end)];

@@ -140,7 +140,7 @@ classdef F2_fastDAQ_HDF5 < handle
             obj.data_struct.save_info = obj.save_info;
             
             % Create EventClass for controlling global event triggers
-            obj.event = F2_EventClass();
+            obj.event = F2_EventClass(); % edef reserved here
             obj.event.select_rate_HDF5(obj.params.rate);
             obj.event_info = obj.event.evt_struct();
             obj.data_struct.metadata.Event = obj.event_info;
@@ -157,6 +157,7 @@ classdef F2_fastDAQ_HDF5 < handle
             % Create formatted list (BPMS_cmd) of requested SCP BPMS
             % Should look like: '["BPMS:LI11:201",...,"BPMS:LI20:3340"]'
             % We will pass this to bash script
+%             if obj.params.saveSCP
             BPMS = [];
             for i = 1:numel(obj.params.SCP_list)
                 BPMS = [BPMS;feval(obj.params.SCP_list{i})];
@@ -164,9 +165,11 @@ classdef F2_fastDAQ_HDF5 < handle
             BPMS_str = join(string(BPMS)','","');
             BPMS_str_cmd = '''["' + BPMS_str + '"]''';
             obj.BPMS_cmd = char(BPMS_str_cmd);
+%             end
             
             % Fill in scan functions
             obj.scanFunctions = struct();
+%             try
             for i = 1:numel(obj.params.scanFuncs)
                 if strcmp(obj.params.scanFuncs{i},"Use_PV")
                     obj.scanFunctions.Use_PV = scanFunc_Use_PV(obj,...
@@ -175,6 +178,12 @@ classdef F2_fastDAQ_HDF5 < handle
                     obj.scanFunctions.(obj.params.scanFuncs{i}) = feval(['scanFunc_' obj.params.scanFuncs{i}],obj);
                 end
             end
+%             catch ME
+%                 obj.dispMessage('Error getting scan function');
+%                 disp(ME.message)
+%                 obj.event.release_eDef();
+%                 return
+%             end
             
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             %%% Camera prep and check %%%
@@ -224,7 +233,6 @@ classdef F2_fastDAQ_HDF5 < handle
         function status = daq_loop(obj)
             % The meat of the matter
             
-            % Resetting PVs that were used in a previous version of DAQ
             % Make sure DAQ isn't saving images in extra dimensions
             lcaPut(obj.daq_pvs.HDF5_NumExtraDims,0);
             lcaPut(obj.daq_pvs.HDF5_ExtraDimSizeN,0);
@@ -278,9 +286,6 @@ classdef F2_fastDAQ_HDF5 < handle
                 catch ME
                     disp(ME.message);
                     obj.dispMessage(sprintf('DAQ failed on step %d',obj.step));
-                    
-                    % we are done BUFFACQ eDef
-%                     obj.event.release_eDef();
                     status = 1;
                 end
                 
@@ -312,18 +317,22 @@ classdef F2_fastDAQ_HDF5 < handle
                 numPulses = obj.params.n_shot;
                 
                 % Run external bash script that acquires SCP BPM data
+%                 command = sprintf('./scpbuffacq.sh %d %d %s > step%d.txt &',SCPtimeout,numPulses,obj.BPMS_cmd,obj.step);
                 command = ['./scpbuffacq.sh ' num2str(SCPtimeout) ' ' num2str(numPulses) ' ' obj.BPMS_cmd ' > step' num2str(obj.step) '.txt &'];
                 commandStat = system(command);
 
                 % Pause for SCP data acquisiton setup
                 pause(1);
+                disp('SCP data acquisition started')
             end
             
             % Start image capture
             lcaPutNoWait(obj.daq_pvs.HDF5_Capture,1);
+            disp('Image data acquisition started')
             
             % Start BSA acquisition
             obj.event.start_eDef();
+            disp('BSA acquisition started')
             
             % Start timer
             timer = tic;
@@ -492,7 +501,14 @@ classdef F2_fastDAQ_HDF5 < handle
             
             disp('beep');
             
+%             try
             obj.getBSAdata(n_use);
+%             status = 0;
+%             catch ME
+%                 disp(ME.message)
+%                 obj.dispMessage('BSA data failed.');
+%                 status = 1;
+%             end
             
             disp('bop');
                         
@@ -549,6 +565,12 @@ classdef F2_fastDAQ_HDF5 < handle
          
             obj.daq_status(:,1) = zeros(obj.params.num_CAM,1);
             for k = 1:nSteps
+                % if the DAQ failed before completing all steps, don't try
+                % to save data after step where it failed
+%                 if k > obj.step
+%                     obj.dispMessage('No camera data to save after this step!')
+%                     break
+%                 end
                 for i = 1:obj.params.num_CAM
                     
                     % Try to read HDF5 file
@@ -610,9 +632,7 @@ classdef F2_fastDAQ_HDF5 < handle
                     PIDs = double(PIDs);
                     
                     disp('blorp');
-                    
-%                     disp([obj.params.camNames{i} ' step ' num2str(k)]);
-                    
+                                        
                     UIDs = obj.generateUIDs(PIDs,k);
                     steps = k*ones(size(PIDs));
                     
@@ -642,6 +662,8 @@ classdef F2_fastDAQ_HDF5 < handle
                     
                     tryCount = 0;
                     while isempty(data)
+%                         status = obj.check_abort();
+%                         if status; return; end
                         pause(1);
                         data = readtable(txtfilename,'MultipleDelimsAsOne',true);
                         tryCount = tryCount+1;
@@ -663,7 +685,7 @@ classdef F2_fastDAQ_HDF5 < handle
                             data = readtable(txtfilename,'MultipleDelimsAsOne',true);
                             tryCount = tryCount+1;
                             if tryCount >= 300
-                                obj.dispMessage('Reading SCP data timed out.')
+                                obj.dispMessage('DAQ failed to read SCP data.')
                                 break
                             end
                         end
@@ -677,7 +699,7 @@ classdef F2_fastDAQ_HDF5 < handle
                 % Organize by sector/BPM and separate X, Y, TMIT data
                 for i = 1:numel(all_scp_data)
                     scp_data = all_scp_data{i};
-                    [unique_BPMS,BPMidx] = unique(scp_data.BPMName);
+                    [unique_BPMS,BPMidx] = unique(scp_data.BPMName,'stable');
                     % Make a new table for each BPM
                     for j = 1:numel(unique_BPMS)
                         smallTable = scp_data(strcmp(scp_data.BPMName,scp_data.BPMName(BPMidx(j),:)),:);
@@ -695,28 +717,18 @@ classdef F2_fastDAQ_HDF5 < handle
                         obj.data_struct.scalars.(fields{idx}).([BPM '_TMIT']) = [obj.data_struct.scalars.(fields{idx}).([BPM '_TMIT']);smallTable.numParticles_coulomb_];
                     end
                     steps = [steps;i*ones(size(smallTable,1),1)];
-                    pid = [pid; unique(scp_data.pulseId)];
+                    pid = [pid; unique(scp_data.pulseId,'stable')];
                 end
                
                 % Create UIDs
                 uids = obj.generateUIDs(pid,steps);
                 
-                % Find matches with scalar UIDs
-                [uid_common,uid_idxa,uid_idxb] = intersect(uids,obj.data_struct.pulseID.scalar_UID);
-                [pid_common,pid_idxa,pid_idxb] = intersect(pid,obj.data_struct.pulseID.scalar_PID);
-                
-%                 obj.data_struct.scalars.BSA_UID_idx = uid_idxa;
-%                 obj.data_struct.scalars.SCP_UID_idx = uid_idxb;
-                
-                obj.data_struct.scalars.BSA_common_idx = pid_idxa;
-                obj.data_struct.scalars.SCP_common_idx = pid_idxb;
-                
-                obj.data_struct.pulseID.scalar_UID = uid_common;
-                obj.data_struct.pulseID.scalar_PID = pid_common;
+                obj.data_struct.pulseID.scalar_PID_SCP = pid;
+                obj.data_struct.pulseID.scalar_UID_SCP = uids;
 
                 % Add to data_struct
-                obj.data_struct.scalars.SCP_steps = steps;
-                obj.data_struct.scalars.SCP_PIDs = pid;
+                obj.data_struct.scalars.steps_SCP = steps;
+                obj.data_struct.pulseID.steps_SCP = steps;
             catch ME
                 disp(ME.message)
             end
@@ -729,28 +741,55 @@ classdef F2_fastDAQ_HDF5 < handle
             
             % Compare scalar (BSA) UIDs and camera UIDs
             for i = 1:obj.params.num_CAM
-                
-                [~,~,camera_index] = intersect(obj.data_struct.pulseID.scalar_UID,obj.data_struct.images.(obj.params.camNames{i}).uid);
+                % This finds matches between each camera and BSA data
+                [~,~,camera_index] = intersect(obj.data_struct.pulseID.scalar_UID,obj.data_struct.images.(obj.params.camNames{i}).uid,'stable');
                 obj.data_struct.images.(obj.params.camNames{i}).scalar_index = camera_index;
     
-                COMMON_UID = intersect(COMMON_UID,obj.data_struct.images.(obj.params.camNames{i}).uid);
+                COMMON_UID = intersect(COMMON_UID,obj.data_struct.images.(obj.params.camNames{i}).uid,'stable');
                 
             end
             
-            [~,~,scalar_index] = intersect(COMMON_UID,obj.data_struct.pulseID.scalar_UID);
+            [~,~,scalar_index] = intersect(COMMON_UID,obj.data_struct.pulseID.scalar_UID,'stable');
             obj.data_struct.pulseID.common_scalar_index = scalar_index;
             obj.data_struct.scalars.common_index = scalar_index;
+            % Up to here nothing should be different...
             
-            % second loop for common index
+            % Find SCP matches
+            if obj.params.saveSCP
+                [COMMON_UID_inclSCP,~,scalar_index_SCP] = intersect(COMMON_UID,obj.data_struct.pulseID.scalar_UID_SCP,'stable');
+                obj.data_struct.pulseID.common_scalar_index_SCP = scalar_index_SCP;
+                obj.data_struct.scalars.common_index_SCP = scalar_index_SCP;
+                
+                obj.data_struct.pulseID.common_UIDs_inclSCP = COMMON_UID_inclSCP;
+                obj.data_struct.pulseID.common_PIDs_inclSCP = ...
+                    obj.data_struct.pulseID.scalar_PID_SCP(obj.data_struct.pulseID.common_scalar_index_SCP);
+                                
+                % Loop to get camera common idx including SCP
+                for i = 1:obj.params.num_CAM
+                    [~,~,camera_index_inclSCP] = intersect(COMMON_UID_inclSCP,obj.data_struct.images.(obj.params.camNames{i}).uid,'stable');
+
+                    obj.data_struct.images.(obj.params.camNames{i}).common_index_inclSCP = camera_index_inclSCP;
+                    obj.data_struct.pulseID.([obj.params.camNames{i} 'common_index_inclSCP']) = camera_index_inclSCP;
+                    
+                    obj.daq_status(i,4) = numel(camera_index_inclSCP);
+                end
+                
+                % Get BSA common idx including SCP
+                [~,~,scalar_index_inclSCP] = intersect(COMMON_UID_inclSCP,obj.data_struct.pulseID.scalar_UID,'stable');
+                obj.data_struct.pulseID.common_scalar_index_inclSCP = scalar_index_inclSCP;
+                obj.data_struct.scalars.common_index_inclSCP = scalar_index_inclSCP;
+            end
+            
+            % Loop to find number of BSA/camera matches (not including SCP)
             for i = 1:obj.params.num_CAM
-                [~,~,camera_index] = intersect(COMMON_UID,obj.data_struct.images.(obj.params.camNames{i}).uid);
+                [~,~,camera_index] = intersect(COMMON_UID,obj.data_struct.images.(obj.params.camNames{i}).uid,'stable');
                 
                 obj.data_struct.images.(obj.params.camNames{i}).common_index = camera_index;
                 obj.data_struct.pulseID.([obj.params.camNames{i} 'common_index']) = camera_index;
                 
                 obj.daq_status(i,3) = numel(camera_index);
-                
             end
+                        
             obj.data_struct.pulseID.common_UIDs = COMMON_UID;
             obj.data_struct.pulseID.common_PIDs = obj.data_struct.pulseID.scalar_PID(obj.data_struct.pulseID.common_scalar_index);
         end                
@@ -809,16 +848,28 @@ classdef F2_fastDAQ_HDF5 < handle
             
             Path_str = sprintf(['Path: ' obj.save_info.save_path '\n' '\n']);
             
-            info_str = sprintf(['| NAME | SAVE | REQ | MATCH ' '\n']);
+            if obj.params.saveSCP
+                info_str = sprintf(['| NAME | SAVE | REQ | MATCH | SCP MATCH ' '\n']);
+            else
+                info_str = sprintf(['| NAME | SAVE | REQ | MATCH ' '\n']);
+            end
+            
             for i = 1:obj.params.num_CAM
                 if obj.params.totalSteps == 0
                     tot_req = obj.daq_status(i,2);
                 else
                     tot_req = obj.params.totalSteps*obj.daq_status(i,2);
                 end
-                mat_line   = sprintf(['| ' obj.params.camNames{i} ' | ' num2str(obj.daq_status(i,1)) ' | '...
-                    num2str(tot_req) ' | ' num2str(obj.daq_status(i,3)) ' ' '\n']);
+                
+                if obj.params.saveSCP
+                    mat_line   = sprintf(['| ' obj.params.camNames{i} ' | ' num2str(obj.daq_status(i,1)) ' | '...
+                        num2str(tot_req) ' | ' num2str(obj.daq_status(i,3)) ' | ' num2str(obj.daq_status(i,4)) ' ' '\n']);
                 % add a disp message here?
+                else
+                    mat_line   = sprintf(['| ' obj.params.camNames{i} ' | ' num2str(obj.daq_status(i,1)) ' | '...
+                        num2str(tot_req) ' | ' num2str(obj.daq_status(i,3)) ' ' '\n']);
+                % add a disp message here?
+                end
                 obj.dispMessage(mat_line);
                 info_str = [info_str mat_line];
             end
@@ -969,6 +1020,7 @@ classdef F2_fastDAQ_HDF5 < handle
             
             obj.data_struct.scalars = struct();
             obj.data_struct.scalars.steps = [];
+
             for i = 1:numel(obj.params.BSA_list)
                 obj.data_struct.scalars.(obj.params.BSA_list{i}) = struct();
                 for j=1:numel(obj.data_struct.metadata.(obj.params.BSA_list{i}).PVs)
@@ -977,11 +1029,18 @@ classdef F2_fastDAQ_HDF5 < handle
                 end
             end
             
-            for i = 1:numel(obj.params.SCP_list)
-                obj.data_struct.scalars.(obj.params.SCP_list{i}) = struct();
-                for j=1:numel(obj.data_struct.metadata.(obj.params.SCP_list{i}).PVs)
-                    pv = obj.data_struct.metadata.(obj.params.SCP_list{i}).PVs{j};
-                    obj.data_struct.scalars.(obj.params.SCP_list{i}).(remove_dots(pv)) = [];
+            if obj.params.saveSCP
+                obj.data_struct.pulseID.scalar_PID_SCP = [];
+                obj.data_struct.pulseID.scalar_UID_SCP = [];
+                obj.data_struct.pulseID.steps_SCP = [];
+                obj.data_struct.scalars.steps_SCP = [];
+                
+                for i = 1:numel(obj.params.SCP_list)
+                    obj.data_struct.scalars.(obj.params.SCP_list{i}) = struct();
+                    for j=1:numel(obj.data_struct.metadata.(obj.params.SCP_list{i}).PVs)
+                        pv = obj.data_struct.metadata.(obj.params.SCP_list{i}).PVs{j};
+                        obj.data_struct.scalars.(obj.params.SCP_list{i}).(remove_dots(pv)) = [];
+                    end
                 end
             end
             
