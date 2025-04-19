@@ -6,6 +6,8 @@ classdef scanFunc_L3Phase_Scan
         initial_readback
         daqhandle
         freerun = true
+        k4_initial
+        k5_initial
     end
     properties(Constant)
         control_PV = "SIOC:SYS1:ML02:AO399"
@@ -33,6 +35,9 @@ classdef scanFunc_L3Phase_Scan
             
             obj.initial_control = caget(obj.pvs.control);
             obj.initial_readback = caget(obj.pvs.readback);
+
+            obj.k4_initial = lcaGetSmart('LI19:KLYS:41:KPHR');
+            obj.k5_initial = lcaGetSmart('LI19:KLYS:51:KPHR');
             
         end
         
@@ -65,7 +70,9 @@ classdef scanFunc_L3Phase_Scan
         
         function restoreInitValue(obj)
             obj.daqhandle.dispMessage('Restoring initial value');
-            obj.set_value(obj.initial_control);
+%             obj.set_value(obj.initial_control);
+        	control_phaseSet('19-4',  obj.k4_initial, 0,0,'KPHR');
+            control_phaseSet('19-5',  obj.k5_initial, 0,0,'KPHR');
         end
         
     end
