@@ -53,10 +53,10 @@ classdef scanFunc_L3Phase_Scan
             
             current_value = caget(obj.pvs.readback);
             
-            while abs(current_value - value) > obj.tolerance
-                current_value = caget(obj.pvs.readback);
-                pause(0.1);
-            end
+%             while abs(current_value - value) > obj.tolerance
+%                 current_value = caget(obj.pvs.readback);
+%                 pause(0.1);
+%             end
             
             delta = current_value - value;
             obj.daqhandle.dispMessage(sprintf('%s readback is %0.2f', obj.pvs.readback.name, current_value));
