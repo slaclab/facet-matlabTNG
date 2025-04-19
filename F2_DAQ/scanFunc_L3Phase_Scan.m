@@ -49,8 +49,8 @@ classdef scanFunc_L3Phase_Scan
             disp(["Initial K4 Phase : ", k4])
             disp(["Initial K5 Phase : ", k5])
 
-        	control_phaseSet('19-4',  k4-value, 0,0,'KPHR');
-            control_phaseSet('19-5',  k5+value, 0,0,'KPHR');
+        	control_phaseSet('19-4',  obj.k4_initial - value, 0,0,'KPHR');
+            control_phaseSet('19-5',  obj.k5_initial + value, 0,0,'KPHR');
 
 %             caput(obj.pvs.control,value);
 
