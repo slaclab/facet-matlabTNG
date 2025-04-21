@@ -629,6 +629,7 @@ classdef F2_phasescan < handle
             assert(self.klys_stat == 1, 'Cannot phase scan, RFS is not on-beam')
 
             self.success = false;
+            self.GUI_abortButton.Value = false;
             self.scan_aborted = false;
             self.abort_requested = false;
 
