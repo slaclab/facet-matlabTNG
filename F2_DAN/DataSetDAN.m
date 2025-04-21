@@ -379,7 +379,7 @@ classdef DataSetDAN < handle
             delete(fig);
         end
 
-        function waterfallPlot(s, diag, fcn, sortFSArray, plotBool)
+        function waterfallPlot(s, diag, fcn, sortFSArray, plotBool, scalarGroup)
 
             if nargin < 3
                 s.hlpDispMsg('Need at least 3 inputs')
@@ -402,7 +402,11 @@ classdef DataSetDAN < handle
             if strcmp(s.imgType,'TIFF')
                 len = length(data.loc(data.common_index));
             elseif strcmp(s.imgType,'HDF5')
-                len = length(data.common_index);
+                if s.inclSCP
+                    len = length(data.common_index_inclSCP);
+                else
+                    len = length(data.common_index);
+                end
             end
             waterfall = zeros(r*c,len);
             waterfall(:,1) = wFData;
@@ -413,7 +417,7 @@ classdef DataSetDAN < handle
             if nargin >= 4
                 type = s.hlpIsFSArray(sortFSArray);
                 s.hlpDispMsg('Starting to sort vector')
-                [sortFSArray,sortLab] = s.hlpGetScalarArray(sortFSArray, type);
+                [sortFSArray,sortLab] = s.hlpGetScalarArray(sortFSArray, type, scalarGroup);
                 sortLab = ['Sorted on ', sortLab];
                 [~, sortedIdx] = sort(sortFSArray);
                 s.hlpDispMsg('Done with sorting vector')
@@ -953,7 +957,11 @@ classdef DataSetDAN < handle
                         end
                     elseif strcmp(s.imgType,'HDF5')
                         diagData = s.hlpGetImageHDF5(FACETscalar{1});
-                        diagData = diagData(:,:,dS.common_index);
+                        if s.inclSCP
+                            diagData = diagData(:,:,dS.common_index_inclSCP);
+                        else
+                            diagData = diagData(:,:,dS.common_index);
+                        end
                         scalarData = fcn(diagData);
                         scalarArray = squeeze(scalarData);
                     end

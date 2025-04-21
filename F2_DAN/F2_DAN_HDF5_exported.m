@@ -423,7 +423,8 @@ classdef F2_DAN_HDF5_exported < matlab.apps.AppBase
                     app.D2SFunctionEditField_WFS, app.D2SFunctionDropDown_WFS);
                 
                 plotSort = app.PlotsortvaluesCheckBox.Value;
-                app.DANobject.waterfallPlot(camera,funkh, FS, plotSort)
+                scalarGroup = app.ScalargroupDropDown_WFS.Value;
+                app.DANobject.waterfallPlot(camera,funkh, FS, plotSort, scalarGroup)
             end
         end
 
@@ -951,7 +952,6 @@ classdef F2_DAN_HDF5_exported < matlab.apps.AppBase
 
             % Create InclSCPCheckBox
             app.InclSCPCheckBox = uicheckbox(app.dataSet);
-            app.InclSCPCheckBox.Enable = 'off';
             app.InclSCPCheckBox.Text = 'Include SCP data';
             app.InclSCPCheckBox.Position = [122 269 115 22];
 
