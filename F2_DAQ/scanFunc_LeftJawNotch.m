@@ -52,7 +52,7 @@ classdef scanFunc_LeftJawNotch
 
             caput(obj.pvs.control,value);
             
-            value_1 = (value*139.8718798 + 919.78)/0.07421884;
+            value_1 = (value*139.8718798 + 919.78+30)/0.07421884;
 
             caput(obj.pvs.control_notch,value_1);
             %caput("COLL:LI20:2069:MOTR",value_1);
