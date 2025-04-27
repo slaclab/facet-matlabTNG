@@ -1,4 +1,4 @@
-classdef scanFunc_LeftJawNotch
+classdef scanFunc_LeftJawNotch_init
     properties
         pvlist PV
         pvs
@@ -18,12 +18,13 @@ classdef scanFunc_LeftJawNotch
         
         control_notch_PV = "COLL:LI20:2069:MOTR" %"SIOC:SYS1:ML00:CALCOUT076"
         readback_notch_PV = "COLL:LI20:2069:MOTR.RBV" %"SIOC:SYS1:ML00:CALCOUT076"
-        tolerance_notch = 2;        
+        tolerance_notch = 2;     
+        
     end
     
     methods 
         
-        function obj = scanFunc_LeftJawNotch(daqhandle)
+        function obj = scanFunc_LeftJawNotch_init(daqhandle)
             
             % Check if scanfunc called by DAQ
             if exist('daqhandle','var')
@@ -45,11 +46,15 @@ classdef scanFunc_LeftJawNotch
             obj.initial_readback = caget(obj.pvs.readback);
             obj.initial_control_notch = caget(obj.pvs.control_notch);
             obj.initial_readback_notch = caget(obj.pvs.readback_notch);
-            % Get the values of the slope from previous calibration. Get
-            % the values of the intercept from previous scan (scanFunc_LeftJawNotch_init MUST HAVE BEEN RUN!!).
+            % Get the initial values of the collimators position set by the
+            % user. Calculate the intercept based on the width you set in the SYAG.
             obj.slope = lcaGet('SIOC:SYS1:ML00:AO798');
-            obj.intercept = lcaGet('SIOC:SYS1:ML00:AO799');
-            
+            set_notch_pos = lcaGet('COLL:LI20:2069:MOTR.RBV');
+            set_leftjaw_pos = lcaGet('COLL:LI20:2085:MOTR.RBV');
+            obj.intercept = set_notch_pos - obj.slope*set_leftjaw_pos;
+            % Set the intercept value at a PV to be used in susequent scans
+            % (THE scanFunc_Left_Jaw_Notch FUCNTION!! NOT this one).
+            lcaPut('SIOC:SYS1:ML00:AO799', obj.intercept);
         end
         
         function delta = set_value(obj,value)
