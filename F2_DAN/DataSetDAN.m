@@ -51,6 +51,7 @@ classdef DataSetDAN < handle
         
         hasBG = 0;
         subtractBackground = 0;
+        inclSCP;
         
         visImageIncrement = 1;
         keepPlotting = 1;
@@ -65,7 +66,6 @@ classdef DataSetDAN < handle
     properties (Access = private)
         
         include_data;
-        inclSCP;
         
         % DAQ-file specific properties 
         maxShotNbr;
@@ -84,7 +84,7 @@ classdef DataSetDAN < handle
     
     % Constructor
     methods 
-        function s = DataSetDAN(dSID,exp,apph)
+        function s = DataSetDAN(dSID,exp,apph,inclSCP)
             %DATASETDAN Construct an instance of this class
             %   Detailed explanation goes here
 
@@ -106,10 +106,20 @@ classdef DataSetDAN < handle
                 s.plotToGUI = 1;
             end
             
+%             % Check if data set has SCP data
+%             hasSCP = s.dataSet.params.saveSCP;
+            
             % Check if user wants to include SCP data in matches/analysis
-            s.inclSCP = s.GUIHandle.InclSCPCheckBox.Value;
+            s.inclSCP = inclSCP;
             if s.inclSCP == 1
-                s.maxShotNbr = length(s.dataSet.pulseID.common_scalar_index_inclSCP);
+                % Check that this data set has SCP data
+                if s.dataSet.params.saveSCP
+                    s.maxShotNbr = length(s.dataSet.pulseID.common_scalar_index_inclSCP);
+                else
+                    s.hlpDispMsg('dataSet does not have SCP data\n');
+                    s.inclSCP = 0;
+                    s.maxShotNbr = length(s.dataSet.pulseID.common_scalar_index);
+                end
             else
                 s.maxShotNbr = length(s.dataSet.pulseID.common_scalar_index);
             end
@@ -238,21 +248,21 @@ classdef DataSetDAN < handle
 %             
 %         end
         
-        function plotCorrMatrix(s)
+        function plotCorrMatrix(s,scalars,scalarGroups)
             % Create array of all scalar data
             if s.inclSCP
                 numDataPts = numel(s.dataSet.pulseID.common_scalar_index_inclSCP);
             else
                 numDataPts = numel(s.dataSet.pulseID.common_scalar_index);
             end
-            
-            scalars = s.GUIHandle.IncludeListBox_CorrM.Items; % cell array
+
+%             scalars = s.GUIHandle.IncludeListBox_CorrM.Items; % cell array
             numScalars = numel(scalars);
             scalarArrayData = zeros(numDataPts,numScalars);
             
             for i = 1:numScalars
-                facetScalar = s.GUIHandle.IncludeListBox_CorrM.Items{i};
-                [x, ~] = s.hlpGetScalarArray(facetScalar,1);
+                facetScalar = scalars{i};
+                [x, ~] = s.hlpGetScalarArray(facetScalar,1,scalarGroups{i});
                 scalarArrayData(:,i) = x;
             end
             
@@ -323,18 +333,18 @@ classdef DataSetDAN < handle
             end
         end
         
-        function [gof, ci] = fitData(s,fitMethod)
+        function [gof, ci] = fitData(s,fitMethod,scalars,scalarGroups)
             % There is another "fit" function so we have to add the path
             % for the one we want to use (the matlab function)
             addpath('/usr/local/lcls/package/matlab/2020a/toolbox/curvefit/curvefit');
             
             % Get data
-            scalars = s.GUIHandle.IncludeListBox_CorrM.Items; % cell array
+%             scalars = s.GUIHandle.IncludeListBox_CorrM.Items; % cell array
             
             facetScalar1 = scalars{1};
-            [x, ~] = s.hlpGetScalarArray(facetScalar1,1);
+            [x, ~] = s.hlpGetScalarArray(facetScalar1,1,scalarGroups{1});
             facetScalar2 = scalars{2};
-            [y, ~] = s.hlpGetScalarArray(facetScalar2,1);
+            [y, ~] = s.hlpGetScalarArray(facetScalar2,1,scalarGroups{2});
             
             panelHan = s.GUIHandle.PlotsPanel;
             set(panelHan,'AutoResizeChildren','off');
@@ -395,6 +405,7 @@ classdef DataSetDAN < handle
 
             [r,c] = size(wFData);
             if ~xor(r == 1, c == 1)
+                s.hlpDispMsg('The provided function does not map the data correctly. Mapped data has %d rows and %d columns.',r,c);
                 error('The provided function does not map the data correctly. Mapped data has %d rows and %d columns.',r,c)
             end
 
@@ -550,6 +561,27 @@ classdef DataSetDAN < handle
             s.hlpPlotScalarArray(curHandle, x, ...
             titleS, xlabS, ylabS);
             
+        end
+        
+        function linearFit(s)
+            % Adds a linear fit to two scalar array plot
+            curHandle = s.hlpGetFigAxis();
+            hold(curHandle,'on');
+            
+            % Get fit
+            mdl = fitlm(s.lastPlotData.xData,s.lastPlotData.yData);
+            fitVals = predict(mdl,s.lastPlotData.xData);
+            plot(curHandle,s.lastPlotData.xData,fitVals,'r');
+            fitInfoStr = ['Linear fit: R^2 = ' num2str(mdl.Rsquared.Adjusted)];
+            
+%             
+%             [p,S] = polyfit(s.lastPlotData.xData,s.lastPlotData.yData,1);
+%             f = polyval(p,s.lastPlotData.xData);
+%             plot(curHandle,s.lastPlotData.xData,f,'r');
+%             fitInfoStr = ['Linear fit: R^2 = ' num2str(S.rsquared)];
+            legend(curHandle,'Data',fitInfoStr);
+            
+            hold(curHandle,'off');
         end
         
         function histogramPlot(s,FS)

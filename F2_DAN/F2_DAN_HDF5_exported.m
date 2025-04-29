@@ -48,6 +48,7 @@ classdef F2_DAN_HDF5_exported < matlab.apps.AppBase
         D21DFcnDropDown_Corr2           matlab.ui.control.DropDown
         UseanotherfunctionLabel_2       matlab.ui.control.Label
         PlotcorrelationButton           matlab.ui.control.Button
+        ShowlinearfitButton             matlab.ui.control.Button
         ImageAxes                       matlab.ui.control.UIAxes
         CLimPanel                       matlab.ui.container.Panel
         ColorbarMinEditFieldLabel       matlab.ui.control.Label
@@ -140,6 +141,8 @@ classdef F2_DAN_HDF5_exported < matlab.apps.AppBase
         commonPIDmin = 1;
         messageLog;
         save_struct = struct % Used for save/load config buttons
+        corrMatrixScalars % scalars to include in correlation matrix
+        corrMatrixSG % scalar groups corresponding to corrMatrixScalars
     end
     
     methods (Access = private)
@@ -224,6 +227,7 @@ classdef F2_DAN_HDF5_exported < matlab.apps.AppBase
         
         function clearAxis(app)
             cla(app.ImageAxes);
+            legend(app.ImageAxes,'hide')
             xlabel(app.ImageAxes,'', 'Interpreter', 'none');
             xticklabels(app.ImageAxes,'auto');
             xticks(app.ImageAxes,'auto');
@@ -316,7 +320,7 @@ classdef F2_DAN_HDF5_exported < matlab.apps.AppBase
             dataSetID = app.dataSetID.Value;
             
             try  
-                app.DANobject = DataSetDAN(dataSetID,exp,app);
+                app.DANobject = DataSetDAN(dataSetID,exp,app,app.InclSCPCheckBox.Value);
             catch errm
                 app.addMsg('Could not find data set')
                 app.addMsg(errm.message)
@@ -326,6 +330,8 @@ classdef F2_DAN_HDF5_exported < matlab.apps.AppBase
             app.updateDataSetInfo();
 
             app.setDropDowns;
+            
+            set(app.InclSCPCheckBox,'Value',app.DANobject.inclSCP);
             
             if ~app.DANobject.dataSet.backgrounds.getBG
                 set(app.SubtractImageBackgroundCheckBox,'Enable','Off')
@@ -652,7 +658,7 @@ classdef F2_DAN_HDF5_exported < matlab.apps.AppBase
         % Button pushed function: ShowCorrelationMatrixButton
         function CorrMatrixButtonPushed(app, event)
             app.clearAxis();
-            app.DANobject.plotCorrMatrix();
+            app.DANobject.plotCorrMatrix(app.corrMatrixScalars,app.corrMatrixSG);
         end
 
         % Value changed function: Dto1DFunctionDropDown_WF
@@ -714,14 +720,23 @@ classdef F2_DAN_HDF5_exported < matlab.apps.AppBase
         % Button pushed function: AddButton
         function AddButtonPushed(app, event)
             selectedScalars = app.ScalarsListBox_CorrM.Value;
+            
+            selectedSG = strings(1,numel(selectedScalars));
+            selectedSG(1,:) = app.ScalargroupDD_CorrM.Value;
+            
             items = app.IncludeListBox_CorrM.Items;
             
             if isempty(items)
                 app.IncludeListBox_CorrM.Items = selectedScalars;
+                app.corrMatrixScalars = selectedScalars;
+                app.corrMatrixSG = selectedSG;
             else
                 ind = contains(selectedScalars,items);
                 items = [items,selectedScalars(~ind)];
                 app.IncludeListBox_CorrM.Items = items;
+                
+                app.corrMatrixScalars = [app.corrMatrixScalars,selectedScalars(~ind)];
+                app.corrMatrixSG = [app.corrMatrixSG,selectedSG(~ind)];
             end
         end
 
@@ -734,6 +749,8 @@ classdef F2_DAN_HDF5_exported < matlab.apps.AppBase
             if ~isempty(ind)
                 items(ind) = [];
                 app.IncludeListBox_CorrM.Items = items;
+                app.corrMatrixScalars(ind) = [];
+                app.corrMatrixSG(ind) = [];
             end
         end
 
@@ -829,7 +846,7 @@ classdef F2_DAN_HDF5_exported < matlab.apps.AppBase
                         fitFun = app.CustomfitfunctionEditField.Value;
                         fitMethod = str2func(fitFun);
                 end
-                [gof,ci] = app.DANobject.fitData(fitMethod);
+                [gof,ci] = app.DANobject.fitData(fitMethod,app.corrMatrixScalars,app.corrMatrixSG);
                 % Get results from fit and show in results box
                 app.ResultsTextArea.Value = ["RMSE: "+string(gof.rmse);...
                     "R-squared: "+string(gof.rsquare); "SSE: "+string(gof.sse);...
@@ -845,6 +862,11 @@ classdef F2_DAN_HDF5_exported < matlab.apps.AppBase
             else
                 app.CustomfitfunctionEditField.Enable = 'off';
             end
+        end
+
+        % Button pushed function: ShowlinearfitButton
+        function ShowlinearfitButtonPushed(app, event)
+           app.DANobject.linearFit();
         end
     end
 
@@ -1120,6 +1142,12 @@ classdef F2_DAN_HDF5_exported < matlab.apps.AppBase
             app.PlotcorrelationButton.ButtonPushedFcn = createCallbackFcn(app, @PlotcorrelationButtonPushed, true);
             app.PlotcorrelationButton.Position = [92 8 135 51];
             app.PlotcorrelationButton.Text = 'Plot correlation';
+
+            % Create ShowlinearfitButton
+            app.ShowlinearfitButton = uibutton(app.correlationPlot, 'push');
+            app.ShowlinearfitButton.ButtonPushedFcn = createCallbackFcn(app, @ShowlinearfitButtonPushed, true);
+            app.ShowlinearfitButton.Position = [230 8 86 51];
+            app.ShowlinearfitButton.Text = 'Show linear fit';
 
             % Create ImageAxes
             app.ImageAxes = uiaxes(app.MainDANTab);
