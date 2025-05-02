@@ -38,10 +38,12 @@ classdef F2_LAA_exported < matlab.apps.AppBase
         feedbackExitPV = 'SIOC:SYS1:ML01:AO169';
         maxMisalignmentTolerancePV = 'SIOC:SYS1:ML01:AO200';
         MPANearFarmaxMisalignmentTolerancePV = 'SIOC:SYS1:ML01:AO189';
+        CompFarmaxMisalignmentTolerancePV = 'SIOC:SYS1:ML01:AO168';
         disableTimestampCheckForCamerasPV = 'SIOC:SYS1:ML01:AO187';
         fitMethod = 1;% Centroid fit method for profmon_process
         maxMisalignmentTolerance;
         MPANearFarmaxMisalignmentTolerance;
+        CompFarmaxMisalignmentTolerance;
         disableTimestampCheckForCameras;
         
         HeNeBlockTRAPV = 'XPS:LA20:LS24:M3';
@@ -229,6 +231,7 @@ classdef F2_LAA_exported < matlab.apps.AppBase
                 end
                 app.maxMisalignmentTolerance = lcaGetSmart(app.maxMisalignmentTolerancePV);% Update max misalignment tolerance
                 app.MPANearFarmaxMisalignmentTolerance = lcaGetSmart(app.MPANearFarmaxMisalignmentTolerancePV);% Update max misalignment tolerance
+                app.CompFarmaxMisalignmentTolerance = lcaGetSmart(app.CompFarmaxMisalignmentTolerancePV);% Update max misalignment tolerance
                 app.disableTimestampCheckForCameras = lcaGetSmart(app.disableTimestampCheckForCamerasPV);% Update timestamp check
                 
                 % Make sure the tolerance PV makes sense

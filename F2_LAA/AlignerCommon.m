@@ -204,6 +204,13 @@ classdef AlignerCommon
                         num2str(self.app.MPANearFarmaxMisalignmentTolerance)]);
                     failed = 1;
                 end
+            elseif strcmp(section.name, 'Comp Far')% Special case for Comp Far
+                moveToBig = any(abs(offsets)>self.app.CompFarmaxMisalignmentTolerance);
+                if any(moveToBig)
+                    self.app.appendMessage(['WARNING - Laser offset is larger than max of ', ...
+                        num2str(self.app.CompFarmaxMisalignmentTolerance)]);
+                    failed = 1;
+                end
             else
                 moveToBig = any(abs(offsets)>self.app.maxMisalignmentTolerance);
                 if any(moveToBig)
