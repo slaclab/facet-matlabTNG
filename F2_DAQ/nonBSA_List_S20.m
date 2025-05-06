@@ -298,5 +298,17 @@ S20_nonBSA_List = {...
 'SIOC:SYS1:ML00:AO638'; %Gamma2 y Out position
 'SIOC:SYS1:ML00:AO639'; %Gamma2 in or out
 
+% Notch jaw motion calibration PVs
+'SIOC:SYS1:ML00:AO991'; % a
+'SIOC:SYS1:ML00:AO992'; % b 
+'SIOC:SYS1:ML00:AO993'; % a'
+'SIOC:SYS1:ML00:AO994'; % b'
+'SIOC:SYS1:ML00:AO958'; % simple linear fit for these 4
+'SIOC:SYS1:ML00:AO964';
+'SIOC:SYS1:ML00:AO965';
+'SIOC:SYS1:ML00:AO967';
+'SIOC:SYS1:ML00:AO997'; % theta_0
+'SIOC:SYS1:ML00:AO538'; % c'
+
 
 };
