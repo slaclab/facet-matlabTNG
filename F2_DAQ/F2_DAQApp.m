@@ -23,6 +23,7 @@ classdef F2_DAQApp < handle
         rate_names = {'Beam','10 Hz','5 Hz','1 Hz','0.5 Hz','0.2 Hz'}
         ecs = [201,203,213,214,222,223,224,225,226,131,53,54,55,56]
         n_ecs = 14
+        n_edefs = 11
     end
     
     methods
@@ -45,6 +46,7 @@ classdef F2_DAQApp < handle
                 PV(context,'name',"GUI_Instance",'pvname',"SIOC:SYS1:ML02:AO351",'mode',"rw",'monitor',true); % Number of times GUI is run
                 PV(context,'name',"DAQ_Instance",'pvname',"SIOC:SYS1:ML02:AO400",'mode',"rw",'monitor',true); % Number of times DAQ is run
                 PV(context,'name',"Reset",'pvname',"SIOC:SYS1:ML02:AO352",'mode',"rw",'monitor',true); % DAQ Running
+                PV(context,'name',"EDEFAVAIL",'pvname',"IOC:SYS1:EV01:EDEFAVAIL",'mode',"rw",'monitor',true); % DAQ Running
                 PV(context,'name',"Abort",'pvname',"SIOC:SYS1:ML02:AO353",'mode',"rw",'monitor',true); % DAQ Abort
                 PV(context,'name',"DAQ_DataOn",'pvname',"SIOC:SYS1:ML02:AO354",'mode',"rw",'monitor',true); % DAQ Data On
                 ] ;
@@ -97,6 +99,28 @@ classdef F2_DAQApp < handle
             % This indicates data taking has ended
             caput(obj.pvs.DAQ_DataOn,0);
             obj.addMessage('DAQ reset.');
+            
+        end
+        
+        function clearEDEFs(obj)
+                        
+            % Check number of available EDEFs
+            avail = caget(obj.pvs.EDEFAVAIL);
+            obj.addMessage([num2str(avail) ' EDEFs available before clearing.']);
+            
+            % Loop over EDEFs and clear them if they are off
+            for i = 1:obj.n_edefs
+                stat = lcaGet(['EDEF:SYS1:' num2str(i) ':CTRL'],0,'DBF_ENUM');
+                if stat
+                    obj.addMessage(['EDEF ' num2str(i) ' is active. Skipping.']);
+                    continue;
+                end
+                lcaPut(['EDEF:SYS1:' num2str(i) ':FREE.PROC'],1);
+            end
+            
+            % Check number of available EDEFs
+            avail = caget(obj.pvs.EDEFAVAIL);
+            obj.addMessage([num2str(avail) ' EDEFs available after clearing.']);
             
         end
         
