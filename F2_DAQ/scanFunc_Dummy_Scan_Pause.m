@@ -38,8 +38,12 @@ classdef scanFunc_Dummy_Scan_Pause
         
         function delta = set_value(obj,value)
             
+            message = 'Scan paused. Press Yes to continue.';
+            reply = questdlg(message,'OK');
+            
             caput(obj.pvs.control,value);
-            pause(10);
+            %pause(10);
+            
             obj.daqhandle.dispMessage(sprintf('Setting %s to %0.2f', obj.pvs.control.name, value));
             
             current_value = caget(obj.pvs.readback);
