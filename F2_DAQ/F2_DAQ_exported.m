@@ -91,6 +91,7 @@ classdef F2_DAQ_exported < matlab.apps.AppBase
         MessagesTextArea               matlab.ui.control.TextArea
         ResetDAQButton                 matlab.ui.control.StateButton
         FixCamerasButton               matlab.ui.control.Button
+        ClearEDEFsButton               matlab.ui.control.Button
     end
 
     
@@ -384,6 +385,11 @@ classdef F2_DAQ_exported < matlab.apps.AppBase
         % Button pushed function: FixCamerasButton
         function FixCamerasButtonPushed(app, event)
             app.aobj.camCheck.restore_trig_event(214)
+        end
+
+        % Button pushed function: ClearEDEFsButton
+        function ClearEDEFsButtonPushed(app, event)
+            app.aobj.clearEDEFs();
         end
     end
 
@@ -929,7 +935,7 @@ classdef F2_DAQ_exported < matlab.apps.AppBase
             app.RunButton.Text = 'Run';
             app.RunButton.BackgroundColor = [0.4588 0.9412 0.4588];
             app.RunButton.FontWeight = 'bold';
-            app.RunButton.Position = [12 84 86 23];
+            app.RunButton.Position = [12 84 57 23];
 
             % Create AbortButton
             app.AbortButton = uibutton(app.RunPanel, 'state');
@@ -937,7 +943,7 @@ classdef F2_DAQ_exported < matlab.apps.AppBase
             app.AbortButton.Text = 'Abort';
             app.AbortButton.BackgroundColor = [0.949 0.0863 0.0863];
             app.AbortButton.FontWeight = 'bold';
-            app.AbortButton.Position = [102 84 90 23];
+            app.AbortButton.Position = [76 84 57 23];
 
             % Create MessagesTextArea
             app.MessagesTextArea = uitextarea(app.RunPanel);
@@ -949,14 +955,20 @@ classdef F2_DAQ_exported < matlab.apps.AppBase
             app.ResetDAQButton.Tooltip = {'Only do this if you know that someone else isn''t trying to run the DAQ. Ask your friends!'};
             app.ResetDAQButton.Text = 'Reset DAQ';
             app.ResetDAQButton.BackgroundColor = [0.8 0.8 0.8];
-            app.ResetDAQButton.Position = [303 84 90 23];
+            app.ResetDAQButton.Position = [320 84 73 23];
 
             % Create FixCamerasButton
             app.FixCamerasButton = uibutton(app.RunPanel, 'push');
             app.FixCamerasButton.ButtonPushedFcn = createCallbackFcn(app, @FixCamerasButtonPushed, true);
-            app.FixCamerasButton.BackgroundColor = [0.8 0.8 0.8];
-            app.FixCamerasButton.Position = [211 84 90 23];
+            app.FixCamerasButton.BackgroundColor = [0.302 0.7451 0.9333];
+            app.FixCamerasButton.Position = [143 84 78 23];
             app.FixCamerasButton.Text = 'Fix Cameras';
+
+            % Create ClearEDEFsButton
+            app.ClearEDEFsButton = uibutton(app.RunPanel, 'push');
+            app.ClearEDEFsButton.ButtonPushedFcn = createCallbackFcn(app, @ClearEDEFsButtonPushed, true);
+            app.ClearEDEFsButton.Position = [228 84 86 23];
+            app.ClearEDEFsButton.Text = 'Clear EDEFs';
 
             % Show the figure after all components are created
             app.FACETIIDAQUIFigure.Visible = 'on';
