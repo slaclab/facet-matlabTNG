@@ -248,7 +248,7 @@ classdef DataSetDAN < handle
 %             
 %         end
         
-        function plotCorrMatrix(s,scalars,scalarGroups)
+        function plotCorrMatrix(s,var1,varGroup1,var2,varGroup2)
             % Create array of all scalar data
             if s.inclSCP
                 numDataPts = numel(s.dataSet.pulseID.common_scalar_index_inclSCP);
@@ -257,77 +257,104 @@ classdef DataSetDAN < handle
             end
 
 %             scalars = s.GUIHandle.IncludeListBox_CorrM.Items; % cell array
-            numScalars = numel(scalars);
-            scalarArrayData = zeros(numDataPts,numScalars);
+            numScalars1 = numel(var1); % limit to 1?
+            scalar1ArrayData = zeros(numDataPts,numScalars1);
             
-            for i = 1:numScalars
-                facetScalar = scalars{i};
-                [x, ~] = s.hlpGetScalarArray(facetScalar,1,scalarGroups{i});
-                scalarArrayData(:,i) = x;
+            for i = 1:numScalars1
+                facetScalar = var1{i};
+                
+                errm = 'input argument #1 not a FACET Scalar Array';
+                type = s.hlpIsFSArray(facetScalar,errm);
+                [x, ~] = s.hlpGetScalarArray(facetScalar,type,varGroup1{i});
+                scalar1ArrayData(:,i) = x;
             end
             
-            if any(any(isnan(scalarArrayData)))
+            if any(any(isnan(scalar1ArrayData)))
                 s.GUIHandle.addMsg('Warning: Scalar data contains NaNs!')
             end
             
+            % Repeat for second variable(s)
+            numScalars2 = numel(var2);
+            scalar2ArrayData = zeros(numDataPts,numScalars2);
+            
+            for i = 1:numScalars2
+                facetScalar = var2{i};
+                
+                errm = 'input argument #1 not a FACET Scalar Array';
+                type = s.hlpIsFSArray(facetScalar,errm);
+                [x, ~] = s.hlpGetScalarArray(facetScalar,type,varGroup2{i});
+                scalar2ArrayData(:,i) = x; % Each column is a different variable
+            end
+            
+            if any(any(isnan(scalar2ArrayData)))
+                s.GUIHandle.addMsg('Warning: Scalar data contains NaNs!')
+            end
+            
+            % Clear current plot
             panelHan = s.GUIHandle.PlotsPanel;
             set(panelHan,'AutoResizeChildren','off');
             delete(panelHan.Children); % clear plots
-                
-            if numScalars < 5
-                % Make corrplot and copy to GUI panel
-                fig = figure('Visible','off');
-                ax = axes(fig);
-                try
-                    [R,~,h] = corrplot(ax,scalarArrayData);
-                catch ME
-                    s.GUIHandle.addMsg('Failed to make correlation plot');
-                    if strcmp(ME.identifier,'MATLAB:hg:shaped_arrays:LimitsWithInfsPredicate')
-                        s.GUIHandle.addMsg('Make sure correlations can be calculated for the selected variables');
-                    end
-                    return
-                end
-
-                % Copy all histogram/scatter plot handles
-                axesHans = {};
-                t = tiledlayout(panelHan,numScalars,numScalars,'Padding',...
-                    'compact','TileSpacing','normal');
-                
-                XscalarVec = repmat(1:numScalars,numScalars,1);
-                YscalarVec = repelem(1:numScalars,numScalars);
-                for i = 1:numel(h)
-                    axesHans{i} = nexttile(t);
-                    copyobj(h(i),axesHans{i});
+            
+            % Initialize R array
+            Rsquaredarray = zeros(numScalars1,numScalars2);
+            PVname = struct;
+            for i = 1:numScalars1
+                for j = 1:numScalars2
+                    % Get correlations
+                    [R_matrix,~] = corrcoef(scalar1ArrayData(:,i),scalar2ArrayData(:,j));
+                    R = R_matrix(1,2); % Get the R we really want
                     
-                    scalars = replace(scalars,"_"," ");
-                    xlabel(axesHans{i},scalars(XscalarVec(i)))
-                    ylabel(axesHans{i},scalars(YscalarVec(i)),'FontSize',7)
+                    % Saves R value
+                    Rsquaredarray(i,j) = R.^2;
+
+                    % Put the name of the PVs as the title
+                    var1Name = var1{i};
+                    if ischar(var1Name)
+                        var1Name = replace(var1Name,"_"," ");
+                    elseif iscell(var1Name)
+                        var1Name = var1{i}{1};
+                        var1Name = replace(var1Name,"_"," ");
+                    end
+                    
+                    var2Name = var2{j};
+                    if ischar(var2Name)
+                        var2Name = replace(var2Name,"_"," ");
+                    elseif iscell(var2Name)
+                        var2Name = var2{j}{1};
+                        var2Name = replace(var2Name,"_"," ");
+                    end
+                    
+                    curloc = (i-1)*numScalars2 + j;
+                    PVname(curloc).PVnameloc = sprintf('%s vs\n%s',var1Name,var2Name);
                 end
-
-                delete(fig); % delete corrplot figure
-            else
-                [R,~] = corrcoef(scalarArrayData);
-                
-                t = tiledlayout(panelHan,1,1,'Padding',...
-                    'compact','TileSpacing','none');
-                axHan = nexttile(t);
-                imagesc(axHan,R);
-                colorbar(axHan);
-                
-                scalars = replace(scalars,"_"," ");
-                xticks(axHan,1:numScalars);
-                xticklabels(axHan,scalars);
-                xtickangle(axHan,45);
-                
-                yticks(axHan,1:numScalars);
-                yticklabels(axHan,scalars);
             end
-
-            title(t,"Correlation Matrix",'FontWeight','bold');
+            
+            
+            % Reshapes data
+            Rsquaredarray = reshape(Rsquaredarray,[1 numScalars1*numScalars2]);
+            
+            % Create tiledlayout
+            t = tiledlayout(panelHan,'flow','Padding','normal','TileSpacing','none');
+            axHan = nexttile(t);
+            plot(axHan,1:length(Rsquaredarray),Rsquaredarray,'*r')
+            hold(axHan,'on');
+            %plot([rsquareddata.(fields{a}).PVs.rsquaredval],'r*','Linewidth',2)
+            %labels = {rsquareddata.(fields{a}).PVs.PVname};
+            for a = 1:length(PVname)
+                text(axHan,a,Rsquaredarray(a),PVname(a).PVnameloc,...
+                    'VerticalAlignment','top','HorizontalAlignment','left');
+            end
+            ylim(axHan,[0 1]);
+            xlim(axHan,[0 numel(Rsquaredarray)+1]);
+            xticklabels(axHan,{});
+            title(axHan,'R^2 Correlations Plot');
+            %title(t,"Correlation Matrix",'FontWeight','bold');
+            %colorbar(axHan,[0,1]);
+%             subtitle(t,['Correlating against ' var1]);
                         
             % Show R values in DAN log
-            s.hlpDispMsg('R =');
-            R_str = num2str(R);
+            s.hlpDispMsg('R^2 =');
+            R_str = num2str(Rsquaredarray);
             for i = 1:size(R_str,1)
                 s.hlpDispMsg(R_str(i,:));
             end
@@ -336,7 +363,7 @@ classdef DataSetDAN < handle
         function [gof, ci] = fitData(s,fitMethod,scalars,scalarGroups)
             % There is another "fit" function so we have to add the path
             % for the one we want to use (the matlab function)
-            addpath('/usr/local/lcls/package/matlab/2020a/toolbox/curvefit/curvefit');
+%             addpath('/usr/local/lcls/package/matlab/2020a/toolbox/curvefit/curvefit');
             
             % Get data
 %             scalars = s.GUIHandle.IncludeListBox_CorrM.Items; % cell array

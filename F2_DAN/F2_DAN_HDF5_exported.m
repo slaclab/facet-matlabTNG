@@ -112,7 +112,7 @@ classdef F2_DAN_HDF5_exported < matlab.apps.AppBase
         DataSetInfoTextArea_2           matlab.ui.control.TextArea
         DANlogTextArea_2Label           matlab.ui.control.Label
         DANlogTextArea_2                matlab.ui.control.TextArea
-        CorrelationMatrixPanel          matlab.ui.container.Panel
+        Correlation1Panel               matlab.ui.container.Panel
         ScalarsLabel                    matlab.ui.control.Label
         ScalarsListBox_CorrM            matlab.ui.control.ListBox
         ShowCorrelationMatrixButton     matlab.ui.control.Button
@@ -122,6 +122,13 @@ classdef F2_DAN_HDF5_exported < matlab.apps.AppBase
         IncludeListBox_CorrM            matlab.ui.control.ListBox
         AddButton                       matlab.ui.control.Button
         RemoveButton                    matlab.ui.control.Button
+        CorrMSwitch1                    matlab.ui.control.Switch
+        CameraLabel_2                   matlab.ui.control.Label
+        CameraDropDown                  matlab.ui.control.DropDown
+        DtoscalarfunctionLabel          matlab.ui.control.Label
+        DtoscalarfunctionDropDown       matlab.ui.control.DropDown
+        OtherEditFieldLabel             matlab.ui.control.Label
+        OtherEditField                  matlab.ui.control.EditField
         PlotsPanel                      matlab.ui.container.Panel
         UIAxes                          matlab.ui.control.UIAxes
         FitDataPanel                    matlab.ui.container.Panel
@@ -132,6 +139,22 @@ classdef F2_DAN_HDF5_exported < matlab.apps.AppBase
         ResultsTextAreaLabel            matlab.ui.control.Label
         ResultsTextArea                 matlab.ui.control.TextArea
         ShowFitButton                   matlab.ui.control.Button
+        Correlation2Panel               matlab.ui.container.Panel
+        ScalargroupDropDownLabel_2      matlab.ui.control.Label
+        ScalargroupDD_CorrM_2           matlab.ui.control.DropDown
+        ScalarsLabel_2                  matlab.ui.control.Label
+        ScalarsListBox_CorrM_2          matlab.ui.control.ListBox
+        CorrMSwitch2                    matlab.ui.control.Switch
+        CameraDropDown_2Label           matlab.ui.control.Label
+        CameraDropDown_2                matlab.ui.control.DropDown
+        DtoscalarfunctionLabel_2        matlab.ui.control.Label
+        DtoscalarfunctionDropDown_2     matlab.ui.control.DropDown
+        AddButton_2                     matlab.ui.control.Button
+        RemoveButton_2                  matlab.ui.control.Button
+        IncludeincorrmatrixfitLabel_2   matlab.ui.control.Label
+        IncludeListBox_CorrM_2          matlab.ui.control.ListBox
+        OtherEditField_2Label           matlab.ui.control.Label
+        OtherEditField_2                matlab.ui.control.EditField
     end
 
     
@@ -141,8 +164,10 @@ classdef F2_DAN_HDF5_exported < matlab.apps.AppBase
         commonPIDmin = 1;
         messageLog;
         save_struct = struct % Used for save/load config buttons
-        corrMatrixScalars % scalars to include in correlation matrix
-        corrMatrixSG % scalar groups corresponding to corrMatrixScalars
+        corrMatrixScalars1 = {} % scalars to include in correlation matrix
+        corrMatrixScalars2 = {} % scalars to include in correlation matrix
+        corrMatrixSG1 % scalar groups corresponding to corrMatrixScalars
+        corrMatrixSG2 % scalar groups corresponding to corrMatrixScalars
     end
     
     methods (Access = private)
@@ -195,6 +220,8 @@ classdef F2_DAN_HDF5_exported < matlab.apps.AppBase
             app.CameraDropDown_WF.Items = listOfCameras;
             app.CameraDropDown_Corr2.Items = listOfCameras;
             app.CameraDropDown_WFS.Items = listOfCameras;
+            app.CameraDropDown.Items = listOfCameras;
+            app.CameraDropDown_2.Items = listOfCameras;
             
             scalarGroups = app.DANobject.getScalarGroups();
             
@@ -210,6 +237,9 @@ classdef F2_DAN_HDF5_exported < matlab.apps.AppBase
                 
                 app.ScalargroupDD_CorrM.Items = scalarGroups;
                 app.ScalargroupDD_CorrMValueChanged();
+                
+                app.ScalargroupDD_CorrM_2.Items = scalarGroups;
+                app.ScalargroupDD_CorrM_2ValueChanged();
             else
                 app.ScalargroupDropDown_Corr1.Items = {''};
                 app.ScalarDropDown_Corr1.Items = {''};
@@ -658,7 +688,7 @@ classdef F2_DAN_HDF5_exported < matlab.apps.AppBase
         % Button pushed function: ShowCorrelationMatrixButton
         function CorrMatrixButtonPushed(app, event)
             app.clearAxis();
-            app.DANobject.plotCorrMatrix(app.corrMatrixScalars,app.corrMatrixSG);
+            app.DANobject.plotCorrMatrix(app.corrMatrixScalars1,app.corrMatrixSG1,app.corrMatrixScalars2,app.corrMatrixSG2);
         end
 
         % Value changed function: Dto1DFunctionDropDown_WF
@@ -719,24 +749,56 @@ classdef F2_DAN_HDF5_exported < matlab.apps.AppBase
 
         % Button pushed function: AddButton
         function AddButtonPushed(app, event)
+            switchVal = app.CorrMSwitch1.Value;
+            
             selectedScalars = app.ScalarsListBox_CorrM.Value;
-            
-            selectedSG = strings(1,numel(selectedScalars));
-            selectedSG(1,:) = app.ScalargroupDD_CorrM.Value;
-            
-            items = app.IncludeListBox_CorrM.Items;
-            
-            if isempty(items)
-                app.IncludeListBox_CorrM.Items = selectedScalars;
-                app.corrMatrixScalars = selectedScalars;
-                app.corrMatrixSG = selectedSG;
+            if isempty(selectedScalars)
+                selectedSG = string(app.ScalargroupDD_CorrM.Value);
             else
-                ind = contains(selectedScalars,items);
-                items = [items,selectedScalars(~ind)];
-                app.IncludeListBox_CorrM.Items = items;
+                selectedSG = strings(1,numel(selectedScalars));
+                selectedSG(1,:) = app.ScalargroupDD_CorrM.Value;
+            end
+            
+            if strcmp(switchVal,'Scalar')
                 
-                app.corrMatrixScalars = [app.corrMatrixScalars,selectedScalars(~ind)];
-                app.corrMatrixSG = [app.corrMatrixSG,selectedSG(~ind)];
+                items = app.IncludeListBox_CorrM.Items;
+                
+                if isempty(items)
+                    app.IncludeListBox_CorrM.Items = selectedScalars;
+                    app.corrMatrixScalars1 = selectedScalars;
+                    app.corrMatrixSG1 = cellstr(selectedSG);
+                else
+                    ind = contains(selectedScalars,items);
+                    items = [items,selectedScalars(~ind)];
+                    app.IncludeListBox_CorrM.Items = items;
+                    
+                    app.corrMatrixScalars1 = [app.corrMatrixScalars1,selectedScalars(~ind)];
+                    app.corrMatrixSG1 = [app.corrMatrixSG1,cellstr(selectedSG(~ind))];
+                end
+            elseif strcmp(switchVal,'Image')
+                selectedCamera = app.CameraDropDown.Value;
+                selectedCameraFcn = app.DtoscalarfunctionDropDown.Value;
+                if strcmp(selectedCameraFcn,'Other')
+                    selectedCameraFcn = app.OtherEditField.Value;
+                end
+                
+                items = app.IncludeListBox_CorrM.Items;
+                
+                if isempty(items)
+                    app.IncludeListBox_CorrM.Items = {selectedCamera};
+                    app.corrMatrixScalars1 = {{selectedCamera,str2func(selectedCameraFcn)}};
+                    app.corrMatrixSG1 = cellstr(selectedSG);
+                else
+                    ind = contains(selectedCamera,items);
+                    if ~ind
+                        items = [items,{selectedCamera}];
+                        app.IncludeListBox_CorrM.Items = items;
+                        app.corrMatrixScalars1 = [app.corrMatrixScalars1,{{selectedCamera,str2func(selectedCameraFcn)}}];
+                        app.corrMatrixSG1 = [app.corrMatrixSG1,cellstr(selectedSG)];
+                    end
+                end
+            else
+                % Add an error here
             end
         end
 
@@ -749,8 +811,8 @@ classdef F2_DAN_HDF5_exported < matlab.apps.AppBase
             if ~isempty(ind)
                 items(ind) = [];
                 app.IncludeListBox_CorrM.Items = items;
-                app.corrMatrixScalars(ind) = [];
-                app.corrMatrixSG(ind) = [];
+                app.corrMatrixScalars1(ind) = [];
+                app.corrMatrixSG1(ind) = [];
             end
         end
 
@@ -867,6 +929,81 @@ classdef F2_DAN_HDF5_exported < matlab.apps.AppBase
         % Button pushed function: ShowlinearfitButton
         function ShowlinearfitButtonPushed(app, event)
            app.DANobject.linearFit();
+        end
+
+        % Button pushed function: AddButton_2
+        function AddButton_2Pushed(app, event)
+            switchVal = app.CorrMSwitch2.Value;
+            
+            selectedScalars = app.ScalarsListBox_CorrM_2.Value;
+            if isempty(selectedScalars)
+                selectedSG = string(app.ScalargroupDD_CorrM.Value);
+            else
+                selectedSG = strings(1,numel(selectedScalars));
+                selectedSG(1,:) = app.ScalargroupDD_CorrM_2.Value;
+            end
+            
+            if strcmp(switchVal,'Scalar')
+                
+                items = app.IncludeListBox_CorrM_2.Items;
+                
+                if isempty(items)
+                    app.IncludeListBox_CorrM_2.Items = selectedScalars;
+                    app.corrMatrixScalars2 = selectedScalars;
+                    app.corrMatrixSG2 = cellstr(selectedSG);
+                else
+                    ind = contains(selectedScalars,items);
+                    items = [items,selectedScalars(~ind)];
+                    app.IncludeListBox_CorrM_2.Items = items;
+                    
+                    app.corrMatrixScalars2 = [app.corrMatrixScalars2,selectedScalars(~ind)];
+                    app.corrMatrixSG2 = [app.corrMatrixSG2,cellstr(selectedSG(~ind))];
+                end
+            elseif strcmp(switchVal,'Image')
+                selectedCamera = app.CameraDropDown_2.Value;
+                selectedCameraFcn = app.DtoscalarfunctionDropDown_2.Value;
+                if strcmp(selectedCameraFcn,'Other')
+                    selectedCameraFcn = app.OtherEditField_2.Value;
+                end
+                
+                items = app.IncludeListBox_CorrM_2.Items;
+                
+                if isempty(items)
+                    app.IncludeListBox_CorrM_2.Items = {selectedCamera};
+                    app.corrMatrixScalars2 = {{selectedCamera,str2func(selectedCameraFcn)}};
+                    app.corrMatrixSG2 = {selectedSG};
+                else
+                    ind = contains(selectedCamera,items);
+                    if ~ind
+                        items = [items,{selectedCamera}];
+                        app.corrMatrixScalars2 = [app.corrMatrixScalars2,{{selectedCamera,str2func(selectedCameraFcn)}}];
+                        app.corrMatrixSG2 = [app.corrMatrixSG2,{selectedSG}];
+                    end
+                    app.IncludeListBox_CorrM_2.Items = items;
+                end
+            else
+                % Add an error here
+            end
+        end
+
+        % Button pushed function: RemoveButton_2
+        function RemoveButton_2Pushed(app, event)
+            value = app.IncludeListBox_CorrM_2.Value;
+            items = app.IncludeListBox_CorrM_2.Items;
+            ind = contains(items,value);
+            
+            if ~isempty(ind)
+                items(ind) = [];
+                app.IncludeListBox_CorrM_2.Items = items;
+                app.corrMatrixScalars2(ind) = [];
+                app.corrMatrixSG2(ind) = [];
+            end
+        end
+
+        % Value changed function: ScalargroupDD_CorrM_2
+        function ScalargroupDD_CorrM_2ValueChanged(app, event)
+            value = app.ScalargroupDD_CorrM_2.Value;
+            app.changeSGroupDD(app.ScalarsListBox_CorrM_2,value);
         end
     end
 
@@ -1504,64 +1641,104 @@ classdef F2_DAN_HDF5_exported < matlab.apps.AppBase
             app.DANlogTextArea_2 = uitextarea(app.DANInfoPanel);
             app.DANlogTextArea_2.Position = [15 14 305 82];
 
-            % Create CorrelationMatrixPanel
-            app.CorrelationMatrixPanel = uipanel(app.MoreFeaturesTab);
-            app.CorrelationMatrixPanel.Title = 'Correlation Matrix';
-            app.CorrelationMatrixPanel.Position = [31 15 333 558];
+            % Create Correlation1Panel
+            app.Correlation1Panel = uipanel(app.MoreFeaturesTab);
+            app.Correlation1Panel.Title = 'Correlation 1';
+            app.Correlation1Panel.Position = [31 15 333 558];
 
             % Create ScalarsLabel
-            app.ScalarsLabel = uilabel(app.CorrelationMatrixPanel);
-            app.ScalarsLabel.Position = [15 470 49 22];
+            app.ScalarsLabel = uilabel(app.Correlation1Panel);
+            app.ScalarsLabel.Position = [9 448 49 22];
             app.ScalarsLabel.Text = 'Scalars:';
 
             % Create ScalarsListBox_CorrM
-            app.ScalarsListBox_CorrM = uilistbox(app.CorrelationMatrixPanel);
+            app.ScalarsListBox_CorrM = uilistbox(app.Correlation1Panel);
             app.ScalarsListBox_CorrM.Items = {};
             app.ScalarsListBox_CorrM.Multiselect = 'on';
-            app.ScalarsListBox_CorrM.Position = [14 326 300 145];
+            app.ScalarsListBox_CorrM.Position = [8 343 158 106];
             app.ScalarsListBox_CorrM.Value = {};
 
             % Create ShowCorrelationMatrixButton
-            app.ShowCorrelationMatrixButton = uibutton(app.CorrelationMatrixPanel, 'push');
+            app.ShowCorrelationMatrixButton = uibutton(app.Correlation1Panel, 'push');
             app.ShowCorrelationMatrixButton.ButtonPushedFcn = createCallbackFcn(app, @CorrMatrixButtonPushed, true);
             app.ShowCorrelationMatrixButton.Position = [86 16 146 42];
             app.ShowCorrelationMatrixButton.Text = 'Show Correlation Matrix';
 
             % Create ScalargroupDropDownLabel
-            app.ScalargroupDropDownLabel = uilabel(app.CorrelationMatrixPanel);
-            app.ScalargroupDropDownLabel.Position = [13 500 77 22];
+            app.ScalargroupDropDownLabel = uilabel(app.Correlation1Panel);
+            app.ScalargroupDropDownLabel.Position = [8 474 77 22];
             app.ScalargroupDropDownLabel.Text = 'Scalar group:';
 
             % Create ScalargroupDD_CorrM
-            app.ScalargroupDD_CorrM = uidropdown(app.CorrelationMatrixPanel);
+            app.ScalargroupDD_CorrM = uidropdown(app.Correlation1Panel);
             app.ScalargroupDD_CorrM.Items = {};
             app.ScalargroupDD_CorrM.ValueChangedFcn = createCallbackFcn(app, @ScalargroupDD_CorrMValueChanged, true);
-            app.ScalargroupDD_CorrM.Position = [105 500 211 22];
+            app.ScalargroupDD_CorrM.Position = [83 474 83 22];
             app.ScalargroupDD_CorrM.Value = {};
 
             % Create IncludeincorrmatrixfitLabel
-            app.IncludeincorrmatrixfitLabel = uilabel(app.CorrelationMatrixPanel);
+            app.IncludeincorrmatrixfitLabel = uilabel(app.Correlation1Panel);
             app.IncludeincorrmatrixfitLabel.Position = [19 262 140 22];
             app.IncludeincorrmatrixfitLabel.Text = 'Include in corr matrix / fit:';
 
             % Create IncludeListBox_CorrM
-            app.IncludeListBox_CorrM = uilistbox(app.CorrelationMatrixPanel);
+            app.IncludeListBox_CorrM = uilistbox(app.Correlation1Panel);
             app.IncludeListBox_CorrM.Items = {};
             app.IncludeListBox_CorrM.Multiselect = 'on';
             app.IncludeListBox_CorrM.Position = [19 87 296 174];
             app.IncludeListBox_CorrM.Value = {};
 
             % Create AddButton
-            app.AddButton = uibutton(app.CorrelationMatrixPanel, 'push');
+            app.AddButton = uibutton(app.Correlation1Panel, 'push');
             app.AddButton.ButtonPushedFcn = createCallbackFcn(app, @AddButtonPushed, true);
             app.AddButton.Position = [86 296 68 22];
             app.AddButton.Text = 'Add';
 
             % Create RemoveButton
-            app.RemoveButton = uibutton(app.CorrelationMatrixPanel, 'push');
+            app.RemoveButton = uibutton(app.Correlation1Panel, 'push');
             app.RemoveButton.ButtonPushedFcn = createCallbackFcn(app, @RemoveButtonPushed, true);
             app.RemoveButton.Position = [164 296 68 22];
             app.RemoveButton.Text = 'Remove';
+
+            % Create CorrMSwitch1
+            app.CorrMSwitch1 = uiswitch(app.Correlation1Panel, 'slider');
+            app.CorrMSwitch1.Items = {'Scalar', 'Image'};
+            app.CorrMSwitch1.Position = [150 509 45 20];
+            app.CorrMSwitch1.Value = 'Scalar';
+
+            % Create CameraLabel_2
+            app.CameraLabel_2 = uilabel(app.Correlation1Panel);
+            app.CameraLabel_2.HorizontalAlignment = 'right';
+            app.CameraLabel_2.Position = [178 474 52 22];
+            app.CameraLabel_2.Text = 'Camera:';
+
+            % Create CameraDropDown
+            app.CameraDropDown = uidropdown(app.Correlation1Panel);
+            app.CameraDropDown.Items = {};
+            app.CameraDropDown.Position = [237 474 88 22];
+            app.CameraDropDown.Value = {};
+
+            % Create DtoscalarfunctionLabel
+            app.DtoscalarfunctionLabel = uilabel(app.Correlation1Panel);
+            app.DtoscalarfunctionLabel.HorizontalAlignment = 'right';
+            app.DtoscalarfunctionLabel.Position = [205 438 118 22];
+            app.DtoscalarfunctionLabel.Text = '2D to scalar function:';
+
+            % Create DtoscalarfunctionDropDown
+            app.DtoscalarfunctionDropDown = uidropdown(app.Correlation1Panel);
+            app.DtoscalarfunctionDropDown.Items = {'@(x)sum(sum(x))', 'Other'};
+            app.DtoscalarfunctionDropDown.Position = [186 417 137 22];
+            app.DtoscalarfunctionDropDown.Value = '@(x)sum(sum(x))';
+
+            % Create OtherEditFieldLabel
+            app.OtherEditFieldLabel = uilabel(app.Correlation1Panel);
+            app.OtherEditFieldLabel.HorizontalAlignment = 'right';
+            app.OtherEditFieldLabel.Position = [284 388 39 22];
+            app.OtherEditFieldLabel.Text = 'Other:';
+
+            % Create OtherEditField
+            app.OtherEditField = uieditfield(app.Correlation1Panel, 'text');
+            app.OtherEditField.Position = [187 367 136 22];
 
             % Create PlotsPanel
             app.PlotsPanel = uipanel(app.MoreFeaturesTab);
@@ -1579,7 +1756,7 @@ classdef F2_DAN_HDF5_exported < matlab.apps.AppBase
             % Create FitDataPanel
             app.FitDataPanel = uipanel(app.MoreFeaturesTab);
             app.FitDataPanel.Title = 'Fit Data';
-            app.FitDataPanel.Position = [386 16 301 295];
+            app.FitDataPanel.Position = [912 18 301 295];
 
             % Create ModeltypetofitDropDownLabel
             app.ModeltypetofitDropDownLabel = uilabel(app.FitDataPanel);
@@ -1618,6 +1795,99 @@ classdef F2_DAN_HDF5_exported < matlab.apps.AppBase
             app.ShowFitButton.ButtonPushedFcn = createCallbackFcn(app, @ShowFitButtonPushed, true);
             app.ShowFitButton.Position = [101 154 100 22];
             app.ShowFitButton.Text = 'Show Fit';
+
+            % Create Correlation2Panel
+            app.Correlation2Panel = uipanel(app.MoreFeaturesTab);
+            app.Correlation2Panel.Title = 'Correlation 2';
+            app.Correlation2Panel.Position = [380 12 511 305];
+
+            % Create ScalargroupDropDownLabel_2
+            app.ScalargroupDropDownLabel_2 = uilabel(app.Correlation2Panel);
+            app.ScalargroupDropDownLabel_2.Position = [11 253 77 22];
+            app.ScalargroupDropDownLabel_2.Text = 'Scalar group:';
+
+            % Create ScalargroupDD_CorrM_2
+            app.ScalargroupDD_CorrM_2 = uidropdown(app.Correlation2Panel);
+            app.ScalargroupDD_CorrM_2.Items = {};
+            app.ScalargroupDD_CorrM_2.ValueChangedFcn = createCallbackFcn(app, @ScalargroupDD_CorrM_2ValueChanged, true);
+            app.ScalargroupDD_CorrM_2.Position = [91 253 90 22];
+            app.ScalargroupDD_CorrM_2.Value = {};
+
+            % Create ScalarsLabel_2
+            app.ScalarsLabel_2 = uilabel(app.Correlation2Panel);
+            app.ScalarsLabel_2.Position = [12 224 49 22];
+            app.ScalarsLabel_2.Text = 'Scalars:';
+
+            % Create ScalarsListBox_CorrM_2
+            app.ScalarsListBox_CorrM_2 = uilistbox(app.Correlation2Panel);
+            app.ScalarsListBox_CorrM_2.Items = {};
+            app.ScalarsListBox_CorrM_2.Multiselect = 'on';
+            app.ScalarsListBox_CorrM_2.Position = [11 127 175 98];
+            app.ScalarsListBox_CorrM_2.Value = {};
+
+            % Create CorrMSwitch2
+            app.CorrMSwitch2 = uiswitch(app.Correlation2Panel, 'slider');
+            app.CorrMSwitch2.Items = {'Scalar', 'Image'};
+            app.CorrMSwitch2.Position = [234 254 45 20];
+            app.CorrMSwitch2.Value = 'Scalar';
+
+            % Create CameraDropDown_2Label
+            app.CameraDropDown_2Label = uilabel(app.Correlation2Panel);
+            app.CameraDropDown_2Label.HorizontalAlignment = 'right';
+            app.CameraDropDown_2Label.Position = [338 253 48 22];
+            app.CameraDropDown_2Label.Text = 'Camera';
+
+            % Create CameraDropDown_2
+            app.CameraDropDown_2 = uidropdown(app.Correlation2Panel);
+            app.CameraDropDown_2.Items = {};
+            app.CameraDropDown_2.Position = [400 253 100 22];
+            app.CameraDropDown_2.Value = {};
+
+            % Create DtoscalarfunctionLabel_2
+            app.DtoscalarfunctionLabel_2 = uilabel(app.Correlation2Panel);
+            app.DtoscalarfunctionLabel_2.HorizontalAlignment = 'right';
+            app.DtoscalarfunctionLabel_2.Position = [382 221 118 22];
+            app.DtoscalarfunctionLabel_2.Text = '2D to scalar function:';
+
+            % Create DtoscalarfunctionDropDown_2
+            app.DtoscalarfunctionDropDown_2 = uidropdown(app.Correlation2Panel);
+            app.DtoscalarfunctionDropDown_2.Items = {'@(x)sum(sum(x))', 'Other'};
+            app.DtoscalarfunctionDropDown_2.Position = [368 200 132 22];
+            app.DtoscalarfunctionDropDown_2.Value = '@(x)sum(sum(x))';
+
+            % Create AddButton_2
+            app.AddButton_2 = uibutton(app.Correlation2Panel, 'push');
+            app.AddButton_2.ButtonPushedFcn = createCallbackFcn(app, @AddButton_2Pushed, true);
+            app.AddButton_2.Position = [222 195 68 22];
+            app.AddButton_2.Text = 'Add';
+
+            % Create RemoveButton_2
+            app.RemoveButton_2 = uibutton(app.Correlation2Panel, 'push');
+            app.RemoveButton_2.ButtonPushedFcn = createCallbackFcn(app, @RemoveButton_2Pushed, true);
+            app.RemoveButton_2.Position = [222 160 68 22];
+            app.RemoveButton_2.Text = 'Remove';
+
+            % Create IncludeincorrmatrixfitLabel_2
+            app.IncludeincorrmatrixfitLabel_2 = uilabel(app.Correlation2Panel);
+            app.IncludeincorrmatrixfitLabel_2.Position = [13 104 140 22];
+            app.IncludeincorrmatrixfitLabel_2.Text = 'Include in corr matrix / fit:';
+
+            % Create IncludeListBox_CorrM_2
+            app.IncludeListBox_CorrM_2 = uilistbox(app.Correlation2Panel);
+            app.IncludeListBox_CorrM_2.Items = {};
+            app.IncludeListBox_CorrM_2.Multiselect = 'on';
+            app.IncludeListBox_CorrM_2.Position = [13 12 487 91];
+            app.IncludeListBox_CorrM_2.Value = {};
+
+            % Create OtherEditField_2Label
+            app.OtherEditField_2Label = uilabel(app.Correlation2Panel);
+            app.OtherEditField_2Label.HorizontalAlignment = 'right';
+            app.OtherEditField_2Label.Position = [346 166 39 22];
+            app.OtherEditField_2Label.Text = 'Other:';
+
+            % Create OtherEditField_2
+            app.OtherEditField_2 = uieditfield(app.Correlation2Panel, 'text');
+            app.OtherEditField_2.Position = [394 166 106 22];
 
             % Show the figure after all components are created
             app.UIFigure.Visible = 'on';
