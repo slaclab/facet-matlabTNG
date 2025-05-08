@@ -310,5 +310,19 @@ S20_nonBSA_List = {...
 'SIOC:SYS1:ML00:AO997'; % theta_0
 'SIOC:SYS1:ML00:AO538'; % c'
 
+% Notch jaw set positions undercompressed
+'SIOC:SYS1:ML00:CALCOUT675'; %drive center
+'SIOC:SYS1:ML00:CALCOUT676'; %drive width
+'SIOC:SYS1:ML00:CALCOUT677'; %witness center
+'SIOC:SYS1:ML00:CALCOUT678'; %witness width
+
+% Notch jaw set positions overcompressed
+
+'SIOC:SYS1:ML00:CALCOUT671'; %drive center
+'SIOC:SYS1:ML00:CALCOUT672'; %drive width
+'SIOC:SYS1:ML00:CALCOUT673'; %witness center
+'SIOC:SYS1:ML00:CALCOUT674'; %witness width
+
+
 
 };
