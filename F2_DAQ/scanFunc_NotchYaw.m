@@ -8,9 +8,9 @@ classdef scanFunc_NotchYaw
         freerun = true
     end
     properties(Constant)
-        control_PV = "COLL:LI20:2069:MOTR"
-        readback_PV = "COLL:LI20:2069:MOTR.RBV"
-        tolerance = 2;
+        control_PV = "COLL:LI20:2073:MOTR"
+        readback_PV = "COLL:LI20:2073:MOTR.RBV"
+        tolerance = 0.05;
     end
     
     methods 
