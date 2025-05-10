@@ -364,10 +364,10 @@ classdef F2_PWFA_Live_Spectrometer_exported < matlab.apps.AppBase
             end
         end
 
-        function [waterfall_column, accelerated_charge, incoming_trailing_charge, energy_gain, energy_loss, incoming_drive_charge, efficiency] = calculate_main(app, proj_CHER, proj_SYAG)
+        function [waterfall_column, accelerated_charge, incoming_trailing_charge, energy_gain, energy_loss, incoming_drive_charge, efficiency] = calculate_main(app, proj_CHER2, proj_SYAG)
             px_range = 1:2040;
             
-            proj_CHER = proj_CHER(px_range);
+            proj_CHER = proj_CHER2(px_range);
 
             y_vals = (1:2040) * app.CHER_res / 1000;
             y_vals = y_vals(end) - y_vals;
@@ -574,7 +574,7 @@ classdef F2_PWFA_Live_Spectrometer_exported < matlab.apps.AppBase
             b_CHER = app.get_camera_img(app.CHER_camera_PV);
             b_SYAG = app.get_camera_img(app.SYAG_camera_PV);
             
-            save("waterfall_live_backgrounds.mat", "b_CHER", "b_SYAG")
+            save("/home/fphysics/rego/waterfall_live_backgrounds.mat", "b_CHER", "b_SYAG")
             
             app.bg_CHER = b_CHER;
             app.bg_SYAG = b_SYAG;
@@ -587,7 +587,7 @@ classdef F2_PWFA_Live_Spectrometer_exported < matlab.apps.AppBase
             value = app.ApplybackgroundsButton.Value;
             if value
                 try 
-                    bg_mat = load("waterfall_live_backgrounds.mat");
+                    bg_mat = load("/home/fphysics/rego/waterfall_live_backgrounds.mat");
                     app.bg_CHER = bg_mat.b_CHER;
                     app.bg_SYAG = bg_mat.b_SYAG;
                     app.apply_backgrounds = 1;
