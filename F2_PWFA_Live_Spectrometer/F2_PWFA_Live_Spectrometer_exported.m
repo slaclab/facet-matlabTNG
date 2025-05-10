@@ -163,6 +163,7 @@ classdef F2_PWFA_Live_Spectrometer_exported < matlab.apps.AppBase
             
             if app.loop_counter == 10
                 app.loop_counter = 1;
+                java.lang.System.gc()
                 app.reset_timer;
             end
             
