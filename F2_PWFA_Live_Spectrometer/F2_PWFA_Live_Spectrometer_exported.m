@@ -161,7 +161,7 @@ classdef F2_PWFA_Live_Spectrometer_exported < matlab.apps.AppBase
             % acquire CHER, SYAG and all relevant spectrometer scalars
             app.loop_counter = app.loop_counter + 1;
             
-            if app.loop_counter == 20
+            if app.loop_counter == 10
                 app.loop_counter = 1;
                 app.reset_timer;
             end
@@ -363,6 +363,19 @@ classdef F2_PWFA_Live_Spectrometer_exported < matlab.apps.AppBase
                 cam_proj = sum(cam_image(:,app.ROI_SYAG_y), 2);
             end
         end
+        
+        function cam_image = get_bg(app, camera_PV)
+            array_data_PV = strcat(camera_PV, ':Image:ArrayData');
+            size_0_PV = strcat(camera_PV, ':Image:ArraySize0_RBV');
+            size_1_PV = strcat(camera_PV, ':Image:ArraySize1_RBV');
+
+            cam_array = lcaGet(array_data_PV);
+            size_0 = lcaGet(size_0_PV);
+            size_1 = lcaGet(size_1_PV);
+            
+            cam_image = reshape(cam_array(1:size_0*size_1), size_0, []);
+        end
+
 
         function [waterfall_column, accelerated_charge, incoming_trailing_charge, energy_gain, energy_loss, incoming_drive_charge, efficiency] = calculate_main(app, proj_CHER2, proj_SYAG)
             px_range = 1:2040;
@@ -571,8 +584,8 @@ classdef F2_PWFA_Live_Spectrometer_exported < matlab.apps.AppBase
 
         % Button pushed function: TakebackgroundsButton
         function TakebackgroundsButtonPushed(app, event)
-            b_CHER = app.get_camera_img(app.CHER_camera_PV);
-            b_SYAG = app.get_camera_img(app.SYAG_camera_PV);
+            b_CHER = app.get_bg(app.CHER_camera_PV);
+            b_SYAG = app.get_bg(app.SYAG_camera_PV);
             
             save("/home/fphysics/rego/waterfall_live_backgrounds.mat", "b_CHER", "b_SYAG")
             
