@@ -409,8 +409,8 @@ classdef F2_PWFA_Live_Spectrometer_exported < matlab.apps.AppBase
                 notch_angle_current = lcaGet('COLL:LI20:2073:MOTR.RBV');
                 
                 notch_center_px = (notch_pos_current - lcaGet(app.calibration_notch_position_intercept_PV) - lcaGet(app.calibration_notch_position_angle_slope_PV) * (notch_angle_current - lcaGet(app.calibration_notch_angle_offset_PV)))/lcaGet(app.calibration_notch_position_slope_PV);
-                notch_center_px = int32(notch_center_px);
                 app.TrailingbunchcutSYAGpxEditField.Value = notch_center_px;
+                notch_center_px = int32(notch_center_px);
                 
                 if app.CurrentcompressionButtonGroup.SelectedObject == app.OvercompressedButton
                     witness_charge = sum(proj_SYAG(notch_center_px:app.ROI_SYAG_x(end)) .* app.charge_calibration_value_SYAG(notch_center_px:app.ROI_SYAG_x(end))');
