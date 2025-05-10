@@ -2,7 +2,7 @@ classdef F2_PWFA_Live_Spectrometer_exported < matlab.apps.AppBase
 
     % Properties that correspond to app components
     properties (Access = public)
-        PWFALiveSpectrometerUIFigure   matlab.ui.Figure
+        UIFigure                       matlab.ui.Figure
         GridLayout                     matlab.ui.container.GridLayout
         LeftPanel                      matlab.ui.container.Panel
         PWFALiveSpectrometerLabel      matlab.ui.control.Label
@@ -68,6 +68,7 @@ classdef F2_PWFA_Live_Spectrometer_exported < matlab.apps.AppBase
         Spectrometerdisplay2DropDown   matlab.ui.control.DropDown
         Spectrometer2SpinnerLabel      matlab.ui.control.Label
         Spectrometer2Spinner           matlab.ui.control.Spinner
+        ResetButton                    matlab.ui.control.Button
         RightPanel                     matlab.ui.container.Panel
         UIAxes                         matlab.ui.control.UIAxes
         UIAxes2                        matlab.ui.control.UIAxes
@@ -148,6 +149,7 @@ classdef F2_PWFA_Live_Spectrometer_exported < matlab.apps.AppBase
 
         divide_blen_by = 1;
 
+        loop_counter = 1;
     end
     
 
@@ -157,21 +159,22 @@ classdef F2_PWFA_Live_Spectrometer_exported < matlab.apps.AppBase
         
         function update_acquisition_fcn(app, src, event)
             % acquire CHER, SYAG and all relevant spectrometer scalars
+            app.loop_counter = app.loop_counter + 1;
             
-            img_CHER = app.get_camera_img(app.CHER_camera_PV);
-            img_SYAG = app.get_camera_img(app.SYAG_camera_PV);
+            if app.loop_counter == 20
+                app.loop_counter = 1;
+                app.reset_timer;
+            end
+            
+            
+            proj_CHER = app.get_camera_img(app.CHER_camera_PV);
+            proj_SYAG = app.get_camera_img(app.SYAG_camera_PV);
 
             blen = lcaGet(app.blen_PV);
-
-            
-            if app.apply_backgrounds
-                img_CHER = img_CHER - app.bg_CHER;
-                img_SYAG = img_SYAG - app.bg_SYAG;
-            end
             
             % append to arrays
 
-            [waterfall_column, accelerated_charge, incoming_trailing_charge, energy_gain, energy_loss, incoming_drive_charge, efficiency] = app.calculate_main(img_CHER, img_SYAG);
+            [waterfall_column, accelerated_charge, incoming_trailing_charge, energy_gain, energy_loss, incoming_drive_charge, efficiency] = app.calculate_main(proj_CHER, proj_SYAG);
             [E_tick_list, E_tick_pos] = generate_E_ticks(app.E_vals, 10);
             
             
@@ -335,7 +338,7 @@ classdef F2_PWFA_Live_Spectrometer_exported < matlab.apps.AppBase
             
         end
 
-        function cam_image = get_camera_img(app, camera_PV)
+        function cam_proj = get_camera_img(app, camera_PV)
             array_data_PV = strcat(camera_PV, ':Image:ArrayData');
             size_0_PV = strcat(camera_PV, ':Image:ArraySize0_RBV');
             size_1_PV = strcat(camera_PV, ':Image:ArraySize1_RBV');
@@ -345,12 +348,23 @@ classdef F2_PWFA_Live_Spectrometer_exported < matlab.apps.AppBase
             size_1 = lcaGet(size_1_PV);
             
             cam_image = reshape(cam_array(1:size_0*size_1), size_0, []);
+            
+            if strcmp(camera_PV, app.CHER_camera_PV)
+                if app.apply_backgrounds
+                    cam_image = cam_image - app.bg_CHER;
+                end
+                cam_image = fix_burns(cam_image(1040:1800, :), app.CHER_burn_spots);
+                cam_proj = sum(cam_image, 1);
+            else
+                if app.apply_backgrounds
+                    cam_image = cam_image - app.bg_SYAG;
+                end
+                cam_image = flip(cam_image, 1);
+                cam_proj = sum(cam_image(:,app.ROI_SYAG_y), 2);
+            end
         end
 
-        function [waterfall_column, accelerated_charge, incoming_trailing_charge, energy_gain, energy_loss, incoming_drive_charge, efficiency] = calculate_main(app, img_CHER, img_SYAG)
-            img_CHER_2 = fix_burns(img_CHER(1040:1800, :), app.CHER_burn_spots);
-            proj_CHER = sum(img_CHER_2, 1);
-
+        function [waterfall_column, accelerated_charge, incoming_trailing_charge, energy_gain, energy_loss, incoming_drive_charge, efficiency] = calculate_main(app, proj_CHER, proj_SYAG)
             px_range = 1:2040;
             
             proj_CHER = proj_CHER(px_range);
@@ -376,31 +390,30 @@ classdef F2_PWFA_Live_Spectrometer_exported < matlab.apps.AppBase
                 energy_gain = 0;
             end
             
-            img_SYAG_2 = flip(img_SYAG, 1);
             if strcmp(app.TwobunchmodeDropDown.Value, 'Notched [automatic]')
                 notch_pos_current = lcaGet('COLL:LI20:2069:MOTR.RBV');
                 notch_angle_current = lcaGet('COLL:LI20:2073:MOTR.RBV');
                 
                 notch_center_px = (notch_pos_current - lcaGet(app.calibration_notch_position_intercept_PV) - lcaGet(app.calibration_notch_position_angle_slope_PV) * (notch_angle_current - lcaGet(app.calibration_notch_angle_offset_PV)))/lcaGet(app.calibration_notch_position_slope_PV);
-                app.TrailingbunchcutSYAGpxEditField.Value = notch_center_px;
                 notch_center_px = int32(notch_center_px);
-               
+                app.TrailingbunchcutSYAGpxEditField.Value = notch_center_px;
+                
                 if app.CurrentcompressionButtonGroup.SelectedObject == app.OvercompressedButton
-                    witness_charge = sum(sum(img_SYAG_2(notch_center_px:app.ROI_SYAG_x(end), app.ROI_SYAG_y), 2) .* app.charge_calibration_value_SYAG(notch_center_px:app.ROI_SYAG_x(end))');
-                    drive_charge = sum(sum(img_SYAG_2(app.ROI_SYAG_x(1):notch_center_px, app.ROI_SYAG_y), 2) .* app.charge_calibration_value_SYAG(app.ROI_SYAG_x(1):notch_center_px)');
+                    witness_charge = sum(proj_SYAG(notch_center_px:app.ROI_SYAG_x(end)) .* app.charge_calibration_value_SYAG(notch_center_px:app.ROI_SYAG_x(end))');
+                    drive_charge = sum(proj_SYAG(app.ROI_SYAG_x(1):notch_center_px) .* app.charge_calibration_value_SYAG(app.ROI_SYAG_x(1):notch_center_px)');
                 else
-                    witness_charge = sum(sum(img_SYAG_2(app.ROI_SYAG_x(1):notch_center_px, app.ROI_SYAG_y), 2) .* app.charge_calibration_value_SYAG(app.ROI_SYAG_x(1):notch_center_px)');
-                    drive_charge = sum(sum(img_SYAG_2(notch_center_px:app.ROI_SYAG_x(end), app.ROI_SYAG_y), 2) .* app.charge_calibration_value_SYAG(notch_center_px:app.ROI_SYAG_x(end))');
+                    witness_charge = sum(proj_SYAG(app.ROI_SYAG_x(1):notch_center_px) .* app.charge_calibration_value_SYAG(app.ROI_SYAG_x(1):notch_center_px)');
+                    drive_charge = sum(proj_SYAG_2(notch_center_px:app.ROI_SYAG_x(end)) .* app.charge_calibration_value_SYAG(notch_center_px:app.ROI_SYAG_x(end))');
                 end
             elseif strcmp(app.TwobunchmodeDropDown.Value, 'Photocathode [manual]')
                 notch_center_px = int32(app.TrailingbunchcutSYAGpxEditField.Value);
                 
                 if app.CurrentcompressionButtonGroup.SelectedObject == app.OvercompressedButton
-                    witness_charge = sum(sum(img_SYAG_2(notch_center_px:app.ROI_SYAG_x(end), app.ROI_SYAG_y), 2) .* app.charge_calibration_value_SYAG(notch_center_px:app.ROI_SYAG_x(end))');
-                    drive_charge = sum(sum(img_SYAG_2(app.ROI_SYAG_x(1):notch_center_px, app.ROI_SYAG_y), 2) .* app.charge_calibration_value_SYAG(app.ROI_SYAG_x(1):notch_center_px)');
+                    witness_charge = sum(proj_SYAG(notch_center_px:app.ROI_SYAG_x(end)) .* app.charge_calibration_value_SYAG(notch_center_px:app.ROI_SYAG_x(end))');
+                    drive_charge = sum(proj_SYAG(app.ROI_SYAG_x(1):notch_center_px) .* app.charge_calibration_value_SYAG(app.ROI_SYAG_x(1):notch_center_px)');
                 else
-                    witness_charge = sum(sum(img_SYAG_2(app.ROI_SYAG_x(1):notch_center_px, app.ROI_SYAG_y), 2) .* app.charge_calibration_value_SYAG(app.ROI_SYAG_x(1):notch_center_px)');
-                    drive_charge = sum(sum(img_SYAG_2(notch_center_px:app.ROI_SYAG_x(end), app.ROI_SYAG_y), 2) .* app.charge_calibration_value_SYAG(notch_center_px:app.ROI_SYAG_x(end))');
+                    witness_charge = sum(proj_SYAG(app.ROI_SYAG_x(1):notch_center_px) .* app.charge_calibration_value_SYAG(app.ROI_SYAG_x(1):notch_center_px)');
+                    drive_charge = sum(proj_SYAG_2(notch_center_px:app.ROI_SYAG_x(end)) .* app.charge_calibration_value_SYAG(notch_center_px:app.ROI_SYAG_x(end))');
                 end
             elseif strcmp(app.TwobunchmodeDropDown.Value, 'Specify fixed bunch charges')
                 witness_charge = app.TrailingbunchcutSYAGpxEditField.Value;
@@ -425,6 +438,22 @@ classdef F2_PWFA_Live_Spectrometer_exported < matlab.apps.AppBase
             
             efficiency = energy_gain/(incoming_drive_charge * 10 * 1e-3) * 100;
             
+        end
+        
+        function reset_timer(app)
+            if app.is_timer_running
+                app.is_timer_running = 0;
+                app.AcquisitionstatusLamp.Color = 'r';
+                pause(0.05)
+                stop(app.main_loop)
+            end            
+            
+            if ~app.is_timer_running
+                app.is_timer_running = 1;
+                app.AcquisitionstatusLamp.Color = 'g';
+                pause(0.05)
+                start(app.main_loop)
+            end
         end
     end
     
@@ -512,8 +541,8 @@ classdef F2_PWFA_Live_Spectrometer_exported < matlab.apps.AppBase
             end
         end
 
-        % Close request function: PWFALiveSpectrometerUIFigure
-        function PWFALiveSpectrometerUIFigureCloseRequest(app, event)
+        % Close request function: UIFigure
+        function UIFigureCloseRequest(app, event)
             if app.is_timer_running
                 app.AcquisitionstatusLamp.Color = 'r';
                 pause(0.05)
@@ -545,7 +574,7 @@ classdef F2_PWFA_Live_Spectrometer_exported < matlab.apps.AppBase
             b_CHER = app.get_camera_img(app.CHER_camera_PV);
             b_SYAG = app.get_camera_img(app.SYAG_camera_PV);
             
-            save("/home/fphysics/rego/waterfall_live_backgrounds.mat", "b_CHER", "b_SYAG")
+            save("waterfall_live_backgrounds.mat", "b_CHER", "b_SYAG")
             
             app.bg_CHER = b_CHER;
             app.bg_SYAG = b_SYAG;
@@ -558,7 +587,7 @@ classdef F2_PWFA_Live_Spectrometer_exported < matlab.apps.AppBase
             value = app.ApplybackgroundsButton.Value;
             if value
                 try 
-                    bg_mat = load("/home/fphysics/rego/waterfall_live_backgrounds.mat");
+                    bg_mat = load("waterfall_live_backgrounds.mat");
                     app.bg_CHER = bg_mat.b_CHER;
                     app.bg_SYAG = bg_mat.b_SYAG;
                     app.apply_backgrounds = 1;
@@ -781,9 +810,26 @@ classdef F2_PWFA_Live_Spectrometer_exported < matlab.apps.AppBase
             end
         end
 
+        % Button pushed function: ResetButton
+        function ResetButtonPushed(app, event)
+            if app.is_timer_running
+                app.is_timer_running = 0;
+                app.AcquisitionstatusLamp.Color = 'r';
+                pause(0.05)
+                stop(app.main_loop)
+            end            
+            
+            if ~app.is_timer_running
+                app.is_timer_running = 1;
+                app.AcquisitionstatusLamp.Color = 'g';
+                pause(0.05)
+                start(app.main_loop)
+            end
+        end
+
         % Changes arrangement of the app based on UIFigure width
         function updateAppLayout(app, event)
-            currentFigureWidth = app.PWFALiveSpectrometerUIFigure.Position(3);
+            currentFigureWidth = app.UIFigure.Position(3);
             if(currentFigureWidth <= app.onePanelWidth)
                 % Change to a 2x1 grid
                 app.GridLayout.RowHeight = {942, 942};
@@ -806,16 +852,16 @@ classdef F2_PWFA_Live_Spectrometer_exported < matlab.apps.AppBase
         % Create UIFigure and components
         function createComponents(app)
 
-            % Create PWFALiveSpectrometerUIFigure and hide until all components are created
-            app.PWFALiveSpectrometerUIFigure = uifigure('Visible', 'off');
-            app.PWFALiveSpectrometerUIFigure.AutoResizeChildren = 'off';
-            app.PWFALiveSpectrometerUIFigure.Position = [100 100 1420 942];
-            app.PWFALiveSpectrometerUIFigure.Name = 'PWFA Live Spectrometer';
-            app.PWFALiveSpectrometerUIFigure.CloseRequestFcn = createCallbackFcn(app, @PWFALiveSpectrometerUIFigureCloseRequest, true);
-            app.PWFALiveSpectrometerUIFigure.SizeChangedFcn = createCallbackFcn(app, @updateAppLayout, true);
+            % Create UIFigure and hide until all components are created
+            app.UIFigure = uifigure('Visible', 'off');
+            app.UIFigure.AutoResizeChildren = 'off';
+            app.UIFigure.Position = [100 100 1420 942];
+            app.UIFigure.Name = 'MATLAB App';
+            app.UIFigure.CloseRequestFcn = createCallbackFcn(app, @UIFigureCloseRequest, true);
+            app.UIFigure.SizeChangedFcn = createCallbackFcn(app, @updateAppLayout, true);
 
             % Create GridLayout
-            app.GridLayout = uigridlayout(app.PWFALiveSpectrometerUIFigure);
+            app.GridLayout = uigridlayout(app.UIFigure);
             app.GridLayout.ColumnWidth = {342, '1x'};
             app.GridLayout.RowHeight = {'1x'};
             app.GridLayout.ColumnSpacing = 0;
@@ -839,13 +885,13 @@ classdef F2_PWFA_Live_Spectrometer_exported < matlab.apps.AppBase
             % Create StartacquiringButton
             app.StartacquiringButton = uibutton(app.LeftPanel, 'push');
             app.StartacquiringButton.ButtonPushedFcn = createCallbackFcn(app, @StartacquiringButtonPushed, true);
-            app.StartacquiringButton.Position = [41 858 100 22];
+            app.StartacquiringButton.Position = [29 859 87 22];
             app.StartacquiringButton.Text = 'Start acquiring';
 
             % Create StopacquiringButton
             app.StopacquiringButton = uibutton(app.LeftPanel, 'push');
             app.StopacquiringButton.ButtonPushedFcn = createCallbackFcn(app, @StopacquiringButtonPushed, true);
-            app.StopacquiringButton.Position = [202 859 100 22];
+            app.StopacquiringButton.Position = [140 859 87 22];
             app.StopacquiringButton.Text = 'Stop acquiring';
 
             % Create AcquisitionrateHzLabel
@@ -1207,6 +1253,12 @@ classdef F2_PWFA_Live_Spectrometer_exported < matlab.apps.AppBase
             app.Spectrometer2Spinner.Position = [267 14 48 22];
             app.Spectrometer2Spinner.Value = 3;
 
+            % Create ResetButton
+            app.ResetButton = uibutton(app.LeftPanel, 'push');
+            app.ResetButton.ButtonPushedFcn = createCallbackFcn(app, @ResetButtonPushed, true);
+            app.ResetButton.Position = [253 859 68 22];
+            app.ResetButton.Text = 'Reset';
+
             % Create RightPanel
             app.RightPanel = uipanel(app.GridLayout);
             app.RightPanel.Layout.Row = 1;
@@ -1236,7 +1288,7 @@ classdef F2_PWFA_Live_Spectrometer_exported < matlab.apps.AppBase
             app.UIAxes3.Position = [28 15 1017 185];
 
             % Show the figure after all components are created
-            app.PWFALiveSpectrometerUIFigure.Visible = 'on';
+            app.UIFigure.Visible = 'on';
         end
     end
 
@@ -1250,7 +1302,7 @@ classdef F2_PWFA_Live_Spectrometer_exported < matlab.apps.AppBase
             createComponents(app)
 
             % Register the app with App Designer
-            registerApp(app, app.PWFALiveSpectrometerUIFigure)
+            registerApp(app, app.UIFigure)
 
             % Execute the startup function
             runStartupFcn(app, @startupFcn)
@@ -1264,7 +1316,7 @@ classdef F2_PWFA_Live_Spectrometer_exported < matlab.apps.AppBase
         function delete(app)
 
             % Delete UIFigure when app is deleted
-            delete(app.PWFALiveSpectrometerUIFigure)
+            delete(app.UIFigure)
         end
     end
 end
