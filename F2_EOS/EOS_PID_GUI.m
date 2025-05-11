@@ -5,6 +5,7 @@ classdef EOS_PID_GUI < matlab.apps.AppBase
         UIFigure                     matlab.ui.Figure
         EOSPlot                      matlab.ui.control.UIAxes
         TimingPlot                   matlab.ui.control.UIAxes
+        SignalPlot                   matlab.ui.control.UIAxes
         StartButton                  matlab.ui.control.Button
         StopButton                   matlab.ui.control.Button
         KpEditFieldLabel             matlab.ui.control.Label
@@ -19,6 +20,8 @@ classdef EOS_PID_GUI < matlab.apps.AppBase
         MinTargetTimeEditField       matlab.ui.control.NumericEditField
         MaxTargetTimeEditFieldLabel  matlab.ui.control.Label
         MaxTargetTimeEditField       matlab.ui.control.NumericEditField
+        MinSignalEditFieldLabel      matlab.ui.control.Label
+        MinSignalEditField           matlab.ui.control.NumericEditField
         KiEditFieldLabel             matlab.ui.control.Label
         KiEditField                  matlab.ui.control.NumericEditField
         LogTextAreaLabel             matlab.ui.control.Label
@@ -41,6 +44,7 @@ classdef EOS_PID_GUI < matlab.apps.AppBase
         EOS_Pixelcount_threshold % Description
         ErrorOutput % Description
         NumberOfShotsPerDatapoint % Description
+        MinSignal
     end
     
     methods (Access = private)
@@ -208,6 +212,7 @@ classdef EOS_PID_GUI < matlab.apps.AppBase
             app.Timing_EOS_Vector=[];
             app.TargetTime_Vector=[];
             app.EOS_Pixelcount_threshold=0;  % TODO: implement EOS threshold for goose-shot identification.
+            app.MinSignal=0;
        
             TargetTime=lcaGet('OSC:LA20:10:FS_TGT_TIME');
             app.TargetTime_LowerBound=TargetTime-0.0025;
@@ -230,6 +235,9 @@ classdef EOS_PID_GUI < matlab.apps.AppBase
             
             app.NumberOfShotsPerDatapoint=1;
             app.ShotsaveragedEditField.Value=app.NumberOfShotsPerDatapoint;
+            
+            app.MinSignalEditField.Value=app.MinSignal;
+            
         end
 
         % Value changed function: KpEditField
@@ -255,6 +263,11 @@ classdef EOS_PID_GUI < matlab.apps.AppBase
             value = app.SetpointpxEditField.Value;
             app.RunFeedbackBool=false;
             app.SetPoint_px=value;
+        end
+        
+        function MinSignalEditFieldValueChanged(app, event)
+            value = app.MinSignalEditField.Value;
+            app.MinSignal=value;
         end
 
         % Button pushed function: StartButton
@@ -312,6 +325,10 @@ classdef EOS_PID_GUI < matlab.apps.AppBase
             xlabel(app.TimingPlot, 'moving shot no.')
             ylabel(app.TimingPlot, 'Target time (ns)')
             app.TimingPlot.Position = [29 167 473 185];
+            
+            % Create SignalPlot
+            app.SignalPlot = uiaxes(app.UIFigure);
+            title(app.Signa
 
             % Create StartButton
             app.StartButton = uibutton(app.UIFigure, 'push');
