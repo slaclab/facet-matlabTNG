@@ -323,6 +323,9 @@ S20_nonBSA_List = {...
 'SIOC:SYS1:ML00:CALCOUT673'; %witness center
 'SIOC:SYS1:ML00:CALCOUT674'; %witness width
 
+% EOS feedback control and readback PVs E320
 
+'SIOC:SYS1:ML00:CALCOUT320'; % Laser target conrol timing in EOS tool
+'SIOC:SYS1:ML00:CALCOUT321'; % Laser target readback timing in EOS tool
 
 };
