@@ -3,27 +3,36 @@ classdef F2_RADFET_GUIApp < handle
     % Use the GUI to create plots of reboot counts and radiation or charge
     % for cameras at the dump
     
-    % Dump Cameras and their associated RADFETs:
-    % The mapping may change in the future. Refer to facethome
+    % Cameras and their associated RADFETs:
+    % The mapping may change in the future. Refer to facethome > LI20 
+    % Experiments > RADFET for most accurate information
 
 %     Camera Name   PV               RADFET
 %     --------------------------------------------------
 %     LBG_LFOV      CMOS:LI20:3515   RADF:LI20:1:D:1:DOSE
 %     DTOTR2        CAMR:LI20:107    RADF:LI20:1:C:1:DOSE
 %     CHER          CMOS:LI20:3506   RADF:LI20:2:A:1:DOSE
-%     GAMMA2        CAMR:LI20:303    RADF:LI20:2:B:1:DOSE
+%     GAMMA2        CMOS:LI20:3507   RADF:LI20:2:B:1:DOSE
 %     GAMMA1        CAMR:LI20:302    RADF:LI20:2:C:1:DOSE
 %     LFOV          CAMR:LI20:301    RADF:LI20:2:D:1:DOSE
+%     FrontView     CAMR:LI20:208    RADF:LI20:3:A:1:DOSE
+%     IPOTR1        CAMR:LI20:102    RADF:LI20:3:B:1:DOSE
+%     IPOTR2        CAMR:LI20:104    RADF:LI20:3:C:1:DOSE
+%     DSOTR         CAMR:LI20:105    RADF:LI20:3:D:1:DOSE
 
     
     properties
         guihan
         radfetPVs = {'RADF:LI20:1:D:1:DOSE';'RADF:LI20:1:C:1:DOSE';...
                 'RADF:LI20:2:A:1:DOSE';'RADF:LI20:2:B:1:DOSE';...
-                'RADF:LI20:2:C:1:DOSE';'RADF:LI20:2:D:1:DOSE'};
-        camNames = {'LBG LFOV';'DTOTR2';'CHER';'GAMMA2';'GAMMA1';'LFOV'}
+                'RADF:LI20:2:C:1:DOSE';'RADF:LI20:2:D:1:DOSE';...
+                'RADF:LI20:3:A:1:DOSE';'RADF:LI20:3:B:1:DOSE';...
+                'RADF:LI20:3:C:1:DOSE';'RADF:LI20:3:D:1:DOSE'};
+        camNames = {'LBG LFOV';'DTOTR2';'CHER';'GAMMA2';'GAMMA1';'LFOV';...
+            'FrontView';'IPOTR1';'IPOTR2';'DSOTR'}
         camPVs = {'CMOS:LI20:3515';'CAMR:LI20:107';'CMOS:LI20:3506';...
-            'CAMR:LI20:303';'CAMR:LI20:302';'CAMR:LI20:301'};
+            'CAMR:LI20:303';'CAMR:LI20:302';'CAMR:LI20:301';'CAMR:LI20:208';...
+            'CAMR:LI20:102';'CAMR:LI20:104';'CAMR:LI20:105'};
         starttime % Start time for data time range
         endtime % End time for data time range
         CamRebootPV % Reboot PV for selected camera
@@ -63,8 +72,7 @@ classdef F2_RADFET_GUIApp < handle
         function getArchiveData(obj)
             % Get data from archiver within selected time range
             timeRange = [obj.starttime obj.endtime];
-            [obj.reboot_t,obj.reboot_v] = history(obj.CamRebootPV,...
-                        timeRange);
+            [obj.reboot_t,obj.reboot_v] = history(obj.CamRebootPV,timeRange);
             switch obj.plotVar
                 case "Radiation"
                     obj.RADFETPV = obj.guihan.RADFETDropDown.Value;
@@ -95,27 +103,28 @@ classdef F2_RADFET_GUIApp < handle
             switch obj.plotVar
                 case "Radiation"
                     % Plot RADFET values on left axis
-                    yyaxis(obj.guihan.UIAxes,'left')
-                    plot(obj.guihan.UIAxes,obj.rad_t,obj.rad_v)
-                    datetick(obj.guihan.UIAxes)
-                    ylabel(obj.guihan.UIAxes,"RADFET (Rad)")
+                    yyaxis(obj.guihan.UIAxes,'left');
+                    plot(obj.guihan.UIAxes,obj.rad_t,obj.rad_v);
+                    datetick(obj.guihan.UIAxes);
+                    ylabel(obj.guihan.UIAxes,"RADFET (Rad)");
                 case "Charge"
                     % Plot toroid values on left axis
-                    yyaxis(obj.guihan.UIAxes,'left')
-                    plot(obj.guihan.UIAxes,obj.toro_t,obj.totalCharge/1000)
-                    datetick(obj.guihan.UIAxes)
-                    ylabel(obj.guihan.UIAxes,"Total cumulative charge (nC)")
+                    yyaxis(obj.guihan.UIAxes,'left');
+                    plot(obj.guihan.UIAxes,obj.toro_t,obj.totalCharge/1000);
+                    datetick(obj.guihan.UIAxes);
+                    ylabel(obj.guihan.UIAxes,"Total cumulative charge (nC)");
                 otherwise
                     % display error message
             end
             
             % Plot reboot count values on right axis
-            yyaxis(obj.guihan.UIAxes,'right')
-            plot(obj.guihan.UIAxes,obj.reboot_t,obj.reboot_v)
-            datetick(obj.guihan.UIAxes)
-            ylabel(obj.guihan.UIAxes,"Reboot Counts")
+            yyaxis(obj.guihan.UIAxes,'right');
+            plot(obj.guihan.UIAxes,obj.reboot_t,obj.reboot_v);
+            datetick(obj.guihan.UIAxes);
+            ylabel(obj.guihan.UIAxes,"Reboot Counts");
             
-            title(obj.guihan.UIAxes,obj.guihan.CameraDropDown.Value)
+            title(obj.guihan.UIAxes,obj.guihan.CameraDropDown.Value);
+            drawnow;
         end
         
         function exportLogbook(obj)

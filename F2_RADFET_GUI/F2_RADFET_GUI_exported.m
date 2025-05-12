@@ -38,6 +38,7 @@ classdef F2_RADFET_GUI_exported < matlab.apps.AppBase
         function startupFcn(app)
             app.aobj = F2_RADFET_GUIApp(app);
             app.CameraDropDown.Items = app.aobj.camNames;
+            app.RADFETDropDown.Items = app.aobj.radfetPVs;
             app.aobj.populate();
             selectedRadioButton = app.ButtonGroup.SelectedObject;
             app.aobj.plotVar = selectedRadioButton.Text;
@@ -55,7 +56,8 @@ classdef F2_RADFET_GUI_exported < matlab.apps.AppBase
                 isnat(app.EndDatePicker.Value);
             if ~anyEmptyFields
                 app.TimeRangeWarning.Visible = false;
-                cla(app.UIAxes)
+                cla(app.UIAxes);
+                yyaxis(app.UIAxes,'left');cla(app.UIAxes);
                 app.aobj.getArchiveData();
                 app.aobj.plotData();
             else
@@ -119,10 +121,10 @@ classdef F2_RADFET_GUI_exported < matlab.apps.AppBase
 
             % Create CameraDropDown
             app.CameraDropDown = uidropdown(app.ConfigurationPanel);
-            app.CameraDropDown.Items = {'LBG LFOV', 'DTOTR2', 'CHER', 'GAMMA2', 'GAMMA1', 'LFOV'};
+            app.CameraDropDown.Items = {};
             app.CameraDropDown.ValueChangedFcn = createCallbackFcn(app, @CameraDropDownValueChanged, true);
             app.CameraDropDown.Position = [84 151 157 22];
-            app.CameraDropDown.Value = 'LBG LFOV';
+            app.CameraDropDown.Value = {};
 
             % Create StartDateDatePickerLabel
             app.StartDateDatePickerLabel = uilabel(app.ConfigurationPanel);
