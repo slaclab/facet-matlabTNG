@@ -1039,7 +1039,7 @@ classdef F2_DAN_HDF5_exported < matlab.apps.AppBase
 
             % Create expDropDown
             app.expDropDown = uidropdown(app.dataSet);
-            app.expDropDown.Items = {'TEST', 'BEAMPHYS', 'E300', 'E301', 'E304', 'E305', 'E308', 'E310', 'E320', 'E324', 'E325', 'E326', 'E327', 'E331', 'E332', 'E338', 'E339'};
+            app.expDropDown.Items = {'TEST', 'BEAMPHYS', 'E300', 'E301', 'E302', 'E304', 'E305', 'E308', 'E310', 'E320', 'E324', 'E325', 'E326', 'E327', 'E331', 'E332', 'E338', 'E339', 'E340'};
             app.expDropDown.Position = [95 333 124 22];
             app.expDropDown.Value = 'TEST';
 
