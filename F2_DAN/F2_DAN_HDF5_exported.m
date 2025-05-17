@@ -2,7 +2,7 @@ classdef F2_DAN_HDF5_exported < matlab.apps.AppBase
 
     % Properties that correspond to app components
     properties (Access = public)
-        UIFigure                        matlab.ui.Figure
+        F2HDF5DANUIFigure               matlab.ui.Figure
         TabGroup                        matlab.ui.container.TabGroup
         MainDANTab                      matlab.ui.container.Tab
         dataSet                         matlab.ui.container.Panel
@@ -667,8 +667,8 @@ classdef F2_DAN_HDF5_exported < matlab.apps.AppBase
             app.getLatestExp();
         end
 
-        % Close request function: UIFigure
-        function UIFigureCloseRequest(app, event)
+        % Close request function: F2HDF5DANUIFigure
+        function F2HDF5DANUIFigureCloseRequest(app, event)
             delete(app)
             disp('Remember to uncomment the exit command')
 %             exit;
@@ -1013,14 +1013,14 @@ classdef F2_DAN_HDF5_exported < matlab.apps.AppBase
         % Create UIFigure and components
         function createComponents(app)
 
-            % Create UIFigure and hide until all components are created
-            app.UIFigure = uifigure('Visible', 'off');
-            app.UIFigure.Position = [100 100 1247 947];
-            app.UIFigure.Name = 'MATLAB App';
-            app.UIFigure.CloseRequestFcn = createCallbackFcn(app, @UIFigureCloseRequest, true);
+            % Create F2HDF5DANUIFigure and hide until all components are created
+            app.F2HDF5DANUIFigure = uifigure('Visible', 'off');
+            app.F2HDF5DANUIFigure.Position = [100 100 1247 947];
+            app.F2HDF5DANUIFigure.Name = 'F2 HDF5 DAN';
+            app.F2HDF5DANUIFigure.CloseRequestFcn = createCallbackFcn(app, @F2HDF5DANUIFigureCloseRequest, true);
 
             % Create TabGroup
-            app.TabGroup = uitabgroup(app.UIFigure);
+            app.TabGroup = uitabgroup(app.F2HDF5DANUIFigure);
             app.TabGroup.Position = [1 1 1235 947];
 
             % Create MainDANTab
@@ -1039,7 +1039,7 @@ classdef F2_DAN_HDF5_exported < matlab.apps.AppBase
 
             % Create expDropDown
             app.expDropDown = uidropdown(app.dataSet);
-            app.expDropDown.Items = {'TEST', 'BEAMPHYS', 'E300', 'E301', 'E302', 'E304', 'E305', 'E308', 'E310', 'E320', 'E324', 'E325', 'E326', 'E327', 'E331', 'E332', 'E338', 'E339', 'E340'};
+            app.expDropDown.Items = {'TEST', 'BEAMPHYS', 'E300', 'E301', 'E302', 'E304', 'E305', 'E308', 'E310', 'E320', 'E324', 'E325', 'E326', 'E327', 'E331', 'E332', 'E336', 'E338', 'E339', 'E340'};
             app.expDropDown.Position = [95 333 124 22];
             app.expDropDown.Value = 'TEST';
 
@@ -1890,7 +1890,7 @@ classdef F2_DAN_HDF5_exported < matlab.apps.AppBase
             app.OtherEditField_2.Position = [394 166 106 22];
 
             % Show the figure after all components are created
-            app.UIFigure.Visible = 'on';
+            app.F2HDF5DANUIFigure.Visible = 'on';
         end
     end
 
@@ -1904,7 +1904,7 @@ classdef F2_DAN_HDF5_exported < matlab.apps.AppBase
             createComponents(app)
 
             % Register the app with App Designer
-            registerApp(app, app.UIFigure)
+            registerApp(app, app.F2HDF5DANUIFigure)
 
             % Execute the startup function
             runStartupFcn(app, @startupFcn)
@@ -1918,7 +1918,7 @@ classdef F2_DAN_HDF5_exported < matlab.apps.AppBase
         function delete(app)
 
             % Delete UIFigure when app is deleted
-            delete(app.UIFigure)
+            delete(app.F2HDF5DANUIFigure)
         end
     end
 end
