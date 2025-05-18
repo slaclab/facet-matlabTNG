@@ -65,42 +65,22 @@ classdef scanFunc_E320_Spec_QuadDipole_ratio
             quadPV.control_PV0  = "LGPS:LI20:3141";
             quadPV.control_PV1  = "LGPS:LI20:3261";
             quadPV.control_PV2  = "LGPS:LI20:3091";
-            %quadPV.control_PV3  = "LGPS:LI20:3330"; % Added dipole
+            quadPV.control_PV3  = "LGPS:LI20:3330"; % Added dipole
             quadPV.readback_PV0 = "LGPS:LI20:3141";
             quadPV.readback_PV1 = "LGPS:LI20:3261";
             quadPV.readback_PV2 = "LGPS:LI20:3091";
-            %quadPV.readback_PV3 = "LGPS:LI20:3330"; % Added dipole
+            quadPV.readback_PV3 = "LGPS:LI20:3330"; % Added dipole
             
             
             dipole_value = lcaGet(obj.ratio_PV) * value;
             
             if isok
-                [delta] = set_Spec_QuadDipole(obj, quadPV, [BDES0, BDES1, BDES2]');
+                [delta] = set_Spec_QuadDipole(obj, quadPV, [BDES0, BDES1, BDES2, dipole_value]');
             else
                 obj.daqhandle.dispMessage('BDES out of range: Q0D = %.2f, Q1D = %.2f, Q2D = %.2f', BDES0, BDES1, BDES2);
                 % caput(obj.abort_PV,1);
                 %delta = 100; % How do I stop a DAQ with an error?
             end
-            
-            
-            try
-                control_magnetSet(obj.dipole_control_PV,dipole_value);
-            catch
-                % try again:
-                obj.daqhandle.dispMessage(sprintf('First attempt setting %s failed, try once more', obj.dipole_control_PV));
-                control_magnetSet(obj.dipole_control_PV,dipole_value); 
-            end
-            
-            
-            current_value_dipole = control_magnetGet(obj.dipole_readback_PV);
-            
-            while abs(current_value_dipole - dipole_value) > obj.tolerance_dipole
-                current_value_dipole = control_magnetGet(obj.dipole_readback_PV);
-                pause(0.4);
-            end
-            
-            delta = current_value_dipole - dipole_value;
-            obj.daqhandle.dispMessage(sprintf('%s readback is %0.2f', obj.dipole_readback_PV, current_value_dipole));
             
            
             
