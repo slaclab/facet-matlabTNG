@@ -32,6 +32,16 @@ classdef F2_OvenWatcherApp < handle
                 PV(context,'name',"TC6",'pvname',"OVEN:LI20:3185:TEMP6",'monitor',true,'mode',"r");
                 PV(context,'name',"TC7",'pvname',"BMLN:LI20:3184:TEMP",'monitor',true,'mode',"r");
                 PV(context,'name',"TC8",'pvname',"BMLN:LI20:3186:TEMP",'monitor',true,'mode',"r");
+                
+                PV(context,'name',"TC1highLimit",'pvname',"SIOC:SYS1:ML02:AO551",'monitor',true,'mode',"rw");
+                PV(context,'name',"TC2highLimit",'pvname',"SIOC:SYS1:ML02:AO552",'monitor',true,'mode',"rw");
+                PV(context,'name',"TC3highLimit",'pvname',"SIOC:SYS1:ML02:AO553",'monitor',true,'mode',"rw");
+                PV(context,'name',"TC4highLimit",'pvname',"SIOC:SYS1:ML02:AO554",'monitor',true,'mode',"rw");
+                PV(context,'name',"TC5highLimit",'pvname',"SIOC:SYS1:ML02:AO555",'monitor',true,'mode',"rw");
+                PV(context,'name',"TC6highLimit",'pvname',"SIOC:SYS1:ML02:AO556",'monitor',true,'mode',"rw");
+                PV(context,'name',"TC7highLimit",'pvname',"SIOC:SYS1:ML02:AO557",'monitor',true,'mode',"rw");
+                PV(context,'name',"TC8highLimit",'pvname',"SIOC:SYS1:ML02:AO558",'monitor',true,'mode',"rw");
+                
                 ] ;
             pset(obj.pvlist,'debug',0) ;
             obj.pvs = struct(obj.pvlist);
@@ -53,6 +63,14 @@ classdef F2_OvenWatcherApp < handle
             obj.pvs.TC7.guihan = apph.TC7;
             obj.pvs.TC8.guihan = apph.TC8;
             
+            obj.pvs.TC4highLimit.guihan = apph.TC4highLimit;
+            obj.pvs.TC3highLimit.guihan = apph.TC3highLimit;
+            obj.pvs.TC2highLimit.guihan = apph.TC2highLimit;
+            obj.pvs.TC1highLimit.guihan = apph.TC1highLimit;
+            obj.pvs.TC5highLimit.guihan = apph.TC5highLimit;
+            obj.pvs.TC6highLimit.guihan = apph.TC6highLimit;
+            obj.pvs.TC7highLimit.guihan = apph.TC7highLimit;
+            obj.pvs.TC8highLimit.guihan = apph.TC8highLimit;
             
             % Start listening for PV updates
             obj.listeners = addlistener(obj,'PVUpdated',@(~,~) obj.loop) ;
