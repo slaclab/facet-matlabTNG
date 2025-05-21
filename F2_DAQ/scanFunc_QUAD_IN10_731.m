@@ -10,7 +10,7 @@ classdef scanFunc_QUAD_IN10_731
     properties(Constant)
         control_PV = "QUAD:IN10:731:BCTRL"
         readback_PV = "QUAD:IN10:731:BACT"
-        tolerance = 0.002;
+        tolerance = 0.004;
     end
     
     methods 
