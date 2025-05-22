@@ -427,7 +427,7 @@ classdef F2_PWFA_Live_Spectrometer_exported < matlab.apps.AppBase
                     drive_charge = sum(proj_SYAG(app.ROI_SYAG_x(1):notch_center_px) .* app.charge_calibration_value_SYAG(app.ROI_SYAG_x(1):notch_center_px)');
                 else
                     witness_charge = sum(proj_SYAG(app.ROI_SYAG_x(1):notch_center_px) .* app.charge_calibration_value_SYAG(app.ROI_SYAG_x(1):notch_center_px)');
-                    drive_charge = sum(proj_SYAG_2(notch_center_px:app.ROI_SYAG_x(end)) .* app.charge_calibration_value_SYAG(notch_center_px:app.ROI_SYAG_x(end))');
+                    drive_charge = sum(proj_SYAG(notch_center_px:app.ROI_SYAG_x(end)) .* app.charge_calibration_value_SYAG(notch_center_px:app.ROI_SYAG_x(end))');
                 end
             elseif strcmp(app.TwobunchmodeDropDown.Value, 'Specify fixed bunch charges')
                 witness_charge = app.TrailingbunchcutSYAGpxEditField.Value;
@@ -512,7 +512,7 @@ classdef F2_PWFA_Live_Spectrometer_exported < matlab.apps.AppBase
             %plot(app.UIAxes3, app.spec_blen_array/app.S14BLENatpeakcompressionEditField.Value)
             plot(app.UIAxes3, app.spec_energy_loss_array)
             xlabel(app.UIAxes3, "Shots [live]")
-            ylabel(app.UIAxes3, "Energy loss [J]")
+            ylabel(app.UIAxes3, app.Spectrometerdisplay2DropDown.Value)
             app.UIAxes3.YLim = [0 2^app.Spectrometer2Spinner.Value];
             app.UIAxes3.XLim = [1 app.NumberofcolumnsEditField.Value];
             %app.UIAxes3.XDir = 'reverse';
