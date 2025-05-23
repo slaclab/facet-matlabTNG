@@ -52,7 +52,7 @@ classdef F2_WirescanApp < handle
     blmname % Control name of slected bunch length monitor
   end
   properties(Constant)
-    usejit logical = [1 0 0 0 0 0 0 0 0 1 1] % Can use jitter correction for wires?
+    % usejit logical = [1 0 0 0 0 0 0 0 0 1 1] % Can use jitter correction for wires?
     usejit logical = [0 0 0 0 0 0 0 0 0 0 0] % Can use jitter correction for wires?
     % aidabpms logical = [0          1         1           1          1          1         1          1            1          0           0     ]
     aidabpms logical = [0          0         0           0          0          0         0          0            0          0           0     ]
