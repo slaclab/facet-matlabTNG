@@ -314,7 +314,7 @@ classdef F2_WirescanApp < handle
             % obj.data.xbpm2 = lcaGet(char(obj.bpms(obj.bpmsel(2))+":XHST"+obj.edef),scanWireBufferNum).*1e-3 ;
             % obj.data.ybpm1 = lcaGet(char(obj.bpms(obj.bpmsel(1))+":YHST"+obj.edef),scanWireBufferNum).*1e-3 ;
             % obj.data.ybpm2 = lcaGet(char(obj.bpms(obj.bpmsel(2))+":YHST"+obj.edef),scanWireBufferNum).*1e-3 ;
-            bj.data.xbpm1 = zeros(size(obj.data.toro)) ;
+            obj.data.xbpm1 = zeros(size(obj.data.toro)) ;
             obj.data.xbpm2 = obj.data.xbpm1;
             obj.data.ybpm1 = obj.data.xbpm1 ;
             obj.data.ybpm2 = obj.data.xbpm2 ;
