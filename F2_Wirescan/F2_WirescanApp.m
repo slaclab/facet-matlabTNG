@@ -310,10 +310,14 @@ classdef F2_WirescanApp < handle
             obj.data.ybpm1 = obj.data.xbpm1 ;
             obj.data.ybpm2 = obj.data.xbpm2 ;
           else % EPICS buffered BPM data
-            obj.data.xbpm1 = lcaGet(char(obj.bpms(obj.bpmsel(1))+":XHST"+obj.edef),scanWireBufferNum).*1e-3 ;
-            obj.data.xbpm2 = lcaGet(char(obj.bpms(obj.bpmsel(2))+":XHST"+obj.edef),scanWireBufferNum).*1e-3 ;
-            obj.data.ybpm1 = lcaGet(char(obj.bpms(obj.bpmsel(1))+":YHST"+obj.edef),scanWireBufferNum).*1e-3 ;
-            obj.data.ybpm2 = lcaGet(char(obj.bpms(obj.bpmsel(2))+":YHST"+obj.edef),scanWireBufferNum).*1e-3 ;
+            % obj.data.xbpm1 = lcaGet(char(obj.bpms(obj.bpmsel(1))+":XHST"+obj.edef),scanWireBufferNum).*1e-3 ;
+            % obj.data.xbpm2 = lcaGet(char(obj.bpms(obj.bpmsel(2))+":XHST"+obj.edef),scanWireBufferNum).*1e-3 ;
+            % obj.data.ybpm1 = lcaGet(char(obj.bpms(obj.bpmsel(1))+":YHST"+obj.edef),scanWireBufferNum).*1e-3 ;
+            % obj.data.ybpm2 = lcaGet(char(obj.bpms(obj.bpmsel(2))+":YHST"+obj.edef),scanWireBufferNum).*1e-3 ;
+            bj.data.xbpm1 = zeros(size(obj.data.toro)) ;
+            obj.data.xbpm2 = obj.data.xbpm1;
+            obj.data.ybpm1 = obj.data.xbpm1 ;
+            obj.data.ybpm2 = obj.data.xbpm2 ;
           end
           % Convert to position at wire
           obj.LLM.UpdateModel ;
@@ -927,12 +931,12 @@ classdef F2_WirescanApp < handle
       end
     end
     function set.jittercor(obj,sel)
-      % if sel && ~obj.usejit(obj.wiresel)
-      %   obj.jittercor=false;
-      %   warning('Unable to process orbit jitter for %s',obj.wirename);
-      % else
+      if sel && ~obj.usejit(obj.wiresel)
+        obj.jittercor=false;
+        warning('Unable to process orbit jitter for %s',obj.wirename);
+      else
         obj.jittercor=sel;
-      % end
+      end
       obj.confsave;
     end
     function set.wiresel(obj,sel)
