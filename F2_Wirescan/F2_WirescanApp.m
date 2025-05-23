@@ -53,6 +53,7 @@ classdef F2_WirescanApp < handle
   end
   properties(Constant)
     usejit logical = [1 0 0 0 0 0 0 0 0 1 1] % Can use jitter correction for wires?
+    usejit logical = [0 0 0 0 0 0 0 0 0 0 0] % Can use jitter correction for wires?
     % aidabpms logical = [0          1         1           1          1          1         1          1            1          0           0     ]
     aidabpms logical = [0          0         0           0          0          0         0          0            0          0           0     ]
     wires string = ["IN10:561" "LI11:444" "LI11:614" "LI11:744" "LI12:214" "LI18:944" "LI19:144" "LI19:244" "LI19:344" "LI20:3179" "LI20:3229"]
