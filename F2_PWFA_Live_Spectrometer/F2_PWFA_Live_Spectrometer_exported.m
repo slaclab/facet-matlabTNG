@@ -150,6 +150,8 @@ classdef F2_PWFA_Live_Spectrometer_exported < matlab.apps.AppBase
         divide_blen_by = 1;
 
         loop_counter = 1;
+        
+        kill_switch_PV = 'SIOC:SYS1:ML00:CALCOUT015';
     end
     
 
@@ -158,6 +160,17 @@ classdef F2_PWFA_Live_Spectrometer_exported < matlab.apps.AppBase
     methods (Access = private)
         
         function update_acquisition_fcn(app, src, event)
+            if lcaGet(app.kill_switch_PV)
+                if app.is_timer_running
+                app.is_timer_running = 0;
+                app.AcquisitionstatusLamp.Color = 'r';
+                pause(0.05)
+                stop(app.main_loop)
+                return
+                end
+            end
+            
+            
             % acquire CHER, SYAG and all relevant spectrometer scalars
             app.loop_counter = app.loop_counter + 1;
             
@@ -537,6 +550,7 @@ classdef F2_PWFA_Live_Spectrometer_exported < matlab.apps.AppBase
         % Button pushed function: StartacquiringButton
         function StartacquiringButtonPushed(app, event)
             if ~app.is_timer_running
+                lcaPut(app.kill_switch_PV, 1);
                 app.is_timer_running = 1;
                 app.AcquisitionstatusLamp.Color = 'g';
                 pause(0.05)
