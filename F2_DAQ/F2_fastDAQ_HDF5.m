@@ -323,16 +323,16 @@ classdef F2_fastDAQ_HDF5 < handle
 
                 % Pause for SCP data acquisiton setup
                 pause(1);
-                disp('SCP data acquisition started')
+                obj.dispMessage('SCP data acquisition started')
             end
             
             % Start image capture
             lcaPutNoWait(obj.daq_pvs.HDF5_Capture,1);
-            disp('Image data acquisition started')
+            obj.dispMessage('Image data acquisition started')
             
             % Start BSA acquisition
             obj.event.start_eDef();
-            disp('BSA acquisition started')
+            obj.dispMessage('BSA acquisition started')
             
             % Start timer
             timer = tic;
@@ -356,6 +356,7 @@ classdef F2_fastDAQ_HDF5 < handle
 
             % Buffers should be full, stop buffer data
             obj.event.stop_eDef();
+            obj.dispMessage('BSA acquisition complete')
             
             % Stop capture, regardless of how many shots were saved
             lcaPut(obj.daq_pvs.HDF5_Capture,0);
@@ -374,15 +375,27 @@ classdef F2_fastDAQ_HDF5 < handle
                 lcaPutSmart(obj.daq_pvs.HDF5_WriteFile(~fileNums),1);
             end
 
+            obj.dispMessage('Checking if cameras are still writing data.');
+            
             writingStatus = lcaGetSmart(obj.daq_pvs.HDF5_WriteFile_RBV);
             while any(~strcmp(writingStatus,'Done'))
                 writingStatus = lcaGetSmart(obj.daq_pvs.HDF5_WriteFile_RBV);
+                if any(~strcmp(writingStatus,'Done'))
+                    for c=1:numel(writingStatus)
+                        if ~strcmp(writingStatus(c),'Done')
+                            obj.dispMessage([obj.params.camNames{c} ' still writing data']);
+                        end
+                    end
+                end
                 % Check and break if there is a writing error
                 errorStatus = lcaGetSmart(obj.daq_pvs.HDF5_WriteStatus);
                 if strcmp(errorStatus,'Write error')
                     break
                 end
+                pause(1);
             end
+            
+            obj.dispMessage('Camera data written.');
         end
         
         function end_scan(obj,status)
@@ -499,18 +512,18 @@ classdef F2_fastDAQ_HDF5 < handle
             
             obj.data_struct.scalars.steps = [obj.data_struct.scalars.steps; steps];
             
-            disp('beep');
+            obj.dispMessage('beep');
             
-%             try
-            obj.getBSAdata(n_use);
-%             status = 0;
-%             catch ME
-%                 disp(ME.message)
-%                 obj.dispMessage('BSA data failed.');
-%                 status = 1;
-%             end
+            try
+                obj.getBSAdata(n_use);
+                status = 0;
+            catch ME
+                disp(ME.message)
+                obj.dispMessage('BSA data failed.');
+                status = 1;
+            end
             
-            disp('bop');
+            obj.dispMessage('bop');
                         
             try 
                 obj.getNonBSAdata(slac_time);
@@ -521,7 +534,7 @@ classdef F2_fastDAQ_HDF5 < handle
                 status = 1;
             end
             
-            disp('borp');
+            obj.dispMessage('borp');
                         
             obj.dispMessage('Quality control complete.');
         end
