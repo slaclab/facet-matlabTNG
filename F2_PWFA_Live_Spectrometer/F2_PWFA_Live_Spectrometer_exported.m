@@ -550,7 +550,7 @@ classdef F2_PWFA_Live_Spectrometer_exported < matlab.apps.AppBase
         % Button pushed function: StartacquiringButton
         function StartacquiringButtonPushed(app, event)
             if ~app.is_timer_running
-                lcaPut(app.kill_switch_PV, 1);
+                lcaPut(app.kill_switch_PV, 0);
                 app.is_timer_running = 1;
                 app.AcquisitionstatusLamp.Color = 'g';
                 pause(0.05)
