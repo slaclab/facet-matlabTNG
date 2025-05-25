@@ -1,0 +1,13 @@
+function S19_SCP_KLYS_BPMSList = SCP_KLYS_List_S19()
+
+S19_SCP_KLYS_List = {...
+    
+'SBST:LI19:1';
+'KLYS:LI19:11';
+'KLYS:LI19:21';
+'KLYS:LI19:31';
+'KLYS:LI19:41';
+'KLYS:LI19:51';
+'KLYS:LI19:61';
+
+};

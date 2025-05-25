@@ -1,0 +1,13 @@
+function S14_SCP_KLYS_BPMSList = SCP_KLYS_List_S14()
+
+S14_SCP_KLYS_List = {...
+    
+'SBST:LI14:1';
+'KLYS:LI14:11';
+'KLYS:LI14:21';
+'KLYS:LI14:31';
+'KLYS:LI14:41';
+'KLYS:LI14:51';
+'KLYS:LI14:61';
+
+};

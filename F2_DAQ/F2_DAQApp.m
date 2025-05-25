@@ -24,6 +24,7 @@ classdef F2_DAQApp < handle
         ecs = [201,203,213,214,222,223,224,225,226,131,53,54,55,56]
         n_ecs = 14
         n_edefs = 11
+        scp_max = 600
     end
     
     methods
@@ -398,7 +399,7 @@ classdef F2_DAQApp < handle
             end
             
             if obj.DAQ_params.saveSCP
-                if obj.DAQ_params.n_shot >= 600
+                if obj.DAQ_params.n_shot >= obj.scp_max
                     selection = uiconfirm(obj.guihan.FACETIIDAQUIFigure,...
                         "Requesting too many shots. Aborting. Try again with less shots.",...
                         "Error requesting SCP data",'Options',{'OK'},'Icon','error');
@@ -587,11 +588,13 @@ classdef F2_DAQApp < handle
             end
             
             % Add SCP BPM lists
-            SCP_Lists = [{'SCP_BPM_List_S11'},{'SCP_BPM_List_S12'},...
-                {'SCP_BPM_List_S13'},{'SCP_BPM_List_S14'},...
-                {'SCP_BPM_List_S15'},{'SCP_BPM_List_S16'},...
-                {'SCP_BPM_List_S17'},{'SCP_BPM_List_S18'},...
-                {'SCP_BPM_List_S19'},{'SCP_BPM_List_S20'}];
+            scp_lists = dir('SCP_*');
+            SCP_Lists = {};
+            for i = 1:numel(scp_lists)
+                split = strsplit(scp_lists(i).name,'.');
+                SCP_Lists{end+1} = split{1};
+            end
+
             name_lists = [name_lists, SCP_Lists];
             obj.guihan.BSADataListBox.Items = name_lists;
             obj.addMessage(sprintf('Loaded %d BSA and SCP Lists.',numel(name_lists)));

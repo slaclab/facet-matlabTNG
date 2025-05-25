@@ -1,0 +1,15 @@
+function S17_SCP_KLYS_BPMSList = SCP_KLYS_List_S17()
+
+S17_SCP_KLYS_List = {...
+    
+'SBST:LI17:1';
+'KLYS:LI17:11';
+'KLYS:LI17:21';
+'KLYS:LI17:31';
+'KLYS:LI17:41';
+'KLYS:LI17:51';
+'KLYS:LI17:61';
+'KLYS:LI17:71';
+'KLYS:LI17:81';
+
+};
