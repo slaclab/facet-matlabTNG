@@ -151,7 +151,7 @@ classdef F2_PWFA_Live_Spectrometer_exported < matlab.apps.AppBase
 
         loop_counter = 1;
         
-        kill_switch_PV = 'SIOC:SYS1:ML00:CALCOUT015';
+        kill_switch_PV = 'SIOC:SYS1:ML00:AO910';
     end
     
 
