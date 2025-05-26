@@ -1,4 +1,4 @@
-function S13_SCP_KLYS_BPMSList = SCP_KLYS_List_S13()
+function S13_SCP_KLYS_List = SCP_KLYS_List_S13()
 
 S13_SCP_KLYS_List = {...
     

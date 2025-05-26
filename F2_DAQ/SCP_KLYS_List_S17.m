@@ -1,4 +1,4 @@
-function S17_SCP_KLYS_BPMSList = SCP_KLYS_List_S17()
+function S17_SCP_KLYS_List = SCP_KLYS_List_S17()
 
 S17_SCP_KLYS_List = {...
     
