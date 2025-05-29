@@ -114,6 +114,32 @@ classdef F2_SCPManager < handle
                 status = 1;
                 return;
             end
+            % Check that files have data
+            for i = 1:obj.nFile
+                if scp_files(i).bytes == 0
+                    j = 0;
+                    while j < 20
+                        obj.daq_handle.dispMessage(['Warning: SCP Step ' num2str(i)...
+                            ' file incomplete. Waiting 3 seconds.']);
+                        pause(3);
+                        scp_files = dir('step*.txt');
+                        if scp_files(i).bytes ~= 0
+                            obj.daq_handle.dispMessage(['Got SCP data for step ' num2str(i)]);
+                            break;
+                        end
+                        j = j+1;
+                    end
+                    if scp_files(i).bytes == 0
+                        obj.daq_handle.dispMessage(['Warning: SCP Step ' num2str(i)...
+                            ' file incomplete. 1 minute timeout exceeded.']);
+                        data = [];
+                        status = 1;
+                        return;
+                    end
+                
+                end
+            end
+
 
             % Remove extra spaces in the SCP files which cause problems for
             % for the MATLAB table functionality, then load data
