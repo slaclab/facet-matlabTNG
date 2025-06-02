@@ -92,7 +92,7 @@ classdef F2_SCPManager < handle
 
             % Start buffered acquisition
             status = system(obj.command);
-
+            
         end
 
         function [data, status] = getSCPdata(obj,scanDim,totalSteps)
@@ -108,8 +108,12 @@ classdef F2_SCPManager < handle
             % Check for SCP files
             scp_files = dir('step*.txt');
             if numel(scp_files) ~= obj.nFile
-                obj.daq_handle.dispMessage(['Warning: Did not find SCP files. '...
-                    num2str(obj.nFile) ' and ' num2str(numel(scp_files)) ' found.']);
+                if ~obj.freerun
+                    obj.daq_handle.dispMessage(['Warning: Did not find SCP files. '...
+                        num2str(obj.nFile) ' and ' num2str(numel(scp_files)) ' found.']);
+                else
+                    disp('Warning: Did not find all SCP files.')
+                end
                 data = [];
                 status = 1;
                 return;
@@ -118,20 +122,26 @@ classdef F2_SCPManager < handle
             for i = 1:obj.nFile
                 if scp_files(i).bytes == 0
                     j = 0;
-                    while j < 20
-                        obj.daq_handle.dispMessage(['Warning: SCP Step ' num2str(i)...
-                            ' file incomplete. Waiting 3 seconds.']);
+                    while j < 30
+                        if ~obj.freerun
+                            obj.daq_handle.dispMessage(['Warning: SCP Step ' num2str(i)...
+                                ' file incomplete. Waiting 3 seconds.']);
+                        end
                         pause(3);
                         scp_files = dir('step*.txt');
                         if scp_files(i).bytes ~= 0
-                            obj.daq_handle.dispMessage(['Got SCP data for step ' num2str(i)]);
+                            if ~obj.freerun
+                                obj.daq_handle.dispMessage(['Got SCP data for step ' num2str(i)]);
+                            end
                             break;
                         end
                         j = j+1;
                     end
                     if scp_files(i).bytes == 0
-                        obj.daq_handle.dispMessage(['Warning: SCP Step ' num2str(i)...
-                            ' file incomplete. 1 minute timeout exceeded.']);
+                        if ~obj.freerun
+                            obj.daq_handle.dispMessage(['Warning: SCP Step ' num2str(i)...
+                                ' file incomplete. 90 second timeout exceeded.']);
+                        end
                         data = [];
                         status = 1;
                         return;
@@ -149,6 +159,8 @@ classdef F2_SCPManager < handle
 
                 % clean data
                 awk_command = [obj.awk_cmd txtfilename ' > ' clnfilename];
+                % check that clnfilename isn't empty for some reason?
+                
                 cmd_stat = system(awk_command);
 
                 % extract data
@@ -197,9 +209,41 @@ classdef F2_SCPManager < handle
                 obj.data.steps = [obj.data.steps; i*ones(obj.numPulses,1)];
                 obj.data.pids = [obj.data.pids; scp_data.pulseId(tableInds)];
             end
+            
+            data = obj.data;
+            status = 0;
 
             % clean up
             obj.rm_text_files();
+            if ~obj.freerun
+                obj.daq_handle.dispMessage('Done reading SCP data');
+            end
+        end
+        
+        function status = checkLastStep(obj,step)
+            % Check if last SCP step finished by checking if the file is
+            % there and is not empty
+            if step > 1
+                j = 0;
+                while ~isfile(sprintf('step%d.txt',step-1))
+                    pause(2);
+                    j = j+1;
+                    if j > 30
+                        status = 1;
+                        break
+                    end
+                end
+                
+                k = 0;
+                while isempty(readtable('step%d.txt',step-1))
+                    pause(2);
+                    k = k+1;
+                    if k > 30
+                        status = 1;
+                        break
+                    end
+                end
+            end
         end
 
         function createMetadata(obj)

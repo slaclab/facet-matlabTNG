@@ -246,7 +246,7 @@ classdef F2_fastDAQ_HDF5 < handle
                     status = 1;
                     
                     % we are done BUFFACQ eDef
-                    obj.event.release_eDef();
+%                     obj.event.release_eDef();
                     return
                 end 
             end
@@ -295,11 +295,21 @@ classdef F2_fastDAQ_HDF5 < handle
             
             waitTime = obj.params.n_shot/obj.event_info.liveRate;
             
-            obj.dispMessage(sprintf('Starting DAQ Step %d. Time estimate %0.1f seconds.',obj.step, waitTime));
+            % Check that last SCP step finished before starting next step
+            if obj.params.saveSCP
+                status = obj.scp_manager.checkLastStep(obj.step);
+                if status
+                    obj.dispMessage(['Error finishing last SCP step.',...
+                    'Cant start next step']);
+                    return
+                end
+            end
             
             % Set up camera files
             lcaPut(obj.daq_pvs.HDF5_FileNumber,0);
             set_CAM_filepath_HDF5(obj);
+            
+            obj.dispMessage(sprintf('Starting DAQ Step %d. Time estimate %0.1f seconds.',obj.step, waitTime));
             
             % If we are requesting SCP data
             if obj.params.saveSCP

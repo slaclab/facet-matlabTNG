@@ -24,7 +24,7 @@ classdef F2_DAQApp < handle
         ecs = [201,203,213,214,222,223,224,225,226,131,53,54,55,56]
         n_ecs = 14
         n_edefs = 11
-        scp_max = 600
+        scp_max = 2000
     end
     
     methods
@@ -403,14 +403,15 @@ classdef F2_DAQApp < handle
                     selection = uiconfirm(obj.guihan.FACETIIDAQUIFigure,...
                         "Requesting too many shots. Aborting. Try again with less shots.",...
                         "Error requesting SCP data",'Options',{'OK'},'Icon','error');
-                    return
-                    % abort
+                    if strcmp(selection,'OK');return;end
                 else
+                    liveBR = lcaGetSmart('EVNT:SYS1:1:BEAMRATE');
+                    waitTime = (obj.DAQ_params.totalSteps*obj.DAQ_params.n_shot)/liveBR;
                     selection = uiconfirm(obj.guihan.FACETIIDAQUIFigure,...
-                        "Acquiring SCP data will steal rate from other applications.",...
+                        ['Acquiring SCP data will steal rate from other applications ',...
+                        'for at least ' num2str(waitTime) 'seconds.'],...
                         "Warning",'Options',{'Continue','Abort'},'Icon','warning');
                     if strcmp(selection,'Abort')
-                        % abort
                         return
                     end
                 end
