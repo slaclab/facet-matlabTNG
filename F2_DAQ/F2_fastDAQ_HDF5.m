@@ -297,11 +297,13 @@ classdef F2_fastDAQ_HDF5 < handle
             
             % Check that last SCP step finished before starting next step
             if obj.params.saveSCP
-                status = obj.scp_manager.checkLastStep(obj.step);
-                if status
-                    obj.dispMessage(['Error finishing last SCP step.',...
-                    'Cant start next step']);
-                    return
+                if obj.step > 1
+                    status = obj.scp_manager.checkLastStep(obj.step);
+                    if status
+                        obj.dispMessage(['Error finishing last SCP step.',...
+                        'Cant start next step']);
+                        return
+                    end
                 end
             end
             

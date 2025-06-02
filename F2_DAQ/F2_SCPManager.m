@@ -223,6 +223,7 @@ classdef F2_SCPManager < handle
         function status = checkLastStep(obj,step)
             % Check if last SCP step finished by checking if the file is
             % there and is not empty
+            status = 0;
             if step > 1
                 j = 0;
                 while ~isfile(sprintf('step%d.txt',step-1))
