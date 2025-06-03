@@ -405,14 +405,20 @@ classdef F2_DAQApp < handle
                         "Error requesting SCP data",'Options',{'OK'},'Icon','error');
                     if strcmp(selection,'OK');return;end
                 else
-%                     liveBR = lcaGetSmart('EVNT:SYS1:1:BEAMRATE');
-%                     waitTime = (obj.DAQ_params.totalSteps*obj.DAQ_params.n_shot)/liveBR;
-%                     selection = uiconfirm(obj.guihan.FACETIIDAQUIFigure,...
-%                         ['Acquiring SCP data will steal rate from other applications ',...
-%                         'for at least ' num2str(waitTime) 'seconds.'],...
-%                         "Warning",'Options',{'Continue','Abort'},'Icon','warning');
+                    % Try to estimate how long it will take to write SCP data
+                    % assume approx 8 devices per SCP list
+                    totalDataPts = obj.DAQ_params.n_shot*numel(obj.DAQ_params.SCP_list)*8;
+                    
+                    % Coefficients for linear fit were acquired empirically
+                    c1 = 3.87E-03;
+                    c2 = 0.25;
+                    predWaitTime = c1*totalDataPts + c2;
+                    predWaitTime = round(predWaitTime,-1);
+                    
                     selection = uiconfirm(obj.guihan.FACETIIDAQUIFigure,...
-                        'Acquiring SCP data will steal rate from other applications.',...
+                        ['Acquiring SCP data will steal rate from other applications. ',...
+                        'Also, expect to wait approx ' num2str(predWaitTime) ' seconds ',...
+                        'between steps while SCP data is being written.'],...
                         "Warning",'Options',{'Continue','Abort'},'Icon','warning');
                     if strcmp(selection,'Abort')
                         return
