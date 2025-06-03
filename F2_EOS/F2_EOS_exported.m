@@ -3,33 +3,37 @@ classdef F2_EOS_exported < matlab.apps.AppBase
     % Properties that correspond to app components
     properties (Access = public)
         UIFigure                     matlab.ui.Figure
-        EOSPlot                      matlab.ui.control.UIAxes
-        TimingPlot                   matlab.ui.control.UIAxes
-        StartButton                  matlab.ui.control.Button
-        StopButton                   matlab.ui.control.Button
-        KpEditFieldLabel             matlab.ui.control.Label
-        KpEditField                  matlab.ui.control.NumericEditField
-        kdEditFieldLabel             matlab.ui.control.Label
-        kdEditField                  matlab.ui.control.NumericEditField
-        ShotsaveragedEditFieldLabel  matlab.ui.control.Label
-        ShotsaveragedEditField       matlab.ui.control.NumericEditField
-        SetpointpxEditFieldLabel     matlab.ui.control.Label
-        SetpointpxEditField          matlab.ui.control.NumericEditField
-        MinTargetTimeEditFieldLabel  matlab.ui.control.Label
-        MinTargetTimeEditField       matlab.ui.control.NumericEditField
-        MaxTargetTimeEditFieldLabel  matlab.ui.control.Label
-        MaxTargetTimeEditField       matlab.ui.control.NumericEditField
-        KiEditFieldLabel             matlab.ui.control.Label
-        KiEditField                  matlab.ui.control.NumericEditField
-        LogTextAreaLabel             matlab.ui.control.Label
-        LogEditField                 matlab.ui.control.TextArea
+        MinSignalEditField           matlab.ui.control.NumericEditField
+        MinSignalEditFieldLabel      matlab.ui.control.Label
         CorrectTick                  matlab.ui.control.CheckBox
+        LogEditField                 matlab.ui.control.TextArea
+        LogTextAreaLabel             matlab.ui.control.Label
+        KiEditField                  matlab.ui.control.NumericEditField
+        KiEditFieldLabel             matlab.ui.control.Label
+        MaxTargetTimeEditField       matlab.ui.control.NumericEditField
+        MaxTargetTimeEditFieldLabel  matlab.ui.control.Label
+        MinTargetTimeEditField       matlab.ui.control.NumericEditField
+        MinTargetTimeEditFieldLabel  matlab.ui.control.Label
+        SetpointpxEditField          matlab.ui.control.NumericEditField
+        SetpointpxEditFieldLabel     matlab.ui.control.Label
+        ShotsaveragedEditField       matlab.ui.control.NumericEditField
+        ShotsaveragedEditFieldLabel  matlab.ui.control.Label
+        kdEditField                  matlab.ui.control.NumericEditField
+        kdEditFieldLabel             matlab.ui.control.Label
+        KpEditField                  matlab.ui.control.NumericEditField
+        KpEditFieldLabel             matlab.ui.control.Label
+        StopButton                   matlab.ui.control.Button
+        StartButton                  matlab.ui.control.Button
+        SignalPlot                   matlab.ui.control.UIAxes
+        TimingPlot                   matlab.ui.control.UIAxes
+        EOSPlot                      matlab.ui.control.UIAxes
     end
 
     
     properties (Access = private)
         RunFeedbackBool % Description
         Timing_EOS_Vector % Description
+        Signal_EOS_Vector
         Error_Vector % Description
         SetPoint_px
         k_i
@@ -41,6 +45,7 @@ classdef F2_EOS_exported < matlab.apps.AppBase
         EOS_Pixelcount_threshold % Description
         ErrorOutput % Description
         NumberOfShotsPerDatapoint % Description
+        MinSignal
     end
     
     methods (Access = private)
@@ -67,51 +72,60 @@ classdef F2_EOS_exported < matlab.apps.AppBase
         end
         
         function TimingPosition_px = ReadDataPoint(app)
+             
              EOS_Camera_PV='CAMR:LI20:205';
              
-             for n=1:app.NumberOfShotsPerDatapoint % first evaluate NumberOfShotsPerDatapoint shots then take average as datapoints 
-                                                   % for loop
+             valid_shots=0;
+             total_shots=0;
+             target_time_mean=[];
+             timing_position_mean=[];
+             
+             
+             while 1
+                 % read camera data
                  CameraData = profmon_grabSeries(EOS_Camera_PV,1);          
-                 PxCountEOS=sum(sum(CameraData.img));
-                 TargetTime_(n)=lcaGet('OSC:LA20:10:FS_TGT_TIME');
                  Projection_X=sum(CameraData.img);
-                 [maxval,maxIndex]=max(Projection_X);
-                  TimingPosition_px_(n)=maxIndex+CameraData.roiX;
-                  %pause(0.01);
-              end
-              
-              
-              
-            if PxCountEOS>app.EOS_Pixelcount_threshold
-                 TargetTime=mean(TargetTime_);
-                
-                 
-                
-                 TimingPosition_px=mean(TimingPosition_px_);
-                 
-                 if length(app.Timing_EOS_Vector)<300
-                     
-                     app.Timing_EOS_Vector(length(app.Timing_EOS_Vector)+1)=TimingPosition_px;
-                     app.TargetTime_Vector(length(app.TargetTime_Vector)+1)=TargetTime;
-                     
-                       
-                 
-                 
+                 [signal,maxIndex]=max(Projection_X);
+                 signal=signal-mean(Projection_X);
+                 % add signal to signal vector
+                 if length(app.Signal_EOS_Vector)==300
+                     app.Signal_EOS_Vector(1:299)=app.Signal_EOS_Vector(2:300);
+                     app.Signal_EOS_Vector(300)=signal;
                  end
-                 
-                 if length(app.Timing_EOS_Vector)==300
-                     app.Timing_EOS_Vector(1:299)=app.Timing_EOS_Vector(2:300);
-                     app.Timing_EOS_Vector(300)=TimingPosition_px;
-                     
-                     app.TargetTime_Vector(1:299)=app.TargetTime_Vector(2:300);
-                     app.TargetTime_Vector(300)=TargetTime;
-                     
-                     
+                 if length(app.Signal_EOS_Vector)<300
+                     app.Signal_EOS_Vector(length(app.Signal_EOS_Vector)+1)=signal;
                  end
-                 
-            end
+                 % check if data point is valid
+                 if signal > app.MinSignal
+                     target_time_mean(length(target_time_mean)+1)=lcaGet('OSC:LA20:10:FS_TGT_TIME');
+                     timing_position_mean(length(timing_position_mean)+1)=maxIndex+CameraData.roiX;
+                     valid_shots=valid_shots+1;
+                 end
+                 % check break condition
+                 total_shots=total_shots+1;
+                 if valid_shots==app.NumberOfShotsPerDatapoint
+                     % update vectors
+                     TargetTime=mean(target_time_mean);
+                     TimingPosition_px=mean(timing_position_mean);
+                    break
+                 end
+                 if total_shots==20*app.NumberOfShotsPerDatapoint
+                     TargetTime=lcaGet('OSC:LA20:10:FS_TGT_TIME');
+                     TimingPosition_px=app.SetPoint_px;
+                     break
+                 end
+             end
              
-             
+             if length(app.Timing_EOS_Vector)<300
+                app.Timing_EOS_Vector(length(app.Timing_EOS_Vector)+1)=TimingPosition_px;
+                app.TargetTime_Vector(length(app.TargetTime_Vector)+1)=TargetTime;
+             end
+             if length(app.Timing_EOS_Vector)==300
+                 app.Timing_EOS_Vector(1:299)=app.Timing_EOS_Vector(2:300);
+                 app.Timing_EOS_Vector(300)=TimingPosition_px;
+                 app.TargetTime_Vector(1:299)=app.TargetTime_Vector(2:300);
+                 app.TargetTime_Vector(300)=TargetTime;
+             end
              
         end
         
@@ -119,15 +133,21 @@ classdef F2_EOS_exported < matlab.apps.AppBase
             
           % app.LogEditField.Value=[app.LogEditField.Value,'plotting...',num2str(app.TargetTime_Vector)]
             plot(app.EOSPlot,[1:length(app.Timing_EOS_Vector)],app.Timing_EOS_Vector)
+            axis(app.EOSPlot,[0,length(app.Timing_EOS_Vector),-inf,inf])
+
             
-            
-            plot(app.TimingPlot,[1:length(app.Timing_EOS_Vector)],app.TargetTime_Vector)
+            plot(app.TimingPlot,[1:length(app.TargetTime_Vector)],app.TargetTime_Vector)
             hold(app.TimingPlot,'on')
-            plot(app.TimingPlot,[1,length(app.Timing_EOS_Vector)],[app.TargetTime_LowerBound,app.TargetTime_LowerBound],'--r')
-            plot(app.TimingPlot,[1,length(app.Timing_EOS_Vector)],[app.TargetTime_UpperBound,app.TargetTime_UpperBound],'--r')
-            axis(app.TimingPlot,[0,length(app.Timing_EOS_Vector),app.TargetTime_LowerBound-0.001,app.TargetTime_UpperBound+0.001])
+            plot(app.TimingPlot,[1,length(app.TargetTime_Vector)],[app.TargetTime_LowerBound,app.TargetTime_LowerBound],'--r')
+            plot(app.TimingPlot,[1,length(app.TargetTime_Vector)],[app.TargetTime_UpperBound,app.TargetTime_UpperBound],'--r')
+            axis(app.TimingPlot,[0,length(app.TargetTime_Vector),app.TargetTime_LowerBound-0.001,app.TargetTime_UpperBound+0.001])
             hold(app.TimingPlot,'off')
-      %  app.TargetTime_UpperBound+0.01,app.TargetTime_LowerBound-0.001
+            
+            plot(app.SignalPlot,[1:length(app.Signal_EOS_Vector)],app.Signal_EOS_Vector)
+            hold(app.SignalPlot,'on')
+            plot(app.SignalPlot,[1,length(app.Signal_EOS_Vector)],[app.MinSignal,app.MinSignal],'--r')
+            hold(app.SignalPlot, 'off')
+            axis(app.SignalPlot,[0,length(app.Signal_EOS_Vector),0,1.2*max(app.Signal_EOS_Vector)])
         end
         
         function results = Evaluate_error(app)
@@ -207,6 +227,8 @@ classdef F2_EOS_exported < matlab.apps.AppBase
             app.RunFeedbackBool=false;
             app.Timing_EOS_Vector=[];
             app.TargetTime_Vector=[];
+            app.Signal_EOS_Vector=[];
+            app.MinSignal=0;
             app.EOS_Pixelcount_threshold=0;  % TODO: implement EOS threshold for goose-shot identification.
        
             TargetTime=lcaGet('OSC:LA20:10:FS_TGT_TIME');
@@ -227,9 +249,11 @@ classdef F2_EOS_exported < matlab.apps.AppBase
             app.KiEditField.Value=app.k_i;
             app.k_d=0.1;
             app.kdEditField.Value=app.k_d;
-            
+                        
             app.NumberOfShotsPerDatapoint=1;
             app.ShotsaveragedEditField.Value=app.NumberOfShotsPerDatapoint;
+            
+            app.MinSignalEditField.Value=app.MinSignal;
         end
 
         % Value changed function: KpEditField
@@ -286,6 +310,12 @@ classdef F2_EOS_exported < matlab.apps.AppBase
             app.NumberOfShotsPerDatapoint=value;  
             app.LogEditField.Value=['N avg changed to ',num2str(value),'.'];
         end
+
+        % Value changed function: MinSignalEditField
+        function MinSignalEditFieldValueChanged(app, event)
+            value = app.MinSignalEditField.Value;
+            app.MinSignal=value;
+        end
     end
 
     % Component initialization
@@ -302,27 +332,46 @@ classdef F2_EOS_exported < matlab.apps.AppBase
             % Create EOSPlot
             app.EOSPlot = uiaxes(app.UIFigure);
             title(app.EOSPlot, 'rel. TOA as measured on EOS')
-            xlabel(app.EOSPlot, 'moving shot no.')
+            xlabel(app.EOSPlot, 'moving shot no. (valid shots only)')
             ylabel(app.EOSPlot, 'EOS signal (px)')
-            app.EOSPlot.Position = [29 370 468 185];
+            app.EOSPlot.XTickLabelRotation = 0;
+            app.EOSPlot.YTickLabelRotation = 0;
+            app.EOSPlot.ZTickLabelRotation = 0;
+            app.EOSPlot.FontSize = 14;
+            app.EOSPlot.Position = [29 399 468 156];
 
             % Create TimingPlot
             app.TimingPlot = uiaxes(app.UIFigure);
             title(app.TimingPlot, 'Target time set point')
-            xlabel(app.TimingPlot, 'moving shot no.')
+            xlabel(app.TimingPlot, 'moving shot no. (valid shots only)')
             ylabel(app.TimingPlot, 'Target time (ns)')
-            app.TimingPlot.Position = [29 167 473 185];
+            app.TimingPlot.XTickLabelRotation = 0;
+            app.TimingPlot.YTickLabelRotation = 0;
+            app.TimingPlot.ZTickLabelRotation = 0;
+            app.TimingPlot.FontSize = 14;
+            app.TimingPlot.Position = [27 237 473 160];
+
+            % Create SignalPlot
+            app.SignalPlot = uiaxes(app.UIFigure);
+            title(app.SignalPlot, 'Signal Strength')
+            xlabel(app.SignalPlot, 'moving shot no. (all shots)')
+            ylabel(app.SignalPlot, 'signal strength')
+            app.SignalPlot.XTickLabelRotation = 0;
+            app.SignalPlot.YTickLabelRotation = 0;
+            app.SignalPlot.ZTickLabelRotation = 0;
+            app.SignalPlot.FontSize = 14;
+            app.SignalPlot.Position = [26 83 475 155];
 
             % Create StartButton
             app.StartButton = uibutton(app.UIFigure, 'push');
             app.StartButton.ButtonPushedFcn = createCallbackFcn(app, @StartButtonPushed, true);
-            app.StartButton.Position = [172 46 100 22];
+            app.StartButton.Position = [162 13 100 22];
             app.StartButton.Text = 'Start';
 
             % Create StopButton
             app.StopButton = uibutton(app.UIFigure, 'push');
             app.StopButton.ButtonPushedFcn = createCallbackFcn(app, @StopButtonPushed, true);
-            app.StopButton.Position = [283 46 100 22];
+            app.StopButton.Position = [277 13 100 22];
             app.StopButton.Text = 'Stop';
 
             % Create KpEditFieldLabel
@@ -361,13 +410,13 @@ classdef F2_EOS_exported < matlab.apps.AppBase
             % Create SetpointpxEditFieldLabel
             app.SetpointpxEditFieldLabel = uilabel(app.UIFigure);
             app.SetpointpxEditFieldLabel.HorizontalAlignment = 'right';
-            app.SetpointpxEditFieldLabel.Position = [151 106 77 22];
+            app.SetpointpxEditFieldLabel.Position = [168 47 77 22];
             app.SetpointpxEditFieldLabel.Text = 'Set point (px)';
 
             % Create SetpointpxEditField
             app.SetpointpxEditField = uieditfield(app.UIFigure, 'numeric');
             app.SetpointpxEditField.ValueChangedFcn = createCallbackFcn(app, @SetpointpxEditFieldValueChanged, true);
-            app.SetpointpxEditField.Position = [243 106 100 22];
+            app.SetpointpxEditField.Position = [260 47 100 22];
 
             % Create MinTargetTimeEditFieldLabel
             app.MinTargetTimeEditFieldLabel = uilabel(app.UIFigure);
@@ -405,17 +454,28 @@ classdef F2_EOS_exported < matlab.apps.AppBase
             % Create LogTextAreaLabel
             app.LogTextAreaLabel = uilabel(app.UIFigure);
             app.LogTextAreaLabel.HorizontalAlignment = 'right';
-            app.LogTextAreaLabel.Position = [511 104 26 22];
+            app.LogTextAreaLabel.Position = [527 104 26 22];
             app.LogTextAreaLabel.Text = 'Log';
 
             % Create LogEditField
             app.LogEditField = uitextarea(app.UIFigure);
-            app.LogEditField.Position = [552 68 150 60];
+            app.LogEditField.Position = [568 68 150 60];
 
             % Create CorrectTick
             app.CorrectTick = uicheckbox(app.UIFigure);
             app.CorrectTick.Text = 'Correcting timing (instead of only reading)';
-            app.CorrectTick.Position = [455 25 247 22];
+            app.CorrectTick.Position = [496 26 247 22];
+
+            % Create MinSignalEditFieldLabel
+            app.MinSignalEditFieldLabel = uilabel(app.UIFigure);
+            app.MinSignalEditFieldLabel.HorizontalAlignment = 'right';
+            app.MinSignalEditFieldLabel.Position = [540 179 62 22];
+            app.MinSignalEditFieldLabel.Text = 'Min Signal';
+
+            % Create MinSignalEditField
+            app.MinSignalEditField = uieditfield(app.UIFigure, 'numeric');
+            app.MinSignalEditField.ValueChangedFcn = createCallbackFcn(app, @MinSignalEditFieldValueChanged, true);
+            app.MinSignalEditField.Position = [617 179 100 22];
 
             % Show the figure after all components are created
             app.UIFigure.Visible = 'on';
