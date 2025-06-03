@@ -1,5 +1,5 @@
 if ~isdeployed 
-  lcaSetTimeout(2);
+  %lcaSetTimeout(2);
   if getenv('IOCCONSOLE_ENV')~="Dev"
     addpath ../epics/extensions/labca_3_7_2/bin/linux-x86_64/labca/
   end

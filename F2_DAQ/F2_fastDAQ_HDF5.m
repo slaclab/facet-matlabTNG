@@ -21,6 +21,7 @@ classdef F2_fastDAQ_HDF5 < handle
         scp_list
         nonbsa_list
         nonbsa_array_list
+        scp_manager
         scanFunctions
         %eDefNum
         daq_status
@@ -145,6 +146,9 @@ classdef F2_fastDAQ_HDF5 < handle
             obj.event_info = obj.event.evt_struct();
             obj.data_struct.metadata.Event = obj.event_info;
             
+            % Let SCPManager class manage SCP stuff
+            obj.scp_manager = F2_SCPManager(obj.params.SCP_list,obj.params.n_shot,obj);
+
             % Set beam blocking if requested
             obj.blockBeam = obj.params.blockBeam;
             
@@ -153,19 +157,6 @@ classdef F2_fastDAQ_HDF5 < handle
                         
             % Fill in the rest of the data struct to prepare for data
             obj.setupDataStruct();
-            
-            % Create formatted list (BPMS_cmd) of requested SCP BPMS
-            % Should look like: '["BPMS:LI11:201",...,"BPMS:LI20:3340"]'
-            % We will pass this to bash script
-%             if obj.params.saveSCP
-            BPMS = [];
-            for i = 1:numel(obj.params.SCP_list)
-                BPMS = [BPMS;feval(obj.params.SCP_list{i})];
-            end
-            BPMS_str = join(string(BPMS)','","');
-            BPMS_str_cmd = '''["' + BPMS_str + '"]''';
-            obj.BPMS_cmd = char(BPMS_str_cmd);
-%             end
             
             % Fill in scan functions
             obj.scanFunctions = struct();
@@ -255,7 +246,7 @@ classdef F2_fastDAQ_HDF5 < handle
                     status = 1;
                     
                     % we are done BUFFACQ eDef
-                    obj.event.release_eDef();
+%                     obj.event.release_eDef();
                     return
                 end 
             end
@@ -304,35 +295,44 @@ classdef F2_fastDAQ_HDF5 < handle
             
             waitTime = obj.params.n_shot/obj.event_info.liveRate;
             
-            obj.dispMessage(sprintf('Starting DAQ Step %d. Time estimate %0.1f seconds.',obj.step, waitTime));
+            % Check that last SCP step finished before starting next step
+            if obj.params.saveSCP
+                if obj.step > 1
+                    status = obj.scp_manager.checkLastStep(obj.step);
+                    if status
+                        obj.dispMessage(['Error finishing last SCP step.',...
+                        'Cant start next step']);
+                        return
+                    end
+                end
+            end
             
             % Set up camera files
             lcaPut(obj.daq_pvs.HDF5_FileNumber,0);
             set_CAM_filepath_HDF5(obj);
             
+            obj.dispMessage(sprintf('Starting DAQ Step %d. Time estimate %0.1f seconds.',obj.step, waitTime));
+            
             % If we are requesting SCP data
             if obj.params.saveSCP
-                % Start SCP Buffered Acquisition, BSA, and image acquisition
-                SCPtimeout = 300; % arbitrarily large enough number
-                numPulses = obj.params.n_shot;
-                
-                % Run external bash script that acquires SCP BPM data
-%                 command = sprintf('./scpbuffacq.sh %d %d %s > step%d.txt &',SCPtimeout,numPulses,obj.BPMS_cmd,obj.step);
-                command = ['./scpbuffacq.sh ' num2str(SCPtimeout) ' ' num2str(numPulses) ' ' obj.BPMS_cmd ' > step' num2str(obj.step) '.txt &'];
-                commandStat = system(command);
-
-                % Pause for SCP data acquisiton setup
-                pause(1);
-                disp('SCP data acquisition started')
+                % Start SCP Buffered Acquisition
+                scp_status = obj.scp_manager.startBuffAcq(obj.step);
+                if scp_status == 0
+                    % Pause for SCP data acquisiton setup
+                    pause(0.5);
+                    obj.dispMessage('SCP data acquisition started');
+                else
+                    obj.dispMessage('SCP acquisition failed to start');
+                end
             end
             
             % Start image capture
             lcaPutNoWait(obj.daq_pvs.HDF5_Capture,1);
-            disp('Image data acquisition started')
+            obj.dispMessage('Image data acquisition started')
             
             % Start BSA acquisition
             obj.event.start_eDef();
-            disp('BSA acquisition started')
+            obj.dispMessage('BSA acquisition started')
             
             % Start timer
             timer = tic;
@@ -356,6 +356,7 @@ classdef F2_fastDAQ_HDF5 < handle
 
             % Buffers should be full, stop buffer data
             obj.event.stop_eDef();
+            obj.dispMessage('BSA acquisition complete')
             
             % Stop capture, regardless of how many shots were saved
             lcaPut(obj.daq_pvs.HDF5_Capture,0);
@@ -374,15 +375,27 @@ classdef F2_fastDAQ_HDF5 < handle
                 lcaPutSmart(obj.daq_pvs.HDF5_WriteFile(~fileNums),1);
             end
 
+            obj.dispMessage('Checking if cameras are still writing data.');
+            
             writingStatus = lcaGetSmart(obj.daq_pvs.HDF5_WriteFile_RBV);
             while any(~strcmp(writingStatus,'Done'))
                 writingStatus = lcaGetSmart(obj.daq_pvs.HDF5_WriteFile_RBV);
+                if any(~strcmp(writingStatus,'Done'))
+                    for c=1:numel(writingStatus)
+                        if ~strcmp(writingStatus(c),'Done')
+                            obj.dispMessage([obj.params.camNames{c} ' still writing data']);
+                        end
+                    end
+                end
                 % Check and break if there is a writing error
                 errorStatus = lcaGetSmart(obj.daq_pvs.HDF5_WriteStatus);
                 if strcmp(errorStatus,'Write error')
                     break
                 end
+                pause(1);
             end
+            
+            obj.dispMessage('Camera data written.');
         end
         
         function end_scan(obj,status)
@@ -499,18 +512,18 @@ classdef F2_fastDAQ_HDF5 < handle
             
             obj.data_struct.scalars.steps = [obj.data_struct.scalars.steps; steps];
             
-            disp('beep');
+            obj.dispMessage('beep');
             
-%             try
-            obj.getBSAdata(n_use);
-%             status = 0;
-%             catch ME
-%                 disp(ME.message)
-%                 obj.dispMessage('BSA data failed.');
-%                 status = 1;
-%             end
+            try
+                obj.getBSAdata(n_use);
+                status = 0;
+            catch ME
+                disp(ME.message)
+                obj.dispMessage('BSA data failed.');
+                status = 1;
+            end
             
-            disp('bop');
+            obj.dispMessage('bop');
                         
             try 
                 obj.getNonBSAdata(slac_time);
@@ -521,7 +534,7 @@ classdef F2_fastDAQ_HDF5 < handle
                 status = 1;
             end
             
-            disp('borp');
+            obj.dispMessage('borp');
                         
             obj.dispMessage('Quality control complete.');
         end
@@ -650,76 +663,17 @@ classdef F2_fastDAQ_HDF5 < handle
         function getSCPdata(obj)
             % Get SCP data from txt files and save to data_struct
             
-            % Put data from all steps into a single cell array all_scp_data
             try
-                % Turn off table variable name warning
-                warnID = 'MATLAB:table:ModifiedAndSavedVarnames';
-                warnStruct = warning('off',warnID);
-                if obj.params.scanDim == 0
-                    all_scp_data = cell(1,1);
-                    txtfilename = 'step1.txt';
-                    data = readtable(txtfilename,'MultipleDelimsAsOne',true);
-                    
-                    tryCount = 0;
-                    while isempty(data)
-%                         status = obj.check_abort();
-%                         if status; return; end
-                        pause(1);
-                        data = readtable(txtfilename,'MultipleDelimsAsOne',true);
-                        tryCount = tryCount+1;
-                        if tryCount >= 300
-                            obj.dispMessage('Reading SCP data timed out.')
-                            break
-                        end
-                    end
-                    all_scp_data{1} = data;
-                else
-                    all_scp_data = cell(1,obj.params.totalSteps);
-                    for i = 1:obj.params.totalSteps
-                        txtfilename = ['step' num2str(i) '.txt'];
-                        data = readtable(txtfilename,'MultipleDelimsAsOne',true);
-                        
-                        tryCount = 0;
-                        while isempty(data)
-                            pause(1);
-                            data = readtable(txtfilename,'MultipleDelimsAsOne',true);
-                            tryCount = tryCount+1;
-                            if tryCount >= 300
-                                obj.dispMessage('DAQ failed to read SCP data.')
-                                break
-                            end
-                        end
-                        all_scp_data{i} = data;
-                    end
+                obj.scp_manager.getSCPdata(obj.params.scanDim,obj.params.totalSteps);
+
+                for i = 1:numel(obj.params.SCP_list)
+                    obj.data_struct.scalars.(obj.params.SCP_list{i}) = ...
+                        obj.scp_manager.data.(obj.params.SCP_list{i});
                 end
 
-                steps = [];
-                pid = [];
-                
-                % Organize by sector/BPM and separate X, Y, TMIT data
-                for i = 1:numel(all_scp_data)
-                    scp_data = all_scp_data{i};
-                    [unique_BPMS,BPMidx] = unique(scp_data.BPMName,'stable');
-                    % Make a new table for each BPM
-                    for j = 1:numel(unique_BPMS)
-                        smallTable = scp_data(strcmp(scp_data.BPMName,scp_data.BPMName(BPMidx(j),:)),:);
-                        BPM = unique_BPMS{j};
-                        BPM = remove_dots(BPM);
-                        sector = extractBetween(BPM,'_LI','_');
-                        fields = fieldnames(obj.data_struct.scalars);
-                        
-                        % Find subfield in data_struct.scalars for that sector
-                        idx = contains(fields,sector) & contains(fields,'SCP_BPM');
-                        
-                        % Add data to correct location in data_struct
-                        obj.data_struct.scalars.(fields{idx}).([BPM '_X']) = [obj.data_struct.scalars.(fields{idx}).([BPM '_X']);smallTable.xOffset_mm_];
-                        obj.data_struct.scalars.(fields{idx}).([BPM '_Y']) = [obj.data_struct.scalars.(fields{idx}).([BPM '_Y']);smallTable.yOffset_mm_];
-                        obj.data_struct.scalars.(fields{idx}).([BPM '_TMIT']) = [obj.data_struct.scalars.(fields{idx}).([BPM '_TMIT']);smallTable.numParticles_coulomb_];
-                    end
-                    steps = [steps;i*ones(size(smallTable,1),1)];
-                    pid = [pid; unique(scp_data.pulseId,'stable')];
-                end
-               
+                pid = obj.scp_manager.data.pids;
+                steps = obj.scp_manager.data.steps;
+
                 % Create UIDs
                 uids = obj.generateUIDs(pid,steps);
                 
@@ -732,8 +686,7 @@ classdef F2_fastDAQ_HDF5 < handle
             catch ME
                 disp(ME.message)
             end
-            % Restore table variable name warning status
-            warning(warnStruct)
+
         end
         
         function compareUIDs(obj)
@@ -958,21 +911,9 @@ classdef F2_fastDAQ_HDF5 < handle
             end
             
             % Fill in SCP BPM data
-            obj.scp_list = {obj.pulseIDPV; obj.secPV; obj.nSecPV;};
             for i = 1:numel(obj.params.SCP_list)
-                pvRoots = feval(obj.params.SCP_list{i});
-                pvList = [];
-                for j = 1:numel(pvRoots)
-                    X_PV = {[pvRoots{j} ':X']};
-                    Y_PV = {[pvRoots{j} ':Y']};
-                    TMIT_PV = {[pvRoots{j} ':TMIT']};
-                    pvList = [pvList;X_PV;Y_PV;TMIT_PV];
-                end
-                pvDesc = pvList; % Temporary
-                obj.data_struct.metadata.(obj.params.SCP_list{i}).PVs = pvList;
-                obj.data_struct.metadata.(obj.params.SCP_list{i}).Desc = pvDesc;
-                
-                obj.scp_list = [obj.scp_list; pvList];
+                obj.data_struct.metadata.(obj.params.SCP_list{i}) =...
+                    obj.scp_manager.metadata.(obj.params.SCP_list{i});
             end
             
             % Fill in non-BSA data

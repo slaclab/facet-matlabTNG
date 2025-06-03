@@ -59,7 +59,7 @@ classdef F2_S20WaistScan_exported < matlab.apps.AppBase
         BMATCH_Q2D                      matlab.ui.control.NumericEditField
         UpdateButton                    matlab.ui.control.Button
         getBSListButt                   matlab.ui.control.Button
-        RelativeWaistParameterscmPanel  matlab.ui.container.Panel
+        RelativeWaistShiftinXcmPanel    matlab.ui.container.Panel
         StartLabel                      matlab.ui.control.Label
         StopLabel                       matlab.ui.control.Label
         StepsLabel                      matlab.ui.control.Label
@@ -68,6 +68,14 @@ classdef F2_S20WaistScan_exported < matlab.apps.AppBase
         StepsEditField                  matlab.ui.control.NumericEditField
         ScanValuesTextArea              matlab.ui.control.TextArea
         Log                             matlab.ui.control.TextArea
+        RelativeWaistShiftinYcmPanel    matlab.ui.container.Panel
+        StartLabel_2                    matlab.ui.control.Label
+        StopLabel_2                     matlab.ui.control.Label
+        StepsLabel_2                    matlab.ui.control.Label
+        StartEditField_2                matlab.ui.control.NumericEditField
+        StopEditField_2                 matlab.ui.control.NumericEditField
+        StepsEditField_2                matlab.ui.control.NumericEditField
+        ScanValuesTextArea_2            matlab.ui.control.TextArea
         TwissParameterPlotPanel         matlab.ui.container.Panel
         UIAxes                          matlab.ui.control.UIAxes
         UIAxes2                         matlab.ui.control.UIAxes
@@ -125,6 +133,7 @@ classdef F2_S20WaistScan_exported < matlab.apps.AppBase
     XYSelect logical = false % true when first X/Y pair selected (either desired beta or waist offset)
     trim1 logical = true
     scan_vals
+    scan_vals_2
   end
 
 
@@ -286,7 +295,7 @@ classdef F2_S20WaistScan_exported < matlab.apps.AppBase
         function WaistX_dzDESValueChanged(app, event)
       value = app.WaistX_dzDES.Value;
       if ~app.XYSelect
-        app.WaistY_dzDES.Value = value ;
+        %app.WaistY_dzDES.Value = value ;
         app.XYSelect=false;
       else
         app.XYSelect=true;
@@ -298,7 +307,7 @@ classdef F2_S20WaistScan_exported < matlab.apps.AppBase
         function WaistY_dzDESValueChanged(app, event)
       value = app.WaistY_dzDES.Value;
       if ~app.XYSelect
-        app.WaistX_dzDES.Value = value ;
+        %app.WaistX_dzDES.Value = value ;
         app.XYSelect=false;
       else
         app.XYSelect=true;
@@ -409,7 +418,7 @@ classdef F2_S20WaistScan_exported < matlab.apps.AppBase
         function getBSListButtButtonPushed(app, event)
             app.getBSListButt.Enable=false; drawnow;
             for idx = 1:length(app.scan_vals)
-                app.appS20.aobj.WaistShiftDES=[app.scan_vals(idx) app.scan_vals(idx)].*1e-2;
+                app.appS20.aobj.WaistShiftDES=[app.scan_vals(idx) app.scan_vals_2(idx)].*1e-2;
                 if idx==1
                     try
                     app.appS20.aobj.ClearBS;
@@ -456,6 +465,22 @@ classdef F2_S20WaistScan_exported < matlab.apps.AppBase
             
             z = set_Z(app.appSpec.aobj, app, 'ZimDropDown');
             lcaPutSmart('SIOC:SYS1:ML00:CALCOUT053', z);
+        end
+
+        % Value changed function: StartEditField_2, StepsEditField_2
+        function StartEditField_2ValueChanged(app, event)
+            start_value = app.StartEditField_2.Value;
+            end_value = app.StopEditField_2.Value;
+            steps_val = app.StepsEditField_2.Value;
+            
+            if steps_val == 0
+                return
+            end
+            
+            
+            app.scan_vals_2 = linspace(start_value,end_value,steps_val);
+            scan_str_2 = num2str(app.scan_vals_2,'%0.2f, ');
+            app.ScanValuesTextArea_2.Value = scan_str_2;
         end
     end
 
@@ -841,51 +866,91 @@ classdef F2_S20WaistScan_exported < matlab.apps.AppBase
             app.getBSListButt.BackgroundColor = [0.4627 0.949 0.1137];
             app.getBSListButt.FontSize = 16;
             app.getBSListButt.FontWeight = 'bold';
-            app.getBSListButt.Position = [223 109 214 26];
+            app.getBSListButt.Position = [434 109 214 26];
             app.getBSListButt.Text = 'Get Waist Scan BDES List';
 
-            % Create RelativeWaistParameterscmPanel
-            app.RelativeWaistParameterscmPanel = uipanel(app.ScanparametersPanel);
-            app.RelativeWaistParameterscmPanel.Title = 'Relative Waist Parameters [cm]';
-            app.RelativeWaistParameterscmPanel.Position = [9 105 203 130];
+            % Create RelativeWaistShiftinXcmPanel
+            app.RelativeWaistShiftinXcmPanel = uipanel(app.ScanparametersPanel);
+            app.RelativeWaistShiftinXcmPanel.Title = 'Relative Waist Shift in X [cm]';
+            app.RelativeWaistShiftinXcmPanel.Position = [9 105 203 130];
 
             % Create StartLabel
-            app.StartLabel = uilabel(app.RelativeWaistParameterscmPanel);
+            app.StartLabel = uilabel(app.RelativeWaistShiftinXcmPanel);
             app.StartLabel.Position = [9 84 31 22];
             app.StartLabel.Text = 'Start';
 
             % Create StopLabel
-            app.StopLabel = uilabel(app.RelativeWaistParameterscmPanel);
+            app.StopLabel = uilabel(app.RelativeWaistShiftinXcmPanel);
             app.StopLabel.Position = [78 84 30 22];
             app.StopLabel.Text = 'Stop';
 
             % Create StepsLabel
-            app.StepsLabel = uilabel(app.RelativeWaistParameterscmPanel);
+            app.StepsLabel = uilabel(app.RelativeWaistShiftinXcmPanel);
             app.StepsLabel.Position = [145 84 36 22];
             app.StepsLabel.Text = 'Steps';
 
             % Create StartEditField
-            app.StartEditField = uieditfield(app.RelativeWaistParameterscmPanel, 'numeric');
+            app.StartEditField = uieditfield(app.RelativeWaistShiftinXcmPanel, 'numeric');
             app.StartEditField.Position = [7 63 51 22];
 
             % Create StopEditField
-            app.StopEditField = uieditfield(app.RelativeWaistParameterscmPanel, 'numeric');
+            app.StopEditField = uieditfield(app.RelativeWaistShiftinXcmPanel, 'numeric');
             app.StopEditField.Position = [76 63 51 22];
 
             % Create StepsEditField
-            app.StepsEditField = uieditfield(app.RelativeWaistParameterscmPanel, 'numeric');
+            app.StepsEditField = uieditfield(app.RelativeWaistShiftinXcmPanel, 'numeric');
             app.StepsEditField.ValueChangedFcn = createCallbackFcn(app, @StartEditFieldValueChanged, true);
             app.StepsEditField.Position = [144 63 51 22];
 
             % Create ScanValuesTextArea
-            app.ScanValuesTextArea = uitextarea(app.RelativeWaistParameterscmPanel);
+            app.ScanValuesTextArea = uitextarea(app.RelativeWaistShiftinXcmPanel);
             app.ScanValuesTextArea.Editable = 'off';
             app.ScanValuesTextArea.Enable = 'off';
             app.ScanValuesTextArea.Position = [9 4 183 51];
 
             % Create Log
             app.Log = uitextarea(app.ScanparametersPanel);
-            app.Log.Position = [223 142 421 94];
+            app.Log.Position = [435 142 209 94];
+
+            % Create RelativeWaistShiftinYcmPanel
+            app.RelativeWaistShiftinYcmPanel = uipanel(app.ScanparametersPanel);
+            app.RelativeWaistShiftinYcmPanel.Title = 'Relative Waist Shift in Y [cm]';
+            app.RelativeWaistShiftinYcmPanel.Position = [221 105 203 130];
+
+            % Create StartLabel_2
+            app.StartLabel_2 = uilabel(app.RelativeWaistShiftinYcmPanel);
+            app.StartLabel_2.Position = [9 84 31 22];
+            app.StartLabel_2.Text = 'Start';
+
+            % Create StopLabel_2
+            app.StopLabel_2 = uilabel(app.RelativeWaistShiftinYcmPanel);
+            app.StopLabel_2.Position = [78 84 30 22];
+            app.StopLabel_2.Text = 'Stop';
+
+            % Create StepsLabel_2
+            app.StepsLabel_2 = uilabel(app.RelativeWaistShiftinYcmPanel);
+            app.StepsLabel_2.Position = [145 84 36 22];
+            app.StepsLabel_2.Text = 'Steps';
+
+            % Create StartEditField_2
+            app.StartEditField_2 = uieditfield(app.RelativeWaistShiftinYcmPanel, 'numeric');
+            app.StartEditField_2.ValueChangedFcn = createCallbackFcn(app, @StartEditField_2ValueChanged, true);
+            app.StartEditField_2.Position = [7 63 51 22];
+
+            % Create StopEditField_2
+            app.StopEditField_2 = uieditfield(app.RelativeWaistShiftinYcmPanel, 'numeric');
+            app.StopEditField_2.Position = [76 63 51 22];
+
+            % Create StepsEditField_2
+            app.StepsEditField_2 = uieditfield(app.RelativeWaistShiftinYcmPanel, 'numeric');
+            app.StepsEditField_2.ValueChangedFcn = createCallbackFcn(app, @StartEditField_2ValueChanged, true);
+            app.StepsEditField_2.Position = [144 63 51 22];
+
+            % Create ScanValuesTextArea_2
+            app.ScanValuesTextArea_2 = uitextarea(app.RelativeWaistShiftinYcmPanel);
+            app.ScanValuesTextArea_2.Editable = 'off';
+            app.ScanValuesTextArea_2.Enable = 'off';
+            app.ScanValuesTextArea_2.Position = [9 4 183 51];
 
             % Create TwissParameterPlotPanel
             app.TwissParameterPlotPanel = uipanel(app.FACETIISector20ConfiguratorUIFigure);

@@ -1,0 +1,12 @@
+function S11_SCP_KLYS_List = SCP_KLYS_List_S11()
+
+S11_SCP_KLYS_List = {...
+
+'SBST:LI11:1';
+'KLYS:LI11:41';
+'KLYS:LI11:51';
+'KLYS:LI11:61';
+'KLYS:LI11:71';
+'KLYS:LI11:81';
+
+};

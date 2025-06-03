@@ -1,0 +1,15 @@
+function S18_SCP_KLYS_List = SCP_KLYS_List_S18()
+
+S18_SCP_KLYS_List = {...
+    
+'SBST:LI18:1';
+'KLYS:LI18:11';
+'KLYS:LI18:21';
+'KLYS:LI18:31';
+'KLYS:LI18:41';
+'KLYS:LI18:51';
+'KLYS:LI18:61';
+'KLYS:LI18:71';
+'KLYS:LI18:81';
+
+};

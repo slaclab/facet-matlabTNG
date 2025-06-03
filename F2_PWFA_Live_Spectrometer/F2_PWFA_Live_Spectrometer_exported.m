@@ -150,6 +150,8 @@ classdef F2_PWFA_Live_Spectrometer_exported < matlab.apps.AppBase
         divide_blen_by = 1;
 
         loop_counter = 1;
+        
+        kill_switch_PV = 'SIOC:SYS1:ML00:AO910';
     end
     
 
@@ -158,6 +160,17 @@ classdef F2_PWFA_Live_Spectrometer_exported < matlab.apps.AppBase
     methods (Access = private)
         
         function update_acquisition_fcn(app, src, event)
+            if lcaGet(app.kill_switch_PV)
+                if app.is_timer_running
+                app.is_timer_running = 0;
+                app.AcquisitionstatusLamp.Color = 'r';
+                pause(0.05)
+                stop(app.main_loop)
+                return
+                end
+            end
+            
+            
             % acquire CHER, SYAG and all relevant spectrometer scalars
             app.loop_counter = app.loop_counter + 1;
             
@@ -427,7 +440,7 @@ classdef F2_PWFA_Live_Spectrometer_exported < matlab.apps.AppBase
                     drive_charge = sum(proj_SYAG(app.ROI_SYAG_x(1):notch_center_px) .* app.charge_calibration_value_SYAG(app.ROI_SYAG_x(1):notch_center_px)');
                 else
                     witness_charge = sum(proj_SYAG(app.ROI_SYAG_x(1):notch_center_px) .* app.charge_calibration_value_SYAG(app.ROI_SYAG_x(1):notch_center_px)');
-                    drive_charge = sum(proj_SYAG_2(notch_center_px:app.ROI_SYAG_x(end)) .* app.charge_calibration_value_SYAG(notch_center_px:app.ROI_SYAG_x(end))');
+                    drive_charge = sum(proj_SYAG(notch_center_px:app.ROI_SYAG_x(end)) .* app.charge_calibration_value_SYAG(notch_center_px:app.ROI_SYAG_x(end))');
                 end
             elseif strcmp(app.TwobunchmodeDropDown.Value, 'Specify fixed bunch charges')
                 witness_charge = app.TrailingbunchcutSYAGpxEditField.Value;
@@ -512,7 +525,7 @@ classdef F2_PWFA_Live_Spectrometer_exported < matlab.apps.AppBase
             %plot(app.UIAxes3, app.spec_blen_array/app.S14BLENatpeakcompressionEditField.Value)
             plot(app.UIAxes3, app.spec_energy_loss_array)
             xlabel(app.UIAxes3, "Shots [live]")
-            ylabel(app.UIAxes3, "Energy loss [J]")
+            ylabel(app.UIAxes3, app.Spectrometerdisplay2DropDown.Value)
             app.UIAxes3.YLim = [0 2^app.Spectrometer2Spinner.Value];
             app.UIAxes3.XLim = [1 app.NumberofcolumnsEditField.Value];
             %app.UIAxes3.XDir = 'reverse';
@@ -537,6 +550,7 @@ classdef F2_PWFA_Live_Spectrometer_exported < matlab.apps.AppBase
         % Button pushed function: StartacquiringButton
         function StartacquiringButtonPushed(app, event)
             if ~app.is_timer_running
+                lcaPut(app.kill_switch_PV, 0);
                 app.is_timer_running = 1;
                 app.AcquisitionstatusLamp.Color = 'g';
                 pause(0.05)
