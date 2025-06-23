@@ -3,23 +3,16 @@ classdef AppSupportTemplate < handle
     % Fill in the script to create an App that plots Process Variables
     % from EPICS.
     
-    events
-        PVUpdated
-    end
-    
     properties
-        pvlist PV
-        pvs
+        PVtimer
         guihan
-        plotOptionState
+        PVtoPlot
         % Add a property that stores application data here
-    end
-    
-    properties (Hidden)
-        listeners
+        plottingOn logical = false
     end
     
     properties (Constant)
+        % This section contains properties that remain constant
         numPlotPts = 50
     end
     
@@ -31,89 +24,65 @@ classdef AppSupportTemplate < handle
             % an instance of the class is created. Property values are
             % initialized here.
             
-            % Initialize the object and add PVs to be monitored
-            context = PV.Initialize(PVtype.EPICS);
-            obj.pvlist = [...
-                PV(context,'name',"GaugePV1",'pvname',"SIOC:SYS1:ML00:AO951",'mode',"rw",'monitor',true,'guihan',apphandle.PV1Gauge);
-                % Add another PV here:
-                ];
-            
-            % Set debug level to 0 to enable read/write operations (make 
-            % PV objects live)
-            pset(obj.pvlist,'debug',0);
-            
-            % Place the PVs in a struct
-            obj.pvs = struct(obj.pvlist);
-            
             % Associate class with GUI
             obj.guihan = apphandle;
             
-            % Create arrays to store the PV values to be plotted at each
-            % time stamp. Use the property numPlotPts, and store both
+            % Create empty arrays to store the PV values to be plotted at 
+            % each time stamp. Use the property numPlotPts, and store both
             % arrays in the data property you defined above.
             % Add your code here:
             
-
-            % Set the initial state of the app to "Waiting for Input"
-            obj.plotOptionState = "Waiting for Input";
             
-            % Start listening for PV updates
-            obj.listeners = addlistener(obj,'PVUpdated',@(~,~)obj.loop);
-            run(obj.pvlist,false,0.1,obj,'PVUpdated');
+            % Set the initial state of the app to plot PV 1
+            obj.PVtoPlot = "PV 1";
+            
+            % Create timer object
+            % The timer executes a callback function every 1 s
+            obj.PVtimer = timer("ExecutionMode","fixedRate","Period",1, ...
+                "BusyMode","queue","TimerFcn",@obj.PVtimerFcn);
+            
+            % Start timer
+            if strcmp(obj.PVtimer.Running,"off")
+                start(obj.PVtimer);
+            end
         end
         
-        function loop(obj)
-            % The app will loop through this function every 0.1 s.
-            
-            % Get the current PV values and assign them to a variable
-            PV1_val = obj.pvs.GaugePV1.val{1};
-            PV2_val = obj.pvs.GaugePV2.val{1};
-            
-            % Assign each variable to the last value in its respective
-            % PV array:
-            
-            
-            % Add a switch that plots a different PV depending on the
-            % Plot Option State (ignore until Step 4)
-            switch % Switch variable here
-                case % Case where PV1 is chosen
-                    % Plot PV1 values:
-                    
-                    drawnow
-                case % Case where PV2 is chosen
-                    % Plot PV2 values:
-                    
-                    drawnow
-                otherwise
-                    % Do nothing. This case is only true when the app is
-                    % first launched, and the state is "Waiting for Input"
-            end
-            
+        function PVtimerFcn(obj,~,event)
             % Use "circshift" to shift the values in the arrays to the
             % left:
             
-        end
-        
-        function
-            % Define a function that updates the Plot Option State to "Plot
-            % PV1"
-            cla(obj.guihan.UIAxes);
-            % Add your code here:
+            % Get the current PV values and assign them to a variable:
+            PV1_val = ;
+            PV2_val = ;
             
-        end
-        
-        function
-            % Define a function that updates the Plot Option State to "Plot
-            % PV2"
-            cla(obj.guihan.UIAxes);
-            % Add your code here:
+            % Store PV value in the last spot in its PV array:
             
+            
+            % Add a switch that plots a different PV depending on
+            % PVtoPlot (ignore until Step 4)
+            switch % Switch variable here
+                case % Case where PV 1 is chosen
+                    % Tell GUI to plot PV1 values here:
+                    
+                case % Case where PV 2 is chosen
+                    % Tell GUI to plot PV2 values here:
+                    
+                otherwise
+                    % Do nothing
+            end
         end
         
-        function clearPV(obj)
-            % This function stops pvlist.
-            Cleanup(obj.pvlist);
-            stop(obj.pvlist);
+        function imageData = loadFacetImage(obj)
+            try
+                fileData = load('/u1/facet/matlab/data/2025/2025-06/2025-06-02/ProfMon-CAMR_LI20_107-2025-06-02-235512.mat');
+                imageData = fileData.data.img;
+            catch
+                imageData = 0;
+            end
+        end
+        
+        function closeApp(obj)
+            stop(obj.PVtimer);
         end
     end
 end
