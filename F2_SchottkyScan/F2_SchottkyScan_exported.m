@@ -218,9 +218,9 @@ classdef F2_SchottkyScan_exported < matlab.apps.AppBase
 
             % Create KlystronDropDown
             app.KlystronDropDown = uidropdown(app.DevicePanel);
-            app.KlystronDropDown.Items = {'KLYS:LI10:21'};
+            app.KlystronDropDown.Items = {'KLYS:LI10:31'};
             app.KlystronDropDown.Position = [82 163 119 22];
-            app.KlystronDropDown.Value = 'KLYS:LI10:21';
+            app.KlystronDropDown.Value = 'KLYS:LI10:31';
 
             % Create DiagnosticDropDownLabel
             app.DiagnosticDropDownLabel = uilabel(app.DevicePanel);
@@ -490,8 +490,9 @@ classdef F2_SchottkyScan_exported < matlab.apps.AppBase
             % Create UIAxes
             app.UIAxes = uiaxes(app.RightPanel);
             title(app.UIAxes, 'Schottky Scan')
-            xlabel(app.UIAxes, 'KLYS LI10-2 Phase [deg] ')
+            xlabel(app.UIAxes, 'KLYS LI10-3 Phase [deg] ')
             ylabel(app.UIAxes, 'Charge [pC]')
+            app.UIAxes.FontSize = 14;
             app.UIAxes.HandleVisibility = 'off';
             app.UIAxes.Position = [7 282 432 314];
 
@@ -563,7 +564,7 @@ classdef F2_SchottkyScan_exported < matlab.apps.AppBase
 
             % Create GunRFphaseButton
             app.GunRFphaseButton = uiradiobutton(app.ImplementchangetoButtonGroup);
-            app.GunRFphaseButton.Tooltip = {'Change 10-2 phase offset correction (leaves gun phase at 0 deg after change)'};
+            app.GunRFphaseButton.Tooltip = {'Change 10-3 phase offset correction (leaves gun phase at 0 deg after change)'};
             app.GunRFphaseButton.Text = 'Gun RF phase';
             app.GunRFphaseButton.Position = [11 7 100 22];
 

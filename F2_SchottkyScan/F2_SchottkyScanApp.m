@@ -38,15 +38,15 @@ classdef F2_SchottkyScanApp < handle
                 PV(context,'name',"State",'pvname',"SIOC:SYS1:ML00:AO402",'mode',"rw",'monitor',true); % Current scan state
                 PV(context,'name',"ZeroOffset",'pvname',"SIOC:SYS1:ML00:AO404",'mode',"rw",'monitor',true); % Current scan state
                 
-                PV(context,'name',"KLYS_21_PDES",'pvname',"KLYS:LI10:21:PDES",'monitor',true,'mode',"rw"); % KLYS LI10 21 PDES
-                PV(context,'name',"KLYS_21_PHAS",'pvname',"KLYS:LI10:21:PHAS",'monitor',true); % KLYS LI10 21 PHAS
-                %PV(context,'name',"KLYS_21_SLED_PHAS",'pvname',"KLYS:LI10:21:SLED_PHAS",'monitor',true); % KLYS LI10 21 SLED PHAS (I think it is same as one above)
-                PV(context,'name',"GUN_21_PHAS",'pvname',"ACCL:LI10:21:PHASE_W0CH6",'monitor',true); % Gun PHAS
-                PV(context,'name',"KLYS_21_OFFSET",'pvname',"KLYS:LI10:21:T5:PREQ_OFFSET",'monitor',true); % Offset between 2-1 PDES and PHAS
-                PV(context,'name',"SFB_ENABLE",'pvname',"KLYS:LI10:21:SFB_PDIS",'monitor',true,'pvdatatype',"int",'mode',"rw"); % Slow feedback on/off
-                %PV(context,'name',"SFB_SWITCH",'pvname',"KLYS:LI10:21:SFB_PDIS",'monitor',true,'mode',"rw",'pvdatatype',"int"); % Slow feedback on/off
-                PV(context,'name',"SFB_PDES",'pvname',"KLYS:LI10:21:SFB_PDES",'monitor',true,'mode',"rw"); % Slow feedback setpoint
-                PV(context,'name',"SFB_POC",'pvname','ACCL:LI10:21:REFPOC','monitor',true,'mode',"rw"); % Phase offset correction for gun waveguide phase
+                PV(context,'name',"KLYS_21_PDES",'pvname',"KLYS:LI10:31:PDES",'monitor',true,'mode',"rw"); % KLYS LI10 21 PDES
+                PV(context,'name',"KLYS_21_PHAS",'pvname',"KLYS:LI10:31:PHAS",'monitor',true); % KLYS LI10 21 PHAS
+                %PV(context,'name',"KLYS_21_SLED_PHAS",'pvname',"KLYS:LI10:31:SLED_PHAS",'monitor',true); % KLYS LI10 21 SLED PHAS (I think it is same as one above)
+                PV(context,'name',"GUN_21_PHAS",'pvname',"ACCL:LI10:31:PHASE_W0CH6",'monitor',true); % Gun PHAS
+                PV(context,'name',"KLYS_21_OFFSET",'pvname',"KLYS:LI10:31:T5:PREQ_OFFSET",'monitor',true); % Offset between 2-1 PDES and PHAS
+                PV(context,'name',"SFB_ENABLE",'pvname',"KLYS:LI10:31:SFB_PDIS",'monitor',true,'pvdatatype',"int",'mode',"rw"); % Slow feedback on/off
+                %PV(context,'name',"SFB_SWITCH",'pvname',"KLYS:LI10:31:SFB_PDIS",'monitor',true,'mode',"rw",'pvdatatype',"int"); % Slow feedback on/off
+                PV(context,'name',"SFB_PDES",'pvname',"KLYS:LI10:31:SFB_PDES",'monitor',true,'mode',"rw"); % Slow feedback setpoint
+                PV(context,'name',"SFB_POC",'pvname','ACCL:LI10:31:REFPOC','monitor',true,'mode',"rw"); % Phase offset correction for gun waveguide phase
                 PV(context,'name',"LaserTargetTime",'pvname',"OSC:LT10:20:FS_TGT_TIME",'monitor',true,'mode',"rw"); % Laser target time 
                 PV(context,'name',"LaserEnergy",'pvname',"LASR:LT10:930:PWR",'monitor',true); % IN10 laser power meter
                 PV(context,'name',"BPM_221_TMIT",'pvname',"BPMS:IN10:221:TMIT",'monitor',true,'mode',"rw"); % BPM IN10 221 charge meas
@@ -437,7 +437,7 @@ classdef F2_SchottkyScanApp < handle
             end
             obj.scan_param.pdes_vals = obj.scan_param.step_vals - obj.machine_state.init_delta_PDES;
             if max(obj.scan_param.pdes_vals) > 179
-                obj.addMessage('Error: Scan values include KLYS:LI10:21:PDES setpoint > 180. Aborting.');
+                obj.addMessage('Error: Scan values include KLYS:LI10:31:PDES setpoint > 180. Aborting.');
                 obj.scan_state = false;
                 obj.mode = "IDLE";
                 obj.guihan.SettingPhaseLamp.Enable = false;
