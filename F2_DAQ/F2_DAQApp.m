@@ -189,7 +189,15 @@ classdef F2_DAQApp < handle
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             
             % Scalar data lists
-            params.BSA_list = obj.guihan.ListBoxBSA.Items;
+            isSCP = contains(obj.guihan.ListBoxBSA.Items,"SCP");
+            params.SCP_list = obj.guihan.ListBoxBSA.Items(isSCP);
+            params.BSA_list = obj.guihan.ListBoxBSA.Items(~isSCP);
+
+            if ~isempty(params.SCP_list)
+                params.saveSCP = true;
+            else
+                params.saveSCP = false;
+            end
             
             isarray = contains(obj.guihan.ListBoxNonBSA.Items,"array");
             params.nonBSA_list = obj.guihan.ListBoxNonBSA.Items(~isarray);
