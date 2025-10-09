@@ -163,6 +163,7 @@ classdef F2_DAQApp < handle
             params.laserBG    = obj.guihan.SaveLaserBGCheckBox.Value;
             params.nBG        = obj.guihan.BackgroundshotsEditField.Value;
             params.blockBeam  = obj.guihan.Blockbeam.Value;
+            params.allowDupSteps = obj.guihan.Allowduplicatesteps.Value;
             
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             %%% Get the cameras, metadata, %%%
