@@ -127,6 +127,9 @@ classdef F2_fastDAQ < handle
             
             % Save DAQ params to data_struct
             obj.data_struct.params = obj.params;
+            if obj.freerun
+                obj.data_struct.params.saveMethod = 'TIFF';
+            end
             obj.data_struct.metadata = struct();
             
             % Choose streaming or not
