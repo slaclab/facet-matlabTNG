@@ -245,14 +245,15 @@ classdef F2_phasescan < handle
         end
 
         % associate each linac with an int labelling its linac region
-        % L0: 10-3, 10-4
+        % L0: 10-8, 10-4
         % L1: 11-1, 11-2
         % L2: 11-4 - 14-8
         % L3: 15-1 - 19-6
         function construct_linac_map(self)
             % literal indexing wastes ~11*8 elements, but who cares lol
             self.linac_map = NaN(20,8);
-            self.linac_map(10,3:4) = 0;
+            self.linac_map(10,3) = 0;
+            self.linac_map(10,8) = 0;
             self.linac_map(11,1:2) = 1;
             self.linac_map(11,4:8) = 2;
             self.linac_map(12:14,:) = 2;
