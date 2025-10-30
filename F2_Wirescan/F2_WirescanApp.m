@@ -663,7 +663,7 @@ classdef F2_WirescanApp < handle
         end
         obj.guihan.ChargeNormalizationCheckBox.Value = obj.chargenorm ;
         obj.guihan.TORODropDown.Value = obj.tors(obj.torsel) ;
-        obj.guihan.BunchLengthWindowingCheckBox.Value = obj.blenwin ;
+        %obj.guihan.BunchLengthWindowingCheckBox.Value = obj.blenwin ;
         obj.guihan.EditField_3.Value = obj.blenvals(1) ;
         obj.guihan.EditField_4.Value = obj.blenvals(2) ;
         obj.guihan.BLENDropDown.Value = obj.blms(obj.blmsel) ;
