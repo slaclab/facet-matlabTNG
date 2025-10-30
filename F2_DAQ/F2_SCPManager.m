@@ -236,7 +236,7 @@ classdef F2_SCPManager < handle
                 end
                 
                 k = 0;
-                while isempty(readtable('step%d.txt',step-1))
+                while isempty(readtable(sprintf('step%d.txt',step-1)))
                     pause(2);
                     k = k+1;
                     if k > 30
