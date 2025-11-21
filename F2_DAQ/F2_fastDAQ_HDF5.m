@@ -150,7 +150,9 @@ classdef F2_fastDAQ_HDF5 < handle
             obj.data_struct.metadata.Event = obj.event_info;
             
             % Let SCPManager class manage SCP stuff
-            obj.scp_manager = F2_SCPManager(obj.params.SCP_list,obj.params.n_shot,obj);
+            if obj.params.saveSCP
+                obj.scp_manager = F2_SCPManager(obj.params.SCP_list,obj.params.n_shot,obj);
+            end
 
             % Set beam blocking if requested
             obj.blockBeam = obj.params.blockBeam;
