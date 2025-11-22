@@ -110,7 +110,8 @@ classdef DataSetDAN < handle
 %             hasSCP = s.dataSet.params.saveSCP;
             
             % Check if user wants to include SCP data in matches/analysis
-            s.inclSCP = inclSCP;
+            s.inclSCP = 0; % BDO
+            % s.inclSCP = inclSCP;
             if s.inclSCP == 1
                 % Check that this data set has SCP data
                 if s.dataSet.params.saveSCP
