@@ -5,156 +5,156 @@ classdef F2_DAN_HDF5_exported < matlab.apps.AppBase
         F2HDF5DANUIFigure               matlab.ui.Figure
         TabGroup                        matlab.ui.container.TabGroup
         MainDANTab                      matlab.ui.container.Tab
-        dataSet                         matlab.ui.container.Panel
-        ExperimentLabel                 matlab.ui.control.Label
-        expDropDown                     matlab.ui.control.DropDown
-        dataSetIDLabel                  matlab.ui.control.Label
-        dataSetID                       matlab.ui.control.NumericEditField
-        LoadDataSetButton               matlab.ui.control.Button
-        DANlogTextAreaLabel             matlab.ui.control.Label
-        DANlogTextArea                  matlab.ui.control.TextArea
-        SubtractImageBackgroundCheckBox  matlab.ui.control.CheckBox
-        DataSetInfoTextAreaLabel        matlab.ui.control.Label
-        DataSetInfoTextArea             matlab.ui.control.TextArea
-        LastDAQButton                   matlab.ui.control.Button
-        SaveconfigButton                matlab.ui.control.Button
-        LoadconfigButton                matlab.ui.control.Button
-        InclSCPCheckBox                 matlab.ui.control.CheckBox
-        correlationPlot                 matlab.ui.container.Panel
-        FACETScalarArray1Panel          matlab.ui.container.Panel
-        ScalarDropDown_Corr1            matlab.ui.control.DropDown
-        ScalargroupLabel_Corr1          matlab.ui.control.Label
-        ScalarLabel_Corr1               matlab.ui.control.Label
-        ScalargroupDropDown_Corr1       matlab.ui.control.DropDown
-        CameraDropDown_Corr1            matlab.ui.control.DropDown
-        CameraLabel_Corr1               matlab.ui.control.Label
-        DtoscalarfunctionLabel_Corr1    matlab.ui.control.Label
-        D21DFunctionEditField_Corr1     matlab.ui.control.EditField
-        Switch_Corr1FS                  matlab.ui.control.Switch
-        HistogramCheckBox               matlab.ui.control.CheckBox
-        D21DFcnDropDown_Corr1           matlab.ui.control.DropDown
-        UseanotherfunctionLabel         matlab.ui.control.Label
-        FACETScalarArray2Panel          matlab.ui.container.Panel
-        ScalarDropDown_Corr2            matlab.ui.control.DropDown
-        ScalargroupLabel_Corr2          matlab.ui.control.Label
-        ScalarLabel_Corr2               matlab.ui.control.Label
-        ScalargroupDropDown_Corr2       matlab.ui.control.DropDown
-        CameraDropDown_Corr2            matlab.ui.control.DropDown
-        CameraLabel_Corr2               matlab.ui.control.Label
-        DtoscalarfunctionLabel_Corr2    matlab.ui.control.Label
-        D21DFunctionEditField_Corr2     matlab.ui.control.EditField
-        Switch_Corr2FS                  matlab.ui.control.Switch
-        CorrelationCheckBox             matlab.ui.control.CheckBox
-        D21DFcnDropDown_Corr2           matlab.ui.control.DropDown
-        UseanotherfunctionLabel_2       matlab.ui.control.Label
-        PlotcorrelationButton           matlab.ui.control.Button
-        ShowlinearfitButton             matlab.ui.control.Button
-        ImageAxes                       matlab.ui.control.UIAxes
-        CLimPanel                       matlab.ui.container.Panel
-        ColorbarMinEditFieldLabel       matlab.ui.control.Label
-        ColorbarMinEditField            matlab.ui.control.NumericEditField
-        MaxEditFieldLabel               matlab.ui.control.Label
-        MaxEditField                    matlab.ui.control.NumericEditField
-        ColormapDropDownLabel           matlab.ui.control.Label
-        ColormapDropDown                matlab.ui.control.DropDown
-        LockCLimCheckBox                matlab.ui.control.CheckBox
-        SavedfilenameLabel              matlab.ui.control.Label
-        SavedfilenameEditField          matlab.ui.control.EditField
-        SaveplotdataButton              matlab.ui.control.Button
-        PrinttologbookButton            matlab.ui.control.Button
-        MotivationIndicatorAirspeedIndicatorLabel  matlab.ui.control.Label
-        MotivationIndicatorAirspeedIndicator  Aero.ui.control.AirspeedIndicator
-        BoostmotivationButton           matlab.ui.control.Button
-        WaterfallplotPanel              matlab.ui.container.Panel
-        CameraLabel                     matlab.ui.control.Label
-        CameraDropDown_WF               matlab.ui.control.DropDown
-        D21DFunctionEditField_WF        matlab.ui.control.EditField
-        PlotwaterfallButton             matlab.ui.control.Button
-        Dto1DFunctionLabel_WF           matlab.ui.control.Label
-        SortwaterfallplotPanel          matlab.ui.container.Panel
-        ScalarDropDown_WFS              matlab.ui.control.DropDown
-        ScalargroupLabel_WFS            matlab.ui.control.Label
-        ScalargroupDropDown_WFS         matlab.ui.control.DropDown
-        ScalarLabel_WFS                 matlab.ui.control.Label
-        CameraLabel_WFS                 matlab.ui.control.Label
-        CameraDropDown_WFS              matlab.ui.control.DropDown
-        D2SFunctionLabel_WFS            matlab.ui.control.Label
-        D2SFunctionEditField_WFS        matlab.ui.control.EditField
-        Switch_WFSFS                    matlab.ui.control.Switch
-        SortonscalarCheckBox            matlab.ui.control.CheckBox
-        PlotsortvaluesCheckBox          matlab.ui.control.CheckBox
-        D2SFunctionDropDown_WFS         matlab.ui.control.DropDown
-        UseanotherfunctionLabel_3       matlab.ui.control.Label
-        Dto1DFunctionLabel              matlab.ui.control.Label
-        Dto1DFunctionDropDown_WF        matlab.ui.control.DropDown
         dispImage                       matlab.ui.container.Panel
-        ImageincrementEditFieldLabel    matlab.ui.control.Label
-        ImageincrementEditField         matlab.ui.control.NumericEditField
-        PlotImageButton                 matlab.ui.control.Button
-        CameraDropDownLabel             matlab.ui.control.Label
-        CameraDropDown_DI               matlab.ui.control.DropDown
-        NextImageButton                 matlab.ui.control.Button
-        ImagenumberEditFieldLabel       matlab.ui.control.Label
-        ImagenumberEditField            matlab.ui.control.NumericEditField
-        PreviousImageButton             matlab.ui.control.Button
-        LoopThroughallButton            matlab.ui.control.Button
-        WaittimesEditFieldLabel         matlab.ui.control.Label
-        WaittimesEditField              matlab.ui.control.NumericEditField
-        StopButton                      matlab.ui.control.Button
-        ImageAnalysisFunctionEditField  matlab.ui.control.EditField
-        ApplyImageanalysis2Dto2DCheckBox  matlab.ui.control.CheckBox
-        FunctionLabel                   matlab.ui.control.Label
-        ImageAnalysisFunctionDD         matlab.ui.control.DropDown
         UseanotherfunctionLabel_4       matlab.ui.control.Label
+        ImageAnalysisFunctionDD         matlab.ui.control.DropDown
+        FunctionLabel                   matlab.ui.control.Label
+        ApplyImageanalysis2Dto2DCheckBox  matlab.ui.control.CheckBox
+        ImageAnalysisFunctionEditField  matlab.ui.control.EditField
+        StopButton                      matlab.ui.control.Button
+        WaittimesEditField              matlab.ui.control.NumericEditField
+        WaittimesEditFieldLabel         matlab.ui.control.Label
+        LoopThroughallButton            matlab.ui.control.Button
+        PreviousImageButton             matlab.ui.control.Button
+        ImagenumberEditField            matlab.ui.control.NumericEditField
+        ImagenumberEditFieldLabel       matlab.ui.control.Label
+        NextImageButton                 matlab.ui.control.Button
+        CameraDropDown_DI               matlab.ui.control.DropDown
+        CameraDropDownLabel             matlab.ui.control.Label
+        PlotImageButton                 matlab.ui.control.Button
+        ImageincrementEditField         matlab.ui.control.NumericEditField
+        ImageincrementEditFieldLabel    matlab.ui.control.Label
+        WaterfallplotPanel              matlab.ui.container.Panel
+        Dto1DFunctionDropDown_WF        matlab.ui.control.DropDown
+        Dto1DFunctionLabel              matlab.ui.control.Label
+        SortwaterfallplotPanel          matlab.ui.container.Panel
+        UseanotherfunctionLabel_3       matlab.ui.control.Label
+        D2SFunctionDropDown_WFS         matlab.ui.control.DropDown
+        PlotsortvaluesCheckBox          matlab.ui.control.CheckBox
+        SortonscalarCheckBox            matlab.ui.control.CheckBox
+        Switch_WFSFS                    matlab.ui.control.Switch
+        D2SFunctionEditField_WFS        matlab.ui.control.EditField
+        D2SFunctionLabel_WFS            matlab.ui.control.Label
+        CameraDropDown_WFS              matlab.ui.control.DropDown
+        CameraLabel_WFS                 matlab.ui.control.Label
+        ScalarLabel_WFS                 matlab.ui.control.Label
+        ScalargroupDropDown_WFS         matlab.ui.control.DropDown
+        ScalargroupLabel_WFS            matlab.ui.control.Label
+        ScalarDropDown_WFS              matlab.ui.control.DropDown
+        Dto1DFunctionLabel_WF           matlab.ui.control.Label
+        PlotwaterfallButton             matlab.ui.control.Button
+        D21DFunctionEditField_WF        matlab.ui.control.EditField
+        CameraDropDown_WF               matlab.ui.control.DropDown
+        CameraLabel                     matlab.ui.control.Label
+        BoostmotivationButton           matlab.ui.control.Button
+        MotivationIndicatorAirspeedIndicator  Aero.ui.control.AirspeedIndicator
+        MotivationIndicatorAirspeedIndicatorLabel  matlab.ui.control.Label
+        PrinttologbookButton            matlab.ui.control.Button
+        SaveplotdataButton              matlab.ui.control.Button
+        SavedfilenameEditField          matlab.ui.control.EditField
+        SavedfilenameLabel              matlab.ui.control.Label
+        CLimPanel                       matlab.ui.container.Panel
+        LockCLimCheckBox                matlab.ui.control.CheckBox
+        ColormapDropDown                matlab.ui.control.DropDown
+        ColormapDropDownLabel           matlab.ui.control.Label
+        MaxEditField                    matlab.ui.control.NumericEditField
+        MaxEditFieldLabel               matlab.ui.control.Label
+        ColorbarMinEditField            matlab.ui.control.NumericEditField
+        ColorbarMinEditFieldLabel       matlab.ui.control.Label
+        correlationPlot                 matlab.ui.container.Panel
+        ShowlinearfitButton             matlab.ui.control.Button
+        PlotcorrelationButton           matlab.ui.control.Button
+        FACETScalarArray2Panel          matlab.ui.container.Panel
+        UseanotherfunctionLabel_2       matlab.ui.control.Label
+        D21DFcnDropDown_Corr2           matlab.ui.control.DropDown
+        CorrelationCheckBox             matlab.ui.control.CheckBox
+        Switch_Corr2FS                  matlab.ui.control.Switch
+        D21DFunctionEditField_Corr2     matlab.ui.control.EditField
+        DtoscalarfunctionLabel_Corr2    matlab.ui.control.Label
+        CameraLabel_Corr2               matlab.ui.control.Label
+        CameraDropDown_Corr2            matlab.ui.control.DropDown
+        ScalargroupDropDown_Corr2       matlab.ui.control.DropDown
+        ScalarLabel_Corr2               matlab.ui.control.Label
+        ScalargroupLabel_Corr2          matlab.ui.control.Label
+        ScalarDropDown_Corr2            matlab.ui.control.DropDown
+        FACETScalarArray1Panel          matlab.ui.container.Panel
+        UseanotherfunctionLabel         matlab.ui.control.Label
+        D21DFcnDropDown_Corr1           matlab.ui.control.DropDown
+        HistogramCheckBox               matlab.ui.control.CheckBox
+        Switch_Corr1FS                  matlab.ui.control.Switch
+        D21DFunctionEditField_Corr1     matlab.ui.control.EditField
+        DtoscalarfunctionLabel_Corr1    matlab.ui.control.Label
+        CameraLabel_Corr1               matlab.ui.control.Label
+        CameraDropDown_Corr1            matlab.ui.control.DropDown
+        ScalargroupDropDown_Corr1       matlab.ui.control.DropDown
+        ScalarLabel_Corr1               matlab.ui.control.Label
+        ScalargroupLabel_Corr1          matlab.ui.control.Label
+        ScalarDropDown_Corr1            matlab.ui.control.DropDown
+        dataSet                         matlab.ui.container.Panel
+        InclSCPCheckBox                 matlab.ui.control.CheckBox
+        LoadconfigButton                matlab.ui.control.Button
+        SaveconfigButton                matlab.ui.control.Button
+        LastDAQButton                   matlab.ui.control.Button
+        DataSetInfoTextArea             matlab.ui.control.TextArea
+        DataSetInfoTextAreaLabel        matlab.ui.control.Label
+        SubtractImageBackgroundCheckBox  matlab.ui.control.CheckBox
+        DANlogTextArea                  matlab.ui.control.TextArea
+        DANlogTextAreaLabel             matlab.ui.control.Label
+        LoadDataSetButton               matlab.ui.control.Button
+        dataSetID                       matlab.ui.control.NumericEditField
+        dataSetIDLabel                  matlab.ui.control.Label
+        expDropDown                     matlab.ui.control.DropDown
+        ExperimentLabel                 matlab.ui.control.Label
+        ImageAxes                       matlab.ui.control.UIAxes
         MoreFeaturesTab                 matlab.ui.container.Tab
-        DANInfoPanel                    matlab.ui.container.Panel
-        DataSetInfoTextArea_2Label      matlab.ui.control.Label
-        DataSetInfoTextArea_2           matlab.ui.control.TextArea
-        DANlogTextArea_2Label           matlab.ui.control.Label
-        DANlogTextArea_2                matlab.ui.control.TextArea
-        Correlation1Panel               matlab.ui.container.Panel
-        ScalarsLabel                    matlab.ui.control.Label
-        ScalarsListBox_CorrM            matlab.ui.control.ListBox
-        ShowCorrelationMatrixButton     matlab.ui.control.Button
-        ScalargroupDropDownLabel        matlab.ui.control.Label
-        ScalargroupDD_CorrM             matlab.ui.control.DropDown
-        IncludeincorrmatrixfitLabel     matlab.ui.control.Label
-        IncludeListBox_CorrM            matlab.ui.control.ListBox
-        AddButton                       matlab.ui.control.Button
-        RemoveButton                    matlab.ui.control.Button
-        CorrMSwitch1                    matlab.ui.control.Switch
-        CameraLabel_2                   matlab.ui.control.Label
-        CameraDropDown                  matlab.ui.control.DropDown
-        DtoscalarfunctionLabel          matlab.ui.control.Label
-        DtoscalarfunctionDropDown       matlab.ui.control.DropDown
-        OtherEditFieldLabel             matlab.ui.control.Label
-        OtherEditField                  matlab.ui.control.EditField
+        Correlation2Panel               matlab.ui.container.Panel
+        OtherEditField_2                matlab.ui.control.EditField
+        OtherEditField_2Label           matlab.ui.control.Label
+        IncludeListBox_CorrM_2          matlab.ui.control.ListBox
+        IncludeincorrmatrixfitLabel_2   matlab.ui.control.Label
+        RemoveButton_2                  matlab.ui.control.Button
+        AddButton_2                     matlab.ui.control.Button
+        DtoscalarfunctionDropDown_2     matlab.ui.control.DropDown
+        DtoscalarfunctionLabel_2        matlab.ui.control.Label
+        CameraDropDown_2                matlab.ui.control.DropDown
+        CameraDropDown_2Label           matlab.ui.control.Label
+        CorrMSwitch2                    matlab.ui.control.Switch
+        ScalarsListBox_CorrM_2          matlab.ui.control.ListBox
+        ScalarsLabel_2                  matlab.ui.control.Label
+        ScalargroupDD_CorrM_2           matlab.ui.control.DropDown
+        ScalargroupDropDownLabel_2      matlab.ui.control.Label
+        FitDataPanel                    matlab.ui.container.Panel
+        ShowFitButton                   matlab.ui.control.Button
+        ResultsTextArea                 matlab.ui.control.TextArea
+        ResultsTextAreaLabel            matlab.ui.control.Label
+        CustomfitfunctionEditField      matlab.ui.control.EditField
+        CustomfitfunctionEditFieldLabel  matlab.ui.control.Label
+        ModeltypetofitDropDown          matlab.ui.control.DropDown
+        ModeltypetofitDropDownLabel     matlab.ui.control.Label
         PlotsPanel                      matlab.ui.container.Panel
         UIAxes                          matlab.ui.control.UIAxes
-        FitDataPanel                    matlab.ui.container.Panel
-        ModeltypetofitDropDownLabel     matlab.ui.control.Label
-        ModeltypetofitDropDown          matlab.ui.control.DropDown
-        CustomfitfunctionEditFieldLabel  matlab.ui.control.Label
-        CustomfitfunctionEditField      matlab.ui.control.EditField
-        ResultsTextAreaLabel            matlab.ui.control.Label
-        ResultsTextArea                 matlab.ui.control.TextArea
-        ShowFitButton                   matlab.ui.control.Button
-        Correlation2Panel               matlab.ui.container.Panel
-        ScalargroupDropDownLabel_2      matlab.ui.control.Label
-        ScalargroupDD_CorrM_2           matlab.ui.control.DropDown
-        ScalarsLabel_2                  matlab.ui.control.Label
-        ScalarsListBox_CorrM_2          matlab.ui.control.ListBox
-        CorrMSwitch2                    matlab.ui.control.Switch
-        CameraDropDown_2Label           matlab.ui.control.Label
-        CameraDropDown_2                matlab.ui.control.DropDown
-        DtoscalarfunctionLabel_2        matlab.ui.control.Label
-        DtoscalarfunctionDropDown_2     matlab.ui.control.DropDown
-        AddButton_2                     matlab.ui.control.Button
-        RemoveButton_2                  matlab.ui.control.Button
-        IncludeincorrmatrixfitLabel_2   matlab.ui.control.Label
-        IncludeListBox_CorrM_2          matlab.ui.control.ListBox
-        OtherEditField_2Label           matlab.ui.control.Label
-        OtherEditField_2                matlab.ui.control.EditField
+        Correlation1Panel               matlab.ui.container.Panel
+        OtherEditField                  matlab.ui.control.EditField
+        OtherEditFieldLabel             matlab.ui.control.Label
+        DtoscalarfunctionDropDown       matlab.ui.control.DropDown
+        DtoscalarfunctionLabel          matlab.ui.control.Label
+        CameraDropDown                  matlab.ui.control.DropDown
+        CameraLabel_2                   matlab.ui.control.Label
+        CorrMSwitch1                    matlab.ui.control.Switch
+        RemoveButton                    matlab.ui.control.Button
+        AddButton                       matlab.ui.control.Button
+        IncludeListBox_CorrM            matlab.ui.control.ListBox
+        IncludeincorrmatrixfitLabel     matlab.ui.control.Label
+        ScalargroupDD_CorrM             matlab.ui.control.DropDown
+        ScalargroupDropDownLabel        matlab.ui.control.Label
+        ShowCorrelationMatrixButton     matlab.ui.control.Button
+        ScalarsListBox_CorrM            matlab.ui.control.ListBox
+        ScalarsLabel                    matlab.ui.control.Label
+        DANInfoPanel                    matlab.ui.container.Panel
+        DANlogTextArea_2                matlab.ui.control.TextArea
+        DANlogTextArea_2Label           matlab.ui.control.Label
+        DataSetInfoTextArea_2           matlab.ui.control.TextArea
+        DataSetInfoTextArea_2Label      matlab.ui.control.Label
     end
 
     
@@ -175,10 +175,10 @@ classdef F2_DAN_HDF5_exported < matlab.apps.AppBase
             % Loads the latest DAQ run to the input
             
             % Get latest DAQ number
-            app.dataSetID.Value = lcaGetSmart('SIOC:SYS1:ML02:AO400');
+            app.dataSetID.Value = lcaGet('SIOC:SYS1:ML02:AO400');
             
             %Get latest DAQ experiment
-            exp = lcaGetSmart('SIOC:SYS1:ML02:AO398');
+            exp = lcaGet('SIOC:SYS1:ML02:AO398');
             if exp == 0
                 exp = 'TEST'
             else
@@ -1027,6 +1027,17 @@ classdef F2_DAN_HDF5_exported < matlab.apps.AppBase
             app.MainDANTab = uitab(app.TabGroup);
             app.MainDANTab.Title = 'Main DAN';
 
+            % Create ImageAxes
+            app.ImageAxes = uiaxes(app.MainDANTab);
+            title(app.ImageAxes, 'Title')
+            xlabel(app.ImageAxes, 'X')
+            ylabel(app.ImageAxes, 'Y')
+            app.ImageAxes.XTickLabelRotation = 0;
+            app.ImageAxes.YTickLabelRotation = 0;
+            app.ImageAxes.ZTickLabelRotation = 0;
+            app.ImageAxes.FontSize = 14;
+            app.ImageAxes.Position = [405 401 803 509];
+
             % Create dataSet
             app.dataSet = uipanel(app.MainDANTab);
             app.dataSet.Title = 'Load data';
@@ -1285,14 +1296,6 @@ classdef F2_DAN_HDF5_exported < matlab.apps.AppBase
             app.ShowlinearfitButton.ButtonPushedFcn = createCallbackFcn(app, @ShowlinearfitButtonPushed, true);
             app.ShowlinearfitButton.Position = [230 8 86 51];
             app.ShowlinearfitButton.Text = 'Show linear fit';
-
-            % Create ImageAxes
-            app.ImageAxes = uiaxes(app.MainDANTab);
-            title(app.ImageAxes, 'Title')
-            xlabel(app.ImageAxes, 'X')
-            ylabel(app.ImageAxes, 'Y')
-            app.ImageAxes.FontSize = 14;
-            app.ImageAxes.Position = [405 401 803 509];
 
             % Create CLimPanel
             app.CLimPanel = uipanel(app.MainDANTab);
@@ -1750,6 +1753,9 @@ classdef F2_DAN_HDF5_exported < matlab.apps.AppBase
             title(app.UIAxes, 'Title')
             xlabel(app.UIAxes, 'X')
             ylabel(app.UIAxes, 'Y')
+            app.UIAxes.XTickLabelRotation = 0;
+            app.UIAxes.YTickLabelRotation = 0;
+            app.UIAxes.ZTickLabelRotation = 0;
             app.UIAxes.FontSize = 14;
             app.UIAxes.Position = [12 12 804 539];
 
