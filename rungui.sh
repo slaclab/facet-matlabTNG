@@ -9,5 +9,14 @@ else
   APPNAME=$1    
 fi
 zenity --info --text="Launching Matlab GUI: $APPNAME..." &
-/usr/local/lcls/package/matlab/2020a/bin/matlab -nodesktop -nosplash -r "rungui('$APPNAME','$!');"
+unset QT_XCB_GL_INTEGRATION
 
+RH_VER=`cat /etc/redhat-release | awk -F 'release '  '{print $2}' | awk -F '.' '{print $1}'`
+
+if [ $RH_VER == '7' ]
+   then
+      /usr/local/lcls/package/matlab/2020a/bin/matlab -nodesktop -nosplash -r "rungui('$APPNAME','$!');"
+elif [ $RH_VER == '9' ]
+   then
+      /usr/local/lcls/package/matlab/2023a/bin/matlab -nodesktop -nosplash -r "rungui('$APPNAME','$!');"
+fi
